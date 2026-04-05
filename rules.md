@@ -219,6 +219,17 @@
 
 ---
 
+## 16. Git Workflow Rules
+
+* Every task must be done on a **new branch** named according to the task.
+* Changes must be:
+
+  * Pushed to the task branch
+  * Opened as a Pull Request targeting `develop`
+* Do NOT push or merge task work directly into `main`.
+
+---
+
 # 🚨 Golden Rule
 
 > **If a feature compromises data accuracy, user trust, or system stability — it must NOT be shipped.**
