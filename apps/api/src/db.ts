@@ -1,4 +1,6 @@
 import { Pool } from "pg";
+import * as fs from "fs";
+import * as path from "path";
 
 export const pool = process.env.DATABASE_URL
   ? new Pool({
@@ -14,26 +16,47 @@ export const pool = process.env.DATABASE_URL
     });
 
 export async function runMigrations() {
-  await pool.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+  // Create the tracking table
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS trades (
-      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      symbol TEXT,
-      direction TEXT,
-      entry_price NUMERIC,
-      exit_price NUMERIC,
-      lot_size NUMERIC,
-      pnl NUMERIC,
-      stop_loss NUMERIC,
-      take_profit NUMERIC,
-      strategy TEXT,
-      notes TEXT,
-      fomo_check BOOLEAN DEFAULT false,
-      trend_alignment BOOLEAN DEFAULT false,
-      vengeance_trade BOOLEAN DEFAULT false,
-      chart_image TEXT,
-      created_at TIMESTAMP DEFAULT NOW()
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      id SERIAL PRIMARY KEY,
+      filename TEXT NOT NULL UNIQUE,
+      executed_at TIMESTAMP DEFAULT NOW()
     )
   `);
-  await pool.query(`ALTER TABLE trades ADD COLUMN IF NOT EXISTS chart_image TEXT`);
+
+  // Read migration files
+  const migrationsDir = path.join(__dirname, "..", "migrations");
+  if (!fs.existsSync(migrationsDir)) {
+    console.log("[migrations] No migrations directory found, skipping.");
+    return;
+  }
+
+  const files = fs.readdirSync(migrationsDir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
+
+  // Get already-executed migrations
+  const executed = await pool.query("SELECT filename FROM schema_migrations");
+  const executedSet = new Set(executed.rows.map((r: { filename: string }) => r.filename));
+
+  for (const file of files) {
+    if (executedSet.has(file)) continue;
+
+    const sql = fs.readFileSync(path.join(migrationsDir, file), "utf-8");
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(sql);
+      await client.query("INSERT INTO schema_migrations (filename) VALUES ($1)", [file]);
+      await client.query("COMMIT");
+      console.log(`[migrations] ✓ ${file}`);
+    } catch (err) {
+      await client.query("ROLLBACK");
+      console.error(`[migrations] ✗ ${file}:`, err);
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
 }

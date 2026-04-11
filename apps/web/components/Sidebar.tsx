@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 const navItems = [
   {
@@ -40,6 +41,18 @@ const navItems = [
     ),
   },
   {
+    label: "JOURNAL",
+    href: "/journal",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="0" y="0" width="14" height="2" />
+        <rect x="0" y="4" width="10" height="2" />
+        <rect x="0" y="8" width="12" height="2" />
+        <rect x="0" y="12" width="8" height="2" />
+      </svg>
+    ),
+  },
+  {
     label: "NEW TRADE",
     href: "/add-trade",
     icon: (
@@ -53,6 +66,11 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+
+  const initials = user?.username
+    ? user.username.slice(0, 2).toUpperCase()
+    : "OP";
 
   return (
     <aside
@@ -90,11 +108,11 @@ export default function Sidebar() {
             color: "#888",
           }}
         >
-          OP
+          {initials}
         </div>
         <div>
           <div className="text-white text-xs font-bold tracking-wider">
-            OPERATOR_01
+            {user?.username?.toUpperCase() || "OPERATOR"}
           </div>
           <div className="text-xs" style={{ color: "#888" }}>
             V-2.4.0
@@ -119,6 +137,7 @@ export default function Sidebar() {
                 background: isActive ? "#ffffff" : "transparent",
                 color: isActive ? "#111111" : "#888888",
                 letterSpacing: "0.1em",
+                textDecoration: "none",
               }}
             >
               <span>{item.icon}</span>
@@ -136,6 +155,7 @@ export default function Sidebar() {
               background: "#ffffff",
               color: "#111111",
               letterSpacing: "0.15em",
+              textDecoration: "none",
             }}
           >
             LOG TRADE
@@ -149,18 +169,16 @@ export default function Sidebar() {
         style={{ borderTop: "1px solid #2a2a2a" }}
       >
         <button
+          onClick={() => logout()}
           className="flex items-center gap-3 px-3 py-2 text-xs font-bold tracking-widest w-full text-left"
-          style={{ color: "#888", letterSpacing: "0.1em" }}
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-            <circle cx="7" cy="7" r="2.5" />
-            <path d="M7 0v2M7 12v2M0 7h2M12 7h2M2.1 2.1l1.4 1.4M10.5 10.5l1.4 1.4M10.5 2.1l-1.4 1.4M3.5 10.5l-1.4 1.4" stroke="currentColor" strokeWidth="1.5" fill="none" />
-          </svg>
-          SETTINGS
-        </button>
-        <button
-          className="flex items-center gap-3 px-3 py-2 text-xs font-bold tracking-widest w-full text-left"
-          style={{ color: "#888", letterSpacing: "0.1em" }}
+          style={{
+            color: "#888",
+            letterSpacing: "0.1em",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
+          }}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
             <path d="M5 2H2v10h3v1H1V1h4V2z" />

@@ -24,15 +24,12 @@ if %errorlevel% neq 0 (
     echo      Docker daemon already running.
 )
 
-:: ── 2. Start PostgreSQL container ───────────────────────────────────
+:: ── 2. Start PostgreSQL + Redis via Docker Compose ──────────────────
 echo.
-echo [2/4] Starting PostgreSQL (tradezen-db)...
-docker start tradezen-db >nul 2>&1
-if %errorlevel% neq 0 (
-    echo      Container not found — creating a new one...
-    docker run -d --name tradezen-db -e POSTGRES_PASSWORD=pass -e POSTGRES_USER=postgres -e POSTGRES_DB=tradezen -p 5432:5432 postgres:16-alpine >nul 2>&1
-)
+echo [2/4] Starting PostgreSQL + Redis (docker-compose)...
+docker-compose up -d
 echo      PostgreSQL running on localhost:5432
+echo      Redis running on localhost:6379
 
 :: ── 3. Wait for Postgres to accept connections ───────────────────────
 echo.

@@ -1,25 +1,83 @@
-import { Controller, Post, Get, Body, Param, UseInterceptors, UploadedFile, BadRequestException } from "@nestjs/common";
+import {
+  Controller, Post, Get, Put, Delete,
+  Body, Param, Query, UseInterceptors, UploadedFile,
+  BadRequestException, Res, Header,
+} from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import { extname, join } from "path";
+import { ApiBearerAuth, ApiTags, ApiOperation } from "@nestjs/swagger";
 import { TradesService } from "./trades.service";
-import type { Express } from "express";
+import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from "./dto";
+import { CurrentUser } from "../auth/current-user.decorator";
+import type { Express, Response } from "express";
 
+@ApiTags("trades")
+@ApiBearerAuth()
 @Controller("trades")
 export class TradesController {
   constructor(private readonly service: TradesService) {}
 
   @Post()
-  create(@Body() body: any) {
-    return this.service.create(body);
+  @ApiOperation({ summary: "Create a new trade" })
+  create(@CurrentUser("id") userId: string, @Body() dto: CreateTradeDto) {
+    return this.service.create(userId, dto);
   }
 
   @Get()
-  getAll() {
-    return this.service.findAll();
+  @ApiOperation({ summary: "List trades with filtering and pagination" })
+  findAll(@CurrentUser("id") userId: string, @Query() query: QueryTradesDto) {
+    return this.service.findAll(userId, query);
+  }
+
+  @Get("analytics")
+  @ApiOperation({ summary: "Get trade analytics and statistics" })
+  getAnalytics(@CurrentUser("id") userId: string) {
+    return this.service.getAnalytics(userId);
+  }
+
+  @Get("daily-pnl")
+  @ApiOperation({ summary: "Get daily PnL breakdown" })
+  getDailyPnl(
+    @CurrentUser("id") userId: string,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+  ) {
+    return this.service.getDailyPnl(userId, from, to);
+  }
+
+  @Get("export/csv")
+  @ApiOperation({ summary: "Export all trades as CSV" })
+  @Header("Content-Type", "text/csv")
+  @Header("Content-Disposition", "attachment; filename=trades.csv")
+  async exportCsv(@CurrentUser("id") userId: string) {
+    return this.service.exportCsv(userId);
+  }
+
+  @Get(":id")
+  @ApiOperation({ summary: "Get a single trade by ID" })
+  findOne(@CurrentUser("id") userId: string, @Param("id") id: string) {
+    return this.service.findOne(userId, id);
+  }
+
+  @Put(":id")
+  @ApiOperation({ summary: "Update a trade" })
+  update(
+    @CurrentUser("id") userId: string,
+    @Param("id") id: string,
+    @Body() dto: UpdateTradeDto,
+  ) {
+    return this.service.update(userId, id, dto);
+  }
+
+  @Delete(":id")
+  @ApiOperation({ summary: "Delete a trade" })
+  remove(@CurrentUser("id") userId: string, @Param("id") id: string) {
+    return this.service.remove(userId, id);
   }
 
   @Post(":id/image")
+  @ApiOperation({ summary: "Upload a chart image for a trade" })
   @UseInterceptors(
     FileInterceptor("image", {
       storage: diskStorage({
@@ -39,10 +97,11 @@ export class TradesController {
     }),
   )
   uploadImage(
+    @CurrentUser("id") userId: string,
     @Param("id") id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException("No image file provided");
-    return this.service.uploadImage(id, file.filename);
+    return this.service.uploadImage(userId, id, file.filename);
   }
 }

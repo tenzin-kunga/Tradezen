@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getTrades } from "@/lib/api";
+import { getTrades, getAnalytics } from "@/lib/api";
 import StatCard from "@/components/StatCard";
 import EquityChart from "@/components/EquityChart";
 import Link from "next/link";
@@ -18,36 +18,6 @@ function fmt(n: number) {
   return n >= 0 ? `+$${abs}` : `-$${abs}`;
 }
 
-function computeStats(trades: Trade[]) {
-  if (!trades.length) return { pnl: "--", winRate: "--", profitFactor: "--", avgRR: "--", pnlColor: "#ffffff" };
-  const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
-  const wins = trades.filter((t) => t.pnl > 0);
-  const losses = trades.filter((t) => t.pnl < 0);
-  const winRate = ((wins.length / trades.length) * 100).toFixed(1) + "%";
-  const grossWin = wins.reduce((s, t) => s + t.pnl, 0);
-  const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
-  const profitFactor = grossLoss === 0 ? "8" : (grossWin / grossLoss).toFixed(2);
-  const rrTrades = trades.filter(
-    (t) => t.stop_loss != null && t.take_profit != null && t.entry_price != null && t.stop_loss !== t.entry_price
-  );
-  const avgRR =
-    rrTrades.length === 0
-      ? "--"
-      : "1:" + (
-          rrTrades.reduce(
-            (s, t) => s + Math.abs(t.take_profit! - t.entry_price) / Math.abs(t.entry_price - t.stop_loss!),
-            0
-          ) / rrTrades.length
-        ).toFixed(1);
-  return {
-    pnl: fmt(totalPnl),
-    winRate,
-    profitFactor,
-    avgRR,
-    pnlColor: totalPnl >= 0 ? "#22c55e" : "#ef4444",
-  };
-}
-
 function buildEquityCurve(trades: Trade[]) {
   const sorted = [...trades].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   let cum = 0;
@@ -59,27 +29,39 @@ function buildEquityCurve(trades: Trade[]) {
 
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getTrades()
-      .then(setTrades)
+    Promise.all([
+      getTrades({ limit: 100, sort: "created_at", order: "desc" }),
+      getAnalytics(),
+    ])
+      .then(([tradesRes, analyticsRes]) => {
+        setTrades(tradesRes.data);
+        setAnalytics(analyticsRes);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
 
-  const stats = computeStats(trades);
   const equityData = buildEquityCurve(trades);
-  const recent = [...trades].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+  const recent = trades.slice(0, 5);
+
+  const pnlStr = analytics ? fmt(analytics.totalPnl) : "--";
+  const pnlColor = analytics ? (analytics.totalPnl >= 0 ? "#22c55e" : "#ef4444") : "#ffffff";
+  const winRateStr = analytics ? `${analytics.winRate}%` : "--";
+  const pfStr = analytics ? String(analytics.profitFactor) : "--";
+  const rrStr = analytics ? (analytics.avgRR > 0 ? `1:${analytics.avgRR.toFixed(1)}` : "--") : "--";
 
   return (
     <div style={{ minHeight: "100%" }}>
       {/* Stat Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, marginBottom: 1 }}>
-        <StatCard label="TOTAL P&L" value={loading ? "..." : stats.pnl} valueColor={stats.pnlColor} />
-        <StatCard label="WIN RATE" value={loading ? "..." : stats.winRate} />
-        <StatCard label="PROFIT FACTOR" value={loading ? "..." : stats.profitFactor} />
-        <StatCard label="AVG R:R" value={loading ? "..." : stats.avgRR} />
+        <StatCard label="TOTAL P&L" value={loading ? "..." : pnlStr} valueColor={pnlColor} />
+        <StatCard label="WIN RATE" value={loading ? "..." : winRateStr} />
+        <StatCard label="PROFIT FACTOR" value={loading ? "..." : pfStr} />
+        <StatCard label="AVG R:R" value={loading ? "..." : rrStr} />
       </div>
 
       {/* Equity Chart */}
