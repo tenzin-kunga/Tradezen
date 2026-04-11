@@ -1,159 +1,130 @@
-# Turborepo starter
+# TradeZen — Carbon Ledger
 
-This Turborepo starter is maintained by the Turborepo core team.
+A professional trading journal web app with a dark hacker/terminal aesthetic. Track trades, analyze performance, maintain a daily journal, and tag trades for organization.
 
-## Using this example
+**Live:** [tradezen-web.vercel.app](https://tradezen-web.vercel.app)
 
-Run the following command:
+## Tech Stack
 
-```sh
-npx create-turbo@latest
+| Layer | Technology |
+|---|---|
+| **Frontend** | Next.js 16, React 19, Tailwind CSS v4, Recharts |
+| **Backend** | NestJS 11, PostgreSQL (raw `pg`), Passport JWT |
+| **Database** | PostgreSQL (Neon serverless) |
+| **Monorepo** | Turborepo with npm workspaces |
+| **Deployment** | Vercel (web) + Render (API) + Neon (DB) |
+
+## Features
+
+- **Authentication** — JWT access tokens + HTTP-only refresh cookies
+- **Trade Logging** — Full CRUD with symbol, direction, entry/exit, lot size, stop loss, take profit, strategy, notes
+- **Behavioral Tracking** — FOMO check, trend alignment, vengeance trade flags
+- **Analytics Dashboard** — Win rate, profit factor, expectancy, max drawdown, Sharpe ratio, day-of-week performance, equity curve
+- **Daily Journal** — Pre/post market notes, mood tracking, market conditions, lessons learned, streak tracking
+- **Tags** — Color-coded tags with categories, attach to trades for filtering
+- **CSV Export** — Export trades to CSV
+- **Swagger Docs** — Interactive API docs at `/api/docs`
+
+## Project Structure
+
+```
+apps/
+  api/          — NestJS backend (auth, trades, journals, tags)
+  web/          — Next.js frontend (dashboard, trade log, analytics, journal)
+packages/
+  types/        — Shared TypeScript types
+  ui/           — Shared UI components
+  eslint-config/— ESLint configs
+  typescript-config/ — TSConfig presets
 ```
 
-## What's inside?
+## Getting Started
 
-This Turborepo includes the following packages/apps:
+### Prerequisites
 
-### Apps and Packages
+- Node.js 20+
+- Docker (for local PostgreSQL + Redis)
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+### Local Development
 
 ```sh
-cd my-turborepo
-turbo build
-```
+# Clone and install
+git clone https://github.com/tampered-sin/Tradezen.git
+cd Tradezen
+npm install
 
-Without global `turbo`, use your package manager:
+# Start database
+docker-compose up -d
 
-```sh
-cd my-turborepo
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
+# Start both apps (API on :3001, Web on :3000)
 npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+Or use the batch script:
 
 ```sh
-turbo dev --filter=web
+start.bat
 ```
 
-Without global `turbo`:
+### Environment Variables
 
-```sh
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+**API** (`apps/api/`) — all have sensible defaults for local dev:
 
-### Remote Caching
+| Variable | Default | Description |
+|---|---|---|
+| `DATABASE_URL` | — | Full Postgres connection string (overrides individual DB vars) |
+| `DB_HOST` | `localhost` | Database host |
+| `DB_PORT` | `5432` | Database port |
+| `DB_USER` | `postgres` | Database user |
+| `DB_PASSWORD` | `pass` | Database password |
+| `DB_NAME` | `tradezen` | Database name |
+| `JWT_SECRET` | `tradezen-dev-secret` | Secret for signing JWTs |
+| `WEB_URL` | `http://localhost:3000` | Frontend URL (CORS origin) |
+| `PORT` | `3001` | API server port |
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+**Web** (`apps/web/`):
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+| Variable | Default | Description |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | Backend API URL |
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+## API Endpoints
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/auth/register` | Register new user |
+| `POST` | `/auth/login` | Login |
+| `POST` | `/auth/refresh` | Refresh access token |
+| `POST` | `/auth/logout` | Logout |
+| `GET` | `/auth/me` | Get current user |
+| `POST` | `/trades` | Create trade |
+| `GET` | `/trades` | List trades (paginated) |
+| `GET` | `/trades/analytics` | Trade analytics |
+| `GET` | `/trades/export/csv` | Export CSV |
+| `GET` | `/trades/:id` | Get trade |
+| `PUT` | `/trades/:id` | Update trade |
+| `DELETE` | `/trades/:id` | Delete trade |
+| `POST` | `/journals` | Create/upsert journal entry |
+| `GET` | `/journals` | List journal entries |
+| `GET` | `/journals/streak` | Get journal streak stats |
+| `GET` | `/journals/date/:date` | Get entry by date |
+| `POST` | `/tags` | Create tag |
+| `GET` | `/tags` | List tags |
+| `PUT` | `/tags/:id` | Update tag |
+| `DELETE` | `/tags/:id` | Delete tag |
 
-```sh
-cd my-turborepo
-turbo login
-```
+Full interactive docs at `/api/docs` (Swagger).
 
-Without global `turbo`, use your package manager:
+## Deployment
 
-```sh
-cd my-turborepo
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
+| Service | Purpose |
+|---|---|
+| [Vercel](https://vercel.com) | Frontend (`apps/web`) |
+| [Render](https://render.com) | Backend (`apps/api`) |
+| [Neon](https://neon.tech) | PostgreSQL database |
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+Auto-deploys on push to `main`.
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+## License
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+UNLICENSED — Private project.
