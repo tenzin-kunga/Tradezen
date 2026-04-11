@@ -1,0 +1,215 @@
+"use client";
+
+import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  backgroundColor: "#111111",
+  border: "1px solid #2a2a2a",
+  borderRadius: "4px",
+  padding: "12px 14px",
+  color: "#ffffff",
+  fontFamily: "monospace",
+  fontSize: "13px",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "10px",
+  color: "#888",
+  letterSpacing: "0.12em",
+  marginBottom: "6px",
+  display: "block",
+};
+
+export default function RegisterPage() {
+  const { register } = useAuth();
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !username || !password || !confirmPassword) {
+      setError("All fields are required.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await register(email, username, password);
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#111111",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "monospace",
+      }}
+    >
+      <div style={{ width: 400 }}>
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <h1
+            style={{
+              color: "#fff",
+              fontSize: 24,
+              fontWeight: 700,
+              letterSpacing: "0.2em",
+              margin: 0,
+            }}
+          >
+            TRADEZEN
+          </h1>
+          <p style={{ color: "#555", fontSize: 11, letterSpacing: "0.1em", marginTop: 8 }}>
+            CREATE OPERATOR ACCOUNT
+          </p>
+        </div>
+
+        <div
+          style={{
+            backgroundColor: "#1c1c1c",
+            border: "1px solid #2a2a2a",
+            borderRadius: "4px",
+            padding: 32,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              color: "#555",
+              letterSpacing: "0.15em",
+              marginBottom: 24,
+            }}
+          >
+            OPERATOR REGISTRATION
+          </div>
+
+          {error && (
+            <div
+              style={{
+                background: "rgba(239,68,68,0.1)",
+                border: "1px solid #ef4444",
+                color: "#ef4444",
+                padding: "10px 14px",
+                fontSize: 11,
+                letterSpacing: "0.05em",
+                marginBottom: 20,
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>EMAIL</label>
+              <input
+                style={inputStyle}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="operator@tradezen.io"
+                autoComplete="email"
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>USERNAME</label>
+              <input
+                style={inputStyle}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="operator_01"
+                autoComplete="username"
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>PASSWORD</label>
+              <input
+                style={inputStyle}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label style={labelStyle}>CONFIRM PASSWORD</label>
+              <input
+                style={inputStyle}
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="new-password"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                backgroundColor: loading ? "#333" : "#ffffff",
+                color: loading ? "#888" : "#111111",
+                border: "none",
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: "0.15em",
+                cursor: loading ? "default" : "pointer",
+                fontFamily: "monospace",
+              }}
+            >
+              {loading ? "CREATING ACCOUNT..." : "REGISTER"}
+            </button>
+          </form>
+
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: 20,
+              fontSize: 11,
+              color: "#555",
+            }}
+          >
+            ALREADY REGISTERED?{" "}
+            <Link
+              href="/login"
+              style={{ color: "#888", textDecoration: "none", letterSpacing: "0.08em" }}
+            >
+              LOGIN
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
