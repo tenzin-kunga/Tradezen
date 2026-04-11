@@ -1,65 +1,139 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import { getTrades } from "@/lib/api";
+import StatCard from "@/components/StatCard";
+import EquityChart from "@/components/EquityChart";
+import Link from "next/link";
+
+type Trade = {
+  id: string; symbol: string; direction: string;
+  entry_price: number; exit_price: number; lot_size: number; pnl: number;
+  stop_loss: number | null; take_profit: number | null;
+  created_at: string;
+};
+
+function fmt(n: number) {
+  const abs = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n >= 0 ? `+$${abs}` : `-$${abs}`;
+}
+
+function computeStats(trades: Trade[]) {
+  if (!trades.length) return { pnl: "--", winRate: "--", profitFactor: "--", avgRR: "--", pnlColor: "#ffffff" };
+  const totalPnl = trades.reduce((s, t) => s + t.pnl, 0);
+  const wins = trades.filter((t) => t.pnl > 0);
+  const losses = trades.filter((t) => t.pnl < 0);
+  const winRate = ((wins.length / trades.length) * 100).toFixed(1) + "%";
+  const grossWin = wins.reduce((s, t) => s + t.pnl, 0);
+  const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl, 0));
+  const profitFactor = grossLoss === 0 ? "8" : (grossWin / grossLoss).toFixed(2);
+  const rrTrades = trades.filter(
+    (t) => t.stop_loss != null && t.take_profit != null && t.entry_price != null && t.stop_loss !== t.entry_price
+  );
+  const avgRR =
+    rrTrades.length === 0
+      ? "--"
+      : "1:" + (
+          rrTrades.reduce(
+            (s, t) => s + Math.abs(t.take_profit! - t.entry_price) / Math.abs(t.entry_price - t.stop_loss!),
+            0
+          ) / rrTrades.length
+        ).toFixed(1);
+  return {
+    pnl: fmt(totalPnl),
+    winRate,
+    profitFactor,
+    avgRR,
+    pnlColor: totalPnl >= 0 ? "#22c55e" : "#ef4444",
+  };
+}
+
+function buildEquityCurve(trades: Trade[]) {
+  const sorted = [...trades].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  let cum = 0;
+  return sorted.map((t) => {
+    cum += t.pnl;
+    return { date: t.created_at, equity: Math.round(cum * 100) / 100 };
+  });
+}
+
+export default function Dashboard() {
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getTrades()
+      .then(setTrades)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const stats = computeStats(trades);
+  const equityData = buildEquityCurve(trades);
+  const recent = [...trades].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{ minHeight: "100%" }}>
+      {/* Stat Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, marginBottom: 1 }}>
+        <StatCard label="TOTAL P&L" value={loading ? "..." : stats.pnl} valueColor={stats.pnlColor} />
+        <StatCard label="WIN RATE" value={loading ? "..." : stats.winRate} />
+        <StatCard label="PROFIT FACTOR" value={loading ? "..." : stats.profitFactor} />
+        <StatCard label="AVG R:R" value={loading ? "..." : stats.avgRR} />
+      </div>
+
+      {/* Equity Chart */}
+      <div style={{ marginTop: 1 }}>
+        <EquityChart data={equityData} />
+      </div>
+
+      {/* Recent Trades */}
+      <div style={{ marginTop: 1, background: "#1c1c1c", border: "1px solid #2a2a2a", padding: 24 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <span style={{ color: "#888", fontSize: 11, letterSpacing: "0.12em", fontWeight: 700, textTransform: "uppercase" }}>
+            RECENT TRADES
+          </span>
+          <Link href="/trades" style={{ color: "#888", fontSize: 11, letterSpacing: "0.1em", textDecoration: "none" }}>
+            VIEW ALL TRADES
+          </Link>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        {recent.length === 0 ? (
+          <p style={{ color: "#888", fontSize: 12, margin: 0 }}>No trades logged yet.</p>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #2a2a2a" }}>
+                {["SYMBOL", "DIRECTION", "RESULT", "EXIT PRICE", "NET P&L"].map((h) => (
+                  <th key={h} style={{ color: "#888", fontWeight: 700, letterSpacing: "0.1em", textAlign: "left", paddingBottom: 12, paddingRight: 16, fontSize: 10, textTransform: "uppercase" }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {recent.map((t) => {
+                const isWin = t.pnl >= 0;
+                const isLong = t.direction === "buy";
+                return (
+                  <tr key={t.id} style={{ borderBottom: "1px solid #2a2a2a" }}>
+                    <td style={{ padding: "14px 16px 14px 0", color: "#fff", fontWeight: 700 }}>{t.symbol}</td>
+                    <td style={{ padding: "14px 16px 14px 0", color: isLong ? "#fff" : "#ef4444", fontWeight: 700 }}>
+                      {isLong ? "LONG" : "SHORT"}
+                    </td>
+                    <td style={{ padding: "14px 16px 14px 0", color: isWin ? "#fff" : "#ef4444", fontWeight: 700 }}>
+                      {isWin ? "PROFIT" : "LOSS"}
+                    </td>
+                    <td style={{ padding: "14px 16px 14px 0", color: "#fff" }}>{t.exit_price}</td>
+                    <td style={{ padding: "14px 0 14px 0", color: isWin ? "#22c55e" : "#ef4444", fontWeight: 700 }}>
+                      {fmt(t.pnl)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }
