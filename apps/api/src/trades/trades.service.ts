@@ -22,12 +22,13 @@ export class TradesService {
       vengeance_trade = false,
       trade_date = null,
       commission = null,
+      contract_size = 100000,
     } = dto;
 
     const pnl =
       direction === "buy"
-        ? (exit - entry) * lot
-        : (entry - exit) * lot;
+        ? (exit - entry) * lot * contract_size
+        : (entry - exit) * lot * contract_size;
 
     const netPnl = commission ? pnl - commission : pnl;
 
@@ -35,12 +36,12 @@ export class TradesService {
       `INSERT INTO trades (
         user_id, symbol, direction, entry_price, exit_price, lot_size, pnl,
         stop_loss, take_profit, strategy, notes,
-        fomo_check, trend_alignment, vengeance_trade, trade_date, commission
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+        fomo_check, trend_alignment, vengeance_trade, trade_date, commission, contract_size
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
       [
         userId, symbol, direction, entry, exit, lot, netPnl,
         stop_loss, take_profit, strategy, notes,
-        fomo_check, trend_alignment, vengeance_trade, trade_date, commission,
+        fomo_check, trend_alignment, vengeance_trade, trade_date, commission, contract_size,
       ],
     );
 

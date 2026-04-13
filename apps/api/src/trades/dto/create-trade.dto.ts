@@ -64,6 +64,12 @@ export class CreateTradeDto {
   @IsBoolean()
   vengeance_trade?: boolean;
 
+  @ApiPropertyOptional({ example: 100000, description: 'Contract size multiplier (100000 for standard forex lot, 1 for stocks)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  contract_size?: number;
+
   @ApiPropertyOptional({ example: '2025-01-15T10:30:00Z' })
   @IsOptional()
   @IsString()
