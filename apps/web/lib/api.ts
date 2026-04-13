@@ -93,7 +93,15 @@ export async function refreshToken(): Promise<boolean> {
 
 export async function getMe() {
   const res = await authFetch(`${API}/auth/me`);
-  return handleResponse<{ id: string; email: string; username: string; created_at: string }>(res);
+  return handleResponse<{ id: string; email: string; username: string; created_at: string; initial_capital: number; default_lot_size: number; timezone: string; theme: string }>(res);
+}
+
+export async function updateSettings(data: { initial_capital?: number; default_lot_size?: number; timezone?: string; theme?: string }) {
+  const res = await authFetch(`${API}/auth/settings`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  return handleResponse<{ id: string; email: string; username: string; created_at: string; initial_capital: number; default_lot_size: number; timezone: string; theme: string }>(res);
 }
 
 export async function logout() {
@@ -116,6 +124,7 @@ export const createTrade = async (data: {
   fomo_check?: boolean;
   trend_alignment?: boolean;
   vengeance_trade?: boolean;
+  trade_date?: string | null;
 }) => {
   const res = await authFetch(`${API}/trades`, {
     method: "POST",

@@ -130,6 +130,14 @@ export default function AddTradePage() {
   const [error, setError] = useState("");
   const [chartImage, setChartImage] = useState<string | null>(null);
   const [chartFile, setChartFile] = useState<File | null>(null);
+  const [tradeDate, setTradeDate] = useState(() => {
+    const now = new Date();
+    return now.toISOString().slice(0, 10);
+  });
+  const [tradeTime, setTradeTime] = useState(() => {
+    const now = new Date();
+    return now.toISOString().slice(11, 16);
+  });
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -182,6 +190,7 @@ export default function AddTradePage() {
         fomo_check: fomoCheck,
         trend_alignment: trendAlignment,
         vengeance_trade: vengeanceTrade,
+        trade_date: tradeDate && tradeTime ? `${tradeDate}T${tradeTime}:00Z` : undefined,
       });
       if (chartFile && trade?.id) {
         await uploadTradeImage(trade.id, chartFile);
@@ -283,6 +292,16 @@ export default function AddTradePage() {
                 <div>
                   <label style={labelStyle}>TAKE PROFIT</label>
                   <input style={inputStyle} type="number" step="any" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} placeholder="0.00000" />
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px" }}>
+                <div>
+                  <label style={labelStyle}>TRADE DATE</label>
+                  <input style={inputStyle} type="date" value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} />
+                </div>
+                <div>
+                  <label style={labelStyle}>TRADE TIME (UTC)</label>
+                  <input style={inputStyle} type="time" value={tradeTime} onChange={(e) => setTradeTime(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -399,6 +418,31 @@ export default function AddTradePage() {
                   RISK/REWARD RATIO
                 </div>
                 <RRDisplay entry={entry} stopLoss={stopLoss} takeProfit={takeProfit} />
+              </div>
+
+              {/* Profit & Loss */}
+              <div style={{ borderTop: "1px solid #2a2a2a", paddingTop: "16px", marginBottom: "20px" }}>
+                <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.1em", marginBottom: "8px" }}>
+                  ESTIMATED P&L
+                </div>
+                {(() => {
+                  const e = parseFloat(entry);
+                  const x = parseFloat(exit);
+                  const q = parseFloat(quantity);
+                  if (!e || !x || !q) return <span style={{ fontSize: "28px", fontWeight: 700, color: "#555" }}>--</span>;
+                  const pnl = direction === "LONG" ? (x - e) * q : (e - x) * q;
+                  const isProfit = pnl >= 0;
+                  return (
+                    <div>
+                      <div style={{ fontSize: "28px", fontWeight: 700, color: isProfit ? "#22c55e" : "#ef4444" }}>
+                        {isProfit ? "+" : ""}{pnl.toFixed(2)}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#888", marginTop: "4px" }}>
+                        {isProfit ? "PROFIT" : "LOSS"}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div style={{ borderTop: "1px solid #2a2a2a", paddingTop: "16px", marginBottom: "20px" }}>

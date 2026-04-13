@@ -20,6 +20,7 @@ export class TradesService {
       fomo_check = false,
       trend_alignment = false,
       vengeance_trade = false,
+      trade_date = null,
     } = dto;
 
     const pnl =
@@ -31,12 +32,12 @@ export class TradesService {
       `INSERT INTO trades (
         user_id, symbol, direction, entry_price, exit_price, lot_size, pnl,
         stop_loss, take_profit, strategy, notes,
-        fomo_check, trend_alignment, vengeance_trade
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+        fomo_check, trend_alignment, vengeance_trade, trade_date
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
       [
         userId, symbol, direction, entry, exit, lot, pnl,
         stop_loss, take_profit, strategy, notes,
-        fomo_check, trend_alignment, vengeance_trade,
+        fomo_check, trend_alignment, vengeance_trade, trade_date,
       ],
     );
 

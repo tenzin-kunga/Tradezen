@@ -63,7 +63,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           flex: 1,
           overflowY: "auto",
           padding: "40px",
-          background: "#111111",
+          background: "var(--bg-primary)",
         }}
       >
         {children}

@@ -1,8 +1,8 @@
-import { Controller, Post, Get, Body, Req, Res, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Post, Get, Patch, Body, Req, Res, HttpCode, HttpStatus } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import type { Request, Response } from "express";
 import { AuthService } from "./auth.service";
-import { RegisterDto, LoginDto } from "./dto";
+import { RegisterDto, LoginDto, UpdateSettingsDto } from "./dto";
 import { Public } from "./public.decorator";
 import { CurrentUser } from "./current-user.decorator";
 
@@ -48,5 +48,12 @@ export class AuthController {
   @ApiOperation({ summary: "Logout and clear refresh token" })
   logout(@Res({ passthrough: true }) res: Response) {
     return this.authService.logout(res);
+  }
+
+  @Patch("settings")
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "Update user settings" })
+  updateSettings(@CurrentUser("id") userId: string, @Body() dto: UpdateSettingsDto) {
+    return this.authService.updateSettings(userId, dto);
   }
 }

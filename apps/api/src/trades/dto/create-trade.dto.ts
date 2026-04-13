@@ -63,4 +63,9 @@ export class CreateTradeDto {
   @IsOptional()
   @IsBoolean()
   vengeance_trade?: boolean;
+
+  @ApiPropertyOptional({ example: '2025-01-15T10:30:00Z' })
+  @IsOptional()
+  @IsString()
+  trade_date?: string | null;
 }
