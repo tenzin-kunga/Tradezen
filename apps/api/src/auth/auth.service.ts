@@ -130,12 +130,46 @@ export class AuthService {
 
   async getMe(userId: string) {
     const res = await pool.query(
-      "SELECT id, email, username, created_at FROM users WHERE id = $1",
+      "SELECT id, email, username, created_at, initial_capital, default_lot_size, timezone, theme FROM users WHERE id = $1",
       [userId],
     );
     if (res.rowCount === 0) {
       throw new UnauthorizedException("User not found");
     }
+    return res.rows[0];
+  }
+
+  async updateSettings(userId: string, dto: { initial_capital?: number; default_lot_size?: number; timezone?: string; theme?: string }) {
+    const fields: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (dto.initial_capital !== undefined) {
+      fields.push(`initial_capital = $${idx++}`);
+      values.push(dto.initial_capital);
+    }
+    if (dto.default_lot_size !== undefined) {
+      fields.push(`default_lot_size = $${idx++}`);
+      values.push(dto.default_lot_size);
+    }
+    if (dto.timezone !== undefined) {
+      fields.push(`timezone = $${idx++}`);
+      values.push(dto.timezone);
+    }
+    if (dto.theme !== undefined) {
+      fields.push(`theme = $${idx++}`);
+      values.push(dto.theme);
+    }
+
+    if (fields.length === 0) {
+      return this.getMe(userId);
+    }
+
+    values.push(userId);
+    const res = await pool.query(
+      `UPDATE users SET ${fields.join(", ")} WHERE id = $${idx} RETURNING id, email, username, created_at, initial_capital, default_lot_size, timezone, theme`,
+      values,
+    );
     return res.rows[0];
   }
 

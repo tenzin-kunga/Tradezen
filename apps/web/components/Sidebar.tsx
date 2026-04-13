@@ -91,12 +91,16 @@ export default function Sidebar() {
         </span>
       </div>
 
-      {/* User Block */}
-      <div
+      {/* User Block — links to Settings */}
+      <Link
+        href="/settings"
         className="mx-4 mb-4 px-3 py-3 flex items-center gap-3"
         style={{
-          background: "#1c1c1c",
+          background: pathname === "/settings" ? "#2a2a2a" : "#1c1c1c",
           border: "1px solid #2a2a2a",
+          textDecoration: "none",
+          cursor: "pointer",
+          transition: "background 0.15s",
         }}
       >
         <div
@@ -118,7 +122,7 @@ export default function Sidebar() {
             V-2.4.0
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Divider */}
       <div style={{ height: 1, background: "#2a2a2a", margin: "0 16px 8px" }} />

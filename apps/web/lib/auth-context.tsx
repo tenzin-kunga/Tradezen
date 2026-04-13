@@ -8,6 +8,10 @@ type User = {
   email: string;
   username: string;
   created_at: string;
+  initial_capital: number;
+  default_lot_size: number;
+  timezone: string;
+  theme: string;
 };
 
 type AuthContextType = {
