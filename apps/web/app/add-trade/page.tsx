@@ -302,6 +302,7 @@ export default function AddTradePage() {
                     <option value="1">1 (Stocks / Crypto)</option>
                   </select>
                 </div>
+                <div>
                   <label style={labelStyle}>STOP LOSS</label>
                   <input style={inputStyle} type="number" step="any" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="0.00000" />
                 </div>
