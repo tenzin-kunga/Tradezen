@@ -125,6 +125,7 @@ export default function AddTradePage() {
   const [trendAlignment, setTrendAlignment] = useState(false);
   const [vengeanceTrade, setVengeanceTrade] = useState(false);
   const [commission, setCommission] = useState("");
+  const [contractSize, setContractSize] = useState("100000");
   const [applyRiskShield, setApplyRiskShield] = useState(false);
   const [utcTime, setUtcTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -184,6 +185,7 @@ export default function AddTradePage() {
         entry: parseFloat(entry),
         exit: parseFloat(exit),
         lot: parseFloat(quantity),
+        contract_size: parseFloat(contractSize) || 100000,
         stop_loss: stopLoss ? parseFloat(stopLoss) : undefined,
         take_profit: takeProfit ? parseFloat(takeProfit) : undefined,
         strategy: strategy.trim() || undefined,
@@ -286,7 +288,20 @@ export default function AddTradePage() {
                   <input style={inputStyle} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="0.01" />
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                <div>
+                  <label style={labelStyle}>CONTRACT SIZE</label>
+                  <select
+                    style={{ ...inputStyle, cursor: "pointer" }}
+                    value={contractSize}
+                    onChange={(e) => setContractSize(e.target.value)}
+                  >
+                    <option value="100000">100,000 (Standard Lot)</option>
+                    <option value="10000">10,000 (Mini Lot)</option>
+                    <option value="1000">1,000 (Micro Lot)</option>
+                    <option value="1">1 (Stocks / Crypto)</option>
+                  </select>
+                </div>
                 <div>
                   <label style={labelStyle}>STOP LOSS</label>
                   <input style={inputStyle} type="number" step="any" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="0.00000" />
@@ -435,8 +450,9 @@ export default function AddTradePage() {
                   const e = parseFloat(entry);
                   const x = parseFloat(exit);
                   const q = parseFloat(quantity);
+                  const cs = parseFloat(contractSize) || 1;
                   if (!e || !x || !q) return <span style={{ fontSize: "28px", fontWeight: 700, color: "#555" }}>--</span>;
-                  const rawPnl = direction === "LONG" ? (x - e) * q : (e - x) * q;
+                  const rawPnl = direction === "LONG" ? (x - e) * q * cs : (e - x) * q * cs;
                   const comm = parseFloat(commission) || 0;
                   const pnl = rawPnl - comm;
                   const isProfit = pnl >= 0;

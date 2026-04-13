@@ -117,6 +117,7 @@ export const createTrade = async (data: {
   entry: number;
   exit: number;
   lot: number;
+  contract_size?: number;
   stop_loss?: number | null;
   take_profit?: number | null;
   strategy?: string | null;
