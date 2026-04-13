@@ -68,4 +68,10 @@ export class CreateTradeDto {
   @IsOptional()
   @IsString()
   trade_date?: string | null;
+
+  @ApiPropertyOptional({ example: 2.5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  commission?: number | null;
 }

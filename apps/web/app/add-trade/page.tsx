@@ -124,6 +124,7 @@ export default function AddTradePage() {
   const [fomoCheck, setFomoCheck] = useState(false);
   const [trendAlignment, setTrendAlignment] = useState(false);
   const [vengeanceTrade, setVengeanceTrade] = useState(false);
+  const [commission, setCommission] = useState("");
   const [applyRiskShield, setApplyRiskShield] = useState(false);
   const [utcTime, setUtcTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -191,6 +192,7 @@ export default function AddTradePage() {
         trend_alignment: trendAlignment,
         vengeance_trade: vengeanceTrade,
         trade_date: tradeDate && tradeTime ? `${tradeDate}T${tradeTime}:00Z` : undefined,
+        commission: commission ? parseFloat(commission) : undefined,
       });
       if (chartFile && trade?.id) {
         await uploadTradeImage(trade.id, chartFile);
@@ -294,14 +296,18 @@ export default function AddTradePage() {
                   <input style={inputStyle} type="number" step="any" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} placeholder="0.00000" />
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "12px" }}>
+                <div>
+                  <label style={labelStyle}>COMMISSION / FEES</label>
+                  <input style={inputStyle} type="number" step="any" min="0" value={commission} onChange={(e) => setCommission(e.target.value)} placeholder="0.00" />
+                </div>
                 <div>
                   <label style={labelStyle}>TRADE DATE</label>
-                  <input style={inputStyle} type="date" value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} />
+                  <input style={{ ...inputStyle, colorScheme: "dark" }} type="date" value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} />
                 </div>
                 <div>
                   <label style={labelStyle}>TRADE TIME (UTC)</label>
-                  <input style={inputStyle} type="time" value={tradeTime} onChange={(e) => setTradeTime(e.target.value)} />
+                  <input style={{ ...inputStyle, colorScheme: "dark" }} type="time" value={tradeTime} onChange={(e) => setTradeTime(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -430,12 +436,16 @@ export default function AddTradePage() {
                   const x = parseFloat(exit);
                   const q = parseFloat(quantity);
                   if (!e || !x || !q) return <span style={{ fontSize: "28px", fontWeight: 700, color: "#555" }}>--</span>;
-                  const pnl = direction === "LONG" ? (x - e) * q : (e - x) * q;
+                  const rawPnl = direction === "LONG" ? (x - e) * q : (e - x) * q;
+                  const comm = parseFloat(commission) || 0;
+                  const pnl = rawPnl - comm;
                   const isProfit = pnl >= 0;
+                  const absPnl = Math.abs(pnl);
+                  const decimals = absPnl > 0 && absPnl < 0.01 ? 5 : absPnl < 1 ? 4 : 2;
                   return (
                     <div>
                       <div style={{ fontSize: "28px", fontWeight: 700, color: isProfit ? "#22c55e" : "#ef4444" }}>
-                        {isProfit ? "+" : ""}{pnl.toFixed(2)}
+                        {isProfit ? "+" : ""}{pnl.toFixed(decimals)}
                       </div>
                       <div style={{ fontSize: "11px", color: "#888", marginTop: "4px" }}>
                         {isProfit ? "PROFIT" : "LOSS"}

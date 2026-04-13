@@ -125,6 +125,7 @@ export const createTrade = async (data: {
   trend_alignment?: boolean;
   vengeance_trade?: boolean;
   trade_date?: string | null;
+  commission?: number | null;
 }) => {
   const res = await authFetch(`${API}/trades`, {
     method: "POST",

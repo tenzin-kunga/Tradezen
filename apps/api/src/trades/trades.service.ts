@@ -21,6 +21,7 @@ export class TradesService {
       trend_alignment = false,
       vengeance_trade = false,
       trade_date = null,
+      commission = null,
     } = dto;
 
     const pnl =
@@ -28,16 +29,18 @@ export class TradesService {
         ? (exit - entry) * lot
         : (entry - exit) * lot;
 
+    const netPnl = commission ? pnl - commission : pnl;
+
     const res = await pool.query(
       `INSERT INTO trades (
         user_id, symbol, direction, entry_price, exit_price, lot_size, pnl,
         stop_loss, take_profit, strategy, notes,
-        fomo_check, trend_alignment, vengeance_trade, trade_date
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+        fomo_check, trend_alignment, vengeance_trade, trade_date, commission
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
       [
-        userId, symbol, direction, entry, exit, lot, pnl,
+        userId, symbol, direction, entry, exit, lot, netPnl,
         stop_loss, take_profit, strategy, notes,
-        fomo_check, trend_alignment, vengeance_trade, trade_date,
+        fomo_check, trend_alignment, vengeance_trade, trade_date, commission,
       ],
     );
 
