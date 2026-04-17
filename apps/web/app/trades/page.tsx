@@ -10,6 +10,9 @@ type Trade = {
   entry_price: number; exit_price: number; lot_size: number; pnl: number;
   stop_loss: number | null; take_profit: number | null;
   strategy: string | null; notes: string | null;
+  chart_image?: string | null;
+  commission?: number | null;
+  trade_date?: string | null;
   fomo_check: boolean; trend_alignment: boolean; vengeance_trade: boolean;
   created_at: string;
 };
@@ -34,9 +37,8 @@ export default function TradeLog() {
   const [toDate, setToDate] = useState("");
   const [assetFilter, setAssetFilter] = useState("ALL ASSETS");
   const [strategyFilter, setStrategyFilter] = useState("ANY STRATEGY");
+  const [resultFilter, setResultFilter] = useState("ALL");
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
 
   const showAnomaly = useMemo(() => {
     if (trades.length < 3) return false;
@@ -47,8 +49,8 @@ export default function TradeLog() {
     setLoading(true);
     try {
       const res = await getTrades({
-        page,
-        limit: 10,
+        page: 1,
+        limit: 1000,
         sort: "created_at",
         order: "desc",
         symbol: assetFilter !== "ALL ASSETS" ? assetFilter : undefined,
@@ -57,14 +59,12 @@ export default function TradeLog() {
         to: toDate || undefined,
       });
       setTrades(res.data);
-      setTotalPages(res.meta.totalPages);
-      setTotal(res.meta.total);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [page, assetFilter, strategyFilter, fromDate, toDate]);
+  }, [assetFilter, strategyFilter, fromDate, toDate]);
 
   useEffect(() => {
     fetchTrades();
@@ -107,16 +107,30 @@ export default function TradeLog() {
     }
   }
 
-  const wins = trades.filter((t) => t.pnl > 0);
-  const losses = trades.filter((t) => t.pnl < 0);
-  const totalPnl = trades.reduce((s, t) => s + Number(t.pnl), 0);
-  const winRate = trades.length ? ((wins.length / trades.length) * 100).toFixed(1) + "%" : "--";
-  const rrTrades = trades.filter((t) => t.stop_loss != null && t.take_profit != null && t.stop_loss !== t.entry_price);
+  const filteredTrades = useMemo(() => trades.filter((t) => {
+    if (resultFilter === "WIN" && Number(t.pnl) <= 0) return false;
+    if (resultFilter === "LOSS" && Number(t.pnl) >= 0) return false;
+    return true;
+  }), [trades, resultFilter]);
+
+  const total = filteredTrades.length;
+  const totalPages = Math.max(1, Math.ceil(total / 10));
+  const totalPnl = filteredTrades.reduce((s, t) => s + Number(t.pnl), 0);
+  const wins = filteredTrades.filter((t) => t.pnl > 0);
+  const losses = filteredTrades.filter((t) => t.pnl < 0);
+  const winRate = filteredTrades.length ? ((wins.length / filteredTrades.length) * 100).toFixed(1) + "%" : "--";
+  const rrTrades = filteredTrades.filter((t) => t.stop_loss != null && t.take_profit != null && t.stop_loss !== t.entry_price);
   const avgRR = rrTrades.length === 0 ? "--" : "1:" + (rrTrades.reduce((s, t) => s + Math.abs(t.take_profit! - t.entry_price) / Math.abs(t.entry_price - t.stop_loss!), 0) / rrTrades.length).toFixed(1);
 
   const sessionCounts: Record<string, number> = { "NY OPEN": 0, "LONDON": 0, "ASIAN": 0 };
-  trades.forEach((t) => { sessionCounts[getSessionBucket(t.created_at)] = (sessionCounts[getSessionBucket(t.created_at)] || 0) + 1; });
-  const sessionTotal = trades.length || 1;
+  filteredTrades.forEach((t) => { sessionCounts[getSessionBucket(t.created_at)] = (sessionCounts[getSessionBucket(t.created_at)] || 0) + 1; });
+  const sessionTotal = filteredTrades.length || 1;
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   return (
     <div>
@@ -147,10 +161,30 @@ export default function TradeLog() {
             {allStrategies.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
-        <button onClick={() => { setPage(1); fetchTrades(); }}
-          style={{ alignSelf: "flex-end", background: "#fff", color: "#111", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", border: "none", cursor: "pointer", marginTop: 18 }}>
-          APPLY FILTERS
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          {(["ALL", "WIN", "LOSS"] as const).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => { setResultFilter(mode); setPage(1); }}
+              style={{
+                background: resultFilter === mode ? "#fff" : "#222",
+                color: resultFilter === mode ? "#111" : "#888",
+                border: "1px solid #2a2a2a",
+                padding: "8px 16px",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                cursor: "pointer",
+              }}
+            >
+              {mode}
+            </button>
+          ))}
+          <button onClick={() => { setPage(1); fetchTrades(); }}
+            style={{ alignSelf: "flex-end", background: "#fff", color: "#111", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", border: "none", cursor: "pointer", marginTop: 18 }}>
+            APPLY FILTERS
+          </button>
+        </div>
         <button onClick={handleExportCsv}
           style={{ alignSelf: "flex-end", background: "transparent", color: "#888", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", border: "1px solid #2a2a2a", cursor: "pointer", marginTop: 18 }}>
           EXPORT CSV
@@ -171,63 +205,103 @@ export default function TradeLog() {
           <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.08em" }}>EXECUTION ARCHIVE</span>
           <span style={{ color: "#888", fontSize: 11 }}>SHOWING {Math.min((page - 1) * 10 + 1, total)}–{Math.min(page * 10, total)} OF {total} TRADES</span>
         </div>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-          <thead>
-            <tr style={{ borderBottom: "1px solid #2a2a2a" }}>
-              {["ASSET", "STRATEGY", "SIDE", "ENTRY", "EXIT", "OUTCOME", "NET PROFIT", "ACTION"].map((h) => (
-                <th key={h} style={{ color: "#888", fontWeight: 700, letterSpacing: "0.1em", textAlign: "left", paddingBottom: 12, paddingRight: 12, fontSize: 10, textTransform: "uppercase" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {trades.length === 0 ? (
-              <tr><td colSpan={8} style={{ color: "#888", padding: "20px 0", textAlign: "center" }}>No trades found.</td></tr>
-            ) : trades.map((t) => {
+        {filteredTrades.length === 0 ? (
+          <div style={{ color: "#888", padding: "60px 0", textAlign: "center" }}>No trades found.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 16 }}>
+            {filteredTrades.slice((page - 1) * 10, page * 10).map((t) => {
               const isWin = t.pnl >= 0;
               const isLong = t.direction === "buy";
               return (
-                <tr key={t.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
-                  <td style={{ padding: "14px 12px 14px 0" }}>
-                    <div style={{ color: "#fff", fontWeight: 700 }}>{t.symbol}</div>
-                    <div style={{ color: "#888", fontSize: 10 }}>{new Date(t.created_at).toISOString().replace("T", " ").slice(0, 16)}</div>
-                  </td>
-                  <td style={{ padding: "14px 12px 14px 0" }}>
-                    {t.strategy ? (
-                      <span style={{ background: "#222", border: "1px solid #2a2a2a", color: "#888", padding: "3px 8px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em" }}>{t.strategy}</span>
-                    ) : <span style={{ color: "#555" }}>--</span>}
-                  </td>
-                  <td style={{ padding: "14px 12px 14px 0", color: isLong ? "#fff" : "#ef4444", fontWeight: 700 }}>{isLong ? "LONG" : "SHORT"}</td>
-                  <td style={{ padding: "14px 12px 14px 0", color: "#fff" }}>{t.entry_price}</td>
-                  <td style={{ padding: "14px 12px 14px 0", color: "#fff" }}>{t.exit_price}</td>
-                  <td style={{ padding: "14px 12px 14px 0" }}>
-                    <span style={{ background: isWin ? "transparent" : "rgba(239,68,68,0.1)", border: `1px solid ${isWin ? "#2a2a2a" : "#ef4444"}`, color: isWin ? "#fff" : "#ef4444", padding: "3px 8px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em" }}>
-                      {isWin ? "WIN" : "LOSS"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "14px 12px 14px 0", color: isWin ? "#22c55e" : "#ef4444", fontWeight: 700 }}>{fmt(Number(t.pnl))}</td>
-                  <td style={{ padding: "14px 0 14px 0", whiteSpace: "nowrap" }}>
-                    <button
-                      onClick={() => router.push(`/trades/${t.id}/edit`)}
-                      style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 12, fontFamily: "monospace", padding: "4px 8px" }}
-                      onMouseEnter={(e) => { (e.target as HTMLElement).style.color = "#fff"; }}
-                      onMouseLeave={(e) => { (e.target as HTMLElement).style.color = "#555"; }}
-                    >
-                      EDIT
-                    </button>
-                    <button
-                      onClick={() => handleDelete(t.id)}
-                      style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 12, fontFamily: "monospace", padding: "4px 8px" }}
-                      onMouseEnter={(e) => { (e.target as HTMLElement).style.color = "#ef4444"; }}
-                      onMouseLeave={(e) => { (e.target as HTMLElement).style.color = "#555"; }}
-                    >
-                      DELETE
-                    </button>
-                  </td>
-                </tr>
+                <div key={t.id} style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden", display: "grid", gridTemplateColumns: "280px 1fr", gap: 0 }}>
+                  <div style={{ minHeight: 200, background: "#141414", position: "relative" }}>
+                    {t.chart_image ? (
+                      <img src={t.chart_image} alt="Trade chart" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#555", fontSize: 12, padding: 16, textAlign: "center" }}>
+                        No chart image added for this trade.
+                      </div>
+                    )}
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 12, background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.8))" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                        <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>{t.symbol}</span>
+                        <span style={{ color: isWin ? "#22c55e" : "#ef4444", fontSize: 12, fontWeight: 700 }}>{isWin ? "WIN" : "LOSS"}</span>
+                      </div>
+                      <div style={{ color: "#aaa", fontSize: 11, marginTop: 4 }}>{t.strategy || "No strategy tag"}</div>
+                    </div>
+                  </div>
+                  <div style={{ padding: 20, display: "grid", gap: 16 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                      <div>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 8 }}>DIRECTION</div>
+                        <div style={{ color: isLong ? "#22c55e" : "#ef4444", fontWeight: 700 }}>{isLong ? "LONG" : "SHORT"}</div>
+                      </div>
+                      <div>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 8 }}>RESULT</div>
+                        <div style={{ color: isWin ? "#22c55e" : "#ef4444", fontWeight: 700 }}>{fmt(Number(t.pnl))}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>ENTRY</div>
+                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.entry_price}</div>
+                      </div>
+                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>EXIT</div>
+                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.exit_price}</div>
+                      </div>
+                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>DATE</div>
+                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.trade_date ? new Date(t.trade_date).toISOString().replace("T", " ").slice(0, 16) : new Date(t.created_at).toISOString().replace("T", " ").slice(0, 16)}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>LOT</div>
+                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.lot_size}</div>
+                      </div>
+                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>SL</div>
+                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.stop_loss?.toFixed(5) ?? "--"}</div>
+                      </div>
+                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>TP</div>
+                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.take_profit?.toFixed(5) ?? "--"}</div>
+                      </div>
+                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>COMMISSION</div>
+                        <div style={{ color: "#fff", fontWeight: 700 }}>${t.commission?.toFixed(2) ?? "0.00"}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+                      <div style={{ flex: 1, minWidth: 220 }}>
+                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>NOTES</div>
+                        <div style={{ color: "#ccc", fontSize: 12, lineHeight: 1.6, minHeight: 60 }}>{t.notes || "No additional notes."}</div>
+                      </div>
+                      <div style={{ minWidth: 130, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <button
+                          onClick={() => router.push(`/trades/${t.id}/edit`)}
+                          style={{ background: "#fff", color: "#111", border: "none", borderRadius: 8, padding: "10px 0", fontWeight: 700, cursor: "pointer" }}
+                        >
+                          EDIT
+                        </button>
+                        <button
+                          onClick={() => handleDelete(t.id)}
+                          style={{ background: "transparent", color: "#ef4444", border: "1px solid #ef4444", borderRadius: 8, padding: "10px 0", fontWeight: 700, cursor: "pointer" }}
+                        >
+                          DELETE
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+        )}
 
         {/* Pagination */}
         {totalPages > 1 && (
