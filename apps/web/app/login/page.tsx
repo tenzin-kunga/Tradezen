@@ -140,24 +140,6 @@ export default function LoginPage() {
                 autoComplete="username"
               />
             </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => updateRememberMe(e.target.checked)}
-                  style={{ marginRight: 8, verticalAlign: "middle" }}
-                />
-                <span style={{ color: "#ccc", fontSize: 11, letterSpacing: "0.08em" }}>
-                  Remember me
-                </span>
-              </label>
-              <div style={{ marginTop: 8, fontSize: 10, color: rememberMe ? "#22c55e" : "#888", letterSpacing: "0.12em" }}>
-                {rememberMe
-                  ? "Saved preference: this device will stay logged in."
-                  : "Not saved: you will need to log in again after closing the browser."}
-              </div>
-            </div>
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>PASSWORD</label>
               <input
@@ -168,6 +150,19 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 autoComplete="current-password"
               />
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => updateRememberMe(e.target.checked)}
+                  style={{ width: 16, height: 16, accentColor: "#fff" }}
+                />
+                <span style={{ color: "#ccc", fontSize: 12, letterSpacing: "0.08em" }}>
+                  Remember me
+                </span>
+              </label>
             </div>
             <button
               type="submit"
