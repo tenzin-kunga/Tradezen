@@ -140,23 +140,27 @@ export class TradesService {
     const entry = dto.entry ?? Number(current.entry_price);
     const exit = dto.exit ?? Number(current.exit_price);
     const lot = dto.lot ?? Number(current.lot_size);
+    const contract_size = dto.contract_size ?? Number(current.contract_size ?? 100000);
+    const commission = dto.commission !== undefined ? dto.commission : Number(current.commission ?? 0);
 
     // Recalculate PnL
     const pnl =
       direction === "buy"
-        ? (exit - entry) * lot
-        : (entry - exit) * lot;
+        ? (exit - entry) * lot * contract_size
+        : (entry - exit) * lot * contract_size;
+    const netPnl = commission ? pnl - commission : pnl;
 
     const res = await pool.query(
       `UPDATE trades SET
         symbol = $1, direction = $2, entry_price = $3, exit_price = $4,
         lot_size = $5, pnl = $6, stop_loss = $7, take_profit = $8,
         strategy = $9, notes = $10, fomo_check = $11, trend_alignment = $12,
-        vengeance_trade = $13, updated_at = NOW()
-       WHERE id = $14 AND user_id = $15
+        vengeance_trade = $13, trade_date = $14, commission = $15,
+        contract_size = $16, updated_at = NOW()
+       WHERE id = $17 AND user_id = $18
        RETURNING *`,
       [
-        symbol, direction, entry, exit, lot, pnl,
+        symbol, direction, entry, exit, lot, netPnl,
         dto.stop_loss !== undefined ? dto.stop_loss : current.stop_loss,
         dto.take_profit !== undefined ? dto.take_profit : current.take_profit,
         dto.strategy !== undefined ? dto.strategy : current.strategy,
@@ -164,6 +168,9 @@ export class TradesService {
         dto.fomo_check !== undefined ? dto.fomo_check : current.fomo_check,
         dto.trend_alignment !== undefined ? dto.trend_alignment : current.trend_alignment,
         dto.vengeance_trade !== undefined ? dto.vengeance_trade : current.vengeance_trade,
+        dto.trade_date !== undefined ? dto.trade_date : current.trade_date,
+        commission,
+        contract_size,
         id, userId,
       ],
     );

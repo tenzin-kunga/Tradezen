@@ -19,5 +19,8 @@ CREATE TABLE IF NOT EXISTS trades (
   trend_alignment BOOLEAN DEFAULT false,
   vengeance_trade BOOLEAN DEFAULT false,
   chart_image TEXT,
+  trade_date TIMESTAMP,
+  commission NUMERIC DEFAULT 0,
+  contract_size NUMERIC DEFAULT 100000,
   created_at TIMESTAMP DEFAULT NOW()
 );
