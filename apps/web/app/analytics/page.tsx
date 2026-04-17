@@ -21,6 +21,7 @@ export default function AnalyticsPage() {
   const [stats, setStats] = useState<any>(null);
   const [dailyPnl, setDailyPnl] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([getAnalytics(), getDailyPnl()])
@@ -28,11 +29,37 @@ export default function AnalyticsPage() {
         setStats(analyticsRes);
         setDailyPnl(dailyRes);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error(err);
+        setError(err instanceof Error ? err.message : "Unable to load analytics data.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const maxStratPnl = stats?.byStrategy ? Math.max(...stats.byStrategy.map((s: any) => Math.abs(s.pnl)), 1) : 1;
+  const safeStats = {
+    totalTrades: stats?.totalTrades ?? 0,
+    totalPnl: Number(stats?.totalPnl ?? 0),
+    winRate: Number(stats?.winRate ?? 0),
+    profitFactor: Number(stats?.profitFactor ?? 0),
+    avgRR: Number(stats?.avgRR ?? 0),
+    expectancy: Number(stats?.expectancy ?? 0),
+    bestTrade: Number(stats?.bestTrade ?? 0),
+    worstTrade: Number(stats?.worstTrade ?? 0),
+    maxDrawdown: Number(stats?.maxDrawdown ?? 0),
+    maxConsecutiveWins: Number(stats?.maxConsecutiveWins ?? 0),
+    maxConsecutiveLosses: Number(stats?.maxConsecutiveLosses ?? 0),
+    byStrategy: Array.isArray(stats?.byStrategy) ? stats.byStrategy : [],
+    byDayOfWeek: Array.isArray(stats?.byDayOfWeek) ? stats.byDayOfWeek : [],
+    behavioralStats: {
+      fomoCount: Number(stats?.behavioralStats?.fomoCount ?? 0),
+      vengeanceCount: Number(stats?.behavioralStats?.vengeanceCount ?? 0),
+      trendAlignedCount: Number(stats?.behavioralStats?.trendAlignedCount ?? 0),
+    },
+  };
+
+  const maxStratPnl = safeStats.byStrategy.length > 0
+    ? Math.max(...safeStats.byStrategy.map((s: any) => Math.abs(Number(s.pnl) || 0)), 1)
+    : 1;
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#111111", color: "#ffffff", fontFamily: "monospace" }}>
@@ -46,14 +73,14 @@ export default function AnalyticsPage() {
             SYSTEM_VERSION_4.2 // AGGREGATED_DATA_7D
           </p>
         </div>
-        {stats && (
+        {!error && (
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: "11px", color: "#888", letterSpacing: "0.1em" }}>NET P/L</div>
-            <div style={{ fontSize: "24px", fontWeight: 700, color: stats.totalPnl >= 0 ? "#22c55e" : "#ef4444" }}>
-              {stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toFixed(2)}
+            <div style={{ fontSize: "24px", fontWeight: 700, color: safeStats.totalPnl >= 0 ? "#22c55e" : "#ef4444" }}>
+              {safeStats.totalPnl >= 0 ? "+" : ""}${safeStats.totalPnl.toFixed(2)}
             </div>
             <div style={{ fontSize: "11px", color: "#888", marginTop: "4px" }}>
-              WIN RATE: <span style={{ color: "#ffffff" }}>{stats.winRate}%</span>
+              WIN RATE: <span style={{ color: "#ffffff" }}>{safeStats.winRate}%</span>
             </div>
           </div>
         )}
@@ -65,13 +92,19 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {!loading && !stats && (
+      {!loading && error && (
+        <div style={{ textAlign: "center", color: "#ff7f50", padding: "60px 0", letterSpacing: "0.2em" }}>
+          ERROR LOADING ANALYTICS: {error}
+        </div>
+      )}
+
+      {!loading && !error && safeStats.totalTrades === 0 && (
         <div style={{ textAlign: "center", color: "#555", padding: "60px 0", letterSpacing: "0.2em" }}>
           NO TRADE DATA AVAILABLE
         </div>
       )}
 
-      {!loading && stats && stats.totalTrades > 0 && (
+      {!loading && !error && safeStats.totalTrades > 0 && (
         <>
           {/* Row 1: Strategy Efficiency + Asset Distribution */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
@@ -80,10 +113,10 @@ export default function AnalyticsPage() {
               <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", marginBottom: "16px" }}>
                 STRATEGY EFFICIENCY BREAKDOWN
               </div>
-              {stats.byStrategy.length === 0 ? (
+              {safeStats.byStrategy.length === 0 ? (
                 <div style={{ color: "#555", fontSize: "12px" }}>NO STRATEGY DATA</div>
               ) : (
-                stats.byStrategy.map((s: any) => (
+                safeStats.byStrategy.map((s: any) => (
                   <div key={s.name} style={{ marginBottom: "14px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                       <span style={{ fontSize: "11px", letterSpacing: "0.08em", color: "#ccc" }}>#{s.name}</span>
@@ -113,7 +146,7 @@ export default function AnalyticsPage() {
                 DAY OF WEEK PERFORMANCE
               </div>
               <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={stats.byDayOfWeek || []} margin={{ top: 4, right: 4, bottom: 4, left: -20 }}>
+                <BarChart data={safeStats.byDayOfWeek} margin={{ top: 4, right: 4, bottom: 4, left: -20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
                   <XAxis dataKey="day" tick={{ fill: "#888", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "#888", fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -135,7 +168,7 @@ export default function AnalyticsPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
               {/* FOMO */}
               {(() => {
-                const count = stats.behavioralStats.fomoCount;
+                const count = safeStats.behavioralStats.fomoCount;
                 const sev = getSeverity(count);
                 return (
                   <div style={{ backgroundColor: "#111", border: `1px solid ${sev.color}22`, borderRadius: "4px", padding: "16px" }}>
@@ -149,7 +182,7 @@ export default function AnalyticsPage() {
               })()}
               {/* VENGEANCE */}
               {(() => {
-                const count = stats.behavioralStats.vengeanceCount;
+                const count = safeStats.behavioralStats.vengeanceCount;
                 const sev = getSeverity(count);
                 return (
                   <div style={{ backgroundColor: "#111", border: `1px solid ${sev.color}22`, borderRadius: "4px", padding: "16px" }}>
@@ -163,7 +196,7 @@ export default function AnalyticsPage() {
               })()}
               {/* TREND ALIGNED */}
               {(() => {
-                const count = stats.behavioralStats.trendAlignedCount;
+                const count = safeStats.behavioralStats.trendAlignedCount;
                 return (
                   <div style={{ backgroundColor: "#111", border: "1px solid #22c55e22", borderRadius: "4px", padding: "16px" }}>
                     <div style={{ fontSize: "10px", color: "#22c55e", letterSpacing: "0.12em", marginBottom: "8px" }}>
@@ -182,25 +215,25 @@ export default function AnalyticsPage() {
             {[
               {
                 label: "EXPECTANCY",
-                value: `$${stats.expectancy.toFixed(2)}`,
+                value: `$${safeStats.expectancy.toFixed(2)}`,
                 sub: "PER TRADE",
-                valueColor: stats.expectancy >= 0 ? "#22c55e" : "#ef4444",
+                valueColor: safeStats.expectancy >= 0 ? "#22c55e" : "#ef4444",
               },
               {
                 label: "PROFIT FACTOR",
-                value: stats.profitFactor === Infinity ? "∞" : stats.profitFactor.toFixed(2),
-                sub: `BEST: $${stats.bestTrade} / WORST: $${stats.worstTrade}`,
-                valueColor: stats.profitFactor >= 1.5 ? "#22c55e" : "#ef4444",
+                value: safeStats.profitFactor === Infinity ? "∞" : safeStats.profitFactor.toFixed(2),
+                sub: `BEST: $${safeStats.bestTrade} / WORST: $${safeStats.worstTrade}`,
+                valueColor: safeStats.profitFactor >= 1.5 ? "#22c55e" : "#ef4444",
               },
               {
                 label: "MAX DRAWDOWN",
-                value: `$${stats.maxDrawdown.toFixed(2)}`,
+                value: `$${safeStats.maxDrawdown.toFixed(2)}`,
                 sub: "PEAK TO TROUGH",
-                valueColor: stats.maxDrawdown > 500 ? "#ef4444" : stats.maxDrawdown > 200 ? "#e8603c" : "#22c55e",
+                valueColor: safeStats.maxDrawdown > 500 ? "#ef4444" : safeStats.maxDrawdown > 200 ? "#e8603c" : "#22c55e",
               },
               {
                 label: "STREAK",
-                value: `W${stats.maxConsecutiveWins} / L${stats.maxConsecutiveLosses}`,
+                value: `W${safeStats.maxConsecutiveWins} / L${safeStats.maxConsecutiveLosses}`,
                 sub: "MAX CONSECUTIVE",
                 valueColor: "#ffffff",
               },
@@ -264,7 +297,7 @@ export default function AnalyticsPage() {
             }}
           >
             <span style={{ fontSize: "11px", color: "#555", letterSpacing: "0.1em" }}>
-              ANALYTIC INSIGHT // {stats.totalTrades} EXECUTION{stats.totalTrades !== 1 ? "S" : ""} PROCESSED
+              ANALYTIC INSIGHT // {safeStats.totalTrades} EXECUTION{safeStats.totalTrades !== 1 ? "S" : ""} PROCESSED
             </span>
             <div style={{ display: "flex", gap: "24px" }}>
               <span style={{ fontSize: "11px", color: "#888" }}>
