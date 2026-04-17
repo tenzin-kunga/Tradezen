@@ -17,7 +17,7 @@ type User = {
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (email: string, username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -51,8 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  const login = useCallback(async (identifier: string, password: string) => {
-    const res = await apiLogin({ identifier, password });
+  const login = useCallback(async (identifier: string, password: string, rememberMe: boolean = true) => {
+    const res = await apiLogin({ identifier, password, remember_me: rememberMe });
     setUser(res.user);
   }, []);
 

@@ -64,7 +64,7 @@ export async function register(data: { email: string; username: string; password
   return body;
 }
 
-export async function login(data: { identifier: string; password: string }) {
+export async function login(data: { identifier: string; password: string; remember_me?: boolean }) {
   const res = await fetch(`${API}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
