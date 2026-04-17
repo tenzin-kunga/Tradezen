@@ -206,7 +206,43 @@ export default function TradeLog() {
           <span style={{ color: "#888", fontSize: 11 }}>SHOWING {Math.min((page - 1) * 10 + 1, total)}–{Math.min(page * 10, total)} OF {total} TRADES</span>
         </div>
         {filteredTrades.length === 0 ? (
-          <div style={{ color: "#888", padding: "60px 0", textAlign: "center" }}>No trades found.</div>
+          <div style={{ color: "#888", padding: "60px 0", textAlign: "center" }}>
+            {loading ? (
+              "Loading trades..."
+            ) : trades.length === 0 ? (
+              <>
+                <div style={{ marginBottom: 12, fontWeight: 700, color: "#fff" }}>
+                  No trades found.
+                </div>
+                <div style={{ marginBottom: 16 }}>Create a new trade to see it appear in the execution archive.</div>
+                <button
+                  onClick={() => router.push("/add-trade")}
+                  style={{ background: "#fff", color: "#111", border: "none", borderRadius: 8, padding: "10px 18px", fontWeight: 700, cursor: "pointer" }}
+                >
+                  Add First Trade
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ marginBottom: 12, fontWeight: 700, color: "#fff" }}>
+                  No trades match the current filters.
+                </div>
+                <button
+                  onClick={() => {
+                    setAssetFilter("ALL ASSETS");
+                    setStrategyFilter("ANY STRATEGY");
+                    setResultFilter("ALL");
+                    setFromDate("");
+                    setToDate("");
+                    setPage(1);
+                  }}
+                  style={{ background: "#fff", color: "#111", border: "none", borderRadius: 8, padding: "10px 18px", fontWeight: 700, cursor: "pointer" }}
+                >
+                  Reset Filters
+                </button>
+              </>
+            )}
+          </div>
         ) : (
           <div style={{ display: "grid", gap: 16 }}>
             {filteredTrades.slice((page - 1) * 10, page * 10).map((t) => {
