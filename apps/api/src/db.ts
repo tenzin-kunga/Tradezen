@@ -59,4 +59,20 @@ export async function runMigrations() {
       client.release();
     }
   }
+
+  const tradesTableExists = await pool.query(
+    `SELECT EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'trades'
+    )`
+  );
+
+  if (tradesTableExists.rows[0]?.exists) {
+    await pool.query(`
+      ALTER TABLE trades
+        ADD COLUMN IF NOT EXISTS trade_date TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS commission NUMERIC DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS contract_size NUMERIC DEFAULT 100000;
+    `);
+  }
 }
