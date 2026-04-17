@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -31,8 +31,21 @@ export default function LoginPage() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("tradezen_remember_me");
+    if (stored !== null) {
+      setRememberMe(stored === "true");
+    }
+  }, []);
+
+  function updateRememberMe(value: boolean) {
+    setRememberMe(value);
+    window.localStorage.setItem("tradezen_remember_me", String(value));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +56,7 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      await login(identifier, password);
+      await login(identifier, password, rememberMe);
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Login failed");
@@ -126,6 +139,24 @@ export default function LoginPage() {
                 placeholder="operator@tradezen.io"
                 autoComplete="username"
               />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => updateRememberMe(e.target.checked)}
+                  style={{ marginRight: 8, verticalAlign: "middle" }}
+                />
+                <span style={{ color: "#ccc", fontSize: 11, letterSpacing: "0.08em" }}>
+                  Remember me
+                </span>
+              </label>
+              <div style={{ marginTop: 8, fontSize: 10, color: rememberMe ? "#22c55e" : "#888", letterSpacing: "0.12em" }}>
+                {rememberMe
+                  ? "Saved preference: this device will stay logged in."
+                  : "Not saved: you will need to log in again after closing the browser."}
+              </div>
             </div>
             <div style={{ marginBottom: 24 }}>
               <label style={labelStyle}>PASSWORD</label>

@@ -35,7 +35,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, response: Response) {
-    const { identifier, password } = dto;
+    const { identifier, password, remember_me = false } = dto;
 
     const res = await pool.query(
       "SELECT id, email, username, password_hash FROM users WHERE email = $1 OR username = $1",
@@ -58,7 +58,8 @@ export class AuthService {
       expiresIn: "15m",
     });
 
-    const refreshToken = this.jwt.sign(payload, {
+    const refreshPayload = { ...payload, remember_me };
+    const refreshToken = this.jwt.sign(refreshPayload, {
       secret: process.env.JWT_REFRESH_SECRET ?? "tradezen-dev-refresh-secret",
       expiresIn: "7d",
     });
@@ -67,8 +68,8 @@ export class AuthService {
     response.cookie("refresh_token", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: "none",
+      maxAge: remember_me ? 7 * 24 * 60 * 60 * 1000 : undefined,
       path: "/",
     });
 
@@ -102,7 +103,8 @@ export class AuthService {
     }
 
     const user = res.rows[0];
-    const newPayload = { sub: user.id, email: user.email, username: user.username };
+    const rememberMe = payload.remember_me === true;
+    const newPayload = { sub: user.id, email: user.email, username: user.username, remember_me: rememberMe };
 
     const accessToken = this.jwt.sign(newPayload, {
       secret: process.env.JWT_SECRET ?? "tradezen-dev-secret",
@@ -117,8 +119,8 @@ export class AuthService {
     response.cookie("refresh_token", newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: "none",
+      maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : undefined,
       path: "/",
     });
 
