@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useEffect } from "react";
 import Sidebar from "./Sidebar";
+import ChatPanel from "./ChatPanel";
 
 const PUBLIC_ROUTES = ["/login", "/register"];
 
@@ -68,6 +69,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       >
         {children}
       </main>
+      <ChatPanel />
     </div>
   );
 }

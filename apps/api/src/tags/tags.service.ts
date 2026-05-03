@@ -81,15 +81,35 @@ export class TagsService {
     return { untagged: true };
   }
 
-  async getTradesForTag(userId: string, tagId: string) {
+  async getTradesForTag(userId: string, tagId: string, limit: number, offset: number) {
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const safeOffset = Math.max(0, offset);
+
+    const { rows: countRows } = await pool.query(
+      `SELECT COUNT(*)::int AS c FROM trades tr
+       JOIN trade_tags tt ON tr.id = tt.trade_id
+       WHERE tt.tag_id = $1 AND tr.user_id = $2`,
+      [tagId, userId],
+    );
+    const total = countRows[0]?.c ?? 0;
+
     const { rows } = await pool.query(
       `SELECT tr.* FROM trades tr
        JOIN trade_tags tt ON tr.id = tt.trade_id
        WHERE tt.tag_id = $1 AND tr.user_id = $2
-       ORDER BY tr.created_at DESC`,
-      [tagId, userId],
+       ORDER BY tr.created_at DESC
+       LIMIT $3 OFFSET $4`,
+      [tagId, userId, safeLimit, safeOffset],
     );
-    return rows;
+
+    return {
+      data: rows,
+      total,
+      limit: safeLimit,
+      offset: safeOffset,
+      page: Math.floor(safeOffset / safeLimit) + 1,
+      totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+    };
   }
 
   async getTagsForTrade(userId: string, tradeId: string) {

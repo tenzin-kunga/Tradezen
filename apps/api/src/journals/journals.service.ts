@@ -22,9 +22,12 @@ export class JournalsService {
   }
 
   async findAll(userId: string, limit = 30, offset = 0) {
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 30));
+    const safeOffset = Math.max(0, Number(offset) || 0);
+
     const { rows } = await pool.query(
       `SELECT * FROM journals WHERE user_id = $1 ORDER BY date DESC LIMIT $2 OFFSET $3`,
-      [userId, limit, offset],
+      [userId, safeLimit, safeOffset],
     );
     const countResult = await pool.query(`SELECT COUNT(*) FROM journals WHERE user_id = $1`, [userId]);
     return { data: rows, total: Number(countResult.rows[0].count) };
@@ -75,35 +78,55 @@ export class JournalsService {
   }
 
   async getStreak(userId: string) {
-    const { rows } = await pool.query(
-      `SELECT date FROM journals WHERE user_id = $1 ORDER BY date DESC`,
+    const { rows: totalRows } = await pool.query(
+      `SELECT COUNT(*)::int AS c FROM journals WHERE user_id = $1`,
       [userId],
     );
-    if (!rows.length) return { currentStreak: 0, longestStreak: 0, totalEntries: 0 };
-
-    let currentStreak = 1;
-    let longestStreak = 1;
-    let streak = 1;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const firstDate = new Date(rows[0].date);
-    firstDate.setHours(0, 0, 0, 0);
-    const diffDays = Math.floor((today.getTime() - firstDate.getTime()) / 86400000);
-    if (diffDays > 1) currentStreak = 0;
-
-    for (let i = 1; i < rows.length; i++) {
-      const prev = new Date(rows[i - 1].date);
-      const curr = new Date(rows[i].date);
-      const diff = Math.floor((prev.getTime() - curr.getTime()) / 86400000);
-      if (diff === 1) {
-        streak++;
-        if (i <= currentStreak || currentStreak === i) currentStreak = streak;
-      } else {
-        streak = 1;
-      }
-      longestStreak = Math.max(longestStreak, streak);
+    const totalEntries = totalRows[0]?.c ?? 0;
+    if (totalEntries === 0) {
+      return { currentStreak: 0, longestStreak: 0, totalEntries: 0 };
     }
 
-    return { currentStreak: diffDays <= 1 ? currentStreak : 0, longestStreak, totalEntries: rows.length };
+    const { rows: longRows } = await pool.query(
+      `WITH distinct_days AS (
+         SELECT date::date AS d FROM journals WHERE user_id = $1 GROUP BY 1
+       ),
+       sequenced AS (
+         SELECT d, (d - (ROW_NUMBER() OVER (ORDER BY d))::integer)::date AS grp
+         FROM distinct_days
+       ),
+       runs AS (
+         SELECT grp, COUNT(*)::int AS len FROM sequenced GROUP BY grp
+       )
+       SELECT COALESCE(MAX(len), 0)::int AS longest FROM runs`,
+      [userId],
+    );
+    const longestStreak = longRows[0]?.longest ?? 0;
+
+    const { rows: curRows } = await pool.query(
+      `WITH distinct_days AS (
+         SELECT date::date AS d FROM journals WHERE user_id = $1 GROUP BY 1
+       ),
+       maxd AS (SELECT MAX(d) AS last FROM distinct_days),
+       seq AS (
+         SELECT d, (d - (ROW_NUMBER() OVER (ORDER BY d))::integer)::date AS grp
+         FROM distinct_days
+       ),
+      last_grp AS (
+        SELECT s.grp FROM seq s JOIN maxd m ON s.d = m.last
+      ),
+      run_lengths AS (
+        SELECT grp, COUNT(*)::int AS len FROM seq GROUP BY grp
+      )
+      SELECT
+        CASE
+          WHEN (SELECT (CURRENT_DATE - last) FROM maxd) > 1 THEN 0
+          ELSE COALESCE((SELECT len FROM run_lengths WHERE grp = (SELECT grp FROM last_grp)), 0)
+        END::int AS current_streak`,
+      [userId],
+    );
+    const currentStreak = curRows[0]?.current_streak ?? 0;
+
+    return { currentStreak, longestStreak, totalEntries };
   }
 }

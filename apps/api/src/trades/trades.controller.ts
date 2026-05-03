@@ -1,7 +1,7 @@
 import {
   Controller, Post, Get, Put, Delete,
   Body, Param, Query, UseInterceptors, UploadedFile,
-  BadRequestException, Res, Header,
+  BadRequestException, Res,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
@@ -47,11 +47,11 @@ export class TradesController {
   }
 
   @Get("export/csv")
-  @ApiOperation({ summary: "Export all trades as CSV" })
-  @Header("Content-Type", "text/csv")
-  @Header("Content-Disposition", "attachment; filename=trades.csv")
-  async exportCsv(@CurrentUser("id") userId: string) {
-    return this.service.exportCsv(userId);
+  @ApiOperation({ summary: "Export all trades as CSV (streamed in chunks)" })
+  async exportCsv(@CurrentUser("id") userId: string, @Res() res: Response) {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="trades.csv"');
+    await this.service.streamExportCsv(userId, res);
   }
 
   @Get(":id")

@@ -47,6 +47,13 @@ echo      Launching API  on http://localhost:3001
 start "TRADEZEN API" cmd /k "cd /d %~dp0apps\api && npm run start:dev"
 
 :: ── 5. Start Web (Next.js) in new window ─────────────────────────────
+:: Check if something is using port 3000 and kill it
+netstat -ano | findstr :3000 >nul
+if %errorlevel% equ 0 (
+    for /f "tokens=5" %%i in ('netstat -ano ^| findstr :3000') do (
+        taskkill /PID %%i /F
+    )
+)
 echo      Launching Web  on http://localhost:3000
 start "TRADEZEN WEB" cmd /k "cd /d %~dp0apps\web && npm run dev"
 

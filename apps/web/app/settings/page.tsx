@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { updateSettings } from "@/lib/api";
@@ -43,6 +43,16 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current != null) {
+        clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -67,7 +77,11 @@ export default function SettingsPage() {
         theme,
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (savedTimerRef.current != null) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => {
+        savedTimerRef.current = null;
+        setSaved(false);
+      }, 2000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to save settings.");
     } finally {

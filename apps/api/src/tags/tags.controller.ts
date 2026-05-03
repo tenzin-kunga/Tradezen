@@ -1,10 +1,10 @@
 import {
   Controller, Get, Post, Put, Delete,
-  Param, Body,
+  Param, Body, Query,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { TagsService } from "./tags.service";
-import { CreateTagDto, UpdateTagDto } from "./dto";
+import { CreateTagDto, QueryTagTradesDto, UpdateTagDto } from "./dto";
 import { CurrentUser } from "../auth/current-user.decorator";
 
 @ApiTags("tags")
@@ -64,8 +64,12 @@ export class TagsController {
   }
 
   @Get(":id/trades")
-  @ApiOperation({ summary: "Get all trades for a tag" })
-  getTradesForTag(@CurrentUser("id") userId: string, @Param("id") id: string) {
-    return this.tagsService.getTradesForTag(userId, id);
+  @ApiOperation({ summary: "Get trades for a tag (paginated)" })
+  getTradesForTag(
+    @CurrentUser("id") userId: string,
+    @Param("id") id: string,
+    @Query() query: QueryTagTradesDto,
+  ) {
+    return this.tagsService.getTradesForTag(userId, id, query.limit ?? 50, query.offset ?? 0);
   }
 }

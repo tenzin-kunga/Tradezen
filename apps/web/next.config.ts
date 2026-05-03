@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  turbopack: {
+    root: "c:/Users/tenku/Desktop/tradezen",
+  },
 };
 
 export default nextConfig;

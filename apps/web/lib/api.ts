@@ -267,3 +267,140 @@ export const untagTrade = async (tagId: string, tradeId: string) => {
   const res = await authFetch(`${API}/tags/${tagId}/trades/${tradeId}`, { method: "DELETE" });
   return handleResponse<any>(res);
 };
+
+// ─── Chat ──────────────────────────────────────────
+
+export type ChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+export type StreamChatParams = {
+  messages: ChatMessage[];
+  model?: string;
+  systemPrompt?: string;
+  temperature?: number;
+  /** Abort to stop the stream (e.g. unmount, new message, panel close). */
+  signal?: AbortSignal;
+  onToken: (token: string) => void;
+  onDone?: () => void;
+};
+
+export async function getChatModels() {
+  const res = await authFetch(`${API}/chat/models`);
+  return handleResponse<{ defaultModel: string; models: string[] }>(res);
+}
+
+async function authFetchStream(url: string, opts: RequestInit = {}): Promise<Response> {
+  const headers: Record<string, string> = {
+    ...(opts.headers as Record<string, string> || {}),
+  };
+
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
+  }
+
+  if (!headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const makeRequest = () =>
+    fetch(url, {
+      ...opts,
+      headers,
+      credentials: "include",
+    });
+
+  let res = await makeRequest();
+  if (res.status === 401 && !url.includes("/auth/refresh")) {
+    const refreshed = await refreshToken();
+    if (refreshed) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+      res = await makeRequest();
+    }
+  }
+
+  return res;
+}
+
+function isAbortError(e: unknown): boolean {
+  if (e && typeof e === "object" && "name" in e && (e as { name: string }).name === "AbortError") return true;
+  return false;
+}
+
+export async function streamChat(params: StreamChatParams): Promise<void> {
+  const { messages, model, systemPrompt, temperature, signal, onToken, onDone } = params;
+
+  let res: Response;
+  try {
+    res = await authFetchStream(`${API}/chat/stream`, {
+      method: "POST",
+      signal,
+      body: JSON.stringify({ messages, model, systemPrompt, temperature }),
+    });
+  } catch (e) {
+    if (signal?.aborted || isAbortError(e)) {
+      onDone?.();
+      return;
+    }
+    throw e;
+  }
+
+  if (!res.ok || !res.body) {
+    const body = await res.text().catch(() => "");
+    throw new Error(body || "Chat stream failed");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      let read: ReadableStreamReadResult<Uint8Array>;
+      try {
+        read = await reader.read();
+      } catch (e) {
+        if (signal?.aborted || isAbortError(e)) {
+          onDone?.();
+          return;
+        }
+        throw e;
+      }
+
+      const { done, value } = read;
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() ?? "";
+
+      for (const chunk of chunks) {
+        const lines = chunk.split("\n");
+        let eventName = "message";
+        let data = "";
+
+        for (const line of lines) {
+          if (line.startsWith("event:")) {
+            eventName = line.slice(6).trim();
+          } else if (line.startsWith("data:")) {
+            data += line.slice(5);
+          }
+        }
+
+        if (eventName === "token" && data) {
+          onToken(data);
+        } else if (eventName === "error") {
+          throw new Error(data || "Chat request failed");
+        } else if (eventName === "done") {
+          onDone?.();
+          return;
+        }
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+
+  onDone?.();
+}

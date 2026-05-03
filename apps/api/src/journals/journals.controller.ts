@@ -4,7 +4,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JournalsService } from "./journals.service";
-import { CreateJournalDto, UpdateJournalDto } from "./dto";
+import { CreateJournalDto, QueryJournalsDto, UpdateJournalDto } from "./dto";
 import { CurrentUser } from "../auth/current-user.decorator";
 
 @ApiTags("journals")
@@ -21,12 +21,8 @@ export class JournalsController {
 
   @Get()
   @ApiOperation({ summary: "Get all journal entries" })
-  findAll(
-    @CurrentUser("id") userId: string,
-    @Query("limit") limit?: string,
-    @Query("offset") offset?: string,
-  ) {
-    return this.journalsService.findAll(userId, Number(limit) || 30, Number(offset) || 0);
+  findAll(@CurrentUser("id") userId: string, @Query() query: QueryJournalsDto) {
+    return this.journalsService.findAll(userId, query.limit ?? 30, query.offset ?? 0);
   }
 
   @Get("streak")

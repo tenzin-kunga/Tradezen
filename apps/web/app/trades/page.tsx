@@ -50,7 +50,7 @@ export default function TradeLog() {
     try {
       const res = await getTrades({
         page: 1,
-        limit: 1000,
+        limit: 100,
         sort: "created_at",
         order: "desc",
         symbol: assetFilter !== "ALL ASSETS" ? assetFilter : undefined,

@@ -3,6 +3,39 @@ import { pool } from "../db";
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from "./dto";
 import * as fs from "fs";
 import * as path from "path";
+import type { Response } from "express";
+
+const CSV_EXPORT_CHUNK = 500;
+
+function escapeCsvCell(val: unknown): string {
+  if (val === null || val === undefined) return "";
+  const str = String(val);
+  return str.includes(",") || str.includes('"') || str.includes("\n")
+    ? `"${str.replace(/"/g, '""')}"`
+    : str;
+}
+
+function computeMaxConsecutive(pnls: number[]) {
+  let maxConsWins = 0;
+  let maxConsLosses = 0;
+  let curWins = 0;
+  let curLosses = 0;
+  for (const p of pnls) {
+    if (p > 0) {
+      curWins++;
+      curLosses = 0;
+    } else if (p < 0) {
+      curLosses++;
+      curWins = 0;
+    } else {
+      curWins = 0;
+      curLosses = 0;
+    }
+    maxConsWins = Math.max(maxConsWins, curWins);
+    maxConsLosses = Math.max(maxConsLosses, curLosses);
+  }
+  return { maxConsWins, maxConsLosses };
+}
 
 @Injectable()
 export class TradesService {
@@ -237,13 +270,98 @@ export class TradesService {
   }
 
   async getAnalytics(userId: string) {
-    const tradesRes = await pool.query(
-      "SELECT * FROM trades WHERE user_id = $1 ORDER BY created_at ASC",
-      [userId],
-    );
-    const trades = tradesRes.rows;
+    const [
+      summaryRes,
+      maxDdRes,
+      avgRrRes,
+      pnlSeriesRes,
+      strategyRes,
+      dowRes,
+      monthRes,
+    ] = await Promise.all([
+      pool.query(
+        `SELECT
+           COUNT(*)::int AS total_trades,
+           COALESCE(SUM(pnl), 0)::float8 AS total_pnl,
+           COUNT(*) FILTER (WHERE pnl > 0)::int AS win_count,
+           COUNT(*) FILTER (WHERE pnl < 0)::int AS loss_count,
+           COALESCE(SUM(pnl) FILTER (WHERE pnl > 0), 0)::float8 AS gross_profit,
+           COALESCE(ABS(SUM(pnl) FILTER (WHERE pnl < 0)), 0)::float8 AS gross_loss,
+           COALESCE(MAX(pnl), 0)::float8 AS best_trade,
+           COALESCE(MIN(pnl), 0)::float8 AS worst_trade,
+           COALESCE(AVG(pnl) FILTER (WHERE pnl > 0), 0)::float8 AS avg_win,
+           COALESCE(AVG(ABS(pnl)) FILTER (WHERE pnl < 0), 0)::float8 AS avg_loss,
+           COUNT(*) FILTER (WHERE fomo_check)::int AS fomo_count,
+           COUNT(*) FILTER (WHERE vengeance_trade)::int AS vengeance_count,
+           COUNT(*) FILTER (WHERE trend_alignment)::int AS trend_aligned_count
+         FROM trades WHERE user_id = $1`,
+        [userId],
+      ),
+      pool.query(
+        `WITH ordered AS (
+           SELECT ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn,
+                  pnl::float8 AS pnl
+           FROM trades WHERE user_id = $1
+         ),
+         cum AS (
+           SELECT rn, SUM(pnl) OVER (ORDER BY rn) AS eq FROM ordered
+         ),
+         peaked AS (
+           SELECT eq, MAX(eq) OVER (ORDER BY rn ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS peak
+           FROM cum
+         )
+         SELECT COALESCE(MAX(peak - eq), 0)::float8 AS max_drawdown FROM peaked`,
+        [userId],
+      ),
+      pool.query(
+        `SELECT COALESCE(AVG(
+           ABS(take_profit - entry_price) / NULLIF(ABS(entry_price - stop_loss), 0)
+         ), 0)::float8 AS avg_rr
+         FROM trades
+         WHERE user_id = $1
+           AND stop_loss IS NOT NULL
+           AND take_profit IS NOT NULL`,
+        [userId],
+      ),
+      pool.query(
+        `SELECT pnl::float8 AS pnl FROM trades WHERE user_id = $1 ORDER BY created_at ASC, id ASC`,
+        [userId],
+      ),
+      pool.query(
+        `SELECT COALESCE(NULLIF(TRIM(COALESCE(strategy, '')), ''), 'No Strategy') AS name,
+                COUNT(*)::int AS trades,
+                COUNT(*) FILTER (WHERE pnl > 0)::int AS wins,
+                COALESCE(SUM(pnl), 0)::float8 AS pnl
+         FROM trades WHERE user_id = $1
+         GROUP BY 1
+         ORDER BY pnl DESC`,
+        [userId],
+      ),
+      pool.query(
+        `SELECT EXTRACT(DOW FROM created_at)::int AS dow,
+                COUNT(*)::int AS trades,
+                COUNT(*) FILTER (WHERE pnl > 0)::int AS wins,
+                COALESCE(SUM(pnl), 0)::float8 AS pnl
+         FROM trades WHERE user_id = $1
+         GROUP BY 1
+         ORDER BY 1`,
+        [userId],
+      ),
+      pool.query(
+        `SELECT TO_CHAR(created_at, 'YYYY-MM') AS month,
+                COUNT(*)::int AS trades,
+                COUNT(*) FILTER (WHERE pnl > 0)::int AS wins,
+                COALESCE(SUM(pnl), 0)::float8 AS pnl
+         FROM trades WHERE user_id = $1
+         GROUP BY 1
+         ORDER BY 1`,
+        [userId],
+      ),
+    ]);
 
-    if (trades.length === 0) {
+    const s = summaryRes.rows[0];
+    const totalTrades = Number(s?.total_trades ?? 0);
+    if (totalTrades === 0) {
       return {
         totalTrades: 0,
         totalPnl: 0,
@@ -265,120 +383,51 @@ export class TradesService {
       };
     }
 
-    const wins = trades.filter((t: any) => Number(t.pnl) > 0);
-    const losses = trades.filter((t: any) => Number(t.pnl) < 0);
+    const grossProfit = Number(s.gross_profit);
+    const grossLoss = Number(s.gross_loss);
+    const winRateRatio = totalTrades > 0 ? Number(s.win_count) / totalTrades : 0;
+    /** JSON-safe: no losses but wins => large finite PF (legacy in-memory used Infinity). */
+    const profitFactor =
+      grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 999999 : 0;
+    const avgWin = Number(s.avg_win);
+    const avgLoss = Number(s.avg_loss);
+    const expectancy =
+      (winRateRatio * avgWin) - ((1 - winRateRatio) * avgLoss);
 
-    const totalPnl = trades.reduce((s: number, t: any) => s + Number(t.pnl), 0);
-    const grossProfit = wins.reduce((s: number, t: any) => s + Number(t.pnl), 0);
-    const grossLoss = Math.abs(losses.reduce((s: number, t: any) => s + Number(t.pnl), 0));
+    const pnls = pnlSeriesRes.rows.map((r: { pnl: string | number }) => Number(r.pnl));
+    const { maxConsWins, maxConsLosses } = computeMaxConsecutive(pnls);
 
-    const winRate = trades.length > 0 ? wins.length / trades.length : 0;
-    const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
-    const avgWin = wins.length > 0 ? grossProfit / wins.length : 0;
-    const avgLoss = losses.length > 0 ? grossLoss / losses.length : 0;
-    const expectancy = trades.length > 0
-      ? (winRate * avgWin) - ((1 - winRate) * avgLoss)
-      : 0;
+    const maxDrawdown = Number(maxDdRes.rows[0]?.max_drawdown ?? 0);
+    const avgRR = Number(avgRrRes.rows[0]?.avg_rr ?? 0);
 
-    // Max consecutive wins/losses
-    let maxConsWins = 0, maxConsLosses = 0, curWins = 0, curLosses = 0;
-    for (const t of trades) {
-      if (Number(t.pnl) > 0) { curWins++; curLosses = 0; }
-      else if (Number(t.pnl) < 0) { curLosses++; curWins = 0; }
-      else { curWins = 0; curLosses = 0; }
-      maxConsWins = Math.max(maxConsWins, curWins);
-      maxConsLosses = Math.max(maxConsLosses, curLosses);
-    }
-
-    // Max drawdown
-    let peak = 0, equity = 0, maxDrawdown = 0;
-    for (const t of trades) {
-      equity += Number(t.pnl);
-      if (equity > peak) peak = equity;
-      const dd = peak - equity;
-      if (dd > maxDrawdown) maxDrawdown = dd;
-    }
-
-    const pnls = trades.map((t: any) => Number(t.pnl));
-    const bestTrade = Math.max(...pnls);
-    const worstTrade = Math.min(...pnls);
-
-    // Avg R:R from trades that have SL and TP
-    const rrTrades = trades.filter((t: any) => t.stop_loss && t.take_profit);
-    let avgRR = 0;
-    if (rrTrades.length > 0) {
-      const rrs = rrTrades.map((t: any) => {
-        const risk = Math.abs(Number(t.entry_price) - Number(t.stop_loss));
-        const reward = Math.abs(Number(t.take_profit) - Number(t.entry_price));
-        return risk > 0 ? reward / risk : 0;
-      });
-      avgRR = rrs.reduce((s: number, r: number) => s + r, 0) / rrs.length;
-    }
-
-    // By strategy
-    const stratMap = new Map<string, { wins: number; losses: number; pnl: number }>();
-    for (const t of trades) {
-      const key = t.strategy || "No Strategy";
-      const entry = stratMap.get(key) || { wins: 0, losses: 0, pnl: 0 };
-      entry.pnl += Number(t.pnl);
-      if (Number(t.pnl) > 0) entry.wins++;
-      else if (Number(t.pnl) < 0) entry.losses++;
-      stratMap.set(key, entry);
-    }
-    const byStrategy = Array.from(stratMap.entries()).map(([name, s]) => ({
-      name,
-      trades: s.wins + s.losses,
-      winRate: (s.wins + s.losses) > 0 ? s.wins / (s.wins + s.losses) : 0,
-      pnl: s.pnl,
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const byStrategy = strategyRes.rows.map((r: any) => ({
+      name: r.name,
+      trades: Number(r.trades),
+      winRate: Number(r.trades) > 0 ? Number(r.wins) / Number(r.trades) : 0,
+      pnl: Number(r.pnl),
+    }));
+    const byDayOfWeek = dowRes.rows.map((r: any) => ({
+      day: dayNames[Number(r.dow) % 7],
+      trades: Number(r.trades),
+      winRate: Number(r.trades) > 0 ? Number(r.wins) / Number(r.trades) : 0,
+      pnl: Number(r.pnl),
+    }));
+    const byMonth = monthRes.rows.map((r: any) => ({
+      month: r.month,
+      trades: Number(r.trades),
+      winRate: Number(r.trades) > 0 ? Number(r.wins) / Number(r.trades) : 0,
+      pnl: Number(r.pnl),
     }));
 
-    // By day of week
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const dayMap = new Map<number, { wins: number; total: number; pnl: number }>();
-    for (const t of trades) {
-      const d = new Date(t.created_at).getDay();
-      const entry = dayMap.get(d) || { wins: 0, total: 0, pnl: 0 };
-      entry.total++;
-      entry.pnl += Number(t.pnl);
-      if (Number(t.pnl) > 0) entry.wins++;
-      dayMap.set(d, entry);
-    }
-    const byDayOfWeek = Array.from(dayMap.entries()).map(([d, s]) => ({
-      day: days[d],
-      trades: s.total,
-      winRate: s.total > 0 ? s.wins / s.total : 0,
-      pnl: s.pnl,
-    }));
-
-    // By month
-    const monthMap = new Map<string, { wins: number; total: number; pnl: number }>();
-    for (const t of trades) {
-      const d = new Date(t.created_at);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const entry = monthMap.get(key) || { wins: 0, total: 0, pnl: 0 };
-      entry.total++;
-      entry.pnl += Number(t.pnl);
-      if (Number(t.pnl) > 0) entry.wins++;
-      monthMap.set(key, entry);
-    }
-    const byMonth = Array.from(monthMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, s]) => ({
-        month,
-        trades: s.total,
-        winRate: s.total > 0 ? s.wins / s.total : 0,
-        pnl: s.pnl,
-      }));
-
-    // Behavioral stats
-    const fomoCount = trades.filter((t: any) => t.fomo_check).length;
-    const vengeanceCount = trades.filter((t: any) => t.vengeance_trade).length;
-    const trendAlignedCount = trades.filter((t: any) => t.trend_alignment).length;
+    const totalPnl = Number(s.total_pnl);
+    const bestTrade = Number(s.best_trade);
+    const worstTrade = Number(s.worst_trade);
 
     return {
-      totalTrades: trades.length,
+      totalTrades,
       totalPnl: Math.round(totalPnl * 100) / 100,
-      winRate: Math.round(winRate * 10000) / 100,
+      winRate: Math.round(winRateRatio * 10000) / 100,
       profitFactor: Math.round(profitFactor * 100) / 100,
       avgWin: Math.round(avgWin * 100) / 100,
       avgLoss: Math.round(avgLoss * 100) / 100,
@@ -392,36 +441,43 @@ export class TradesService {
       byStrategy,
       byDayOfWeek,
       byMonth,
-      behavioralStats: { fomoCount, vengeanceCount, trendAlignedCount },
+      behavioralStats: {
+        fomoCount: Number(s.fomo_count ?? 0),
+        vengeanceCount: Number(s.vengeance_count ?? 0),
+        trendAlignedCount: Number(s.trend_aligned_count ?? 0),
+      },
     };
   }
 
-  async exportCsv(userId: string) {
-    const res = await pool.query(
-      "SELECT * FROM trades WHERE user_id = $1 ORDER BY created_at DESC",
-      [userId],
-    );
-    const trades = res.rows;
-
+  /** Streams CSV in DB chunks to avoid loading all rows into memory. */
+  async streamExportCsv(userId: string, res: Response): Promise<void> {
     const headers = [
       "id", "symbol", "direction", "entry_price", "exit_price", "lot_size",
       "pnl", "stop_loss", "take_profit", "strategy", "notes",
       "fomo_check", "trend_alignment", "vengeance_trade", "created_at",
     ];
+    res.write(`${headers.map(escapeCsvCell).join(",")}\n`);
 
-    const csvRows = [headers.join(",")];
-    for (const t of trades) {
-      const row = headers.map((h) => {
-        const val = t[h];
-        if (val === null || val === undefined) return "";
-        const str = String(val);
-        return str.includes(",") || str.includes('"') || str.includes("\n")
-          ? `"${str.replace(/"/g, '""')}"`
-          : str;
-      });
-      csvRows.push(row.join(","));
+    let offset = 0;
+    for (;;) {
+      const { rows } = await pool.query(
+        `SELECT id, symbol, direction, entry_price, exit_price, lot_size, pnl,
+                stop_loss, take_profit, strategy, notes,
+                fomo_check, trend_alignment, vengeance_trade, created_at
+         FROM trades WHERE user_id = $1
+         ORDER BY created_at DESC
+         LIMIT $2 OFFSET $3`,
+        [userId, CSV_EXPORT_CHUNK, offset],
+      );
+      if (rows.length === 0) break;
+
+      for (const t of rows) {
+        const line = headers.map((h) => escapeCsvCell((t as Record<string, unknown>)[h])).join(",");
+        res.write(`${line}\n`);
+      }
+
+      offset += rows.length;
+      if (rows.length < CSV_EXPORT_CHUNK) break;
     }
-
-    return csvRows.join("\n");
   }
 }
