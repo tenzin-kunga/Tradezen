@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import * as fs from 'fs';
 import * as path from 'path';
+import { db } from './db/drizzle';
 
 export const pool = process.env.DATABASE_URL
   ? new Pool({
@@ -14,6 +15,8 @@ export const pool = process.env.DATABASE_URL
       password: process.env.DB_PASSWORD ?? 'pass',
       port: Number(process.env.DB_PORT ?? 5432),
     });
+
+export { db };
 
 export async function runMigrations() {
   // Create the tracking table
