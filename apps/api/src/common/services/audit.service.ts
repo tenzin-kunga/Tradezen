@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { pool } from '../../db';
+import { db } from '../../db/drizzle';
+import { auditLog } from '../../db/schema';
 
 export type AuditAction =
   | 'LOGIN_SUCCESS'
@@ -28,19 +29,15 @@ export class AuditService {
     details?: Record<string, unknown>;
   }): Promise<void> {
     try {
-      await pool.query(
-        `INSERT INTO audit_log (user_id, action, resource, resource_id, ip, user_agent, details)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          params.userId,
-          params.action,
-          params.resource,
-          params.resourceId,
-          params.ip,
-          params.userAgent,
-          params.details ? JSON.stringify(params.details) : null,
-        ],
-      );
+      await db.insert(auditLog).values({
+        userId: params.userId,
+        action: params.action,
+        resource: params.resource,
+        resourceId: params.resourceId,
+        ip: params.ip,
+        userAgent: params.userAgent,
+        details: params.details,
+      });
     } catch (error) {
       this.logger.error(`Audit log failed: ${(error as Error).message}`);
     }

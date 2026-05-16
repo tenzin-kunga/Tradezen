@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { pool } from '../../db';
+import { eq, sql, count } from 'drizzle-orm';
+import { db } from '../../db/drizzle';
+import { loginAttempts, users } from '../../db/schema';
 
 @Injectable()
 export class SuspiciousLoginService {
@@ -9,36 +11,57 @@ export class SuspiciousLoginService {
     const flags: string[] = [];
 
     try {
-      const knownIps = await pool.query(
-        `SELECT DISTINCT ip FROM login_attempts
-         WHERE identifier = (SELECT email FROM users WHERE id = $1)
-         AND created_at > NOW() - INTERVAL '30 days'`,
-        [userId],
-      );
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, String(userId)),
+        columns: { email: true },
+      });
 
-      const isKnownIp = knownIps.rows.some((row) => row.ip === ip);
-      if (!isKnownIp && knownIps.rows.length > 0) {
-        flags.push('NEW_IP');
-        this.logger.warn(`Suspicious login: userId=${userId} ip=${ip} flag=NEW_IP`);
+      if (user) {
+        const knownIps = await db
+          .select({ ip: loginAttempts.ip })
+          .from(loginAttempts)
+          .where(
+            sql`${loginAttempts.identifier} = ${user.email} AND ${loginAttempts.createdAt} > NOW() - INTERVAL '30 days'`,
+          );
+
+        const uniqueIps = [...new Set(knownIps.map((row) => row.ip))];
+        const isKnownIp = uniqueIps.includes(ip);
+        if (!isKnownIp && uniqueIps.length > 0) {
+          flags.push('NEW_IP');
+          this.logger.warn(
+            `Suspicious login: userId=${userId} ip=${ip} flag=NEW_IP`,
+          );
+        }
       }
     } catch (error) {
       this.logger.error(`IP check failed: ${(error as Error).message}`);
     }
 
     try {
-      const recentFailedAttempts = await pool.query(
-        `SELECT COUNT(*) as count FROM login_attempts
-         WHERE identifier = (SELECT email FROM users WHERE id = $1)
-         AND created_at > NOW() - INTERVAL '5 minutes'`,
-        [userId],
-      );
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, String(userId)),
+        columns: { email: true },
+      });
 
-      if (parseInt(recentFailedAttempts.rows[0].count) > 3) {
-        flags.push('POSSIBLE_BRUTE_FORCE');
-        this.logger.warn(`Suspicious login: userId=${userId} ip=${ip} flag=POSSIBLE_BRUTE_FORCE`);
+      if (user) {
+        const result = await db
+          .select({ count: count() })
+          .from(loginAttempts)
+          .where(
+            sql`${loginAttempts.identifier} = ${user.email} AND ${loginAttempts.createdAt} > NOW() - INTERVAL '5 minutes'`,
+          );
+
+        if (result[0].count > 3) {
+          flags.push('POSSIBLE_BRUTE_FORCE');
+          this.logger.warn(
+            `Suspicious login: userId=${userId} ip=${ip} flag=POSSIBLE_BRUTE_FORCE`,
+          );
+        }
       }
     } catch (error) {
-      this.logger.error(`Rapid login check failed: ${(error as Error).message}`);
+      this.logger.error(
+        `Rapid login check failed: ${(error as Error).message}`,
+      );
     }
 
     return flags;

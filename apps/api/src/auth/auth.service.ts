@@ -5,7 +5,9 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { pool } from '../db';
+import { eq, or } from 'drizzle-orm';
+import { db } from '../db/drizzle';
+import { users } from '../db/schema';
 import { RegisterDto, LoginDto } from './dto';
 import type { Response } from 'express';
 import { BruteForceService } from '../common/services/brute-force.service';
@@ -13,18 +15,6 @@ import { AuditService } from '../common/services/audit.service';
 import { SuspiciousLoginService } from '../common/services/suspicious-login.service';
 
 const SALT_ROUNDS = 12;
-
-interface User {
-  id: string;
-  email: string;
-  username: string;
-  password_hash?: string;
-  created_at: Date;
-  initial_capital?: number;
-  default_lot_size?: number;
-  timezone?: string;
-  theme?: string;
-}
 
 @Injectable()
 export class AuthService {
@@ -54,23 +44,25 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const { email, username, password } = dto;
 
-    const existing = await pool.query<User>(
-      'SELECT id FROM users WHERE email = $1 OR username = $2',
-      [email, username],
-    );
-    if ((existing.rowCount ?? 0) > 0) {
+    const existing = await db.query.users.findFirst({
+      where: or(eq(users.email, email), eq(users.username, username)),
+    });
+    if (existing) {
       throw new ConflictException('Email or username already taken');
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const res = await pool.query<User>(
-      `INSERT INTO users (email, username, password_hash)
-       VALUES ($1, $2, $3)
-       RETURNING id, email, username, created_at`,
-      [email, username, passwordHash],
-    );
+    const [user] = await db
+      .insert(users)
+      .values({ email, username, passwordHash })
+      .returning({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        createdAt: users.createdAt,
+      });
 
-    return res.rows[0];
+    return user;
   }
 
   async login(dto: LoginDto, response: Response) {
@@ -80,33 +72,62 @@ export class AuthService {
 
     const lockedOut = await this.bruteForce.isLockedOut(identifier);
     if (lockedOut) {
-      await this.audit.log({ action: 'LOGIN_LOCKOUT', ip, userAgent, details: { identifier: identifier.substring(0, 2) + '***' } });
-      throw new UnauthorizedException('Account temporarily locked. Try again later.');
+      await this.audit.log({
+        action: 'LOGIN_LOCKOUT',
+        ip,
+        userAgent,
+        details: { identifier: identifier.substring(0, 2) + '***' },
+      });
+      throw new UnauthorizedException(
+        'Account temporarily locked. Try again later.',
+      );
     }
 
-    const res = await pool.query<User>(
-      'SELECT id, email, username, password_hash FROM users WHERE email = $1 OR username = $1',
-      [identifier],
-    );
-    if ((res.rowCount ?? 0) === 0) {
+    const user = await db.query.users.findFirst({
+      where: or(eq(users.email, identifier), eq(users.username, identifier)),
+      columns: {
+        id: true,
+        email: true,
+        username: true,
+        passwordHash: true,
+      },
+    });
+    if (!user) {
       await this.bruteForce.recordFailedAttempt(identifier, ip);
-      await this.audit.log({ action: 'LOGIN_FAILURE', ip, userAgent, details: { identifier: identifier.substring(0, 2) + '***' } });
+      await this.audit.log({
+        action: 'LOGIN_FAILURE',
+        ip,
+        userAgent,
+        details: { identifier: identifier.substring(0, 2) + '***' },
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const user = res.rows[0]!;
-    const valid = await bcrypt.compare(password, user.password_hash);
+    const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       await this.bruteForce.recordFailedAttempt(identifier, ip);
-      await this.audit.log({ action: 'LOGIN_FAILURE', ip, userAgent, details: { identifier: identifier.substring(0, 2) + '***' } });
+      await this.audit.log({
+        action: 'LOGIN_FAILURE',
+        ip,
+        userAgent,
+        details: { identifier: identifier.substring(0, 2) + '***' },
+      });
       throw new UnauthorizedException('Invalid credentials');
     }
 
     await this.bruteForce.clearAttempts(identifier);
 
-    const flags = await this.suspiciousLogin.detectAnomalies(Number(user.id), ip);
+    const flags = await this.suspiciousLogin.detectAnomalies(
+      Number(user.id),
+      ip,
+    );
 
-    await this.audit.log({ userId: Number(user.id), action: 'LOGIN_SUCCESS', ip, userAgent });
+    await this.audit.log({
+      userId: Number(user.id),
+      action: 'LOGIN_SUCCESS',
+      ip,
+      userAgent,
+    });
 
     const payload = {
       sub: user.id,
@@ -158,15 +179,18 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const res = await pool.query<User>(
-      'SELECT id, email, username FROM users WHERE id = $1',
-      [payload.sub],
-    );
-    if ((res.rowCount ?? 0) === 0) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, payload.sub),
+      columns: {
+        id: true,
+        email: true,
+        username: true,
+      },
+    });
+    if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    const user = res.rows[0]!;
     const rememberMe = payload.remember_me === true;
     const newPayload = {
       sub: user.id,
@@ -203,14 +227,23 @@ export class AuthService {
   }
 
   async getMe(userId: string) {
-    const res = await pool.query<User>(
-      'SELECT id, email, username, created_at, initial_capital, default_lot_size, timezone, theme FROM users WHERE id = $1',
-      [userId],
-    );
-    if ((res.rowCount ?? 0) === 0) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: {
+        id: true,
+        email: true,
+        username: true,
+        createdAt: true,
+        initialCapital: true,
+        defaultLotSize: true,
+        timezone: true,
+        theme: true,
+      },
+    });
+    if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    return res.rows[0];
+    return user;
   }
 
   async updateSettings(
@@ -222,37 +255,31 @@ export class AuthService {
       theme?: string;
     },
   ) {
-    const fields: string[] = [];
-    const values: (string | number | undefined)[] = [];
-    let idx = 1;
+    const updateData: Record<string, string | number> = {};
+    if (dto.initial_capital !== undefined) updateData.initialCapital = dto.initial_capital;
+    if (dto.default_lot_size !== undefined) updateData.defaultLotSize = dto.default_lot_size;
+    if (dto.timezone !== undefined) updateData.timezone = dto.timezone;
+    if (dto.theme !== undefined) updateData.theme = dto.theme;
 
-    if (dto.initial_capital !== undefined) {
-      fields.push(`initial_capital = $${idx++}`);
-      values.push(dto.initial_capital);
-    }
-    if (dto.default_lot_size !== undefined) {
-      fields.push(`default_lot_size = $${idx++}`);
-      values.push(dto.default_lot_size);
-    }
-    if (dto.timezone !== undefined) {
-      fields.push(`timezone = $${idx++}`);
-      values.push(dto.timezone);
-    }
-    if (dto.theme !== undefined) {
-      fields.push(`theme = $${idx++}`);
-      values.push(dto.theme);
-    }
-
-    if (fields.length === 0) {
+    if (Object.keys(updateData).length === 0) {
       return this.getMe(userId);
     }
 
-    values.push(userId);
-    const res = await pool.query<User>(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, email, username, created_at, initial_capital, default_lot_size, timezone, theme`,
-      values,
-    );
-    return res.rows[0];
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        createdAt: users.createdAt,
+        initialCapital: users.initialCapital,
+        defaultLotSize: users.defaultLotSize,
+        timezone: users.timezone,
+        theme: users.theme,
+      });
+    return user;
   }
 
   async logout(response: Response) {
