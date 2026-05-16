@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TradesModule } from './trades/trades.module';
@@ -10,7 +11,36 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
 
 @Module({
-  imports: [AuthModule, TradesModule, JournalsModule, TagsModule, ChatModule],
+  imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.LOG_LEVEL ?? 'info',
+        transport:
+          process.env.NODE_ENV === 'production'
+            ? undefined
+            : {
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                  translateTime: 'SYS:standard',
+                  ignore: 'pid,hostname',
+                },
+              },
+        customProps: (req: any) => ({
+          requestId: (req as any).id,
+        }),
+        redact: {
+          paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'],
+          censor: '**REDACTED**',
+        },
+      },
+    }),
+    AuthModule,
+    TradesModule,
+    JournalsModule,
+    TagsModule,
+    ChatModule,
+  ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],
 })

@@ -10,6 +10,8 @@ import { AppModule } from './app.module';
 import { runMigrations } from './db';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
+import { TimingInterceptor } from './common/interceptors/timing.interceptor';
 
 // ── Environment Validation ────────────────────────────────────────────────────
 // This function is temporarily disabled for development mode.
@@ -54,7 +56,9 @@ console.log(
 // }
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
 
   // ── CORS ────────────────────────────────────────────────────────────────────
   app.enableCors({
@@ -64,6 +68,7 @@ async function bootstrap() {
 
   // ── Middleware ──────────────────────────────────────────────────────────────
   app.use(cookieParser());
+  app.use(new RequestContextMiddleware().use);
 
   // ── Global Pipes ────────────────────────────────────────────────────────────
   app.useGlobalPipes(
@@ -79,7 +84,7 @@ async function bootstrap() {
 
   // ── Global Filters & Interceptors ──────────────────────────────────────────
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalInterceptors(new LoggingInterceptor(), new TimingInterceptor());
 
   // ── Swagger / OpenAPI ───────────────────────────────────────────────────────
   // Disable in production to avoid exposing API structure
