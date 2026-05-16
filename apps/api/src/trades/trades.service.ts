@@ -1,13 +1,43 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { eq, and, like, ilike, desc, asc, sql, count, lt, gte, lte } from 'drizzle-orm';
+import { eq, and, like, ilike, desc, asc, sql, count, lt, gte, lte, inArray } from 'drizzle-orm';
 import { db } from '../db/drizzle';
-import { trades } from '../db/schema';
+import { trades, tags, tradeTags } from '../db/schema';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Response } from 'express';
 
 const CSV_EXPORT_CHUNK = 500;
+
+export interface StrategyPerformance {
+  strategy: string;
+  totalTrades: number;
+  winRate: number;
+  profitFactor: number;
+  expectancy: number;
+  totalPnl: number;
+  avgTradeDuration?: number;
+}
+
+export interface TagPerformance {
+  tag: string;
+  category: string;
+  totalTrades: number;
+  winRate: number;
+  totalPnl: number;
+}
+
+export interface StrategyComparison {
+  strategyA: StrategyPerformance & { name: string };
+  strategyB: StrategyPerformance & { name: string };
+  winner: string;
+  metrics: {
+    winRateDiff: number;
+    profitFactorDiff: number;
+    expectancyDiff: number;
+    pnlDiff: number;
+  };
+}
 
 function calculateSharpe(dailyReturns: number[], riskFreeRate = 0.05): number {
   if (dailyReturns.length === 0) return 0;
@@ -715,6 +745,171 @@ export class TradesService {
       topSymbols,
       bottomSymbols,
       winRateByDirection,
+    };
+  }
+
+  async getStrategyAnalytics(userId: string): Promise<{
+    byStrategy: StrategyPerformance[];
+    bestStrategy: string;
+    worstStrategy: string;
+  }> {
+    const tradeRows = await db
+      .select()
+      .from(trades)
+      .where(eq(trades.userId, userId));
+
+    const strategyMap = new Map<string, typeof tradeRows>();
+    for (const t of tradeRows) {
+      const strat = t.strategy || 'Unknown';
+      if (!strategyMap.has(strat)) strategyMap.set(strat, []);
+      strategyMap.get(strat)!.push(t);
+    }
+
+    const byStrategy: StrategyPerformance[] = [];
+    for (const [strategy, stratTrades] of strategyMap) {
+      const wins = stratTrades.filter(t => Number(t.pnl) > 0);
+      const losses = stratTrades.filter(t => Number(t.pnl) <= 0);
+      const totalPnl = stratTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
+      const grossProfit = wins.reduce((sum, t) => sum + Number(t.pnl), 0);
+      const grossLoss = Math.abs(losses.reduce((sum, t) => sum + Number(t.pnl), 0));
+
+      byStrategy.push({
+        strategy,
+        totalTrades: stratTrades.length,
+        winRate: stratTrades.length > 0 ? Math.round((wins.length / stratTrades.length) * 10000) / 100 : 0,
+        profitFactor: grossLoss > 0 ? Math.round((grossProfit / grossLoss) * 100) / 100 : grossProfit > 0 ? Infinity : 0,
+        expectancy: stratTrades.length > 0 ? Math.round((totalPnl / stratTrades.length) * 100) / 100 : 0,
+        totalPnl: Math.round(totalPnl * 100) / 100,
+      });
+    }
+
+    byStrategy.sort((a, b) => b.totalPnl - a.totalPnl);
+    const bestStrategy = byStrategy.length > 0 ? byStrategy[0].strategy : '';
+    const worstStrategy = byStrategy.length > 0 ? byStrategy[byStrategy.length - 1].strategy : '';
+
+    return { byStrategy, bestStrategy, worstStrategy };
+  }
+
+  async getTagAnalytics(userId: string): Promise<{
+    byTag: TagPerformance[];
+    byCategory: { category: string; totalTrades: number; winRate: number; totalPnl: number }[];
+    topTagCombinations: { tags: string[]; trades: number; pnl: number; winRate: number }[];
+  }> {
+    const tradeRows = await db
+      .select()
+      .from(trades)
+      .where(eq(trades.userId, userId));
+
+    const tradeIds = tradeRows.map(t => t.id);
+    if (tradeIds.length === 0) {
+      return { byTag: [], byCategory: [], topTagCombinations: [] };
+    }
+
+    const tagLinks = await db
+      .select()
+      .from(tradeTags)
+      .where(inArray(tradeTags.tradeId, tradeIds));
+
+    const tagMap = new Map<string, string[]>();
+    for (const link of tagLinks) {
+      if (!tagMap.has(link.tradeId)) tagMap.set(link.tradeId, []);
+      tagMap.get(link.tradeId)!.push(link.tagId);
+    }
+
+    const tagDetails = await db.select().from(tags);
+    const tagLookup = new Map<string, { name: string; category: string }>();
+    for (const tag of tagDetails) {
+      tagLookup.set(tag.id, { name: tag.name, category: tag.category ?? 'uncategorized' });
+    }
+
+    const tagStats = new Map<string, { trades: number; wins: number; pnl: number; category: string }>();
+    for (const [tradeId, tagIds] of tagMap) {
+      const trade = tradeRows.find(t => t.id === tradeId);
+      if (!trade) continue;
+      for (const tagId of tagIds) {
+        const info = tagLookup.get(tagId);
+        if (!info) continue;
+        const key = info.name;
+        if (!tagStats.has(key)) tagStats.set(key, { trades: 0, wins: 0, pnl: 0, category: info.category });
+        const stat = tagStats.get(key)!;
+        stat.trades++;
+        if (Number(trade.pnl) > 0) stat.wins++;
+        stat.pnl += Number(trade.pnl);
+      }
+    }
+
+    const byTag: TagPerformance[] = Array.from(tagStats.entries()).map(([tag, stat]) => ({
+      tag,
+      category: stat.category,
+      totalTrades: stat.trades,
+      winRate: stat.trades > 0 ? Math.round((stat.wins / stat.trades) * 10000) / 100 : 0,
+      totalPnl: Math.round(stat.pnl * 100) / 100,
+    }));
+
+    const categoryMap = new Map<string, { trades: number; wins: number; pnl: number }>();
+    for (const stat of tagStats.values()) {
+      if (!categoryMap.has(stat.category)) categoryMap.set(stat.category, { trades: 0, wins: 0, pnl: 0 });
+      const cat = categoryMap.get(stat.category)!;
+      cat.trades += stat.trades;
+      cat.wins += stat.wins;
+      cat.pnl += stat.pnl;
+    }
+
+    const byCategory = Array.from(categoryMap.entries()).map(([category, stat]) => ({
+      category,
+      totalTrades: stat.trades,
+      winRate: stat.trades > 0 ? Math.round((stat.wins / stat.trades) * 10000) / 100 : 0,
+      totalPnl: Math.round(stat.pnl * 100) / 100,
+    }));
+
+    const comboMap = new Map<string, { trades: number; wins: number; pnl: number }>();
+    for (const [tradeId, tagIds] of tagMap) {
+      if (tagIds.length < 2) continue;
+      const trade = tradeRows.find(t => t.id === tradeId);
+      if (!trade) continue;
+      const combo = [...tagIds].sort().join('+');
+      if (!comboMap.has(combo)) comboMap.set(combo, { trades: 0, wins: 0, pnl: 0 });
+      const c = comboMap.get(combo)!;
+      c.trades++;
+      if (Number(trade.pnl) > 0) c.wins++;
+      c.pnl += Number(trade.pnl);
+    }
+
+    const topTagCombinations = Array.from(comboMap.entries())
+      .map(([combo, stat]) => ({
+        tags: combo.split('+').map(id => tagLookup.get(id)?.name ?? id),
+        trades: stat.trades,
+        pnl: Math.round(stat.pnl * 100) / 100,
+        winRate: stat.trades > 0 ? Math.round((stat.wins / stat.trades) * 10000) / 100 : 0,
+      }))
+      .sort((a, b) => b.trades - a.trades)
+      .slice(0, 10);
+
+    return { byTag, byCategory, topTagCombinations };
+  }
+
+  async compareStrategies(userId: string, strategyA: string, strategyB: string): Promise<StrategyComparison> {
+    const all = await this.getStrategyAnalytics(userId);
+    const a = all.byStrategy.find(s => s.strategy === strategyA);
+    const b = all.byStrategy.find(s => s.strategy === strategyB);
+
+    if (!a || !b) {
+      throw new Error(`Strategy not found: ${!a ? strategyA : strategyB}`);
+    }
+
+    const pnlDiff = Math.round((a.totalPnl - b.totalPnl) * 100) / 100;
+    const winner = a.totalPnl > b.totalPnl ? strategyA : strategyB;
+
+    return {
+      strategyA: { ...a, name: strategyA },
+      strategyB: { ...b, name: strategyB },
+      winner,
+      metrics: {
+        winRateDiff: Math.round((a.winRate - b.winRate) * 100) / 100,
+        profitFactorDiff: Math.round((a.profitFactor - b.profitFactor) * 100) / 100,
+        expectancyDiff: Math.round((a.expectancy - b.expectancy) * 100) / 100,
+        pnlDiff,
+      },
     };
   }
 

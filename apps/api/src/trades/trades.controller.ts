@@ -69,6 +69,28 @@ export class TradesController {
     return this.behavioralService.analyzeBehavior(userId, days ? parseInt(days) : 90);
   }
 
+  @Get('analytics/strategy')
+  @ApiOperation({ summary: 'Get strategy performance analytics' })
+  getStrategyAnalytics(@CurrentUser('id') userId: string) {
+    return this.service.getStrategyAnalytics(userId);
+  }
+
+  @Get('analytics/tags')
+  @ApiOperation({ summary: 'Get tag performance analytics' })
+  getTagAnalytics(@CurrentUser('id') userId: string) {
+    return this.service.getTagAnalytics(userId);
+  }
+
+  @Get('analytics/compare')
+  @ApiOperation({ summary: 'Compare two strategies head-to-head' })
+  compareStrategies(
+    @CurrentUser('id') userId: string,
+    @Query('strategyA') strategyA: string,
+    @Query('strategyB') strategyB: string,
+  ) {
+    return this.service.compareStrategies(userId, strategyA, strategyB);
+  }
+
   @Get('daily-pnl')
   @ApiOperation({ summary: 'Get daily PnL breakdown' })
   getDailyPnl(

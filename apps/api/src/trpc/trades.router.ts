@@ -100,4 +100,25 @@ export const tradesRouter = router({
       const service = new BehavioralService();
       return service.analyzeBehavior(ctx.userId, input.days || 90);
     }),
+
+  getStrategyAnalytics: protectedProcedure
+    .input(z.void())
+    .query(async ({ ctx }) => {
+      const service = new TradesService();
+      return service.getStrategyAnalytics(ctx.userId);
+    }),
+
+  getTagAnalytics: protectedProcedure
+    .input(z.void())
+    .query(async ({ ctx }) => {
+      const service = new TradesService();
+      return service.getTagAnalytics(ctx.userId);
+    }),
+
+  compareStrategies: protectedProcedure
+    .input(z.object({ strategyA: z.string(), strategyB: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const service = new TradesService();
+      return service.compareStrategies(ctx.userId, input.strategyA, input.strategyB);
+    }),
 });
