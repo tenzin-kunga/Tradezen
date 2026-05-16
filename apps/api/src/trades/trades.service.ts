@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { eq, and, like, ilike, desc, asc, sql, count } from 'drizzle-orm';
+import { eq, and, like, ilike, desc, asc, sql, count, lt, gte, lte } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { trades } from '../db/schema';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
@@ -42,6 +42,31 @@ function computeMaxConsecutive(pnls: number[]) {
 
 @Injectable()
 export class TradesService {
+  private analyticsCache = new Map<string, { data: unknown; expiresAt: number }>();
+
+  async findAllCursor(userId: string, cursor?: string, limit = 20) {
+    const conditions = [eq(trades.userId, userId)];
+
+    if (cursor) {
+      conditions.push(lt(trades.createdAt, new Date(cursor)));
+    }
+
+    const rows = await db
+      .select()
+      .from(trades)
+      .where(and(...conditions))
+      .orderBy(desc(trades.createdAt))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const items = rows.slice(0, limit);
+    const lastItem = items.length > 0 ? items[items.length - 1] : null;
+    const nextCursor = hasMore && lastItem?.createdAt
+      ? lastItem.createdAt.toISOString()
+      : null;
+
+    return { items, nextCursor, hasMore };
+  }
   async create(userId: string, dto: CreateTradeDto) {
     const {
       symbol,
@@ -299,32 +324,38 @@ export class TradesService {
   }
 
   async getDailyPnl(userId: string, from?: string, to?: string) {
-    const conditions = [sql`user_id = ${userId}`];
+    const conditions = [eq(trades.userId, userId)];
 
     if (from) {
-      conditions.push(sql`created_at >= ${from}`);
+      conditions.push(gte(trades.tradeDate, new Date(from)));
     }
     if (to) {
-      conditions.push(sql`created_at <= ${to}`);
+      conditions.push(lte(trades.tradeDate, new Date(to)));
     }
 
-    const where = conditions.join(' AND ');
-
-    const result = await db.execute(sql`
-      SELECT DATE(created_at) as date,
-             SUM(pnl) as total_pnl,
-             COUNT(*) as trade_count,
-             COUNT(*) FILTER (WHERE pnl > 0) as wins,
-             COUNT(*) FILTER (WHERE pnl < 0) as losses
-      FROM trades WHERE ${sql.raw(where)}
-      GROUP BY DATE(created_at)
-      ORDER BY date DESC
-    `);
+    const result = await db
+      .select({
+        date: trades.tradeDate,
+        totalPnl: sql<number>`SUM(${trades.pnl})`,
+        tradeCount: count(),
+        wins: sql<number>`COUNT(*) FILTER (WHERE ${trades.pnl} > 0)`,
+        losses: sql<number>`COUNT(*) FILTER (WHERE ${trades.pnl} < 0)`,
+      })
+      .from(trades)
+      .where(and(...conditions))
+      .groupBy(trades.tradeDate)
+      .orderBy(desc(trades.tradeDate));
 
     return result;
   }
 
   async getAnalytics(userId: string) {
+    const cacheKey = `analytics:${userId}`;
+    const cached = this.analyticsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
     const [
       summaryRes,
       maxDdRes,
@@ -376,7 +407,7 @@ export class TradesService {
           AND take_profit IS NOT NULL
       `),
       db.execute(sql`
-        SELECT pnl::float8 AS pnl FROM trades WHERE user_id = ${userId} ORDER BY created_at ASC, id ASC
+        SELECT pnl::float8 AS pnl FROM trades WHERE user_id = ${userId} ORDER BY created_at ASC, id ASC LIMIT 1000
       `),
       db.execute(sql`
         SELECT COALESCE(NULLIF(TRIM(COALESCE(strategy, '')), ''), 'No Strategy') AS name,
@@ -483,7 +514,7 @@ export class TradesService {
     const bestTrade = Number(s.best_trade);
     const worstTrade = Number(s.worst_trade);
 
-    return {
+    const result = {
       totalTrades,
       totalPnl: Math.round(totalPnl * 100) / 100,
       winRate: Math.round(winRateRatio * 10000) / 100,
@@ -506,6 +537,13 @@ export class TradesService {
         trendAlignedCount: Number(s.trend_aligned_count ?? 0),
       },
     };
+
+    this.analyticsCache.set(cacheKey, {
+      data: result,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+    });
+
+    return result;
   }
 
   async streamExportCsv(userId: string, res: Response): Promise<void> {
