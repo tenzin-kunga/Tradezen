@@ -9,6 +9,8 @@ import { pool } from '../db';
 import { RegisterDto, LoginDto } from './dto';
 import type { Response } from 'express';
 import { BruteForceService } from '../common/services/brute-force.service';
+import { AuditService } from '../common/services/audit.service';
+import { SuspiciousLoginService } from '../common/services/suspicious-login.service';
 
 const SALT_ROUNDS = 12;
 
@@ -29,6 +31,8 @@ export class AuthService {
   constructor(
     private readonly jwt: JwtService,
     private readonly bruteForce: BruteForceService,
+    private readonly audit: AuditService,
+    private readonly suspiciousLogin: SuspiciousLoginService,
   ) {}
 
   private getJwtSecret(): string {
@@ -71,9 +75,12 @@ export class AuthService {
 
   async login(dto: LoginDto, response: Response) {
     const { identifier, password, remember_me = false } = dto;
+    const ip = response.req?.ip ?? 'unknown';
+    const userAgent = response.req?.headers['user-agent'];
 
     const lockedOut = await this.bruteForce.isLockedOut(identifier);
     if (lockedOut) {
+      await this.audit.log({ action: 'LOGIN_LOCKOUT', ip, userAgent, details: { identifier } });
       throw new UnauthorizedException('Account temporarily locked. Try again later.');
     }
 
@@ -82,18 +89,24 @@ export class AuthService {
       [identifier],
     );
     if ((res.rowCount ?? 0) === 0) {
-      await this.bruteForce.recordFailedAttempt(identifier, response.req?.ip ?? 'unknown');
+      await this.bruteForce.recordFailedAttempt(identifier, ip);
+      await this.audit.log({ action: 'LOGIN_FAILURE', ip, userAgent, details: { identifier } });
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const user = res.rows[0]!;
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
-      await this.bruteForce.recordFailedAttempt(identifier, response.req?.ip ?? 'unknown');
+      await this.bruteForce.recordFailedAttempt(identifier, ip);
+      await this.audit.log({ action: 'LOGIN_FAILURE', ip, userAgent, details: { identifier } });
       throw new UnauthorizedException('Invalid credentials');
     }
 
     await this.bruteForce.clearAttempts(identifier);
+
+    const flags = await this.suspiciousLogin.detectAnomalies(Number(user.id), ip);
+
+    await this.audit.log({ userId: Number(user.id), action: 'LOGIN_SUCCESS', ip, userAgent });
 
     const payload = {
       sub: user.id,
@@ -126,6 +139,7 @@ export class AuthService {
     return {
       access_token: accessToken,
       user: { id: user.id, email: user.email, username: user.username },
+      suspicious_flags: flags.length > 0 ? flags : undefined,
     };
   }
 

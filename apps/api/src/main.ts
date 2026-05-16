@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { runMigrations } from './db';
@@ -54,6 +55,31 @@ async function bootstrap() {
     origin: process.env.WEB_URL ?? 'http://localhost:3000',
     credentials: true,
   });
+
+  // ── Security Headers (Helmet) ───────────────────────────────────────────────
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'blob:'],
+          connectSrc: ["'self'", process.env.WEB_URL ?? 'http://localhost:3000'],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameSrc: ["'none'"],
+          upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+        },
+      },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // ── Middleware ──────────────────────────────────────────────────────────────
   app.use(cookieParser());
