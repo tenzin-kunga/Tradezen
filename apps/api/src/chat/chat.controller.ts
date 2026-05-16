@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ChatService } from './chat.service';
@@ -7,6 +8,7 @@ import { CreateChatDto } from './dto/create-chat.dto';
 
 @ApiTags('chat')
 @ApiBearerAuth()
+@Throttle({ default: { limit: 20, ttl: 60000 } })
 @Controller('chat')
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}

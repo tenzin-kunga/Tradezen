@@ -1,5 +1,6 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import type { Request } from 'express';
 import { AppController } from './app.controller';
@@ -11,9 +12,16 @@ import { TagsModule } from './tags/tags.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
+import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
     LoggerModule.forRoot({
       pinoHttp: {
         level: process.env.LOG_LEVEL ?? 'info',
@@ -44,7 +52,7 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
     ChatModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],
+  providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ThrottlerEventsGuard }],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

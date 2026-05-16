@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt';
 import { pool } from '../db';
 import { RegisterDto, LoginDto } from './dto';
 import type { Response } from 'express';
+import { BruteForceService } from '../common/services/brute-force.service';
 
 const SALT_ROUNDS = 12;
 
@@ -25,7 +26,10 @@ interface User {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly jwt: JwtService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly bruteForce: BruteForceService,
+  ) {}
 
   private getJwtSecret(): string {
     const secret = process.env.JWT_SECRET;
@@ -68,19 +72,28 @@ export class AuthService {
   async login(dto: LoginDto, response: Response) {
     const { identifier, password, remember_me = false } = dto;
 
+    const lockedOut = await this.bruteForce.isLockedOut(identifier);
+    if (lockedOut) {
+      throw new UnauthorizedException('Account temporarily locked. Try again later.');
+    }
+
     const res = await pool.query<User>(
       'SELECT id, email, username, password_hash FROM users WHERE email = $1 OR username = $1',
       [identifier],
     );
     if ((res.rowCount ?? 0) === 0) {
+      await this.bruteForce.recordFailedAttempt(identifier, response.req?.ip ?? 'unknown');
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const user = res.rows[0]!;
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
+      await this.bruteForce.recordFailedAttempt(identifier, response.req?.ip ?? 'unknown');
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    await this.bruteForce.clearAttempts(identifier);
 
     const payload = {
       sub: user.id,
