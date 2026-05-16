@@ -11,6 +11,8 @@ import { AppModule } from './app.module';
 import { runMigrations } from './db';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TimingInterceptor } from './common/interceptors/timing.interceptor';
+import { createExpressMiddleware } from '@trpc/server/adapters/express';
+import { appRouter, createContext } from './trpc';
 
 // ── Environment Validation ────────────────────────────────────────────────────
 // This function is temporarily disabled for development mode.
@@ -65,11 +67,15 @@ async function bootstrap() {
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", 'data:', 'blob:'],
-          connectSrc: ["'self'", process.env.WEB_URL ?? 'http://localhost:3000'],
+          connectSrc: [
+            "'self'",
+            process.env.WEB_URL ?? 'http://localhost:3000',
+          ],
           fontSrc: ["'self'"],
           objectSrc: ["'none'"],
           frameSrc: ["'none'"],
-          upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+          upgradeInsecureRequests:
+            process.env.NODE_ENV === 'production' ? [] : null,
         },
       },
       hsts: {
@@ -117,6 +123,15 @@ async function bootstrap() {
   const uploadsDir = join(process.cwd(), 'uploads');
   if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
   app.useStaticAssets(uploadsDir, { prefix: '/uploads' });
+
+  // ── tRPC Endpoint ───────────────────────────────────────────────────────────
+  app.use(
+    '/trpc',
+    createExpressMiddleware({
+      router: appRouter,
+      createContext,
+    }),
+  );
 
   // ── Database Migrations ─────────────────────────────────────────────────────
   await runMigrations();
