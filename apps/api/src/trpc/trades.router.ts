@@ -85,4 +85,11 @@ export const tradesRouter = router({
       const service = new TradesService();
       return service.getDailyPnl(ctx.userId, input.from, input.to);
     }),
+
+  getAdvancedAnalytics: protectedProcedure
+    .input(z.void())
+    .query(async ({ ctx }) => {
+      const service = new TradesService();
+      return service.getAdvancedAnalytics(ctx.userId);
+    }),
 });

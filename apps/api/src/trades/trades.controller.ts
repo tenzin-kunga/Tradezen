@@ -50,6 +50,12 @@ export class TradesController {
     return this.service.getAnalytics(userId);
   }
 
+  @Get('analytics/advanced')
+  @ApiOperation({ summary: 'Get advanced analytics with Sharpe, Sortino, Calmar ratios' })
+  getAdvancedAnalytics(@CurrentUser('id') userId: string) {
+    return this.service.getAdvancedAnalytics(userId);
+  }
+
   @Get('daily-pnl')
   @ApiOperation({ summary: 'Get daily PnL breakdown' })
   getDailyPnl(

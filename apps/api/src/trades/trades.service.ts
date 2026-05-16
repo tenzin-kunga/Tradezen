@@ -9,6 +9,40 @@ import type { Response } from 'express';
 
 const CSV_EXPORT_CHUNK = 500;
 
+function calculateSharpe(dailyReturns: number[], riskFreeRate = 0.05): number {
+  if (dailyReturns.length === 0) return 0;
+  const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
+  const variance = dailyReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / dailyReturns.length;
+  const std = Math.sqrt(variance);
+  if (std === 0) return 0;
+  return ((mean - riskFreeRate / 252) / std) * Math.sqrt(252);
+}
+
+function calculateSortino(dailyReturns: number[], riskFreeRate = 0.05): number {
+  if (dailyReturns.length === 0) return 0;
+  const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
+  const downsideReturns = dailyReturns.filter(r => r < 0);
+  if (downsideReturns.length === 0) return dailyReturns.length > 0 ? Infinity : 0;
+  const downsideVariance = downsideReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0) / downsideReturns.length;
+  const downsideStd = Math.sqrt(downsideVariance);
+  if (downsideStd === 0) return 0;
+  return ((mean - riskFreeRate / 252) / downsideStd) * Math.sqrt(252);
+}
+
+function calculateCalmar(totalPnl: number, maxDrawdown: number, tradingDays: number): number {
+  if (maxDrawdown === 0 || tradingDays === 0) return 0;
+  const annualReturn = (totalPnl / tradingDays) * 252;
+  return annualReturn / Math.abs(maxDrawdown);
+}
+
+function sampleEquityCurve(cumulativePnl: number[], targetPoints = 100) {
+  if (cumulativePnl.length <= targetPoints) return cumulativePnl;
+  const step = cumulativePnl.length / targetPoints;
+  return Array.from({ length: targetPoints }, (_, i) =>
+    cumulativePnl[Math.floor(i * step)]
+  );
+}
+
 function escapeCsvCell(val: unknown): string {
   if (val === null || val === undefined) return '';
   // eslint-disable-next-line @typescript-eslint/no-base-to-string
@@ -544,6 +578,144 @@ export class TradesService {
     });
 
     return result;
+  }
+
+  async getAdvancedAnalytics(userId: string) {
+    const [tradesRes, maxDdRes] = await Promise.all([
+      db.execute(sql`
+        SELECT pnl::float8 AS pnl, symbol, direction, trade_date, created_at
+        FROM trades WHERE user_id = ${userId}
+        ORDER BY created_at ASC, id ASC
+      `),
+      db.execute(sql`
+        WITH ordered AS (
+          SELECT ROW_NUMBER() OVER (ORDER BY created_at ASC, id ASC) AS rn,
+                 pnl::float8 AS pnl
+          FROM trades WHERE user_id = ${userId}
+        ),
+        cum AS (
+          SELECT rn, SUM(pnl) OVER (ORDER BY rn) AS eq FROM ordered
+        ),
+        peaked AS (
+          SELECT eq, MAX(eq) OVER (ORDER BY rn ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS peak
+          FROM cum
+        )
+        SELECT COALESCE(MAX(peak - eq), 0)::float8 AS max_drawdown FROM peaked
+      `),
+    ]);
+
+    const allTrades = tradesRes as any[];
+    if (allTrades.length === 0) {
+      return {
+        sharpeRatio: 0,
+        sortinoRatio: 0,
+        calmarRatio: 0,
+        currentStreak: { type: 'none' as const, count: 0 },
+        equityCurve: [],
+        topSymbols: [],
+        bottomSymbols: [],
+        winRateByDirection: {
+          buy: { rate: 0, count: 0 },
+          sell: { rate: 0, count: 0 },
+        },
+      };
+    }
+
+    const pnls = allTrades.map((t) => Number(t.pnl));
+    const totalPnl = pnls.reduce((a, b) => a + b, 0);
+    const maxDrawdown = Number((maxDdRes[0] as any)?.max_drawdown ?? 0);
+
+    const dailyReturns = pnls.map((pnl) => {
+      const prevEquity = pnls.slice(0, pnls.indexOf(pnl)).reduce((a, b) => a + b, 0);
+      return prevEquity !== 0 ? pnl / prevEquity : 0;
+    });
+
+    const sharpeRatio = calculateSharpe(dailyReturns);
+    const sortinoRatio = calculateSortino(dailyReturns);
+
+    const tradingDays = new Set(
+      allTrades
+        .filter((t) => t.trade_date)
+        .map((t) => new Date(t.trade_date).toDateString())
+    ).size || allTrades.length;
+
+    const calmarRatio = calculateCalmar(totalPnl, maxDrawdown, tradingDays);
+
+    let streakType: 'win' | 'loss' | 'none' = 'none';
+    let streakCount = 0;
+    for (let i = pnls.length - 1; i >= 0; i--) {
+      if (pnls[i] > 0) {
+        if (streakType === 'none') streakType = 'win';
+        if (streakType === 'win') streakCount++;
+        else break;
+      } else if (pnls[i] < 0) {
+        if (streakType === 'none') streakType = 'loss';
+        if (streakType === 'loss') streakCount++;
+        else break;
+      }
+    }
+
+    const cumulativePnl: number[] = [];
+    let running = 0;
+    for (const p of pnls) {
+      running += p;
+      cumulativePnl.push(running);
+    }
+
+    const sampledCurve = sampleEquityCurve(cumulativePnl, 100);
+    const startDate = allTrades[0]?.trade_date || allTrades[0]?.created_at;
+    const endDate = allTrades[allTrades.length - 1]?.trade_date || allTrades[allTrades.length - 1]?.created_at;
+    const equityCurve = sampledCurve.map((value, i) => ({
+      date: new Date(
+        new Date(startDate).getTime() +
+          ((new Date(endDate).getTime() - new Date(startDate).getTime()) * i) / (sampledCurve.length - 1 || 1)
+      ).toISOString().split('T')[0],
+      value: Math.round(value * 100) / 100,
+    }));
+
+    const symbolMap = new Map<string, { pnl: number; trades: number }>();
+    for (const t of allTrades) {
+      const sym = t.symbol || 'Unknown';
+      const existing = symbolMap.get(sym) || { pnl: 0, trades: 0 };
+      existing.pnl += Number(t.pnl);
+      existing.trades++;
+      symbolMap.set(sym, existing);
+    }
+
+    const sortedSymbols = Array.from(symbolMap.entries())
+      .map(([symbol, data]) => ({ symbol, pnl: Math.round(data.pnl * 100) / 100, trades: data.trades }))
+      .sort((a, b) => b.pnl - a.pnl);
+
+    const topSymbols = sortedSymbols.slice(0, 5);
+    const bottomSymbols = sortedSymbols.slice(-5).reverse();
+
+    const buyTrades = allTrades.filter((t) => t.direction === 'buy');
+    const sellTrades = allTrades.filter((t) => t.direction === 'sell');
+
+    const buyWins = buyTrades.filter((t) => Number(t.pnl) > 0).length;
+    const sellWins = sellTrades.filter((t) => Number(t.pnl) > 0).length;
+
+    const winRateByDirection = {
+      buy: {
+        rate: buyTrades.length > 0 ? Math.round((buyWins / buyTrades.length) * 10000) / 100 : 0,
+        count: buyTrades.length,
+      },
+      sell: {
+        rate: sellTrades.length > 0 ? Math.round((sellWins / sellTrades.length) * 10000) / 100 : 0,
+        count: sellTrades.length,
+      },
+    };
+
+    return {
+      sharpeRatio: Math.round(sharpeRatio * 100) / 100,
+      sortinoRatio: sortinoRatio === Infinity ? 999999 : Math.round(sortinoRatio * 100) / 100,
+      calmarRatio: Math.round(calmarRatio * 100) / 100,
+      currentStreak: { type: streakType, count: streakCount },
+      equityCurve,
+      topSymbols,
+      bottomSymbols,
+      winRateByDirection,
+    };
   }
 
   async streamExportCsv(userId: string, res: Response): Promise<void> {
