@@ -28,9 +28,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const res = exception.getResponse();
 
       if (typeof res === 'object' && res !== null) {
-        const obj = res as Record<string, any>;
-        message = obj.message ?? exception.message;
-        error = obj.error ?? 'Error';
+        const obj = res as Record<string, unknown>;
+        message = typeof obj.message === 'string' ? obj.message : exception.message;
+        error = typeof obj.error === 'string' ? obj.error : 'Error';
 
         if (status === HttpStatus.UNAUTHORIZED) {
           errorCode = ApiErrorCode.UNAUTHORIZED;
@@ -52,6 +52,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
         `Unhandled error: ${exception.message}`,
         exception.stack,
       );
+    } else {
+      this.logger.error(`Unknown exception type: ${typeof exception}`);
     }
 
     const apiResponse: ApiErrorResponse = {
@@ -59,7 +61,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       error,
       message,
       errorCode,
-      requestId: request.headers['x-request-id'] as string,
+      requestId: (request.headers['x-request-id'] as string) ?? undefined,
       timestamp: new Date().toISOString(),
       path: request.url,
     };

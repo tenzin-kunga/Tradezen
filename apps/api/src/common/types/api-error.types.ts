@@ -2,7 +2,7 @@ export interface ApiErrorResponse {
   statusCode: number;
   error: string;
   message: string | string[];
-  errorCode?: string;
+  errorCode?: ApiErrorCode;
   requestId?: string;
   timestamp: string;
   path?: string;
