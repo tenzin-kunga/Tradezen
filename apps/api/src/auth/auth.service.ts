@@ -80,7 +80,7 @@ export class AuthService {
 
     const lockedOut = await this.bruteForce.isLockedOut(identifier);
     if (lockedOut) {
-      await this.audit.log({ action: 'LOGIN_LOCKOUT', ip, userAgent, details: { identifier } });
+      await this.audit.log({ action: 'LOGIN_LOCKOUT', ip, userAgent, details: { identifier: identifier.substring(0, 2) + '***' } });
       throw new UnauthorizedException('Account temporarily locked. Try again later.');
     }
 
@@ -90,7 +90,7 @@ export class AuthService {
     );
     if ((res.rowCount ?? 0) === 0) {
       await this.bruteForce.recordFailedAttempt(identifier, ip);
-      await this.audit.log({ action: 'LOGIN_FAILURE', ip, userAgent, details: { identifier } });
+      await this.audit.log({ action: 'LOGIN_FAILURE', ip, userAgent, details: { identifier: identifier.substring(0, 2) + '***' } });
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -98,7 +98,7 @@ export class AuthService {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       await this.bruteForce.recordFailedAttempt(identifier, ip);
-      await this.audit.log({ action: 'LOGIN_FAILURE', ip, userAgent, details: { identifier } });
+      await this.audit.log({ action: 'LOGIN_FAILURE', ip, userAgent, details: { identifier: identifier.substring(0, 2) + '***' } });
       throw new UnauthorizedException('Invalid credentials');
     }
 
