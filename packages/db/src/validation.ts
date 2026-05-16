@@ -1,0 +1,86 @@
+import { z } from 'zod';
+
+// Trade schemas
+export const createTradeSchema = z.object({
+  symbol: z.string().min(2).max(20),
+  direction: z.enum(['buy', 'sell']),
+  entry: z.number().positive().max(99999999.99999999),
+  exit: z.number().positive().max(99999999.99999999),
+  lot: z.number().min(0.01).max(1000),
+  stop_loss: z.number().positive().max(99999999.99999999).nullish(),
+  take_profit: z.number().positive().max(99999999.99999999).nullish(),
+  strategy: z.string().max(100).nullish(),
+  notes: z.string().max(2000).nullish(),
+  fomo_check: z.boolean().optional(),
+  trend_alignment: z.boolean().optional(),
+  vengeance_trade: z.boolean().optional(),
+  contract_size: z.number().min(1).max(1000000).optional(),
+  trade_date: z.string().nullish(),
+  commission: z.number().min(0).max(10000).nullish(),
+});
+
+// Auth schemas
+export const loginSchema = z.object({
+  identifier: z.string().min(3).max(100),
+  password: z.string().min(8).max(128),
+  remember_me: z.boolean().optional(),
+});
+
+export const updateSettingsSchema = z.object({
+  initial_capital: z.number().min(0).max(10000000).optional(),
+  default_lot_size: z.number().min(0.01).max(1000).optional(),
+  timezone: z.string().max(50).optional(),
+  theme: z.enum(['dark', 'light']).optional(),
+});
+
+// Journal schemas
+export const journalMoodEnum = z.enum([
+  'great',
+  'good',
+  'neutral',
+  'bad',
+  'terrible',
+]);
+
+export const createJournalSchema = z.object({
+  date: z.string().datetime(),
+  pre_market_notes: z.string().max(5000).optional(),
+  post_market_notes: z.string().max(5000).optional(),
+  mood: journalMoodEnum.optional(),
+  market_conditions: z.string().max(2000).optional(),
+  lessons: z.string().max(5000).optional(),
+});
+
+// Tag schemas
+export const tagCategoryEnum = z.enum(['setup', 'condition', 'emotion']);
+
+export const createTagSchema = z.object({
+  name: z.string().min(1).max(30),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, {
+      message: 'Color must be a valid hex color (e.g., #888888)',
+    })
+    .optional(),
+  category: tagCategoryEnum.optional(),
+});
+
+// Chat schemas
+export const chatRoleEnum = z.enum(['system', 'user', 'assistant']);
+
+export const chatMessageSchema = z.object({
+  role: chatRoleEnum,
+  content: z.string().min(1).max(4000),
+  context: z.string().max(100).optional(),
+});
+
+// Export inferred types
+export type CreateTradeInput = z.infer<typeof createTradeSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
+export type CreateJournalInput = z.infer<typeof createJournalSchema>;
+export type CreateTagInput = z.infer<typeof createTagSchema>;
+export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
+export type JournalMood = z.infer<typeof journalMoodEnum>;
+export type TagCategory = z.infer<typeof tagCategoryEnum>;
+export type ChatRole = z.infer<typeof chatRoleEnum>;
