@@ -251,28 +251,31 @@ export class TradesService {
   }
 
   async remove(userId: string, id: string) {
-    return withTransaction(async (client) => {
-      const tradeRes = await client.query(
-        'SELECT * FROM trades WHERE id = $1 AND user_id = $2',
-        [id, userId],
-      );
-      if (tradeRes.rowCount === 0)
-        throw new NotFoundException(`Trade ${id} not found`);
-      const trade = tradeRes.rows[0];
+    const tradeRes = await pool.query(
+      'SELECT * FROM trades WHERE id = $1 AND user_id = $2',
+      [id, userId],
+    );
+    if (tradeRes.rowCount === 0)
+      throw new NotFoundException(`Trade ${id} not found`);
+    const trade = tradeRes.rows[0];
 
-      if (trade.chart_image) {
-        const imagePath = path.join(process.cwd(), trade.chart_image);
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
-        }
-      }
-
+    await withTransaction(async (client) => {
       await client.query('DELETE FROM trades WHERE id = $1 AND user_id = $2', [
         id,
         userId,
       ]);
-      return { deleted: true };
     });
+
+    if (trade.chart_image) {
+      const imagePath = path.join(process.cwd(), trade.chart_image);
+      try {
+        fs.unlinkSync(imagePath);
+      } catch {
+        // File already deleted or inaccessible — non-fatal
+      }
+    }
+
+    return { deleted: true };
   }
 
   async uploadImage(userId: string, id: string, filename: string) {
@@ -598,10 +601,7 @@ export class TradesService {
       return idx >= 0 ? (row[idx]?.trim() ?? '') : '';
     };
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
+    return withTransaction(async (client) => {
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
@@ -673,16 +673,8 @@ export class TradesService {
         }
       }
 
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      const message = err instanceof Error ? err.message : String(err);
-      errors.push(`Transaction failed: ${message}`);
-    } finally {
-      client.release();
-    }
-
-    return { imported, errors };
+      return { imported, errors };
+    });
   }
 
   private parseCsvLine(line: string): string[] {

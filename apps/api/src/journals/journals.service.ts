@@ -63,38 +63,32 @@ export class JournalsService {
   }
 
   async update(userId: string, id: string, dto: UpdateJournalDto) {
-    return withTransaction(async (client) => {
-      const checkRes = await client.query(
+    const fields: string[] = [];
+    const values: (string | number | null)[] = [];
+    let idx = 3;
+    for (const [key, val] of Object.entries(dto)) {
+      if (val !== undefined) {
+        fields.push(`${key} = $${idx}`);
+        values.push(val);
+        idx++;
+      }
+    }
+    if (!fields.length) {
+      const { rows } = await pool.query(
         'SELECT * FROM journals WHERE id = $1 AND user_id = $2',
         [id, userId],
       );
-      if (checkRes.rowCount === 0)
-        throw new NotFoundException('Journal entry not found');
-
-      const fields: string[] = [];
-      const values: (string | number | null)[] = [];
-      let idx = 3;
-      for (const [key, val] of Object.entries(dto)) {
-        if (val !== undefined) {
-          fields.push(`${key} = $${idx}`);
-          values.push(val);
-          idx++;
-        }
-      }
-      if (!fields.length) {
-        const { rows } = await client.query(
-          'SELECT * FROM journals WHERE id = $1 AND user_id = $2',
-          [id, userId],
-        );
-        return rows[0];
-      }
-      fields.push('updated_at = NOW()');
-      const { rows } = await client.query(
-        `UPDATE journals SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
-        [id, userId, ...values],
-      );
+      if (!rows[0]) throw new NotFoundException('Journal entry not found');
       return rows[0];
-    });
+    }
+    fields.push('updated_at = NOW()');
+    const result = await pool.query(
+      `UPDATE journals SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [id, userId, ...values],
+    );
+    if (result.rowCount === 0)
+      throw new NotFoundException('Journal entry not found');
+    return result.rows[0];
   }
 
   async remove(userId: string, id: string) {

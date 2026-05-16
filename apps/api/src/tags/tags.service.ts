@@ -54,36 +54,30 @@ export class TagsService {
   }
 
   async update(userId: string, id: string, dto: UpdateTagDto) {
-    return withTransaction(async (client) => {
-      const checkRes = await client.query(
+    const fields: string[] = [];
+    const values: (string | number | undefined)[] = [];
+    let idx = 3;
+    for (const [key, val] of Object.entries(dto)) {
+      if (val !== undefined) {
+        fields.push(`${key} = $${idx}`);
+        values.push(key === 'name' ? (val as string).trim() : val);
+        idx++;
+      }
+    }
+    if (!fields.length) {
+      const { rows } = await pool.query(
         'SELECT * FROM tags WHERE id = $1 AND user_id = $2',
         [id, userId],
       );
-      if (checkRes.rowCount === 0) throw new NotFoundException('Tag not found');
-
-      const fields: string[] = [];
-      const values: (string | number | undefined)[] = [];
-      let idx = 3;
-      for (const [key, val] of Object.entries(dto)) {
-        if (val !== undefined) {
-          fields.push(`${key} = $${idx}`);
-          values.push(key === 'name' ? (val as string).trim() : val);
-          idx++;
-        }
-      }
-      if (!fields.length) {
-        const { rows } = await client.query(
-          'SELECT * FROM tags WHERE id = $1 AND user_id = $2',
-          [id, userId],
-        );
-        return rows[0];
-      }
-      const { rows } = await client.query(
-        `UPDATE tags SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
-        [id, userId, ...values],
-      );
+      if (!rows[0]) throw new NotFoundException('Tag not found');
       return rows[0];
-    });
+    }
+    const result = await pool.query(
+      `UPDATE tags SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [id, userId, ...values],
+    );
+    if (result.rowCount === 0) throw new NotFoundException('Tag not found');
+    return result.rows[0];
   }
 
   async remove(userId: string, id: string) {

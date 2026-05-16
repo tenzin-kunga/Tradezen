@@ -27,13 +27,21 @@ export async function withTransaction<T>(
         // Ignore rollback errors
       }
 
-      const isRetryable =
-        error instanceof Error &&
-        (error.message.includes('deadlock') ||
-          error.message.includes('serializable') ||
-          error.message.includes('connection'));
+      const pgError = error as { code?: string };
+      const isRetryable = (err: unknown): boolean => {
+        if (!(err instanceof Error)) return false;
+        const pgErr = err as { code?: string };
+        if (pgErr.code === '40P01') return true;
+        if (pgErr.code === '40001') return true;
+        if (pgErr.code?.startsWith('08')) return true;
+        return (
+          err.message.includes('deadlock') ||
+          err.message.includes('serializable') ||
+          err.message.includes('connection')
+        );
+      };
 
-      if (!isRetryable || attempt === maxRetries) {
+      if (!isRetryable(error) || attempt === maxRetries) {
         logger.error(
           `Transaction failed (attempt ${attempt + 1}/${maxRetries + 1}): ${lastError.message}`,
         );
@@ -44,12 +52,13 @@ export async function withTransaction<T>(
         `Retrying transaction (attempt ${attempt + 1}/${maxRetries + 1})`,
       );
       await new Promise((resolve) =>
-        setTimeout(resolve, 100 * Math.pow(2, attempt)),
+        setTimeout(resolve, 1000 * Math.pow(2, attempt)),
       );
     } finally {
       client.release();
     }
   }
 
-  throw new Error('Transaction failed after all retries');
+  // Unreachable — loop always throws or returns
+  throw lastError!;
 }
