@@ -9,8 +9,6 @@ import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { runMigrations } from './db';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { TimingInterceptor } from './common/interceptors/timing.interceptor';
 
 // ── Environment Validation ────────────────────────────────────────────────────
@@ -40,18 +38,9 @@ function _validateEnv() {
   }
 }
 
-// Debug: Log environment state
-console.log('DEBUG: NODE_ENV =', process.env.NODE_ENV);
-console.log('DEBUG: JWT_SECRET exists =', !!process.env.JWT_SECRET);
-console.log(
-  'DEBUG: JWT_REFRESH_SECRET exists =',
-  !!process.env.JWT_REFRESH_SECRET,
-);
-
 // Run validation in production (skip in dev for convenience)
 // TEMPORARILY DISABLED FOR DEV MODE
 // if (process.env.NODE_ENV === 'production') {
-//   console.log('DEBUG: Running validation in production mode');
 //   validateEnv();
 // }
 
@@ -68,7 +57,6 @@ async function bootstrap() {
 
   // ── Middleware ──────────────────────────────────────────────────────────────
   app.use(cookieParser());
-  app.use(new RequestContextMiddleware().use);
 
   // ── Global Pipes ────────────────────────────────────────────────────────────
   app.useGlobalPipes(
@@ -84,7 +72,7 @@ async function bootstrap() {
 
   // ── Global Filters & Interceptors ──────────────────────────────────────────
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor(), new TimingInterceptor());
+  app.useGlobalInterceptors(new TimingInterceptor());
 
   // ── Swagger / OpenAPI ───────────────────────────────────────────────────────
   // Disable in production to avoid exposing API structure

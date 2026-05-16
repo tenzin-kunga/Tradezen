@@ -29,7 +29,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
       if (typeof res === 'object' && res !== null) {
         const obj = res as Record<string, unknown>;
-        message = typeof obj.message === 'string' ? obj.message : exception.message;
+        message =
+          typeof obj.message === 'string' ? obj.message : exception.message;
         error = typeof obj.error === 'string' ? obj.error : 'Error';
 
         if (status === HttpStatus.UNAUTHORIZED) {
@@ -61,7 +62,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       error,
       message,
       errorCode,
-      requestId: (request.headers['x-request-id'] as string) ?? undefined,
+      requestId: request.id,
       timestamp: new Date().toISOString(),
       path: request.url,
     };

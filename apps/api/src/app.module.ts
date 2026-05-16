@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
+import type { Request } from 'express';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TradesModule } from './trades/trades.module';
@@ -9,6 +10,7 @@ import { JournalsModule } from './journals/journals.module';
 import { TagsModule } from './tags/tags.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
+import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 
 @Module({
   imports: [
@@ -26,8 +28,8 @@ import { ChatModule } from './chat/chat.module';
                   ignore: 'pid,hostname',
                 },
               },
-        customProps: (req: any) => ({
-          requestId: (req as any).id,
+        customProps: (req: Request) => ({
+          requestId: req.id,
         }),
         redact: {
           paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'],
@@ -44,4 +46,8 @@ import { ChatModule } from './chat/chat.module';
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestContextMiddleware).forRoutes('*');
+  }
+}
