@@ -10,6 +10,8 @@ export class ThrottlerEventsGuard extends ThrottlerGuard {
     if (!result) {
       const { context } = requestProps;
       const req = context.switchToHttp().getRequest();
+      const res = context.switchToHttp().getResponse();
+      res.setHeader('Retry-After', Math.ceil(requestProps.ttl / 1000));
       this.logger.warn({
         event: 'rate_limit_exceeded',
         ip: req.ip,
