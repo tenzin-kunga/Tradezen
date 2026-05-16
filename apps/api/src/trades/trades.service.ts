@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { pool } from '../db';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
+import { withTransaction } from '../common/utils/transaction';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Response } from 'express';
@@ -41,59 +42,61 @@ function computeMaxConsecutive(pnls: number[]) {
 @Injectable()
 export class TradesService {
   async create(userId: string, dto: CreateTradeDto) {
-    const {
-      symbol,
-      direction,
-      entry,
-      exit,
-      lot,
-      stop_loss = null,
-      take_profit = null,
-      strategy = null,
-      notes = null,
-      fomo_check = false,
-      trend_alignment = false,
-      vengeance_trade = false,
-      trade_date = null,
-      commission = null,
-      contract_size = 100000,
-    } = dto;
-
-    const pnl =
-      direction === 'buy'
-        ? (exit - entry) * lot * contract_size
-        : (entry - exit) * lot * contract_size;
-
-    const netPnl = commission ? pnl - commission : pnl;
-
-    const res = await pool.query(
-      `INSERT INTO trades (
-        user_id, symbol, direction, entry_price, exit_price, lot_size, pnl,
-        stop_loss, take_profit, strategy, notes,
-        fomo_check, trend_alignment, vengeance_trade, trade_date, commission, contract_size
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
-      [
-        userId,
+    return withTransaction(async (client) => {
+      const {
         symbol,
         direction,
         entry,
         exit,
         lot,
-        netPnl,
-        stop_loss,
-        take_profit,
-        strategy,
-        notes,
-        fomo_check,
-        trend_alignment,
-        vengeance_trade,
-        trade_date,
-        commission,
-        contract_size,
-      ],
-    );
+        stop_loss = null,
+        take_profit = null,
+        strategy = null,
+        notes = null,
+        fomo_check = false,
+        trend_alignment = false,
+        vengeance_trade = false,
+        trade_date = null,
+        commission = null,
+        contract_size = 100000,
+      } = dto;
 
-    return res.rows[0];
+      const pnl =
+        direction === 'buy'
+          ? (exit - entry) * lot * contract_size
+          : (entry - exit) * lot * contract_size;
+
+      const netPnl = commission ? pnl - commission : pnl;
+
+      const res = await client.query(
+        `INSERT INTO trades (
+          user_id, symbol, direction, entry_price, exit_price, lot_size, pnl,
+          stop_loss, take_profit, strategy, notes,
+          fomo_check, trend_alignment, vengeance_trade, trade_date, commission, contract_size
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+        [
+          userId,
+          symbol,
+          direction,
+          entry,
+          exit,
+          lot,
+          netPnl,
+          stop_loss,
+          take_profit,
+          strategy,
+          notes,
+          fomo_check,
+          trend_alignment,
+          vengeance_trade,
+          trade_date,
+          commission,
+          contract_size,
+        ],
+      );
+
+      return res.rows[0];
+    });
   }
 
   async findAll(userId: string, query: QueryTradesDto) {
@@ -181,93 +184,113 @@ export class TradesService {
   }
 
   async update(userId: string, id: string, dto: UpdateTradeDto) {
-    // Get current trade
-    const current = await this.findOne(userId, id);
+    return withTransaction(async (client) => {
+      const currentRes = await client.query(
+        'SELECT * FROM trades WHERE id = $1 AND user_id = $2',
+        [id, userId],
+      );
+      if (currentRes.rowCount === 0)
+        throw new NotFoundException(`Trade ${id} not found`);
+      const current = currentRes.rows[0];
 
-    const symbol = dto.symbol ?? current.symbol;
-    const direction = dto.direction ?? current.direction;
-    const entry = dto.entry ?? Number(current.entry_price);
-    const exit = dto.exit ?? Number(current.exit_price);
-    const lot = dto.lot ?? Number(current.lot_size);
-    const contract_size =
-      dto.contract_size ?? Number(current.contract_size ?? 100000);
-    const commission =
-      dto.commission !== undefined
-        ? dto.commission
-        : Number(current.commission ?? 0);
+      const symbol = dto.symbol ?? current.symbol;
+      const direction = dto.direction ?? current.direction;
+      const entry = dto.entry ?? Number(current.entry_price);
+      const exit = dto.exit ?? Number(current.exit_price);
+      const lot = dto.lot ?? Number(current.lot_size);
+      const contract_size =
+        dto.contract_size ?? Number(current.contract_size ?? 100000);
+      const commission =
+        dto.commission !== undefined
+          ? dto.commission
+          : Number(current.commission ?? 0);
 
-    // Recalculate PnL
-    const pnl =
-      direction === 'buy'
-        ? (exit - entry) * lot * contract_size
-        : (entry - exit) * lot * contract_size;
-    const netPnl = commission ? pnl - commission : pnl;
+      const pnl =
+        direction === 'buy'
+          ? (exit - entry) * lot * contract_size
+          : (entry - exit) * lot * contract_size;
+      const netPnl = commission ? pnl - commission : pnl;
 
-    const res = await pool.query(
-      `UPDATE trades SET
-        symbol = $1, direction = $2, entry_price = $3, exit_price = $4,
-        lot_size = $5, pnl = $6, stop_loss = $7, take_profit = $8,
-        strategy = $9, notes = $10, fomo_check = $11, trend_alignment = $12,
-        vengeance_trade = $13, trade_date = $14, commission = $15,
-        contract_size = $16, updated_at = NOW()
-       WHERE id = $17 AND user_id = $18
-       RETURNING *`,
-      [
-        symbol,
-        direction,
-        entry,
-        exit,
-        lot,
-        netPnl,
-        dto.stop_loss !== undefined ? dto.stop_loss : current.stop_loss,
-        dto.take_profit !== undefined ? dto.take_profit : current.take_profit,
-        dto.strategy !== undefined ? dto.strategy : current.strategy,
-        dto.notes !== undefined ? dto.notes : current.notes,
-        dto.fomo_check !== undefined ? dto.fomo_check : current.fomo_check,
-        dto.trend_alignment !== undefined
-          ? dto.trend_alignment
-          : current.trend_alignment,
-        dto.vengeance_trade !== undefined
-          ? dto.vengeance_trade
-          : current.vengeance_trade,
-        dto.trade_date !== undefined ? dto.trade_date : current.trade_date,
-        commission,
-        contract_size,
-        id,
-        userId,
-      ],
-    );
+      const res = await client.query(
+        `UPDATE trades SET
+          symbol = $1, direction = $2, entry_price = $3, exit_price = $4,
+          lot_size = $5, pnl = $6, stop_loss = $7, take_profit = $8,
+          strategy = $9, notes = $10, fomo_check = $11, trend_alignment = $12,
+          vengeance_trade = $13, trade_date = $14, commission = $15,
+          contract_size = $16, updated_at = NOW()
+         WHERE id = $17 AND user_id = $18
+         RETURNING *`,
+        [
+          symbol,
+          direction,
+          entry,
+          exit,
+          lot,
+          netPnl,
+          dto.stop_loss !== undefined ? dto.stop_loss : current.stop_loss,
+          dto.take_profit !== undefined ? dto.take_profit : current.take_profit,
+          dto.strategy !== undefined ? dto.strategy : current.strategy,
+          dto.notes !== undefined ? dto.notes : current.notes,
+          dto.fomo_check !== undefined ? dto.fomo_check : current.fomo_check,
+          dto.trend_alignment !== undefined
+            ? dto.trend_alignment
+            : current.trend_alignment,
+          dto.vengeance_trade !== undefined
+            ? dto.vengeance_trade
+            : current.vengeance_trade,
+          dto.trade_date !== undefined ? dto.trade_date : current.trade_date,
+          commission,
+          contract_size,
+          id,
+          userId,
+        ],
+      );
 
-    return res.rows[0];
+      return res.rows[0];
+    });
   }
 
   async remove(userId: string, id: string) {
-    const trade = await this.findOne(userId, id);
+    return withTransaction(async (client) => {
+      const tradeRes = await client.query(
+        'SELECT * FROM trades WHERE id = $1 AND user_id = $2',
+        [id, userId],
+      );
+      if (tradeRes.rowCount === 0)
+        throw new NotFoundException(`Trade ${id} not found`);
+      const trade = tradeRes.rows[0];
 
-    // Remove chart image if exists
-    if (trade.chart_image) {
-      const imagePath = path.join(process.cwd(), trade.chart_image);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
+      if (trade.chart_image) {
+        const imagePath = path.join(process.cwd(), trade.chart_image);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
       }
-    }
 
-    await pool.query('DELETE FROM trades WHERE id = $1 AND user_id = $2', [
-      id,
-      userId,
-    ]);
-    return { deleted: true };
+      await client.query('DELETE FROM trades WHERE id = $1 AND user_id = $2', [
+        id,
+        userId,
+      ]);
+      return { deleted: true };
+    });
   }
 
   async uploadImage(userId: string, id: string, filename: string) {
-    await this.findOne(userId, id);
+    return withTransaction(async (client) => {
+      const checkRes = await client.query(
+        'SELECT * FROM trades WHERE id = $1 AND user_id = $2',
+        [id, userId],
+      );
+      if (checkRes.rowCount === 0)
+        throw new NotFoundException(`Trade ${id} not found`);
 
-    const imageUrl = `/uploads/${filename}`;
-    await pool.query(
-      'UPDATE trades SET chart_image = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
-      [imageUrl, id, userId],
-    );
-    return { chart_image: imageUrl };
+      const imageUrl = `/uploads/${filename}`;
+      await client.query(
+        'UPDATE trades SET chart_image = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
+        [imageUrl, id, userId],
+      );
+      return { chart_image: imageUrl };
+    });
   }
 
   async getDailyPnl(userId: string, from?: string, to?: string) {

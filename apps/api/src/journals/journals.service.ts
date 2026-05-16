@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { pool } from '../db';
 import { CreateJournalDto, UpdateJournalDto } from './dto';
+import { withTransaction } from '../common/utils/transaction';
 
 @Injectable()
 export class JournalsService {
@@ -62,33 +63,55 @@ export class JournalsService {
   }
 
   async update(userId: string, id: string, dto: UpdateJournalDto) {
-    await this.findOne(userId, id);
-    const fields: string[] = [];
-    const values: (string | number | null)[] = [];
-    let idx = 3;
-    for (const [key, val] of Object.entries(dto)) {
-      if (val !== undefined) {
-        fields.push(`${key} = $${idx}`);
-        values.push(val);
-        idx++;
+    return withTransaction(async (client) => {
+      const checkRes = await client.query(
+        'SELECT * FROM journals WHERE id = $1 AND user_id = $2',
+        [id, userId],
+      );
+      if (checkRes.rowCount === 0)
+        throw new NotFoundException('Journal entry not found');
+
+      const fields: string[] = [];
+      const values: (string | number | null)[] = [];
+      let idx = 3;
+      for (const [key, val] of Object.entries(dto)) {
+        if (val !== undefined) {
+          fields.push(`${key} = $${idx}`);
+          values.push(val);
+          idx++;
+        }
       }
-    }
-    if (!fields.length) return this.findOne(userId, id);
-    fields.push('updated_at = NOW()');
-    const { rows } = await pool.query(
-      `UPDATE journals SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
-      [id, userId, ...values],
-    );
-    return rows[0];
+      if (!fields.length) {
+        const { rows } = await client.query(
+          'SELECT * FROM journals WHERE id = $1 AND user_id = $2',
+          [id, userId],
+        );
+        return rows[0];
+      }
+      fields.push('updated_at = NOW()');
+      const { rows } = await client.query(
+        `UPDATE journals SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
+        [id, userId, ...values],
+      );
+      return rows[0];
+    });
   }
 
   async remove(userId: string, id: string) {
-    await this.findOne(userId, id);
-    await pool.query(`DELETE FROM journals WHERE id = $1 AND user_id = $2`, [
-      id,
-      userId,
-    ]);
-    return { deleted: true };
+    return withTransaction(async (client) => {
+      const checkRes = await client.query(
+        'SELECT * FROM journals WHERE id = $1 AND user_id = $2',
+        [id, userId],
+      );
+      if (checkRes.rowCount === 0)
+        throw new NotFoundException('Journal entry not found');
+
+      await client.query(
+        'DELETE FROM journals WHERE id = $1 AND user_id = $2',
+        [id, userId],
+      );
+      return { deleted: true };
+    });
   }
 
   async getStreak(userId: string) {

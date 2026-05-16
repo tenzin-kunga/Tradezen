@@ -6,6 +6,7 @@ import {
 import { pool } from '../db';
 import { CreateTagDto, UpdateTagDto } from './dto';
 import { TagCategory } from './dto/create-tag.dto';
+import { withTransaction } from '../common/utils/transaction';
 
 @Injectable()
 export class TagsService {
@@ -53,57 +54,85 @@ export class TagsService {
   }
 
   async update(userId: string, id: string, dto: UpdateTagDto) {
-    await this.findOne(userId, id);
-    const fields: string[] = [];
-    const values: (string | number | undefined)[] = [];
-    let idx = 3;
-    for (const [key, val] of Object.entries(dto)) {
-      if (val !== undefined) {
-        fields.push(`${key} = $${idx}`);
-        values.push(key === 'name' ? (val as string).trim() : val);
-        idx++;
+    return withTransaction(async (client) => {
+      const checkRes = await client.query(
+        'SELECT * FROM tags WHERE id = $1 AND user_id = $2',
+        [id, userId],
+      );
+      if (checkRes.rowCount === 0) throw new NotFoundException('Tag not found');
+
+      const fields: string[] = [];
+      const values: (string | number | undefined)[] = [];
+      let idx = 3;
+      for (const [key, val] of Object.entries(dto)) {
+        if (val !== undefined) {
+          fields.push(`${key} = $${idx}`);
+          values.push(key === 'name' ? (val as string).trim() : val);
+          idx++;
+        }
       }
-    }
-    if (!fields.length) return this.findOne(userId, id);
-    const { rows } = await pool.query(
-      `UPDATE tags SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
-      [id, userId, ...values],
-    );
-    return rows[0];
+      if (!fields.length) {
+        const { rows } = await client.query(
+          'SELECT * FROM tags WHERE id = $1 AND user_id = $2',
+          [id, userId],
+        );
+        return rows[0];
+      }
+      const { rows } = await client.query(
+        `UPDATE tags SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
+        [id, userId, ...values],
+      );
+      return rows[0];
+    });
   }
 
   async remove(userId: string, id: string) {
-    await this.findOne(userId, id);
-    await pool.query(`DELETE FROM tags WHERE id = $1 AND user_id = $2`, [
-      id,
-      userId,
-    ]);
-    return { deleted: true };
+    return withTransaction(async (client) => {
+      const checkRes = await client.query(
+        'SELECT * FROM tags WHERE id = $1 AND user_id = $2',
+        [id, userId],
+      );
+      if (checkRes.rowCount === 0) throw new NotFoundException('Tag not found');
+
+      await client.query(`DELETE FROM tags WHERE id = $1 AND user_id = $2`, [
+        id,
+        userId,
+      ]);
+      return { deleted: true };
+    });
   }
 
   async addTagToTrade(userId: string, tradeId: string, tagId: string) {
-    const tradeCheck = await pool.query(
-      `SELECT id FROM trades WHERE id = $1 AND user_id = $2`,
-      [tradeId, userId],
-    );
-    if (!tradeCheck.rows[0]) throw new NotFoundException('Trade not found');
-    await this.findOne(userId, tagId);
-    try {
-      await pool.query(
-        `INSERT INTO trade_tags (trade_id, tag_id) VALUES ($1, $2)`,
-        [tradeId, tagId],
+    return withTransaction(async (client) => {
+      const tradeCheck = await client.query(
+        `SELECT id FROM trades WHERE id = $1 AND user_id = $2`,
+        [tradeId, userId],
       );
-    } catch (err) {
-      if (
-        err &&
-        typeof err === 'object' &&
-        'code' in err &&
-        err.code === '23505'
-      )
-        return;
-      throw err;
-    }
-    return { tagged: true };
+      if (!tradeCheck.rows[0]) throw new NotFoundException('Trade not found');
+
+      const tagCheck = await client.query(
+        `SELECT * FROM tags WHERE id = $1 AND user_id = $2`,
+        [tagId, userId],
+      );
+      if (!tagCheck.rows[0]) throw new NotFoundException('Tag not found');
+
+      try {
+        await client.query(
+          `INSERT INTO trade_tags (trade_id, tag_id) VALUES ($1, $2)`,
+          [tradeId, tagId],
+        );
+      } catch (err) {
+        if (
+          err &&
+          typeof err === 'object' &&
+          'code' in err &&
+          err.code === '23505'
+        )
+          return { tagged: true };
+        throw err;
+      }
+      return { tagged: true };
+    });
   }
 
   async removeTagFromTrade(userId: string, tradeId: string, tagId: string) {
