@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { pool } from '../db';
 import { CreateTagDto, UpdateTagDto } from './dto';
+import { TagCategory } from './dto/create-tag.dto';
 
 @Injectable()
 export class TagsService {
@@ -16,7 +17,7 @@ export class TagsService {
           userId,
           dto.name.trim(),
           dto.color || '#888888',
-          dto.category || 'setup',
+          dto.category || TagCategory.SETUP,
         ],
       );
       return rows[0];

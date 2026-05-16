@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { CreateChatDto } from './dto/create-chat.dto';
+import { ChatRole } from './dto/chat-message.dto';
 
 type OpenRouterStreamHandlers = {
   onToken: (token: string) => void;
@@ -47,7 +48,7 @@ export class ChatService {
     const modelCandidates = this.buildModelCandidates(requestedModel);
     const systemPrompt = dto.systemPrompt?.trim();
     const messages = systemPrompt
-      ? [{ role: 'system', content: systemPrompt }, ...dto.messages]
+      ? [{ role: ChatRole.SYSTEM, content: systemPrompt }, ...dto.messages]
       : dto.messages;
     let lastError: string | null = null;
 
