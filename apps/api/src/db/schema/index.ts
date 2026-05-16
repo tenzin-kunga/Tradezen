@@ -12,6 +12,7 @@ import {
   integer,
   index,
   unique,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable(
@@ -158,3 +159,14 @@ export const auditLog = pgTable(
     index('idx_audit_log_created_at').on(table.createdAt),
   ],
 );
+
+export const analyticsSnapshots = pgTable('analytics_snapshots', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id),
+  snapshotDate: date('snapshot_date').notNull(),
+  metrics: jsonb('metrics').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  userDateIdx: index('idx_snapshots_user_date').on(table.userId, table.snapshotDate),
+  userDateUnique: uniqueIndex('uq_snapshots_user_date').on(table.userId, table.snapshotDate),
+}));

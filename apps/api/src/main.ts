@@ -6,8 +6,10 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { join } from 'path';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import cron from 'node-cron';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
+import { SnapshotService } from './analytics/snapshot.service';
 import { runMigrations } from './db';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TimingInterceptor } from './common/interceptors/timing.interceptor';
@@ -135,6 +137,14 @@ async function bootstrap() {
 
   // ── Database Migrations ─────────────────────────────────────────────────────
   await runMigrations();
+
+  // ── Nightly Analytics Snapshots ─────────────────────────────────────────────
+  const snapshotService = app.get(SnapshotService);
+  cron.schedule('0 23 * * *', async () => {
+    console.log('Running nightly analytics snapshots...');
+    await snapshotService.createAllSnapshots();
+    console.log('Nightly analytics snapshots completed');
+  });
 
   // ── Start Server ────────────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3001;

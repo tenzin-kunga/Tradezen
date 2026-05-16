@@ -13,6 +13,8 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
+import { SnapshotService } from './analytics/snapshot.service';
+import { BehavioralService } from './analytics/behavioral.service';
 
 @Module({
   imports: [
@@ -40,7 +42,11 @@ import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
           requestId: req.id,
         }),
         redact: {
-          paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'],
+          paths: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'res.headers.set-cookie',
+          ],
           censor: '**REDACTED**',
         },
       },
@@ -52,7 +58,13 @@ import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
     ChatModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }, { provide: APP_GUARD, useClass: ThrottlerEventsGuard }],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: ThrottlerEventsGuard },
+    SnapshotService,
+    BehavioralService,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

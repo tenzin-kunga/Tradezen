@@ -18,6 +18,7 @@ import { extname, join } from 'path';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TradesService } from './trades.service';
 import { BehavioralService } from '../analytics/behavioral.service';
+import { SnapshotService } from '../analytics/snapshot.service';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { Express, Response } from 'express';
@@ -34,6 +35,7 @@ export class TradesController {
   constructor(
     private readonly service: TradesService,
     private readonly behavioralService: BehavioralService,
+    private readonly snapshotService: SnapshotService,
   ) {}
 
   @Post()
@@ -89,6 +91,31 @@ export class TradesController {
     @Query('strategyB') strategyB: string,
   ) {
     return this.service.compareStrategies(userId, strategyA, strategyB);
+  }
+
+  @Post('analytics/snapshot')
+  @ApiOperation({ summary: 'Create an analytics snapshot' })
+  async createSnapshot(@Body('userId') userId: string) {
+    await this.snapshotService.createSnapshot(userId);
+    return { message: 'Snapshot created' };
+  }
+
+  @Get('analytics/snapshot')
+  @ApiOperation({ summary: 'Get an analytics snapshot by date' })
+  async getSnapshot(
+    @Query('userId') userId: string,
+    @Query('date') date: string,
+  ) {
+    return this.snapshotService.getSnapshot(userId, date);
+  }
+
+  @Get('analytics/snapshot/history')
+  @ApiOperation({ summary: 'Get analytics snapshot history' })
+  async getSnapshotHistory(
+    @Query('userId') userId: string,
+    @Query('days') days?: string,
+  ) {
+    return this.snapshotService.getSnapshotHistory(userId, days ? parseInt(days) : 30);
   }
 
   @Get('daily-pnl')
