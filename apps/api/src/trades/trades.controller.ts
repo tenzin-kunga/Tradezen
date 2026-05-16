@@ -17,6 +17,7 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TradesService } from './trades.service';
+import { BehavioralService } from '../analytics/behavioral.service';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { Express, Response } from 'express';
@@ -30,7 +31,10 @@ interface ImportResult {
 @ApiBearerAuth()
 @Controller('trades')
 export class TradesController {
-  constructor(private readonly service: TradesService) {}
+  constructor(
+    private readonly service: TradesService,
+    private readonly behavioralService: BehavioralService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new trade' })
@@ -54,6 +58,15 @@ export class TradesController {
   @ApiOperation({ summary: 'Get advanced analytics with Sharpe, Sortino, Calmar ratios' })
   getAdvancedAnalytics(@CurrentUser('id') userId: string) {
     return this.service.getAdvancedAnalytics(userId);
+  }
+
+  @Get('analytics/behavioral')
+  @ApiOperation({ summary: 'Get behavioral analytics: FOMO, revenge trading, time patterns' })
+  getBehavioralAnalytics(
+    @CurrentUser('id') userId: string,
+    @Query('days') days?: string,
+  ) {
+    return this.behavioralService.analyzeBehavior(userId, days ? parseInt(days) : 90);
   }
 
   @Get('daily-pnl')

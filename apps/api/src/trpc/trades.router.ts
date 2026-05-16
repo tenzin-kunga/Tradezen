@@ -2,6 +2,7 @@ import { router, protectedProcedure } from './index';
 import { createTradeSchema } from '@tradezen/db';
 import { z } from 'zod';
 import { TradesService } from '../trades/trades.service';
+import { BehavioralService } from '../analytics/behavioral.service';
 import type { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from '../trades/dto';
 
 const queryTradesSchema = z.object({
@@ -91,5 +92,12 @@ export const tradesRouter = router({
     .query(async ({ ctx }) => {
       const service = new TradesService();
       return service.getAdvancedAnalytics(ctx.userId);
+    }),
+
+  getBehavioralAnalytics: protectedProcedure
+    .input(z.object({ days: z.number().optional() }))
+    .query(async ({ ctx, input }) => {
+      const service = new BehavioralService();
+      return service.analyzeBehavior(ctx.userId, input.days || 90);
     }),
 });
