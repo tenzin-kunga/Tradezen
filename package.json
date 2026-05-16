@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "prettier": "^3.7.4",
+    "styled-jsx": "^5.1.6",
     "turbo": "^2.9.3",
     "typescript": "5.9.2"
   },

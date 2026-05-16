@@ -1,30 +1,61 @@
-import { Injectable, ConflictException, UnauthorizedException } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
-import * as bcrypt from "bcrypt";
-import { pool } from "../db";
-import { RegisterDto, LoginDto } from "./dto";
-import type { Response } from "express";
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { pool } from '../db';
+import { RegisterDto, LoginDto } from './dto';
+import type { Response } from 'express';
 
 const SALT_ROUNDS = 12;
+
+interface User {
+  id: string;
+  email: string;
+  username: string;
+  password_hash?: string;
+  created_at: Date;
+  initial_capital?: number;
+  default_lot_size?: number;
+  timezone?: string;
+  theme?: string;
+}
 
 @Injectable()
 export class AuthService {
   constructor(private readonly jwt: JwtService) {}
 
+  private getJwtSecret(): string {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new UnauthorizedException('JWT configuration missing');
+    }
+    return secret;
+  }
+
+  private getRefreshJwtSecret(): string {
+    const secret = process.env.JWT_REFRESH_SECRET;
+    if (!secret) {
+      throw new UnauthorizedException('JWT configuration missing');
+    }
+    return secret;
+  }
+
   async register(dto: RegisterDto) {
     const { email, username, password } = dto;
 
-    // Check existing
-    const existing = await pool.query(
-      "SELECT id FROM users WHERE email = $1 OR username = $2",
+    const existing = await pool.query<User>(
+      'SELECT id FROM users WHERE email = $1 OR username = $2',
       [email, username],
     );
-    if (existing.rowCount && existing.rowCount > 0) {
-      throw new ConflictException("Email or username already taken");
+    if ((existing.rowCount ?? 0) > 0) {
+      throw new ConflictException('Email or username already taken');
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const res = await pool.query(
+    const res = await pool.query<User>(
       `INSERT INTO users (email, username, password_hash)
        VALUES ($1, $2, $3)
        RETURNING id, email, username, created_at`,
@@ -37,40 +68,46 @@ export class AuthService {
   async login(dto: LoginDto, response: Response) {
     const { identifier, password, remember_me = false } = dto;
 
-    const res = await pool.query(
-      "SELECT id, email, username, password_hash FROM users WHERE email = $1 OR username = $1",
+    const res = await pool.query<User>(
+      'SELECT id, email, username, password_hash FROM users WHERE email = $1 OR username = $1',
       [identifier],
     );
-    if (res.rowCount === 0) {
-      throw new UnauthorizedException("Invalid credentials");
+    if ((res.rowCount ?? 0) === 0) {
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    const user = res.rows[0];
+    const user = res.rows[0]!;
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
-      throw new UnauthorizedException("Invalid credentials");
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { sub: user.id, email: user.email, username: user.username };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      username: user.username,
+    };
+
+    const jwtSecret = this.getJwtSecret();
+    const refreshSecret = this.getRefreshJwtSecret();
 
     const accessToken = this.jwt.sign(payload, {
-      secret: process.env.JWT_SECRET ?? "tradezen-dev-secret",
-      expiresIn: "15m",
+      secret: jwtSecret,
+      expiresIn: '15m',
     });
 
     const refreshPayload = { ...payload, remember_me };
     const refreshToken = this.jwt.sign(refreshPayload, {
-      secret: process.env.JWT_REFRESH_SECRET ?? "tradezen-dev-refresh-secret",
-      expiresIn: "7d",
+      secret: refreshSecret,
+      expiresIn: '7d',
     });
 
-    // Set refresh token as HTTP-only cookie
-    response.cookie("refresh_token", refreshToken, {
+    response.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: remember_me ? 7 * 24 * 60 * 60 * 1000 : undefined,
-      path: "/",
+      path: '/',
     });
 
     return {
@@ -81,47 +118,55 @@ export class AuthService {
 
   async refresh(refreshToken: string, response: Response) {
     if (!refreshToken) {
-      throw new UnauthorizedException("No refresh token");
+      throw new UnauthorizedException('No refresh token');
     }
 
-    let payload: any;
+    let payload: { sub: string; remember_me?: boolean };
     try {
+      const refreshSecret = this.getRefreshJwtSecret();
       payload = this.jwt.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET ?? "tradezen-dev-refresh-secret",
+        secret: refreshSecret,
       });
     } catch {
-      throw new UnauthorizedException("Invalid refresh token");
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
-    // Verify user still exists
-    const res = await pool.query(
-      "SELECT id, email, username FROM users WHERE id = $1",
+    const res = await pool.query<User>(
+      'SELECT id, email, username FROM users WHERE id = $1',
       [payload.sub],
     );
-    if (res.rowCount === 0) {
-      throw new UnauthorizedException("User not found");
+    if ((res.rowCount ?? 0) === 0) {
+      throw new UnauthorizedException('User not found');
     }
 
-    const user = res.rows[0];
+    const user = res.rows[0]!;
     const rememberMe = payload.remember_me === true;
-    const newPayload = { sub: user.id, email: user.email, username: user.username, remember_me: rememberMe };
+    const newPayload = {
+      sub: user.id,
+      email: user.email,
+      username: user.username,
+      remember_me: rememberMe,
+    };
+
+    const jwtSecret = this.getJwtSecret();
+    const refreshSecret = this.getRefreshJwtSecret();
 
     const accessToken = this.jwt.sign(newPayload, {
-      secret: process.env.JWT_SECRET ?? "tradezen-dev-secret",
-      expiresIn: "15m",
+      secret: jwtSecret,
+      expiresIn: '15m',
     });
 
     const newRefreshToken = this.jwt.sign(newPayload, {
-      secret: process.env.JWT_REFRESH_SECRET ?? "tradezen-dev-refresh-secret",
-      expiresIn: "7d",
+      secret: refreshSecret,
+      expiresIn: '7d',
     });
 
-    response.cookie("refresh_token", newRefreshToken, {
+    response.cookie('refresh_token', newRefreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : undefined,
-      path: "/",
+      path: '/',
     });
 
     return {
@@ -131,19 +176,27 @@ export class AuthService {
   }
 
   async getMe(userId: string) {
-    const res = await pool.query(
-      "SELECT id, email, username, created_at, initial_capital, default_lot_size, timezone, theme FROM users WHERE id = $1",
+    const res = await pool.query<User>(
+      'SELECT id, email, username, created_at, initial_capital, default_lot_size, timezone, theme FROM users WHERE id = $1',
       [userId],
     );
-    if (res.rowCount === 0) {
-      throw new UnauthorizedException("User not found");
+    if ((res.rowCount ?? 0) === 0) {
+      throw new UnauthorizedException('User not found');
     }
     return res.rows[0];
   }
 
-  async updateSettings(userId: string, dto: { initial_capital?: number; default_lot_size?: number; timezone?: string; theme?: string }) {
+  async updateSettings(
+    userId: string,
+    dto: {
+      initial_capital?: number;
+      default_lot_size?: number;
+      timezone?: string;
+      theme?: string;
+    },
+  ) {
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | undefined)[] = [];
     let idx = 1;
 
     if (dto.initial_capital !== undefined) {
@@ -168,15 +221,15 @@ export class AuthService {
     }
 
     values.push(userId);
-    const res = await pool.query(
-      `UPDATE users SET ${fields.join(", ")} WHERE id = $${idx} RETURNING id, email, username, created_at, initial_capital, default_lot_size, timezone, theme`,
+    const res = await pool.query<User>(
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idx} RETURNING id, email, username, created_at, initial_capital, default_lot_size, timezone, theme`,
       values,
     );
     return res.rows[0];
   }
 
   async logout(response: Response) {
-    response.clearCookie("refresh_token", { path: "/" });
-    return { message: "Logged out" };
+    response.clearCookie('refresh_token', { path: '/' });
+    return { message: 'Logged out' };
   }
 }

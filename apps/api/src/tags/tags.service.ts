@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
-import { pool } from "../db";
-import { CreateTagDto, UpdateTagDto } from "./dto";
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+import { pool } from '../db';
+import { CreateTagDto, UpdateTagDto } from './dto';
 
 @Injectable()
 export class TagsService {
@@ -8,11 +12,22 @@ export class TagsService {
     try {
       const { rows } = await pool.query(
         `INSERT INTO tags (user_id, name, color, category) VALUES ($1, $2, $3, $4) RETURNING *`,
-        [userId, dto.name.trim(), dto.color || "#888888", dto.category || "setup"],
+        [
+          userId,
+          dto.name.trim(),
+          dto.color || '#888888',
+          dto.category || 'setup',
+        ],
       );
       return rows[0];
-    } catch (err: any) {
-      if (err.code === "23505") throw new ConflictException("Tag with this name already exists");
+    } catch (err) {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        err.code === '23505'
+      )
+        throw new ConflictException('Tag with this name already exists');
       throw err;
     }
   }
@@ -32,25 +47,25 @@ export class TagsService {
       `SELECT * FROM tags WHERE id = $1 AND user_id = $2`,
       [userId, id],
     );
-    if (!rows[0]) throw new NotFoundException("Tag not found");
+    if (!rows[0]) throw new NotFoundException('Tag not found');
     return rows[0];
   }
 
   async update(userId: string, id: string, dto: UpdateTagDto) {
     await this.findOne(userId, id);
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | undefined)[] = [];
     let idx = 3;
     for (const [key, val] of Object.entries(dto)) {
       if (val !== undefined) {
         fields.push(`${key} = $${idx}`);
-        values.push(key === "name" ? (val as string).trim() : val);
+        values.push(key === 'name' ? (val as string).trim() : val);
         idx++;
       }
     }
     if (!fields.length) return this.findOne(userId, id);
     const { rows } = await pool.query(
-      `UPDATE tags SET ${fields.join(", ")} WHERE id = $1 AND user_id = $2 RETURNING *`,
+      `UPDATE tags SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
       [id, userId, ...values],
     );
     return rows[0];
@@ -58,30 +73,52 @@ export class TagsService {
 
   async remove(userId: string, id: string) {
     await this.findOne(userId, id);
-    await pool.query(`DELETE FROM tags WHERE id = $1 AND user_id = $2`, [id, userId]);
+    await pool.query(`DELETE FROM tags WHERE id = $1 AND user_id = $2`, [
+      id,
+      userId,
+    ]);
     return { deleted: true };
   }
 
   async addTagToTrade(userId: string, tradeId: string, tagId: string) {
-    // verify ownership
-    const tradeCheck = await pool.query(`SELECT id FROM trades WHERE id = $1 AND user_id = $2`, [tradeId, userId]);
-    if (!tradeCheck.rows[0]) throw new NotFoundException("Trade not found");
+    const tradeCheck = await pool.query(
+      `SELECT id FROM trades WHERE id = $1 AND user_id = $2`,
+      [tradeId, userId],
+    );
+    if (!tradeCheck.rows[0]) throw new NotFoundException('Trade not found');
     await this.findOne(userId, tagId);
     try {
-      await pool.query(`INSERT INTO trade_tags (trade_id, tag_id) VALUES ($1, $2)`, [tradeId, tagId]);
-    } catch (err: any) {
-      if (err.code === "23505") return; // already tagged
+      await pool.query(
+        `INSERT INTO trade_tags (trade_id, tag_id) VALUES ($1, $2)`,
+        [tradeId, tagId],
+      );
+    } catch (err) {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        err.code === '23505'
+      )
+        return;
       throw err;
     }
     return { tagged: true };
   }
 
   async removeTagFromTrade(userId: string, tradeId: string, tagId: string) {
-    await pool.query(`DELETE FROM trade_tags WHERE trade_id = $1 AND tag_id = $2`, [tradeId, tagId]);
+    await pool.query(
+      `DELETE FROM trade_tags WHERE trade_id = $1 AND tag_id = $2`,
+      [tradeId, tagId],
+    );
     return { untagged: true };
   }
 
-  async getTradesForTag(userId: string, tagId: string, limit: number, offset: number) {
+  async getTradesForTag(
+    userId: string,
+    tagId: string,
+    limit: number,
+    offset: number,
+  ) {
     const safeLimit = Math.min(100, Math.max(1, limit));
     const safeOffset = Math.max(0, offset);
 

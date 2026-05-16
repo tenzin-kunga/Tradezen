@@ -1,22 +1,292 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [develop]
+    branches: [main, develop]
   pull_request:
     branches: [main]
 
+env:
+  NODE_VERSION: '20'
+
+# ── Jobs ─────────────────────────────────────────────────────────────────────
 jobs:
-  ci:
+  # ── 1. SECURITY AUDIT ─────────────────────────────────────────────────────
+  security:
+    name: Security Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run check-types
-      - run: npm test --workspaces --if-present
-      - run: npm run build
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # NPM audit — reports vulnerabilities, doesn't fail build (can be configured to fail)
+      - name: Run npm audit
+        run: |
+          npm audit --audit-level=moderate || true
+          npm audit --json > npm-audit.json || true
+
+      - name: Upload npm audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: npm-audit.json
+          retention-days: 30
+
+      # Trivy — filesystem vulnerability scanner (JS/TS deps, OS packages)
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy scan results to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      # Check for hardcoded secrets (git-secrets, gitleaks pattern)
+      - name: Scan for hardcoded secrets
+        run: |
+          echo "Scanning for potential secrets in codebase..."
+          # Basic patterns — extend as needed
+          grep -r "sk-or-v1-" . --include="*.ts" --include="*.js" --include="*.env*" || true
+          grep -r "JWT_SECRET.*tradezen-dev-secret" . --include="*.ts" || true
+          grep -r "DB_PASSWORD.*pass" . --include="*.ts" --include="*.yml" || true
+        continue-on-error: true
+
+  # ── 2. LINT & TYPE CHECK ──────────────────────────────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript type check
+        run: npm run check-types
+
+  # ── 3. UNIT TESTS ──────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint]
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Jest tests with coverage
+        run: npm test --workspaces --if-present --coverage
+
+      - name: Upload coverage to Codecov
+        if: matrix.node-version == '20' && github.ref == 'refs/heads/main'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/**/lcov.info
+          fail_ci_if_error: false
+          flags: unittests
+          version: 'v4'
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.node-version }}
+          path: |
+            ./coverage
+            ./junit.xml
+          retention-days: 14
+
+  # ── 4. E2E TESTS ───────────────────────────────────────────────────────────
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tradezen_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    env:
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: tradezen_test
+      JWT_SECRET: test-jwt-secret
+      JWT_REFRESH_SECRET: test-refresh-secret
+      WEB_URL: http://localhost:3000
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run database migrations
+        run: npm run migrate --workspace=@tradezen/api
+
+      - name: Run E2E tests
+        run: npm run test:e2e --workspace=@tradezen/api
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: ./coverage
+          retention-days: 14
+
+  # ── 5. BUILD & DOCKERIZE ──────────────────────────────────────────────────
+  build:
+    name: Build & Dockerize
+    runs-on: ubuntu-latest
+    needs: [test, e2e, security]
+    if: github.ref == 'refs/heads/main'  # Only on main branch
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/tradezen-api
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            latest
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/api
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/tradezen-api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/tradezen-api:${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/tradezen-api:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/tradezen-api:buildcache,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Scan built image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          scan-ref: ${{ secrets.DOCKERHUB_USERNAME }}/tradezen-api:latest
+          format: 'sarif'
+          output: 'trivy-image.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
+      - name: Upload Trivy image scan
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-image.sarif'
+
+  # ── 6. DEPLOYMENT ──────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    concurrency: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          echo "Triggering Render deployment..."
+          curl -X POST "https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys" \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache":true}'
+
+      - name: Deploy to Vercel (Web)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        run: |
+          echo "Triggering Vercel deployment..."
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel deploy --yes --prod --token=$VERCEL_TOKEN
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          echo "Deployment completed with status: ${{ job.status }}"
+
+# ── Permissions ──────────────────────────────────────────────────────────────
+permissions:
+  contents: read
+  security-events: write  # Required for CodeQL/Trivy SARIF uploads
+  actions: read

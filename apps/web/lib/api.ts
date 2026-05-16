@@ -204,6 +204,16 @@ export const exportCsv = async () => {
   return res.text();
 };
 
+export const importCsv = async (file: File): Promise<{ imported: number; errors: string[] }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await authFetch(`${API}/trades/import/csv`, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse<{ imported: number; errors: string[] }>(res);
+};
+
 // ─── Journals ──────────────────────────────────────
 
 export const createJournal = async (data: Record<string, any>) => {

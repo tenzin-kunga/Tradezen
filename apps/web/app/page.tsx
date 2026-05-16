@@ -49,44 +49,41 @@ export default function Dashboard() {
   const recent = trades.slice(0, 5);
 
   const pnlStr = analytics ? fmt(analytics.totalPnl) : "--";
-  const pnlColor = analytics ? (analytics.totalPnl >= 0 ? "#22c55e" : "#ef4444") : "#ffffff";
+  const pnlColor = analytics ? (analytics.totalPnl >= 0 ? "#10b981" : "#ef4444") : undefined;
   const winRateStr = analytics ? `${analytics.winRate}%` : "--";
   const pfStr = analytics ? String(analytics.profitFactor) : "--";
   const rrStr = analytics ? (analytics.avgRR > 0 ? `1:${analytics.avgRR.toFixed(1)}` : "--") : "--";
 
   return (
     <div style={{ minHeight: "100%" }}>
-      {/* Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, marginBottom: 1 }}>
-        <StatCard label="TOTAL P&L" value={loading ? "..." : pnlStr} valueColor={pnlColor} />
-        <StatCard label="WIN RATE" value={loading ? "..." : winRateStr} />
-        <StatCard label="PROFIT FACTOR" value={loading ? "..." : pfStr} />
-        <StatCard label="AVG R:R" value={loading ? "..." : rrStr} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+        <div className="fade-up"><StatCard label="TOTAL P&L" value={loading ? "..." : pnlStr} valueColor={pnlColor} /></div>
+        <div className="fade-up"><StatCard label="WIN RATE" value={loading ? "..." : winRateStr} /></div>
+        <div className="fade-up"><StatCard label="PROFIT FACTOR" value={loading ? "..." : pfStr} /></div>
+        <div className="fade-up"><StatCard label="AVG R:R" value={loading ? "..." : rrStr} /></div>
       </div>
 
-      {/* Equity Chart */}
-      <div style={{ marginTop: 1 }}>
+      <div className="fade-up" style={{ marginBottom: 16 }}>
         <EquityChart data={equityData} />
       </div>
 
-      {/* Recent Trades */}
-      <div style={{ marginTop: 1, background: "#1c1c1c", border: "1px solid #2a2a2a", padding: 24 }}>
+      <div className="glass-card p-6 fade-up" style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <span style={{ color: "#888", fontSize: 11, letterSpacing: "0.12em", fontWeight: 700, textTransform: "uppercase" }}>
+          <span className="label-caps">
             RECENT TRADES
           </span>
-          <Link href="/trades" style={{ color: "#888", fontSize: 11, letterSpacing: "0.1em", textDecoration: "none" }}>
-            VIEW ALL TRADES
+          <Link href="/trades" className="btn-glass" style={{ textDecoration: "none" }}>
+            VIEW ALL
           </Link>
         </div>
         {recent.length === 0 ? (
-          <p style={{ color: "#888", fontSize: 12, margin: 0 }}>No trades logged yet.</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 12, margin: 0 }}>No trades logged yet.</p>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #2a2a2a" }}>
+              <tr style={{ borderBottom: "1px solid var(--border)" }}>
                 {["SYMBOL", "DIRECTION", "RESULT", "EXIT PRICE", "NET P&L"].map((h) => (
-                  <th key={h} style={{ color: "#888", fontWeight: 700, letterSpacing: "0.1em", textAlign: "left", paddingBottom: 12, paddingRight: 16, fontSize: 10, textTransform: "uppercase" }}>
+                  <th key={h} className="label-caps" style={{ textAlign: "left", paddingBottom: 12, paddingRight: 16 }}>
                     {h}
                   </th>
                 ))}
@@ -97,16 +94,16 @@ export default function Dashboard() {
                 const isWin = t.pnl >= 0;
                 const isLong = t.direction === "buy";
                 return (
-                  <tr key={t.id} style={{ borderBottom: "1px solid #2a2a2a" }}>
-                    <td style={{ padding: "14px 16px 14px 0", color: "#fff", fontWeight: 700 }}>{t.symbol}</td>
-                    <td style={{ padding: "14px 16px 14px 0", color: isLong ? "#fff" : "#ef4444", fontWeight: 700 }}>
+                  <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: "16px 16px 16px 0", fontWeight: 700 }}>{t.symbol}</td>
+                    <td style={{ padding: "16px 16px 16px 0", fontWeight: 700, color: isLong ? "#10b981" : "#ef4444" }}>
                       {isLong ? "LONG" : "SHORT"}
                     </td>
-                    <td style={{ padding: "14px 16px 14px 0", color: isWin ? "#fff" : "#ef4444", fontWeight: 700 }}>
-                      {isWin ? "PROFIT" : "LOSS"}
+                    <td style={{ padding: "16px 16px 16px 0", fontWeight: 700, color: isWin ? "#10b981" : "#ef4444" }}>
+                      {isWin ? "WIN" : "LOSS"}
                     </td>
-                    <td style={{ padding: "14px 16px 14px 0", color: "#fff" }}>{t.exit_price}</td>
-                    <td style={{ padding: "14px 0 14px 0", color: isWin ? "#22c55e" : "#ef4444", fontWeight: 700 }}>
+                    <td className="mono-data" style={{ padding: "16px 16px 16px 0" }}>{t.exit_price}</td>
+                    <td className="mono-data" style={{ padding: "16px 0 16px 0", fontWeight: 700, color: isWin ? "#10b981" : "#ef4444" }}>
                       {fmt(t.pnl)}
                     </td>
                   </tr>

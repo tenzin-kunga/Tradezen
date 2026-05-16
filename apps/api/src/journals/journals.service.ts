@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { pool } from "../db";
-import { CreateJournalDto, UpdateJournalDto } from "./dto";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { pool } from '../db';
+import { CreateJournalDto, UpdateJournalDto } from './dto';
 
 @Injectable()
 export class JournalsService {
@@ -16,7 +16,15 @@ export class JournalsService {
          lessons = COALESCE(EXCLUDED.lessons, journals.lessons),
          updated_at = NOW()
        RETURNING *`,
-      [userId, dto.date, dto.pre_market_notes, dto.post_market_notes, dto.mood, dto.market_conditions, dto.lessons],
+      [
+        userId,
+        dto.date,
+        dto.pre_market_notes,
+        dto.post_market_notes,
+        dto.mood,
+        dto.market_conditions,
+        dto.lessons,
+      ],
     );
     return rows[0];
   }
@@ -29,7 +37,10 @@ export class JournalsService {
       `SELECT * FROM journals WHERE user_id = $1 ORDER BY date DESC LIMIT $2 OFFSET $3`,
       [userId, safeLimit, safeOffset],
     );
-    const countResult = await pool.query(`SELECT COUNT(*) FROM journals WHERE user_id = $1`, [userId]);
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM journals WHERE user_id = $1`,
+      [userId],
+    );
     return { data: rows, total: Number(countResult.rows[0].count) };
   }
 
@@ -46,14 +57,14 @@ export class JournalsService {
       `SELECT * FROM journals WHERE id = $1 AND user_id = $2`,
       [userId, id],
     );
-    if (!rows[0]) throw new NotFoundException("Journal entry not found");
+    if (!rows[0]) throw new NotFoundException('Journal entry not found');
     return rows[0];
   }
 
   async update(userId: string, id: string, dto: UpdateJournalDto) {
     await this.findOne(userId, id);
     const fields: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | null)[] = [];
     let idx = 3;
     for (const [key, val] of Object.entries(dto)) {
       if (val !== undefined) {
@@ -63,9 +74,9 @@ export class JournalsService {
       }
     }
     if (!fields.length) return this.findOne(userId, id);
-    fields.push("updated_at = NOW()");
+    fields.push('updated_at = NOW()');
     const { rows } = await pool.query(
-      `UPDATE journals SET ${fields.join(", ")} WHERE id = $1 AND user_id = $2 RETURNING *`,
+      `UPDATE journals SET ${fields.join(', ')} WHERE id = $1 AND user_id = $2 RETURNING *`,
       [id, userId, ...values],
     );
     return rows[0];
@@ -73,7 +84,10 @@ export class JournalsService {
 
   async remove(userId: string, id: string) {
     await this.findOne(userId, id);
-    await pool.query(`DELETE FROM journals WHERE id = $1 AND user_id = $2`, [id, userId]);
+    await pool.query(`DELETE FROM journals WHERE id = $1 AND user_id = $2`, [
+      id,
+      userId,
+    ]);
     return { deleted: true };
   }
 

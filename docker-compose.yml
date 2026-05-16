@@ -1,24 +1,204 @@
+# ── Networks ────────────────────────────────────────────────────────────────
+networks:
+  tradezen-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ── Volumes ─────────────────────────────────────────────────────────────────
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+
+# ── Services ────────────────────────────────────────────────────────────────
 services:
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: tradezen-db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: tradezen
-    ports:
-      - "5432:5432"
+      # Use environment variables with sensible defaults
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-tradezen}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    networks:
+      tradezen-net:
+        ipv4_address: 172.28.1.10
     volumes:
+      # Named volume for data persistence
       - pgdata:/var/lib/postgresql/data
+      # Optional: custom PostgreSQL config (create this file for tuning)
+      # - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.50'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    # Do not expose to host in production; only needed for local dev
+    # In production, API connects via internal network
+    ports:
+      - "127.0.0.1:5432:5432"  # bind to localhost only if needed
 
+  # ── Redis ─────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: tradezen-redis
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
+    command: redis-server --appendonly yes --save 60 1000 --maxmemory 128mb --maxmemory-policy allkeys-lru
+    networks:
+      tradezen-net:
+        ipv4_address: 172.28.1.11
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.10'
+    # Do not expose to host in production
+    # ports:
+    #   - "127.0.0.1:6379:6379"
 
-volumes:
-  pgdata:
-  redisdata:
+  # ── API (NestJS) ──────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+      # Enable BuildKit cache optimization
+      cache_from:
+        - type=local,src=/tmp/.buildx-cache-api
+      cache_to:
+        - type=local,dest=/tmp/.buildx-cache-api,mode=max
+    container_name: tradezen-api
+    restart: unless-stopped
+    networks:
+      tradezen-net:
+        ipv4_address: 172.28.1.20
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-tradezen}?sslmode=disable
+      # Or individual params:
+      # DB_USER: ${DB_USER:-postgres}
+      # DB_PASSWORD: ${DB_PASSWORD}
+      # DB_HOST: postgres
+      # DB_PORT: 5432
+      # DB_NAME: ${DB_NAME:-tradezen}
+
+      # JWT Secrets (MUST be set in production)
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+
+      # CORS & URLs
+      WEB_URL: ${WEB_URL:-http://localhost:3000}
+      NODE_ENV: production
+
+      # API configuration
+      PORT: 3001
+
+      # OpenRouter (AI chat)
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-qwen/qwen3-next-80b-a3b-instruct:free}
+      OPENROUTER_AVAILABLE_MODELS: ${OPENROUTER_AVAILABLE_MODELS}
+      OPENROUTER_HTTP_REFERER: ${OPENROUTER_HTTP_REFERER}
+      OPENROUTER_APP_TITLE: ${OPENROUTER_APP_TITLE:-TradeZen}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3001/ | head -1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.50'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    # Expose only if accessing directly (typically behind reverse proxy)
+    # ports:
+    #   - "127.0.0.1:3001:3001"
+
+  # ── Web (Next.js) ─────────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+      cache_from:
+        - type=local,src=/tmp/.buildx-cache-web
+      cache_to:
+        - type=local,dest=/tmp/.buildx-cache-web,mode=max
+    container_name: tradezen-web
+    restart: unless-stopped
+    networks:
+      tradezen-net:
+        ipv4_address: 172.28.1.21
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://api:3001
+    depends_on:
+      api:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ | head -1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.50'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    ports:
+      # Expose to host; in production use reverse proxy (nginx, traefik)
+      - "127.0.0.1:3000:3000"
+
+# ── Notes ───────────────────────────────────────────────────────────────────
+# 1. Create a `.env.docker` file in project root with:
+#    DB_PASSWORD=<strong-random-password>
+#    JWT_SECRET=<long-random-string>
+#    JWT_REFRESH_SECRET=<another-long-random-string>
+#    OPENROUTER_API_KEY=<your-key>
+#    WEB_URL=http://localhost:3000
+#
+# 2. Load it when starting:
+#    `docker-compose --env-file .env.docker up -d`
+#
+# 3. In production, use a secrets manager (Docker secrets, Kubernetes secrets,
+#    or cloud provider secret store) instead of .env files.
+#
+# 4. To enable local DB access for psql, temporarily expose port:
+#    Uncomment the `ports` section under `postgres` service, then:
+#    `psql -h localhost -p 5432 -U postgres -d tradezen`

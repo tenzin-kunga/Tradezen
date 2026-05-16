@@ -1,15 +1,22 @@
-import { IsString, IsIn, IsNumber, IsOptional, IsBoolean, Min } from "class-validator";
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import {
+  IsString,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  Min,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateTradeDto {
-  @ApiProperty({ example: "EURUSD" })
+  @ApiProperty({ example: 'EURUSD' })
   @IsString()
   symbol: string;
 
-  @ApiProperty({ enum: ["buy", "sell"] })
-  @IsIn(["buy", "sell"])
-  direction: "buy" | "sell";
+  @ApiProperty({ enum: ['buy', 'sell'] })
+  @IsIn(['buy', 'sell'])
+  direction: 'buy' | 'sell';
 
   @ApiProperty({ example: 1.085 })
   @Type(() => Number)
@@ -39,7 +46,7 @@ export class CreateTradeDto {
   @IsNumber()
   take_profit?: number | null;
 
-  @ApiPropertyOptional({ example: "breakout" })
+  @ApiPropertyOptional({ example: 'breakout' })
   @IsOptional()
   @IsString()
   strategy?: string | null;
@@ -64,7 +71,11 @@ export class CreateTradeDto {
   @IsBoolean()
   vengeance_trade?: boolean;
 
-  @ApiPropertyOptional({ example: 100000, description: 'Contract size multiplier (100000 for standard forex lot, 1 for stocks)' })
+  @ApiPropertyOptional({
+    example: 100000,
+    description:
+      'Contract size multiplier (100000 for standard forex lot, 1 for stocks)',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()

@@ -1,7 +1,16 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Type } from "class-transformer";
-import { ArrayMaxSize, IsArray, IsNumber, IsOptional, IsString, MaxLength, Min, ValidateNested } from "class-validator";
-import { ChatMessageDto } from "./chat-message.dto";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { ChatMessageDto } from './chat-message.dto';
 
 export class CreateChatDto {
   @ApiProperty({ type: [ChatMessageDto] })
@@ -11,13 +20,13 @@ export class CreateChatDto {
   @Type(() => ChatMessageDto)
   messages: ChatMessageDto[];
 
-  @ApiPropertyOptional({ example: "openai/gpt-4o-mini" })
+  @ApiPropertyOptional({ example: 'openai/gpt-4o-mini' })
   @IsOptional()
   @IsString()
   @MaxLength(120)
   model?: string;
 
-  @ApiPropertyOptional({ example: "You are a concise trading assistant." })
+  @ApiPropertyOptional({ example: 'You are a concise trading assistant.' })
   @IsOptional()
   @IsString()
   @MaxLength(1000)

@@ -1,6 +1,6 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { Type } from "class-transformer";
-import { IsInt, IsOptional, Max, Min } from "class-validator";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, Max, Min } from 'class-validator';
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;

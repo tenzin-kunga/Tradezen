@@ -12,9 +12,6 @@ import { ChatModule } from './chat/chat.module';
 @Module({
   imports: [AuthModule, TradesModule, JournalsModule, TagsModule, ChatModule],
   controllers: [AppController],
-  providers: [
-    AppService,
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
-  ],
+  providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
 export class AppModule {}

@@ -1,16 +1,17 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { pool } from "../db";
-import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from "./dto";
-import * as fs from "fs";
-import * as path from "path";
-import type { Response } from "express";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { pool } from '../db';
+import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
+import * as fs from 'fs';
+import * as path from 'path';
+import type { Response } from 'express';
 
 const CSV_EXPORT_CHUNK = 500;
 
 function escapeCsvCell(val: unknown): string {
-  if (val === null || val === undefined) return "";
-  const str = String(val);
-  return str.includes(",") || str.includes('"') || str.includes("\n")
+  if (val === null || val === undefined) return '';
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+  const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+  return str.includes(',') || str.includes('"') || str.includes('\n')
     ? `"${str.replace(/"/g, '""')}"`
     : str;
 }
@@ -59,7 +60,7 @@ export class TradesService {
     } = dto;
 
     const pnl =
-      direction === "buy"
+      direction === 'buy'
         ? (exit - entry) * lot * contract_size
         : (entry - exit) * lot * contract_size;
 
@@ -72,9 +73,23 @@ export class TradesService {
         fomo_check, trend_alignment, vengeance_trade, trade_date, commission, contract_size
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
       [
-        userId, symbol, direction, entry, exit, lot, netPnl,
-        stop_loss, take_profit, strategy, notes,
-        fomo_check, trend_alignment, vengeance_trade, trade_date, commission, contract_size,
+        userId,
+        symbol,
+        direction,
+        entry,
+        exit,
+        lot,
+        netPnl,
+        stop_loss,
+        take_profit,
+        strategy,
+        notes,
+        fomo_check,
+        trend_alignment,
+        vengeance_trade,
+        trade_date,
+        commission,
+        contract_size,
       ],
     );
 
@@ -85,8 +100,8 @@ export class TradesService {
     const {
       page = 1,
       limit = 20,
-      sort = "created_at",
-      order = "desc",
+      sort = 'created_at',
+      order = 'desc',
       symbol,
       direction,
       strategy,
@@ -94,11 +109,11 @@ export class TradesService {
       to,
     } = query;
 
-    const allowedSorts = ["created_at", "pnl", "symbol"];
-    const safeSort = allowedSorts.includes(sort) ? sort : "created_at";
-    const safeOrder = order === "asc" ? "ASC" : "DESC";
+    const allowedSorts = ['created_at', 'pnl', 'symbol'];
+    const safeSort = allowedSorts.includes(sort) ? sort : 'created_at';
+    const safeOrder = order === 'asc' ? 'ASC' : 'DESC';
 
-    const conditions: string[] = ["user_id = $1"];
+    const conditions: string[] = ['user_id = $1'];
     const params: any[] = [userId];
     let idx = 2;
 
@@ -128,7 +143,7 @@ export class TradesService {
       idx++;
     }
 
-    const where = conditions.join(" AND ");
+    const where = conditions.join(' AND ');
 
     const countRes = await pool.query(
       `SELECT COUNT(*) FROM trades WHERE ${where}`,
@@ -157,10 +172,11 @@ export class TradesService {
 
   async findOne(userId: string, id: string) {
     const res = await pool.query(
-      "SELECT * FROM trades WHERE id = $1 AND user_id = $2",
+      'SELECT * FROM trades WHERE id = $1 AND user_id = $2',
       [id, userId],
     );
-    if (res.rowCount === 0) throw new NotFoundException(`Trade ${id} not found`);
+    if (res.rowCount === 0)
+      throw new NotFoundException(`Trade ${id} not found`);
     return res.rows[0];
   }
 
@@ -173,12 +189,16 @@ export class TradesService {
     const entry = dto.entry ?? Number(current.entry_price);
     const exit = dto.exit ?? Number(current.exit_price);
     const lot = dto.lot ?? Number(current.lot_size);
-    const contract_size = dto.contract_size ?? Number(current.contract_size ?? 100000);
-    const commission = dto.commission !== undefined ? dto.commission : Number(current.commission ?? 0);
+    const contract_size =
+      dto.contract_size ?? Number(current.contract_size ?? 100000);
+    const commission =
+      dto.commission !== undefined
+        ? dto.commission
+        : Number(current.commission ?? 0);
 
     // Recalculate PnL
     const pnl =
-      direction === "buy"
+      direction === 'buy'
         ? (exit - entry) * lot * contract_size
         : (entry - exit) * lot * contract_size;
     const netPnl = commission ? pnl - commission : pnl;
@@ -193,18 +213,28 @@ export class TradesService {
        WHERE id = $17 AND user_id = $18
        RETURNING *`,
       [
-        symbol, direction, entry, exit, lot, netPnl,
+        symbol,
+        direction,
+        entry,
+        exit,
+        lot,
+        netPnl,
         dto.stop_loss !== undefined ? dto.stop_loss : current.stop_loss,
         dto.take_profit !== undefined ? dto.take_profit : current.take_profit,
         dto.strategy !== undefined ? dto.strategy : current.strategy,
         dto.notes !== undefined ? dto.notes : current.notes,
         dto.fomo_check !== undefined ? dto.fomo_check : current.fomo_check,
-        dto.trend_alignment !== undefined ? dto.trend_alignment : current.trend_alignment,
-        dto.vengeance_trade !== undefined ? dto.vengeance_trade : current.vengeance_trade,
+        dto.trend_alignment !== undefined
+          ? dto.trend_alignment
+          : current.trend_alignment,
+        dto.vengeance_trade !== undefined
+          ? dto.vengeance_trade
+          : current.vengeance_trade,
         dto.trade_date !== undefined ? dto.trade_date : current.trade_date,
         commission,
         contract_size,
-        id, userId,
+        id,
+        userId,
       ],
     );
 
@@ -222,24 +252,26 @@ export class TradesService {
       }
     }
 
-    await pool.query("DELETE FROM trades WHERE id = $1 AND user_id = $2", [id, userId]);
+    await pool.query('DELETE FROM trades WHERE id = $1 AND user_id = $2', [
+      id,
+      userId,
+    ]);
     return { deleted: true };
   }
 
   async uploadImage(userId: string, id: string, filename: string) {
-    // Verify ownership
     await this.findOne(userId, id);
 
     const imageUrl = `/uploads/${filename}`;
-    const res = await pool.query(
-      "UPDATE trades SET chart_image = $1 WHERE id = $2 AND user_id = $3 RETURNING *",
+    await pool.query(
+      'UPDATE trades SET chart_image = $1 WHERE id = $2 AND user_id = $3 RETURNING *',
       [imageUrl, id, userId],
     );
     return { chart_image: imageUrl };
   }
 
   async getDailyPnl(userId: string, from?: string, to?: string) {
-    const conditions: string[] = ["user_id = $1"];
+    const conditions: string[] = ['user_id = $1'];
     const params: any[] = [userId];
     let idx = 2;
 
@@ -254,7 +286,7 @@ export class TradesService {
       idx++;
     }
 
-    const where = conditions.join(" AND ");
+    const where = conditions.join(' AND ');
     const res = await pool.query(
       `SELECT DATE(created_at) as date,
               SUM(pnl) as total_pnl,
@@ -379,28 +411,42 @@ export class TradesService {
         byStrategy: [],
         byDayOfWeek: [],
         byMonth: [],
-        behavioralStats: { fomoCount: 0, vengeanceCount: 0, trendAlignedCount: 0 },
+        behavioralStats: {
+          fomoCount: 0,
+          vengeanceCount: 0,
+          trendAlignedCount: 0,
+        },
       };
     }
 
     const grossProfit = Number(s.gross_profit);
     const grossLoss = Number(s.gross_loss);
-    const winRateRatio = totalTrades > 0 ? Number(s.win_count) / totalTrades : 0;
+    const winRateRatio =
+      totalTrades > 0 ? Number(s.win_count) / totalTrades : 0;
     /** JSON-safe: no losses but wins => large finite PF (legacy in-memory used Infinity). */
     const profitFactor =
       grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? 999999 : 0;
     const avgWin = Number(s.avg_win);
     const avgLoss = Number(s.avg_loss);
-    const expectancy =
-      (winRateRatio * avgWin) - ((1 - winRateRatio) * avgLoss);
+    const expectancy = winRateRatio * avgWin - (1 - winRateRatio) * avgLoss;
 
-    const pnls = pnlSeriesRes.rows.map((r: { pnl: string | number }) => Number(r.pnl));
+    const pnls = pnlSeriesRes.rows.map((r: { pnl: string | number }) =>
+      Number(r.pnl),
+    );
     const { maxConsWins, maxConsLosses } = computeMaxConsecutive(pnls);
 
     const maxDrawdown = Number(maxDdRes.rows[0]?.max_drawdown ?? 0);
     const avgRR = Number(avgRrRes.rows[0]?.avg_rr ?? 0);
 
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const dayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     const byStrategy = strategyRes.rows.map((r: any) => ({
       name: r.name,
       trades: Number(r.trades),
@@ -452,11 +498,23 @@ export class TradesService {
   /** Streams CSV in DB chunks to avoid loading all rows into memory. */
   async streamExportCsv(userId: string, res: Response): Promise<void> {
     const headers = [
-      "id", "symbol", "direction", "entry_price", "exit_price", "lot_size",
-      "pnl", "stop_loss", "take_profit", "strategy", "notes",
-      "fomo_check", "trend_alignment", "vengeance_trade", "created_at",
+      'id',
+      'symbol',
+      'direction',
+      'entry_price',
+      'exit_price',
+      'lot_size',
+      'pnl',
+      'stop_loss',
+      'take_profit',
+      'strategy',
+      'notes',
+      'fomo_check',
+      'trend_alignment',
+      'vengeance_trade',
+      'created_at',
     ];
-    res.write(`${headers.map(escapeCsvCell).join(",")}\n`);
+    res.write(`${headers.map(escapeCsvCell).join(',')}\n`);
 
     let offset = 0;
     for (;;) {
@@ -472,12 +530,162 @@ export class TradesService {
       if (rows.length === 0) break;
 
       for (const t of rows) {
-        const line = headers.map((h) => escapeCsvCell((t as Record<string, unknown>)[h])).join(",");
+        const line = headers
+          .map((h) => escapeCsvCell((t as Record<string, unknown>)[h]))
+          .join(',');
         res.write(`${line}\n`);
       }
 
       offset += rows.length;
       if (rows.length < CSV_EXPORT_CHUNK) break;
     }
+  }
+
+  async importCsv(
+    userId: string,
+    csvContent: string,
+  ): Promise<{ imported: number; errors: string[] }> {
+    const lines = csvContent.trim().split('\n');
+    const errors: string[] = [];
+    let imported = 0;
+
+    if (lines.length < 2) {
+      return { imported: 0, errors: ['CSV file is empty or has no data rows'] };
+    }
+
+    const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+    const requiredHeaders = [
+      'symbol',
+      'direction',
+      'entry_price',
+      'exit_price',
+      'lot_size',
+    ];
+    const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h));
+
+    if (missingHeaders.length > 0) {
+      return {
+        imported: 0,
+        errors: [`Missing required headers: ${missingHeaders.join(', ')}`],
+      };
+    }
+
+    const getValue = (row: string[], header: string): string => {
+      const idx = headers.indexOf(header);
+      return idx >= 0 ? (row[idx]?.trim() ?? '') : '';
+    };
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const row = this.parseCsvLine(line);
+
+        try {
+          const symbol = getValue(row, 'symbol');
+          const direction = getValue(row, 'direction').toLowerCase();
+          const entryPrice = parseFloat(getValue(row, 'entry_price'));
+          const exitPrice = parseFloat(getValue(row, 'exit_price'));
+          const lotSize = parseFloat(getValue(row, 'lot_size'));
+
+          if (!symbol) {
+            errors.push(`Row ${i + 1}: Missing symbol`);
+            continue;
+          }
+          if (isNaN(entryPrice) || isNaN(exitPrice) || isNaN(lotSize)) {
+            errors.push(`Row ${i + 1}: Invalid numeric values`);
+            continue;
+          }
+          if (direction !== 'buy' && direction !== 'sell') {
+            errors.push(
+              `Row ${i + 1}: Invalid direction (must be 'buy' or 'sell')`,
+            );
+            continue;
+          }
+
+          const pnl =
+            direction === 'buy'
+              ? (exitPrice - entryPrice) * lotSize * 100000
+              : (entryPrice - exitPrice) * lotSize * 100000;
+
+          const stopLoss = parseFloat(getValue(row, 'stop_loss')) || null;
+          const takeProfit = parseFloat(getValue(row, 'take_profit')) || null;
+          const strategy = getValue(row, 'strategy') || null;
+          const notes = getValue(row, 'notes') || null;
+          const fomoCheck =
+            getValue(row, 'fomo_check').toLowerCase() === 'true';
+          const trendAlignment =
+            getValue(row, 'trend_alignment').toLowerCase() === 'true';
+          const vengeanceTrade =
+            getValue(row, 'vengeance_trade').toLowerCase() === 'true';
+
+          await client.query(
+            `INSERT INTO trades (user_id, symbol, direction, entry_price, exit_price, lot_size, pnl, stop_loss, take_profit, strategy, notes, fomo_check, trend_alignment, vengeance_trade)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+            [
+              userId,
+              symbol,
+              direction,
+              entryPrice,
+              exitPrice,
+              lotSize,
+              pnl,
+              stopLoss,
+              takeProfit,
+              strategy,
+              notes,
+              fomoCheck,
+              trendAlignment,
+              vengeanceTrade,
+            ],
+          );
+          imported++;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          errors.push(`Row ${i + 1}: ${message}`);
+        }
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      const message = err instanceof Error ? err.message : String(err);
+      errors.push(`Transaction failed: ${message}`);
+    } finally {
+      client.release();
+    }
+
+    return { imported, errors };
+  }
+
+  private parseCsvLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    result.push(current);
+    return result;
   }
 }

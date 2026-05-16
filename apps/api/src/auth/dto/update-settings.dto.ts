@@ -1,6 +1,6 @@
-import { IsOptional, IsNumber, IsString, IsIn, Min } from "class-validator";
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { IsOptional, IsNumber, IsString, IsIn, Min } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class UpdateSettingsDto {
   @ApiPropertyOptional({ example: 10000 })
@@ -17,13 +17,13 @@ export class UpdateSettingsDto {
   @Min(0)
   default_lot_size?: number;
 
-  @ApiPropertyOptional({ example: "UTC" })
+  @ApiPropertyOptional({ example: 'UTC' })
   @IsOptional()
   @IsString()
   timezone?: string;
 
-  @ApiPropertyOptional({ enum: ["dark", "light"] })
+  @ApiPropertyOptional({ enum: ['dark', 'light'] })
   @IsOptional()
-  @IsIn(["dark", "light"])
+  @IsIn(['dark', 'light'])
   theme?: string;
 }

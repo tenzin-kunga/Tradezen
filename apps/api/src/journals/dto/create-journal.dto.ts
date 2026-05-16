@@ -1,5 +1,5 @@
-import { IsOptional, IsString, IsEnum, IsDateString } from "class-validator";
-import { ApiPropertyOptional } from "@nestjs/swagger";
+import { IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateJournalDto {
   @ApiPropertyOptional()
@@ -16,9 +16,11 @@ export class CreateJournalDto {
   @IsString()
   post_market_notes?: string;
 
-  @ApiPropertyOptional({ enum: ["great", "good", "neutral", "bad", "terrible"] })
+  @ApiPropertyOptional({
+    enum: ['great', 'good', 'neutral', 'bad', 'terrible'],
+  })
   @IsOptional()
-  @IsEnum(["great", "good", "neutral", "bad", "terrible"])
+  @IsEnum(['great', 'good', 'neutral', 'bad', 'terrible'])
   mood?: string;
 
   @ApiPropertyOptional()
