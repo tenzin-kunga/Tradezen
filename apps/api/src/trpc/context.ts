@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 export interface TrpcContext {
   req: Request;
   res: Response;
-  userId?: number;
+  userId?: string;
 }
 
 export function createContext({

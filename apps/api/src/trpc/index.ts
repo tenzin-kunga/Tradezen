@@ -1,6 +1,8 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { TrpcContext, createContext } from './context';
-import { createTradeSchema } from '@tradezen/db';
+import { tradesRouter } from './trades.router';
+import { journalsRouter } from './journals.router';
+import { tagsRouter } from './tags.router';
 
 const t = initTRPC.context<TrpcContext>().create();
 
@@ -16,15 +18,9 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 
 export const appRouter = router({
   health: publicProcedure.query(() => 'ok'),
-  
-  // Example: create trade with Zod validation
-  createTrade: protectedProcedure
-    .input(createTradeSchema)
-    .mutation(async ({ input, ctx }) => {
-      // Input is validated and typed
-      // This is a placeholder — actual implementation in TZ-024
-      return { success: true, input };
-    }),
+  trades: tradesRouter,
+  journals: journalsRouter,
+  tags: tagsRouter,
 });
 
 export type AppRouter = typeof appRouter;
