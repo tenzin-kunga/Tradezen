@@ -22,7 +22,8 @@ export const users = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     email: text('email').notNull().unique(),
     username: text('username').notNull().unique(),
-    passwordHash: text('password_hash').notNull(),
+    passwordHash: text('password_hash'),
+    authMethod: text('auth_method').notNull().default('password'),
     createdAt: timestamp('created_at').defaultNow(),
     twoFactorEnabled: boolean('two_factor_enabled').default(false),
     twoFactorSecret: varchar('two_factor_secret', { length: 32 }),
@@ -293,3 +294,26 @@ export const notifications = pgTable('notifications', {
   unreadIdx: index('idx_notifications_unread').on(table.userId, table.isRead),
   createdIdx: index('idx_notifications_created').on(table.userId, table.createdAt),
 }));
+
+export const accounts = pgTable(
+  'accounts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    providerId: text('provider_id').notNull(),
+    providerEmail: text('provider_email'),
+    providerUsername: text('provider_username'),
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    expiresAt: timestamp('expires_at'),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => [
+    unique().on(table.provider, table.providerId),
+    index('idx_accounts_user').on(table.userId),
+    index('idx_accounts_provider').on(table.provider),
+  ],
+);

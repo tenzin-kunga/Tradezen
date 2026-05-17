@@ -129,6 +129,14 @@ services:
       OPENROUTER_HTTP_REFERER: ${OPENROUTER_HTTP_REFERER}
       OPENROUTER_APP_TITLE: ${OPENROUTER_APP_TITLE:-TradeZen}
 
+      # OAuth Providers
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3001/auth/google/callback}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-http://localhost:3001/auth/github/callback}
+
       # Sentry
       SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:

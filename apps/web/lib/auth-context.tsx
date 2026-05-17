@@ -38,13 +38,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
+        const storedToken = window.localStorage.getItem("tradezen_access_token");
+        if (storedToken) {
+          setAccessToken(storedToken);
+        }
+
         const refreshed = await refreshToken();
         if (refreshed) {
           const me = await getMe();
           setUser(me);
         }
       } catch {
-        // Not logged in
+        window.localStorage.removeItem("tradezen_access_token");
+        setAccessToken(null);
       } finally {
         setLoading(false);
       }
