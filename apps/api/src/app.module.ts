@@ -19,6 +19,8 @@ import { SnapshotService } from './analytics/snapshot.service';
 import { BehavioralService } from './analytics/behavioral.service';
 import { EventPublisherService } from './common/services/event-publisher.service';
 import { EventSubscriberService } from './common/services/event-subscriber.service';
+import { EmbeddingService } from './ai/embedding.service';
+import { MemoryService } from './ai/memory.service';
 
 @Module({
   imports: [
@@ -72,6 +74,8 @@ import { EventSubscriberService } from './common/services/event-subscriber.servi
     BehavioralService,
     EventPublisherService,
     EventSubscriberService,
+    EmbeddingService,
+    MemoryService,
   ],
 })
 export class AppModule implements NestModule {

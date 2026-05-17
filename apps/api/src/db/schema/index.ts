@@ -13,6 +13,7 @@ import {
   index,
   unique,
   uniqueIndex,
+  customType,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable(
@@ -169,4 +170,22 @@ export const analyticsSnapshots = pgTable('analytics_snapshots', {
 }, (table) => ({
   userDateIdx: index('idx_snapshots_user_date').on(table.userId, table.snapshotDate),
   userDateUnique: uniqueIndex('uq_snapshots_user_date').on(table.userId, table.snapshotDate),
+}));
+
+const vector = (name: string, opts: { dimensions: number }) =>
+  customType<{ data: number[] }>({
+    dataType: () => `vector(${opts.dimensions})`,
+  })(name);
+
+export const embeddings = pgTable('embeddings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  sourceType: varchar('source_type', { length: 50 }).notNull(),
+  sourceId: uuid('source_id').notNull(),
+  content: text('content').notNull(),
+  embedding: vector('embedding', { dimensions: 1536 }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  userIdIdx: index('idx_embeddings_user').on(table.userId),
+  sourceIdx: index('idx_embeddings_source').on(table.sourceType, table.sourceId),
 }));
