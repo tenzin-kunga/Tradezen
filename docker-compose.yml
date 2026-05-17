@@ -154,6 +154,26 @@ services:
     # ports:
     #   - "127.0.0.1:3001:3001"
 
+  # ── Database Backup ─────────────────────────────────────────────────────
+  backup:
+    image: alpine:latest
+    container_name: tradezen-backup
+    restart: "no"
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./backups:/backups
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - RETENTION_DAYS=30
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "0 2 * * * /scripts/backup.sh /backups" > /etc/crontabs/root
+        crond -f -l 2
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # ── Web (Next.js) ─────────────────────────────────────────────────────────
   web:
     build:
