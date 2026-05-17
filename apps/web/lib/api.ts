@@ -414,3 +414,25 @@ export async function streamChat(params: StreamChatParams): Promise<void> {
 
   onDone?.();
 }
+
+// ─── Notifications ──────────────────────────────────
+
+export async function getNotifications(limit = 10) {
+  const res = await authFetch(`${API}/chat/notifications?limit=${limit}`);
+  return handleResponse<any[]>(res);
+}
+
+export async function getNotificationCount() {
+  const res = await authFetch(`${API}/chat/notifications/count`);
+  return handleResponse<{ count: number }>(res);
+}
+
+export async function markNotificationRead(id: string) {
+  const res = await authFetch(`${API}/chat/notifications/${id}/read`, { method: 'POST' });
+  return handleResponse<{ message: string }>(res);
+}
+
+export async function markAllNotificationsRead() {
+  const res = await authFetch(`${API}/chat/notifications/read-all`, { method: 'POST' });
+  return handleResponse<{ message: string }>(res);
+}

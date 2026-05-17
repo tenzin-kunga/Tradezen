@@ -22,6 +22,7 @@ import { CreateChatDto } from './dto/create-chat.dto';
 import { JobStatusService } from '../queues/job-status.service';
 import { JournalIntelligenceService } from '../ai/journal-intelligence.service';
 import { CoachingEngineService } from '../ai/coaching-engine.service';
+import { NotificationService } from '../common/services/notification.service';
 
 @ApiTags('chat')
 @ApiBearerAuth()
@@ -33,6 +34,7 @@ export class ChatController {
     private readonly threadService: ChatThreadService,
     private readonly journalIntelligenceService: JournalIntelligenceService,
     private readonly coachingEngineService: CoachingEngineService,
+    private readonly notificationService: NotificationService,
     @InjectQueue('ai-processing') private aiQueue: Queue,
     private readonly jobStatusService: JobStatusService,
   ) {}
@@ -229,5 +231,38 @@ export class ChatController {
   @ApiOperation({ summary: 'Get latest active coaching recommendation' })
   async getActiveCoaching(@CurrentUser('id') userId: string) {
     return this.coachingEngineService.getActiveCoaching(userId);
+  }
+
+  @Get('notifications')
+  @ApiOperation({ summary: 'Get unread notifications' })
+  async getNotifications(
+    @CurrentUser('id') userId: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.notificationService.getUnread(userId, limit ? parseInt(limit) : 20);
+  }
+
+  @Post('notifications/:id/read')
+  @ApiOperation({ summary: 'Mark notification as read' })
+  async markRead(
+    @CurrentUser('id') userId: string,
+    @Param('id') notificationId: string,
+  ) {
+    await this.notificationService.markRead(userId, notificationId);
+    return { message: 'Notification marked as read' };
+  }
+
+  @Post('notifications/read-all')
+  @ApiOperation({ summary: 'Mark all notifications as read' })
+  async markAllRead(@CurrentUser('id') userId: string) {
+    await this.notificationService.markAllRead(userId);
+    return { message: 'All notifications marked as read' };
+  }
+
+  @Get('notifications/count')
+  @ApiOperation({ summary: 'Get unread notification count' })
+  async getNotificationCount(@CurrentUser('id') userId: string) {
+    const count = await this.notificationService.getCount(userId);
+    return { count };
   }
 }

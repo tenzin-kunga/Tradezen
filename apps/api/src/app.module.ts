@@ -24,6 +24,10 @@ import { MemoryService } from './ai/memory.service';
 import { JournalAnalysisWorkflow } from './ai/workflows/journal-analysis.workflow';
 import { CoachingWorkflow } from './ai/workflows/coaching.workflow';
 import { CoachingEngineService } from './ai/coaching-engine.service';
+import { NotificationService } from './common/services/notification.service';
+import { NotificationTriggersService } from './common/services/notification-triggers.service';
+import { TradesService } from './trades/trades.service';
+import { JournalsService } from './journals/journals.service';
 
 @Module({
   imports: [
@@ -82,6 +86,10 @@ import { CoachingEngineService } from './ai/coaching-engine.service';
     JournalAnalysisWorkflow,
     CoachingWorkflow,
     CoachingEngineService,
+    NotificationService,
+    NotificationTriggersService,
+    TradesService,
+    JournalsService,
   ],
 })
 export class AppModule implements NestModule {

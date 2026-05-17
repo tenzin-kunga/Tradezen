@@ -278,3 +278,18 @@ export const coachingSessions = pgTable('coaching_sessions', {
   severityIdx: index('idx_coaching_severity').on(table.userId, table.severity),
   createdIdx: index('idx_coaching_created').on(table.userId, table.createdAt),
 }));
+
+export const notifications = pgTable('notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: varchar('type', { length: 50 }).notNull(),
+  title: varchar('title', { length: 200 }).notNull(),
+  message: text('message').notNull(),
+  metadata: jsonb('metadata'),
+  isRead: boolean('is_read').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  userIdx: index('idx_notifications_user').on(table.userId),
+  unreadIdx: index('idx_notifications_unread').on(table.userId, table.isRead),
+  createdIdx: index('idx_notifications_created').on(table.userId, table.createdAt),
+}));

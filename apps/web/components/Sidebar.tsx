@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { NotificationBell } from "./NotificationBell";
 
 const navItems = [
   {
@@ -93,15 +94,18 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         >
           TRADEZEN
         </span>
-        <button
-          onClick={onClose}
-          className="md:hidden p-1"
-          style={{ background: "none", border: "none", color: "#888", cursor: "pointer" }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <button
+            onClick={onClose}
+            className="md:hidden p-1"
+            style={{ background: "none", border: "none", color: "#888", cursor: "pointer" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* User Block */}
