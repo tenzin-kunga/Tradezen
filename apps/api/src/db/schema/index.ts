@@ -189,3 +189,26 @@ export const embeddings = pgTable('embeddings', {
   userIdIdx: index('idx_embeddings_user').on(table.userId),
   sourceIdx: index('idx_embeddings_source').on(table.sourceType, table.sourceId),
 }));
+
+export const chatThreads = pgTable('chat_threads', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  userIdIdx: index('idx_chat_threads_user').on(table.userId),
+  updatedIdx: index('idx_chat_threads_updated').on(table.userId, table.updatedAt),
+}));
+
+export const chatMessages = pgTable('chat_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  threadId: uuid('thread_id').notNull().references(() => chatThreads.id, { onDelete: 'cascade' }),
+  role: varchar('role', { length: 20 }).notNull(),
+  content: text('content').notNull(),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  threadIdx: index('idx_chat_messages_thread').on(table.threadId),
+  createdIdx: index('idx_chat_messages_created').on(table.threadId, table.createdAt),
+}));

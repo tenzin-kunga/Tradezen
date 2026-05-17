@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Query, Req, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Queue } from 'bullmq';
@@ -6,6 +6,7 @@ import type { Request, Response } from 'express';
 import { InjectQueue } from '@nestjs/bullmq';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ChatService } from './chat.service';
+import { ChatThreadService } from './chat-thread.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { JobStatusService } from '../queues/job-status.service';
 
@@ -16,6 +17,7 @@ import { JobStatusService } from '../queues/job-status.service';
 export class ChatController {
   constructor(
     private readonly chatService: ChatService,
+    private readonly threadService: ChatThreadService,
     @InjectQueue('ai-processing') private aiQueue: Queue,
     private readonly jobStatusService: JobStatusService,
   ) {}
@@ -24,6 +26,47 @@ export class ChatController {
   @ApiOperation({ summary: 'Get configured OpenRouter models' })
   models() {
     return this.chatService.getModels();
+  }
+
+  @Post('threads')
+  @ApiOperation({ summary: 'Create a new chat thread' })
+  async createThread(
+    @CurrentUser('id') userId: string,
+    @Body('title') title?: string,
+  ) {
+    return this.threadService.createThread(userId, title);
+  }
+
+  @Get('threads')
+  @ApiOperation({ summary: 'List user chat threads' })
+  async listThreads(@CurrentUser('id') userId: string) {
+    return this.threadService.listThreads(userId);
+  }
+
+  @Get('threads/:id')
+  @ApiOperation({ summary: 'Get a chat thread by ID' })
+  async getThread(
+    @CurrentUser('id') userId: string,
+    @Param('id') threadId: string,
+  ) {
+    const thread = await this.threadService.getThread(userId, threadId);
+    if (!thread) throw new NotFoundException('Thread not found');
+    return thread;
+  }
+
+  @Delete('threads/:id')
+  @ApiOperation({ summary: 'Delete a chat thread' })
+  async deleteThread(
+    @CurrentUser('id') userId: string,
+    @Param('id') threadId: string,
+  ) {
+    return this.threadService.deleteThread(userId, threadId);
+  }
+
+  @Get('threads/:id/messages')
+  @ApiOperation({ summary: 'Get messages for a chat thread' })
+  async getMessages(@Param('id') threadId: string) {
+    return this.threadService.getMessages(threadId);
   }
 
   @Post('stream')
