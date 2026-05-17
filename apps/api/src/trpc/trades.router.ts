@@ -121,4 +121,16 @@ export const tradesRouter = router({
       const service = new TradesService();
       return service.compareStrategies(ctx.userId, input.strategyA, input.strategyB);
     }),
+
+  getCsvImportJobStatus: protectedProcedure
+    .input(z.object({ jobId: z.string() }))
+    .query(async ({ input }) => {
+      return { jobId: input.jobId, status: 'pending' };
+    }),
+
+  getCsvImportJobHistory: protectedProcedure
+    .input(z.object({ limit: z.number().optional() }))
+    .query(async () => {
+      return [];
+    }),
 });

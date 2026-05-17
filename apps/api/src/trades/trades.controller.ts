@@ -16,9 +16,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Queue } from 'bullmq';
+import { InjectQueue } from '@nestjs/bullmq';
 import { TradesService } from './trades.service';
 import { BehavioralService } from '../analytics/behavioral.service';
 import { SnapshotService } from '../analytics/snapshot.service';
+import { JobStatusService } from '../queues/job-status.service';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { Express, Response } from 'express';
@@ -26,6 +29,11 @@ import type { Express, Response } from 'express';
 interface ImportResult {
   imported: number;
   errors: string[];
+}
+
+interface ImportJobResponse {
+  jobId: string;
+  message: string;
 }
 
 @ApiTags('trades')
@@ -36,6 +44,8 @@ export class TradesController {
     private readonly service: TradesService,
     private readonly behavioralService: BehavioralService,
     private readonly snapshotService: SnapshotService,
+    @InjectQueue('csv-import') private csvQueue: Queue,
+    private readonly jobStatusService: JobStatusService,
   ) {}
 
   @Post()
@@ -137,18 +147,49 @@ export class TradesController {
   }
 
   @Post('import/csv')
-  @ApiOperation({ summary: 'Import trades from CSV file' })
+  @ApiOperation({ summary: 'Import trades from CSV file (async)' })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException('Only CSV files are allowed'), false);
+        }
+      },
     }),
   )
   async importCsv(
     @CurrentUser('id') userId: string,
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<ImportResult> {
+  ): Promise<ImportJobResponse> {
     if (!file) throw new BadRequestException('No CSV file provided');
-    return this.service.importCsv(userId, file.buffer.toString('utf-8'));
+    const csvContent = file.buffer.toString('utf-8');
+    const job = await this.csvQueue.add('import', {
+      userId,
+      csvContent,
+      fileName: file.originalname,
+    }, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 1000 },
+      removeOnComplete: { age: 86400 },
+      removeOnFail: { age: 604800 },
+    });
+
+    return { jobId: job.id!, message: 'CSV import started. Poll status with job ID.' };
+  }
+
+  @Get('import/jobs/:jobId')
+  @ApiOperation({ summary: 'Get CSV import job status' })
+  async getImportJobStatus(@Param('jobId') jobId: string) {
+    return this.jobStatusService.getJobStatus('csv-import', jobId);
+  }
+
+  @Get('import/jobs')
+  @ApiOperation({ summary: 'Get CSV import job history' })
+  async getImportJobHistory(@Query('limit') limit?: string) {
+    return this.jobStatusService.getJobHistory('csv-import', limit ? parseInt(limit) : 10);
   }
 
   @Get(':id')
