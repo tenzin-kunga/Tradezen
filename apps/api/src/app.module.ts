@@ -11,6 +11,7 @@ import { JournalsModule } from './journals/journals.module';
 import { TagsModule } from './tags/tags.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
+import { QueuesModule } from './queues/queues.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
 import { SnapshotService } from './analytics/snapshot.service';
@@ -56,6 +57,7 @@ import { BehavioralService } from './analytics/behavioral.service';
     JournalsModule,
     TagsModule,
     ChatModule,
+    QueuesModule,
   ],
   controllers: [AppController],
   providers: [
