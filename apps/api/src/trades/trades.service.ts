@@ -3,6 +3,7 @@ import { eq, and, like, ilike, desc, asc, sql, count, lt, gte, lte, inArray } fr
 import { db } from '../db/drizzle';
 import { trades, tags, tradeTags } from '../db/schema';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
+import { EventPublisherService } from '../common/services/event-publisher.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Response } from 'express';
@@ -108,6 +109,10 @@ function computeMaxConsecutive(pnls: number[]) {
 export class TradesService {
   private analyticsCache = new Map<string, { data: unknown; expiresAt: number }>();
 
+  constructor(
+    private readonly eventPublisher: EventPublisherService,
+  ) {}
+
   async findAllCursor(userId: string, cursor?: string, limit = 20) {
     const conditions = [eq(trades.userId, userId)];
 
@@ -180,7 +185,9 @@ export class TradesService {
       })
       .returning();
 
-    return result[0];
+    const trade = result[0];
+    await this.eventPublisher.publish(`trades:${userId}`, ['trade:created', trade]);
+    return trade;
   }
 
   async findAll(userId: string, query: QueryTradesDto) {
@@ -343,7 +350,9 @@ export class TradesService {
       .returning();
 
     if (!result[0]) throw new NotFoundException(`Trade ${id} not found`);
-    return result[0];
+    const updatedTrade = result[0];
+    await this.eventPublisher.publish(`trades:${userId}`, ['trade:updated', updatedTrade]);
+    return updatedTrade;
   }
 
   async remove(userId: string, id: string) {
@@ -357,6 +366,8 @@ export class TradesService {
     await db
       .delete(trades)
       .where(and(eq(trades.id, id), eq(trades.userId, userId)));
+
+    await this.eventPublisher.publish(`trades:${userId}`, ['trade:deleted', { id }]);
 
     if (trade.chartImage) {
       const imagePath = path.join(process.cwd(), trade.chartImage);
