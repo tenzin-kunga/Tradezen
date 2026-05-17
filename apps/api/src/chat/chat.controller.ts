@@ -1,17 +1,24 @@
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import { Queue } from 'bullmq';
 import type { Request, Response } from 'express';
+import { InjectQueue } from '@nestjs/bullmq';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ChatService } from './chat.service';
 import { CreateChatDto } from './dto/create-chat.dto';
+import { JobStatusService } from '../queues/job-status.service';
 
 @ApiTags('chat')
 @ApiBearerAuth()
 @Throttle({ default: { limit: 20, ttl: 60000 } })
 @Controller('chat')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    @InjectQueue('ai-processing') private aiQueue: Queue,
+    private readonly jobStatusService: JobStatusService,
+  ) {}
 
   @Get('models')
   @ApiOperation({ summary: 'Get configured OpenRouter models' })
@@ -60,5 +67,57 @@ export class ChatController {
     } finally {
       req.off('close', onClientClose);
     }
+  }
+
+  @Post('jobs/summarize-journals')
+  @ApiOperation({ summary: 'Start journal summarization job' })
+  async summarizeJournals(
+    @CurrentUser('id') userId: string,
+    @Body('dateFrom') dateFrom: string,
+    @Body('dateTo') dateTo: string,
+  ) {
+    const job = await this.aiQueue.add('journal-summarize', {
+      userId,
+      dateFrom,
+      dateTo,
+    }, {
+      attempts: 2,
+      backoff: { type: 'exponential', delay: 2000 },
+      removeOnComplete: { age: 86400 },
+      removeOnFail: { age: 604800 },
+    });
+
+    return { jobId: job.id!, message: 'Journal summarization started.' };
+  }
+
+  @Post('jobs/pattern-analysis')
+  @ApiOperation({ summary: 'Start trade pattern analysis job' })
+  async patternAnalysis(
+    @CurrentUser('id') userId: string,
+    @Body('days') days?: number,
+  ) {
+    const job = await this.aiQueue.add('pattern-analysis', {
+      userId,
+      days: days || 30,
+    }, {
+      attempts: 2,
+      backoff: { type: 'exponential', delay: 2000 },
+      removeOnComplete: { age: 86400 },
+      removeOnFail: { age: 604800 },
+    });
+
+    return { jobId: job.id!, message: 'Pattern analysis started.' };
+  }
+
+  @Get('jobs/:jobId')
+  @ApiOperation({ summary: 'Get AI job status by ID' })
+  async getJobStatus(@Param('jobId') jobId: string) {
+    return this.jobStatusService.getJobStatus('ai-processing', jobId);
+  }
+
+  @Get('jobs')
+  @ApiOperation({ summary: 'Get AI job history' })
+  async getJobHistory(@Query('limit') limit?: string) {
+    return this.jobStatusService.getJobHistory('ai-processing', parseInt(limit ?? '10') || 10);
   }
 }
