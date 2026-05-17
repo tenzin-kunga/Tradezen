@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getTrades, deleteTrade, exportCsv, importCsv } from "@/lib/api";
 import StatCard from "@/components/StatCard";
+import { useRealtime } from "@/hooks/use-realtime";
 
 type Trade = {
   id: string; symbol: string; direction: string;
@@ -71,6 +72,18 @@ export default function TradeLog() {
   useEffect(() => {
     fetchTrades();
   }, [fetchTrades]);
+
+  useRealtime('trade:created', () => {
+    fetchTrades();
+  });
+
+  useRealtime('trade:updated', () => {
+    fetchTrades();
+  });
+
+  useRealtime('trade:deleted', () => {
+    fetchTrades();
+  });
 
   const [allSymbols, setAllSymbols] = useState<string[]>([]);
   const [allStrategies, setAllStrategies] = useState<string[]>([]);

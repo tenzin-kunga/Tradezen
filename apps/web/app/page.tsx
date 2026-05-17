@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getTrades, getAnalytics } from "@/lib/api";
 import StatCard from "@/components/StatCard";
 import EquityChart from "@/components/EquityChart";
 import Link from "next/link";
+import { useRealtime } from "@/hooks/use-realtime";
 
 type Trade = {
   id: string; symbol: string; direction: string;
@@ -32,7 +33,7 @@ export default function Dashboard() {
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     Promise.all([
       getTrades({ limit: 100, sort: "created_at", order: "desc" }),
       getAnalytics(),
@@ -44,6 +45,22 @@ export default function Dashboard() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useRealtime('trade:created', () => {
+    loadData();
+  });
+
+  useRealtime('trade:updated', () => {
+    loadData();
+  });
+
+  useRealtime('trade:deleted', () => {
+    loadData();
+  });
 
   const equityData = buildEquityCurve(trades);
   const recent = trades.slice(0, 5);

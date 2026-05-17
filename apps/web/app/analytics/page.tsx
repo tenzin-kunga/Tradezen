@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getAnalytics, getDailyPnl } from "@/lib/api";
 import {
   BarChart,
@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useRealtime } from "@/hooks/use-realtime";
 
 function getSeverity(count: number): { label: string; color: string } {
   if (count > 5) return { label: "CRITICAL", color: "#ef4444" };
@@ -23,7 +24,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadAnalytics = useCallback(() => {
     Promise.all([getAnalytics(), getDailyPnl()])
       .then(([analyticsRes, dailyRes]) => {
         setStats(analyticsRes);
@@ -35,6 +36,22 @@ export default function AnalyticsPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
+
+  useRealtime('trade:created', () => {
+    loadAnalytics();
+  });
+
+  useRealtime('trade:updated', () => {
+    loadAnalytics();
+  });
+
+  useRealtime('trade:deleted', () => {
+    loadAnalytics();
+  });
 
   const safeStats = {
     totalTrades: stats?.totalTrades ?? 0,
