@@ -6,7 +6,6 @@ import { getChatModels, streamChat, type ChatMessage } from "@/lib/api";
 const MODEL_STORAGE_KEY = "tradezen.chat.model";
 const CHAT_SIZE_STORAGE_KEY = "tradezen.chat.size";
 const FALLBACK_MODEL = "default";
-/** Cap retained chat messages to limit heap / re-render cost. */
 const MAX_CHAT_MESSAGES = 80;
 
 function capChatMessages(list: ChatMessage[]): ChatMessage[] {
@@ -121,7 +120,6 @@ export default function ChatPanel() {
     window.localStorage.setItem(MODEL_STORAGE_KEY, model);
   }, [model]);
 
-  // Load saved chat size
   useEffect(() => {
     const savedSize = window.localStorage.getItem(CHAT_SIZE_STORAGE_KEY);
     if (savedSize) {
@@ -135,12 +133,10 @@ export default function ChatPanel() {
     }
   }, []);
 
-  // Handle resize
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingRef.current) return;
 
-      // Get the panel's position
       const panel = document.querySelector('section[style*="position: fixed"]') as HTMLElement;
       if (!panel) return;
 
@@ -230,219 +226,336 @@ export default function ChatPanel() {
 
   return (
     <>
+      {/* Mobile toggle - fixed bottom right */}
       <button
         onClick={() => setOpen((value) => !value)}
+        className="fixed right-4 bottom-4 md:right-6 md:bottom-6 z-40 px-3 py-2 md:px-4 md:py-2.5 text-[10px] md:text-[11px] font-bold tracking-widest"
         style={{
-          position: "fixed",
-          right: 24,
-          bottom: 24,
-          zIndex: 40,
           background: "#ffffff",
           color: "#111111",
           border: "1px solid #d0d0d0",
-          padding: "10px 14px",
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.12em",
           cursor: "pointer",
         }}
       >
         {open ? "CLOSE AI" : "OPEN AI"}
       </button>
 
-      {open ? (
-        <section
-          style={{
-            position: "fixed",
-            right: 24,
-            bottom: 72,
-            zIndex: 40,
-            width: width,
-            height: height,
-            display: "flex",
-            flexDirection: "column",
-            border: "1px solid var(--border)",
-            background: "var(--bg-card)",
-            boxShadow: "0 8px 40px rgba(0, 0, 0, 0.35)",
-            userSelect: "none",
-          }}
-        >
-          <header
+      {open && (
+        <>
+          {/* Mobile overlay */}
+          <div
+            className="fixed inset-0 bg-black/40 z-40 md:hidden"
+            onClick={() => setOpen(false)}
+          />
+
+          {/* Mobile bottom sheet */}
+          <div
+            className="fixed inset-x-0 bottom-0 z-50 md:hidden flex flex-col rounded-t-xl"
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "12px 14px",
-              borderBottom: "1px solid var(--border)",
-              gap: 8,
+              maxHeight: "80vh",
+              border: "1px solid var(--border)",
+              borderBottom: "none",
+              background: "var(--bg-card)",
+              boxShadow: "0 -8px 40px rgba(0, 0, 0, 0.35)",
             }}
           >
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em" }}>TRADE ASSISTANT</span>
-            <select
-              value={model}
-              onChange={(event) => setModel(event.target.value)}
-              disabled={isStreaming}
-              style={{
-                background: "var(--bg-panel)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--border)",
-                padding: "6px 8px",
-                fontSize: 11,
-              }}
+            <header
+              className="flex justify-between items-center px-4 py-3 border-b"
+              style={{ borderBottomColor: "var(--border)" }}
             >
-              {modelOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option === FALLBACK_MODEL ? "Default model" : option}
-                </option>
-              ))}
-            </select>
-          </header>
+              <span className="text-[11px] font-bold tracking-widest">TRADE ASSISTANT</span>
+              <div className="flex items-center gap-2">
+                <select
+                  value={model}
+                  onChange={(event) => setModel(event.target.value)}
+                  disabled={isStreaming}
+                  className="text-[10px]"
+                  style={{
+                    background: "var(--bg-panel)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border)",
+                    padding: "4px 6px",
+                  }}
+                >
+                  {modelOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option === FALLBACK_MODEL ? "Default model" : option}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="p-1"
+                  style={{ background: "none", border: "none", color: "#888", cursor: "pointer" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            </header>
 
-          <div
-            ref={viewportRef}
+            <div
+              ref={viewportRef}
+              className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2"
+              style={{ minHeight: 0 }}
+            >
+              {messages.map((message, index) => (
+                <div
+                  key={`${message.role}-${index}`}
+                  className="max-w-[90%] px-3 py-2 text-xs leading-relaxed"
+                  style={{
+                    alignSelf: message.role === "user" ? "flex-end" : "flex-start",
+                    background: message.role === "user" ? "#ffffff" : "var(--bg-panel)",
+                    color: message.role === "user" ? "#111111" : "var(--text-primary)",
+                    border: "1px solid var(--border)",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {message.content || (isStreaming && message.role === "assistant" ? "..." : "")}
+                </div>
+              ))}
+            </div>
+
+            {error && (
+              <div style={{ color: "var(--accent-loss)", fontSize: 11, padding: "0 12px 6px 12px" }}>
+                {error}
+              </div>
+            )}
+
+            <div
+              className="border-t px-3 py-3 flex gap-2"
+              style={{ borderTopColor: "var(--border)" }}
+            >
+              <textarea
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void onSend();
+                  }
+                }}
+                placeholder="Ask about your trading..."
+                disabled={isStreaming}
+                className="flex-1 text-xs resize-none px-3 py-2"
+                style={{
+                  height: 56,
+                  background: "var(--bg-panel)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border)",
+                }}
+              />
+              <button
+                onClick={() => void onSend()}
+                disabled={!canSend}
+                className="w-16 text-[10px] font-bold tracking-widest"
+                style={{
+                  background: canSend ? "#ffffff" : "#777777",
+                  color: "#111111",
+                  border: "1px solid #d0d0d0",
+                  cursor: canSend ? "pointer" : "not-allowed",
+                }}
+              >
+                {isStreaming ? "..." : "SEND"}
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop floating panel */}
+          <section
+            className="hidden md:block"
             style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: 12,
+              position: "fixed",
+              right: 24,
+              bottom: 72,
+              zIndex: 40,
+              width: width,
+              height: height,
               display: "flex",
               flexDirection: "column",
-              gap: 8,
+              border: "1px solid var(--border)",
+              background: "var(--bg-card)",
+              boxShadow: "0 8px 40px rgba(0, 0, 0, 0.35)",
+              userSelect: "none",
             }}
           >
-            {messages.map((message, index) => (
-              <div
-                key={`${message.role}-${index}`}
+            <header
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 14px",
+                borderBottom: "1px solid var(--border)",
+                gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em" }}>TRADE ASSISTANT</span>
+              <select
+                value={model}
+                onChange={(event) => setModel(event.target.value)}
+                disabled={isStreaming}
                 style={{
-                  alignSelf: message.role === "user" ? "flex-end" : "flex-start",
-                  maxWidth: "90%",
-                  background: message.role === "user" ? "#ffffff" : "var(--bg-panel)",
-                  color: message.role === "user" ? "#111111" : "var(--text-primary)",
+                  background: "var(--bg-panel)",
+                  color: "var(--text-primary)",
+                  border: "1px solid var(--border)",
+                  padding: "6px 8px",
+                  fontSize: 11,
+                }}
+              >
+                {modelOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option === FALLBACK_MODEL ? "Default model" : option}
+                  </option>
+                ))}
+              </select>
+            </header>
+
+            <div
+              ref={viewportRef}
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: 12,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              {messages.map((message, index) => (
+                <div
+                  key={`${message.role}-${index}`}
+                  style={{
+                    alignSelf: message.role === "user" ? "flex-end" : "flex-start",
+                    maxWidth: "90%",
+                    background: message.role === "user" ? "#ffffff" : "var(--bg-panel)",
+                    color: message.role === "user" ? "#111111" : "var(--text-primary)",
+                    border: "1px solid var(--border)",
+                    padding: "8px 10px",
+                    fontSize: 12,
+                    lineHeight: 1.6,
+                    whiteSpace: "normal" as const,
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
+                    hyphens: "auto",
+                    textRendering: "optimizeLegibility",
+                    fontVariantLigatures: "normal",
+                    fontKerning: "auto",
+                  } as React.CSSProperties}
+                >
+                  {message.content || (isStreaming && message.role === "assistant" ? "..." : "")}
+                </div>
+              ))}
+            </div>
+
+            {error ? (
+              <div
+                style={{
+                  color: "var(--accent-loss)",
+                  fontSize: 11,
+                  padding: "0 12px 8px 12px",
+                }}
+              >
+                {error}
+              </div>
+            ) : null}
+
+            <div
+              style={{
+                borderTop: "1px solid var(--border)",
+                padding: 12,
+                display: "flex",
+                gap: 8,
+              }}
+            >
+              <textarea
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void onSend();
+                  }
+                }}
+                placeholder="Ask about your trading performance..."
+                disabled={isStreaming}
+                style={{
+                  flex: 1,
+                  height: 68,
+                  resize: "none",
+                  background: "var(--bg-panel)",
+                  color: "var(--text-primary)",
                   border: "1px solid var(--border)",
                   padding: "8px 10px",
                   fontSize: 12,
-                  lineHeight: 1.6,
-                  whiteSpace: "normal" as const,
-                  wordBreak: "break-word",
-                  overflowWrap: "break-word",
-                  hyphens: "auto",
-                  textRendering: "optimizeLegibility",
-                  fontVariantLigatures: "normal",
-                  fontKerning: "auto",
-                } as React.CSSProperties}
+                }}
+              />
+              <button
+                onClick={() => void onSend()}
+                disabled={!canSend}
+                style={{
+                  width: 80,
+                  background: canSend ? "#ffffff" : "#777777",
+                  color: "#111111",
+                  border: "1px solid #d0d0d0",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.1em",
+                  cursor: canSend ? "pointer" : "not-allowed",
+                }}
               >
-                {message.content || (isStreaming && message.role === "assistant" ? "..." : "")}
-              </div>
-            ))}
-          </div>
-
-          {error ? (
-            <div
-              style={{
-                color: "var(--accent-loss)",
-                fontSize: 11,
-                padding: "0 12px 8px 12px",
-              }}
-            >
-              {error}
+                {isStreaming ? "..." : "SEND"}
+              </button>
             </div>
-          ) : null}
 
-          <div
-            style={{
-              borderTop: "1px solid var(--border)",
-              padding: 12,
-              display: "flex",
-              gap: 8,
-            }}
-          >
-            <textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void onSend();
-                }
+            {/* Resize handle */}
+            <div
+              ref={resizeRef}
+              onMouseDown={() => {
+                isResizingRef.current = true;
               }}
-              placeholder="Ask about your trading performance..."
-              disabled={isStreaming}
               style={{
-                flex: 1,
-                height: 68,
-                resize: "none",
-                background: "var(--bg-panel)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--border)",
-                padding: "8px 10px",
-                fontSize: 12,
+                position: "absolute",
+                bottom: 0,
+                right: 0,
+                width: 30,
+                height: 30,
+                cursor: "nwse-resize",
+                background: "linear-gradient(135deg, transparent 60%, #666 60%)",
               }}
             />
-            <button
-              onClick={() => void onSend()}
-              disabled={!canSend}
-              style={{
-                width: 80,
-                background: canSend ? "#ffffff" : "#777777",
-                color: "#111111",
-                border: "1px solid #d0d0d0",
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                cursor: canSend ? "pointer" : "not-allowed",
+            <div
+              onMouseDown={() => {
+                isResizingRef.current = true;
               }}
-            >
-              {isStreaming ? "..." : "SEND"}
-            </button>
-          </div>
-
-          {/* Resize handle */}
-          <div
-            ref={resizeRef}
-            onMouseDown={() => {
-              isResizingRef.current = true;
-            }}
-            style={{
-              position: "absolute",
-              bottom: 0,
-              right: 0,
-              width: 30,
-              height: 30,
-              cursor: "nwse-resize",
-              background: "linear-gradient(135deg, transparent 60%, #666 60%)",
-            }}
-          />
-          {/* Right edge resize */}
-          <div
-            onMouseDown={() => {
-              isResizingRef.current = true;
-            }}
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              width: 5,
-              height: "100%",
-              cursor: "ew-resize",
-              background: "transparent",
-            }}
-          />
-          {/* Bottom edge resize */}
-          <div
-            onMouseDown={() => {
-              isResizingRef.current = true;
-            }}
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              width: "100%",
-              height: 5,
-              cursor: "ns-resize",
-              background: "transparent",
-            }}
-          />
-        </section>
-      ) : null}
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                width: 5,
+                height: "100%",
+                cursor: "ew-resize",
+                background: "transparent",
+              }}
+            />
+            <div
+              onMouseDown={() => {
+                isResizingRef.current = true;
+              }}
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                width: "100%",
+                height: 5,
+                cursor: "ns-resize",
+                background: "transparent",
+              }}
+            />
+          </section>
+        </>
+      )}
     </>
   );
 }

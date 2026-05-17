@@ -64,7 +64,7 @@ const navItems = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
@@ -72,28 +72,42 @@ export default function Sidebar() {
     ? user.username.slice(0, 2).toUpperCase()
     : "OP";
 
+  const handleNavClick = () => {
+    onClose?.();
+  };
+
   return (
     <aside
-      className="flex flex-col flex-shrink-0 h-screen"
+      className="flex flex-col h-screen md:h-auto"
       style={{
         width: 240,
         background: "#111111",
         borderRight: "1px solid #2a2a2a",
       }}
     >
-      {/* Logo */}
-      <div className="px-6 py-6">
+      {/* Logo + close button */}
+      <div className="px-6 py-6 flex items-center justify-between">
         <span
           className="text-white font-bold tracking-widest"
           style={{ fontSize: 18, letterSpacing: "0.2em" }}
         >
           TRADEZEN
         </span>
+        <button
+          onClick={onClose}
+          className="md:hidden p-1"
+          style={{ background: "none", border: "none", color: "#888", cursor: "pointer" }}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
       </div>
 
-      {/* User Block — links to Settings */}
+      {/* User Block */}
       <Link
         href="/settings"
+        onClick={handleNavClick}
         className="mx-4 mb-4 px-3 py-3 flex items-center gap-3"
         style={{
           background: pathname === "/settings" ? "#2a2a2a" : "#1c1c1c",
@@ -136,6 +150,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={handleNavClick}
               className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold tracking-widest transition-colors"
               style={{
                 background: isActive ? "#ffffff" : "transparent",
@@ -154,6 +169,7 @@ export default function Sidebar() {
         <div style={{ marginTop: 24 }}>
           <Link
             href="/add-trade"
+            onClick={handleNavClick}
             className="flex items-center justify-center px-3 py-3 text-xs font-bold tracking-widest transition-colors"
             style={{
               background: "#ffffff",
@@ -173,7 +189,7 @@ export default function Sidebar() {
         style={{ borderTop: "1px solid #2a2a2a" }}
       >
         <button
-          onClick={() => logout()}
+          onClick={() => { logout(); onClose?.(); }}
           className="flex items-center gap-3 px-3 py-2 text-xs font-bold tracking-widest w-full text-left"
           style={{
             color: "#888",

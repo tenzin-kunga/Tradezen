@@ -5,27 +5,6 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  backgroundColor: "#111111",
-  border: "1px solid #2a2a2a",
-  borderRadius: "4px",
-  padding: "12px 14px",
-  color: "#ffffff",
-  fontFamily: "monospace",
-  fontSize: "13px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: "10px",
-  color: "#888",
-  letterSpacing: "0.12em",
-  marginBottom: "6px",
-  display: "block",
-};
-
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
@@ -67,83 +46,66 @@ export default function LoginPage() {
 
   return (
     <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#111111",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "monospace",
-      }}
+      className="min-h-screen flex items-center justify-center px-4 py-8"
+      style={{ backgroundColor: "#111111", fontFamily: "monospace" }}
     >
-      <div style={{ width: 400 }}>
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8 md:mb-10">
           <h1
-            style={{
-              color: "#fff",
-              fontSize: 24,
-              fontWeight: 700,
-              letterSpacing: "0.2em",
-              margin: 0,
-            }}
+            className="text-white font-bold tracking-widest text-xl md:text-2xl m-0"
+            style={{ letterSpacing: "0.2em" }}
           >
             TRADEZEN
           </h1>
-          <p style={{ color: "#555", fontSize: 11, letterSpacing: "0.1em", marginTop: 8 }}>
+          <p className="text-xs md:text-sm mt-2" style={{ color: "#555", letterSpacing: "0.1em" }}>
             AUTHENTICATE // ACCESS LEDGER
           </p>
         </div>
 
         <div
+          className="p-6 md:p-8"
           style={{
             backgroundColor: "#1c1c1c",
             border: "1px solid #2a2a2a",
             borderRadius: "4px",
-            padding: 32,
           }}
         >
           <div
-            style={{
-              fontSize: 10,
-              color: "#555",
-              letterSpacing: "0.15em",
-              marginBottom: 24,
-            }}
+            className="text-xs mb-6"
+            style={{ color: "#555", letterSpacing: "0.15em" }}
           >
             OPERATOR LOGIN
           </div>
 
           {error && (
             <div
+              className="text-xs tracking-wide mb-5 p-3"
               style={{
                 background: "rgba(239,68,68,0.1)",
                 border: "1px solid #ef4444",
                 color: "#ef4444",
-                padding: "10px 14px",
-                fontSize: 11,
                 letterSpacing: "0.05em",
-                marginBottom: 20,
               }}
             >
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>EMAIL OR USERNAME</label>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 tracking-widest mb-1.5">EMAIL OR USERNAME</label>
               <input
-                style={inputStyle}
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-3.5 py-3 text-white text-sm font-mono outline-none box-border focus:border-[#22d3ee]"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="operator@tradezen.io"
                 autoComplete="username"
               />
             </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={labelStyle}>PASSWORD</label>
+            <div>
+              <label className="block text-xs text-gray-500 tracking-widest mb-1.5">PASSWORD</label>
               <input
-                style={inputStyle}
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-3.5 py-3 text-white text-sm font-mono outline-none box-border focus:border-[#22d3ee]"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -151,15 +113,16 @@ export default function LoginPage() {
                 autoComplete="current-password"
               />
             </div>
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => updateRememberMe(e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: "#fff" }}
+                  className="w-4 h-4"
+                  style={{ accentColor: "#fff" }}
                 />
-                <span style={{ color: "#ccc", fontSize: 12, letterSpacing: "0.08em" }}>
+                <span className="text-sm tracking-wide" style={{ color: "#ccc" }}>
                   Remember me
                 </span>
               </label>
@@ -167,17 +130,11 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
+              className="w-full py-3 text-xs font-bold tracking-widest font-mono rounded disabled:cursor-not-allowed"
               style={{
-                width: "100%",
-                padding: "12px",
                 backgroundColor: loading ? "#333" : "#ffffff",
                 color: loading ? "#888" : "#111111",
                 border: "none",
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: "0.15em",
-                cursor: loading ? "default" : "pointer",
-                fontFamily: "monospace",
               }}
             >
               {loading ? "AUTHENTICATING..." : "LOGIN"}
@@ -185,17 +142,14 @@ export default function LoginPage() {
           </form>
 
           <div
-            style={{
-              textAlign: "center",
-              marginTop: 20,
-              fontSize: 11,
-              color: "#555",
-            }}
+            className="text-center mt-5 text-xs"
+            style={{ color: "#555" }}
           >
             NO ACCOUNT?{" "}
             <Link
               href="/register"
-              style={{ color: "#888", textDecoration: "none", letterSpacing: "0.08em" }}
+              className="no-underline tracking-wide"
+              style={{ color: "#888" }}
             >
               REGISTER
             </Link>

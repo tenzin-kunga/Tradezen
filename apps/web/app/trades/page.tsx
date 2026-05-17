@@ -168,65 +168,70 @@ export default function TradeLog() {
 
   return (
     <div>
-      <div className="glass-card p-4 mb-4" style={{ display: "flex", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
-        <div>
-          <div className="label-caps mb-2">DATE RANGE</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-glass" />
-            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-glass" />
+      {/* Filters - stack on mobile, row on desktop */}
+      <div className="glass-card p-3 md:p-4 mb-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-end flex-wrap">
+            <div>
+              <div className="label-caps mb-2">DATE RANGE</div>
+              <div className="flex gap-2">
+                <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-glass text-xs" />
+                <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-glass text-xs" />
+              </div>
+            </div>
+            <div>
+              <div className="label-caps mb-2">ASSET CLASS</div>
+              <select value={assetFilter} onChange={(e) => setAssetFilter(e.target.value)} className="select-glass text-xs">
+                <option>ALL ASSETS</option>
+                {allSymbols.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="label-caps mb-2">STRATEGY</div>
+              <select value={strategyFilter} onChange={(e) => setStrategyFilter(e.target.value)} className="select-glass text-xs">
+                <option>ANY STRATEGY</option>
+                {allStrategies.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
           </div>
-        </div>
-        <div>
-          <div className="label-caps mb-2">ASSET CLASS</div>
-          <select value={assetFilter} onChange={(e) => setAssetFilter(e.target.value)} className="select-glass">
-            <option>ALL ASSETS</option>
-            {allSymbols.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-        <div>
-          <div className="label-caps mb-2">STRATEGY</div>
-          <select value={strategyFilter} onChange={(e) => setStrategyFilter(e.target.value)} className="select-glass">
-            <option>ANY STRATEGY</option>
-            {allStrategies.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          {(["ALL", "WIN", "LOSS"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => { setResultFilter(mode); setPage(1); }}
-              className={`btn-glass ${resultFilter === mode ? 'active' : ''}`}
-            >
-              {mode}
+          <div className="flex flex-wrap gap-2 items-center">
+            {(["ALL", "WIN", "LOSS"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => { setResultFilter(mode); setPage(1); }}
+                className={`btn-glass text-xs ${resultFilter === mode ? 'active' : ''}`}
+              >
+                {mode}
+              </button>
+            ))}
+            <button onClick={() => { setPage(1); fetchTrades(); }} className="btn-primary text-xs">
+              APPLY
             </button>
-          ))}
-          <button onClick={() => { setPage(1); fetchTrades(); }} className="btn-primary">
-            APPLY
-          </button>
-        </div>
-        <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
-          <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCsv} style={{ display: "none" }} />
-          <button onClick={() => fileInputRef.current?.click()} className="btn-glass">
-            IMPORT
-          </button>
-          <button onClick={handleExportCsv} className="btn-glass">
-            EXPORT
-          </button>
+            <div className="flex gap-2 ml-auto">
+              <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCsv} style={{ display: "none" }} />
+              <button onClick={() => fileInputRef.current?.click()} className="btn-glass text-xs">
+                IMPORT
+              </button>
+              <button onClick={handleExportCsv} className="btn-glass text-xs">
+                EXPORT
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {importResult && (
-        <div className="glass-card p-4 mb-4" style={{
+        <div className="glass-card p-3 md:p-4 mb-4" style={{
           background: importResult.errors.length > 0 ? "rgba(239,68,68,0.05)" : "rgba(16,185,129,0.05)",
           border: `1px solid ${importResult.errors.length > 0 ? "var(--accent-loss)" : "var(--accent-profit)"}`,
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: importResult.errors.length > 0 ? "var(--accent-loss)" : "var(--accent-profit)", marginBottom: 4 }}>
+              <div className="text-xs font-semibold mb-1" style={{ color: importResult.errors.length > 0 ? "var(--accent-loss)" : "var(--accent-profit)" }}>
                 {importResult.imported > 0 ? `IMPORTED ${importResult.imported} TRADE${importResult.imported !== 1 ? "S" : ""}` : "IMPORT COMPLETED"}
               </div>
               {importResult.errors.length > 0 && (
-                <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
                   {importResult.errors.slice(0, 3).map((err, i) => (
                     <div key={i}>{err}</div>
                   ))}
@@ -234,40 +239,42 @@ export default function TradeLog() {
                 </div>
               )}
             </div>
-            <button onClick={() => setImportResult(null)} className="btn-glass">DISMISS</button>
+            <button onClick={() => setImportResult(null)} className="btn-glass text-xs">DISMISS</button>
           </div>
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 16 }}>
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
         <div className="fade-up"><StatCard label="TOTAL P&L" value={loading ? "..." : fmt(totalPnl)} valueColor={totalPnl >= 0 ? "#10b981" : "#ef4444"} /></div>
         <div className="fade-up"><StatCard label="WIN RATE" value={loading ? "..." : winRate} /></div>
         <div className="fade-up"><StatCard label="AVG R:R" value={loading ? "..." : avgRR} /></div>
         <div className="fade-up"><StatCard label="ACTIVE TRADES" value={`${total}`} /></div>
       </div>
 
-      <div className="glass-card p-6 fade-up" style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      {/* Trade cards */}
+      <div className="glass-card p-4 md:p-6 fade-up mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 md:mb-5">
           <span className="label-caps">EXECUTION ARCHIVE</span>
-          <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
             SHOWING {Math.min((page - 1) * 10 + 1, total)}–{Math.min(page * 10, total)} OF {total} TRADES
           </span>
         </div>
         {filteredTrades.length === 0 ? (
-          <div style={{ color: "var(--text-muted)", padding: "60px 0", textAlign: "center" }}>
+          <div style={{ color: "var(--text-muted)", padding: "40px 0", textAlign: "center" }}>
             {loading ? (
               "Loading trades..."
             ) : trades.length === 0 ? (
               <>
-                <div style={{ marginBottom: 12, fontWeight: 600, color: "var(--text-primary)" }}>No trades found.</div>
-                <div style={{ marginBottom: 16 }}>Create a new trade to see it appear here.</div>
+                <div className="mb-3 font-semibold" style={{ color: "var(--text-primary)" }}>No trades found.</div>
+                <div className="mb-4">Create a new trade to see it appear here.</div>
                 <button onClick={() => router.push("/add-trade")} className="btn-primary">
                   Add First Trade
                 </button>
               </>
             ) : (
               <>
-                <div style={{ marginBottom: 12, fontWeight: 600, color: "var(--text-primary)" }}>No trades match filters.</div>
+                <div className="mb-3 font-semibold" style={{ color: "var(--text-primary)" }}>No trades match filters.</div>
                 <button
                   onClick={() => {
                     setAssetFilter("ALL ASSETS");
@@ -285,82 +292,84 @@ export default function TradeLog() {
             )}
           </div>
         ) : (
-          <div style={{ display: "grid", gap: 16 }}>
+          <div className="flex flex-col gap-4">
             {filteredTrades.slice((page - 1) * 10, page * 10).map((t) => {
               const isWin = t.pnl >= 0;
               const isLong = t.direction === "buy";
               return (
-                <div key={t.id} className="glass-card" style={{ overflow: "hidden", display: "grid", gridTemplateColumns: "280px 1fr" }}>
-                  <div style={{ minHeight: 200, background: "var(--bg-primary)", position: "relative" }}>
+                <div key={t.id} className="glass-card overflow-hidden">
+                  {/* Image section - full width mobile, left side desktop */}
+                  <div className="w-full md:w-[280px] min-h-[160px] md:min-h-[200px] relative" style={{ background: "var(--bg-primary)" }}>
                     {t.chart_image ? (
-                      <img src={t.chart_image} alt="Trade chart" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={t.chart_image} alt="Trade chart" className="w-full h-full object-cover" />
                     ) : (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-dim)", fontSize: 11, padding: 16, textAlign: "center" }}>
+                      <div className="flex items-center justify-center h-full text-xs p-4 text-center" style={{ color: "var(--text-dim)" }}>
                         No chart image
                       </div>
                     )}
-                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 12, background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.8))" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                        <span style={{ fontWeight: 700 }}>{t.symbol}</span>
-                        <span style={{ fontWeight: 700, color: isWin ? "#10b981" : "#ef4444" }}>{isWin ? "WIN" : "LOSS"}</span>
+                    <div className="absolute bottom-0 left-0 right-0 p-3" style={{ background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.8))" }}>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-bold text-sm">{t.symbol}</span>
+                        <span className="font-bold text-sm" style={{ color: isWin ? "#10b981" : "#ef4444" }}>{isWin ? "WIN" : "LOSS"}</span>
                       </div>
-                      <div style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 4 }}>{t.strategy || "No strategy"}</div>
+                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t.strategy || "No strategy"}</div>
                     </div>
                   </div>
-                  <div style={{ padding: 20, display: "grid", gap: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  {/* Details */}
+                  <div className="p-4 flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="label-caps mb-2">DIRECTION</div>
-                        <div style={{ fontWeight: 600, color: isLong ? "#10b981" : "#ef4444" }}>{isLong ? "LONG" : "SHORT"}</div>
+                        <div className="label-caps mb-1">DIRECTION</div>
+                        <div className="font-semibold text-sm" style={{ color: isLong ? "#10b981" : "#ef4444" }}>{isLong ? "LONG" : "SHORT"}</div>
                       </div>
                       <div>
-                        <div className="label-caps mb-2">RESULT</div>
-                        <div className="mono-data" style={{ fontWeight: 600, color: isWin ? "#10b981" : "#ef4444" }}>{fmt(Number(t.pnl))}</div>
+                        <div className="label-caps mb-1">RESULT</div>
+                        <div className="mono-data font-semibold text-sm" style={{ color: isWin ? "#10b981" : "#ef4444" }}>{fmt(Number(t.pnl))}</div>
                       </div>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <div className="glass-card p-3">
                         <div className="label-caps mb-1">ENTRY</div>
-                        <div className="mono-data" style={{ fontWeight: 600 }}>{t.entry_price}</div>
+                        <div className="mono-data font-semibold text-sm">{t.entry_price}</div>
                       </div>
                       <div className="glass-card p-3">
                         <div className="label-caps mb-1">EXIT</div>
-                        <div className="mono-data" style={{ fontWeight: 600 }}>{t.exit_price}</div>
+                        <div className="mono-data font-semibold text-sm">{t.exit_price}</div>
                       </div>
-                      <div className="glass-card p-3">
+                      <div className="glass-card p-3 col-span-2 sm:col-span-1">
                         <div className="label-caps mb-1">DATE</div>
-                        <div className="mono-data" style={{ fontWeight: 600, fontSize: 11 }}>{t.trade_date ? new Date(t.trade_date).toISOString().replace("T", " ").slice(0, 16) : new Date(t.created_at).toISOString().replace("T", " ").slice(0, 16)}</div>
+                        <div className="mono-data font-semibold text-xs">{t.trade_date ? new Date(t.trade_date).toISOString().replace("T", " ").slice(0, 16) : new Date(t.created_at).toISOString().replace("T", " ").slice(0, 16)}</div>
                       </div>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       <div className="glass-card p-3">
                         <div className="label-caps mb-1">LOT</div>
-                        <div className="mono-data" style={{ fontWeight: 600 }}>{t.lot_size}</div>
+                        <div className="mono-data font-semibold text-sm">{t.lot_size}</div>
                       </div>
                       <div className="glass-card p-3">
                         <div className="label-caps mb-1">SL</div>
-                        <div className="mono-data" style={{ fontWeight: 600 }}>{t.stop_loss?.toFixed(5) ?? "--"}</div>
+                        <div className="mono-data font-semibold text-sm">{t.stop_loss?.toFixed(5) ?? "--"}</div>
                       </div>
                       <div className="glass-card p-3">
                         <div className="label-caps mb-1">TP</div>
-                        <div className="mono-data" style={{ fontWeight: 600 }}>{t.take_profit?.toFixed(5) ?? "--"}</div>
+                        <div className="mono-data font-semibold text-sm">{t.take_profit?.toFixed(5) ?? "--"}</div>
                       </div>
                       <div className="glass-card p-3">
                         <div className="label-caps mb-1">COMMISSION</div>
-                        <div className="mono-data" style={{ fontWeight: 600 }}>${t.commission?.toFixed(2) ?? "0.00"}</div>
+                        <div className="mono-data font-semibold text-sm">${t.commission?.toFixed(2) ?? "0.00"}</div>
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-                      <div style={{ flex: 1, minWidth: 220 }}>
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                      <div className="flex-1 w-full">
                         <div className="label-caps mb-2">NOTES</div>
-                        <div style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6, minHeight: 60 }}>{t.notes || "No notes."}</div>
+                        <div style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6, minHeight: 40 }}>{t.notes || "No notes."}</div>
                       </div>
-                      <div style={{ minWidth: 130, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <button onClick={() => router.push(`/trades/${t.id}/edit`)} className="btn-primary">EDIT</button>
-                        <button onClick={() => handleDelete(t.id)} className="btn-glass" style={{ color: "var(--accent-loss)", borderColor: "var(--accent-loss)" }}>DELETE</button>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <button onClick={() => router.push(`/trades/${t.id}/edit`)} className="btn-primary text-xs flex-1 sm:flex-initial">EDIT</button>
+                        <button onClick={() => handleDelete(t.id)} className="btn-glass text-xs flex-1 sm:flex-initial" style={{ color: "var(--accent-loss)", borderColor: "var(--accent-loss)" }}>DELETE</button>
                       </div>
                     </div>
                   </div>
@@ -371,26 +380,27 @@ export default function TradeLog() {
         )}
 
         {totalPages > 1 && (
-          <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 20 }}>
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn-glass" disabled={page === 1}>{"<"}</button>
+          <div className="flex gap-1 justify-center mt-5 flex-wrap">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn-glass text-xs" disabled={page === 1}>{"<"}</button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={`btn-glass ${p === page ? 'active' : ''}`}>{p}</button>
+              <button key={p} onClick={() => setPage(p)} className={`btn-glass text-xs ${p === page ? 'active' : ''}`}>{p}</button>
             ))}
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="btn-glass" disabled={page === totalPages}>{">"}</button>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="btn-glass text-xs" disabled={page === totalPages}>{">"}</button>
           </div>
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-        <div className="glass-card p-6 fade-up">
-          <div className="label-caps mb-5">SESSION DISTRIBUTION</div>
+      {/* Session + Strategy */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="glass-card p-4 md:p-6 fade-up">
+          <div className="label-caps mb-4">SESSION DISTRIBUTION</div>
           {["NY OPEN", "LONDON", "ASIAN"].map((session) => {
             const pct = Math.round((sessionCounts[session] / sessionTotal) * 100);
             return (
-              <div key={session} style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontWeight: 600, letterSpacing: "0.05em", fontSize: 12 }}>{session}</span>
-                  <span className="mono-data" style={{ fontWeight: 600 }}>{pct}%</span>
+              <div key={session} className="mb-4">
+                <div className="flex justify-between mb-1.5">
+                  <span className="font-semibold tracking-wide text-xs">{session}</span>
+                  <span className="mono-data font-semibold">{pct}%</span>
                 </div>
                 <div style={{ height: 4, background: "var(--border)", width: "100%", borderRadius: 2 }}>
                   <div style={{ height: 4, background: "var(--accent-cyan)", width: `${pct}%`, transition: "width 0.3s", borderRadius: 2 }} />
@@ -400,14 +410,14 @@ export default function TradeLog() {
           })}
         </div>
 
-        <div className="glass-card p-6 fade-up">
-          <div className="label-caps mb-5">STRATEGY TAGS</div>
+        <div className="glass-card p-4 md:p-6 fade-up">
+          <div className="label-caps mb-4">STRATEGY TAGS</div>
           {allStrategies.length === 0 ? (
             <p style={{ color: "var(--text-dim)", fontSize: 12 }}>No strategy tags yet.</p>
           ) : (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div className="flex flex-wrap gap-2">
               {allStrategies.map((s) => (
-                <span key={s} className="glass-card" style={{ padding: "6px 12px", fontSize: 11, fontWeight: 600 }}>
+                <span key={s} className="glass-card px-3 py-1.5 text-xs font-semibold">
                   #{s}
                 </span>
               ))}
@@ -417,12 +427,12 @@ export default function TradeLog() {
       </div>
 
       {showAnomaly && (
-        <div className="glass-card p-6 fade-up" style={{ borderColor: "var(--accent-warn)" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "var(--accent-warn)", marginBottom: 8 }}>ANOMALOUS RISK</div>
-          <p style={{ color: "var(--text-muted)", fontSize: 12, margin: "0 0 16px" }}>
+        <div className="glass-card p-4 md:p-6 fade-up" style={{ borderColor: "var(--accent-warn)" }}>
+          <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "var(--accent-warn)" }}>ANOMALOUS RISK</div>
+          <p className="text-sm mb-4" style={{ color: "var(--text-muted)", margin: "0 0 16px" }}>
             3+ consecutive losses detected. Review your protocol.
           </p>
-          <button className="btn-glass" style={{ borderColor: "var(--accent-warn)", color: "var(--accent-warn)" }}>REVIEW PROTOCOL</button>
+          <button className="btn-glass text-xs" style={{ borderColor: "var(--accent-warn)", color: "var(--accent-warn)" }}>REVIEW PROTOCOL</button>
         </div>
       )}
     </div>

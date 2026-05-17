@@ -79,76 +79,74 @@ export default function AnalyticsPage() {
     : 1;
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#111111", color: "#ffffff", fontFamily: "monospace" }}>
+    <div className="min-h-screen text-white font-mono">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "0.1em", margin: 0 }}>
+          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
             PROTOCOL ANALYTICS
           </h1>
-          <p style={{ fontSize: "11px", color: "#555", margin: "4px 0 0", letterSpacing: "0.05em" }}>
+          <p className="text-xs text-gray-600 mt-1 tracking-wide">
             SYSTEM_VERSION_4.2 // AGGREGATED_DATA_7D
           </p>
         </div>
         {!error && (
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "11px", color: "#888", letterSpacing: "0.1em" }}>NET P/L</div>
-            <div style={{ fontSize: "24px", fontWeight: 700, color: safeStats.totalPnl >= 0 ? "#22c55e" : "#ef4444" }}>
+          <div className="text-right">
+            <div className="text-xs tracking-widest" style={{ color: "#888" }}>NET P/L</div>
+            <div className="text-xl md:text-2xl font-bold" style={{ color: safeStats.totalPnl >= 0 ? "#22c55e" : "#ef4444" }}>
               {safeStats.totalPnl >= 0 ? "+" : ""}${safeStats.totalPnl.toFixed(2)}
             </div>
-            <div style={{ fontSize: "11px", color: "#888", marginTop: "4px" }}>
-              WIN RATE: <span style={{ color: "#ffffff" }}>{safeStats.winRate}%</span>
+            <div className="text-xs mt-1" style={{ color: "#888" }}>
+              WIN RATE: <span className="text-white">{safeStats.winRate}%</span>
             </div>
           </div>
         )}
       </div>
 
       {loading && (
-        <div style={{ textAlign: "center", color: "#888", padding: "60px 0", letterSpacing: "0.2em" }}>
+        <div className="text-center py-16 tracking-widest" style={{ color: "#888" }}>
           LOADING PROTOCOL DATA...
         </div>
       )}
 
       {!loading && error && (
-        <div style={{ textAlign: "center", color: "#ff7f50", padding: "60px 0", letterSpacing: "0.2em" }}>
+        <div className="text-center py-16 tracking-widest" style={{ color: "#ff7f50" }}>
           ERROR LOADING ANALYTICS: {error}
         </div>
       )}
 
       {!loading && !error && safeStats.totalTrades === 0 && (
-        <div style={{ textAlign: "center", color: "#555", padding: "60px 0", letterSpacing: "0.2em" }}>
+        <div className="text-center py-16 tracking-widest" style={{ color: "#555" }}>
           NO TRADE DATA AVAILABLE
         </div>
       )}
 
       {!loading && !error && safeStats.totalTrades > 0 && (
         <>
-          {/* Row 1: Strategy Efficiency + Asset Distribution */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+          {/* Row 1: Strategy + Day of Week */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
             {/* Strategy Efficiency */}
-            <div style={{ backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", padding: "20px" }}>
-              <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", marginBottom: "16px" }}>
+            <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5">
+              <div className="text-xs tracking-widest mb-4" style={{ color: "#888" }}>
                 STRATEGY EFFICIENCY BREAKDOWN
               </div>
               {safeStats.byStrategy.length === 0 ? (
-                <div style={{ color: "#555", fontSize: "12px" }}>NO STRATEGY DATA</div>
+                <div className="text-sm" style={{ color: "#555" }}>NO STRATEGY DATA</div>
               ) : (
                 safeStats.byStrategy.map((s: any) => (
-                  <div key={s.name} style={{ marginBottom: "14px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "11px", letterSpacing: "0.08em", color: "#ccc" }}>#{s.name}</span>
-                      <span style={{ fontSize: "11px", color: "#888" }}>
+                  <div key={s.name} className="mb-3.5">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs tracking-wide" style={{ color: "#ccc" }}>#{s.name}</span>
+                      <span className="text-xs" style={{ color: "#888" }}>
                         {(s.winRate * 100).toFixed(0)}% WIN · {s.trades} TRADES
                       </span>
                     </div>
-                    <div style={{ height: "4px", backgroundColor: "#2a2a2a", borderRadius: "2px" }}>
+                    <div className="h-1 bg-[#2a2a2a] rounded">
                       <div
+                        className="h-1 rounded transition-all"
                         style={{
-                          height: "4px",
-                          borderRadius: "2px",
                           width: `${(Math.abs(s.pnl) / maxStratPnl) * 100}%`,
                           backgroundColor: s.pnl >= 0 ? "#22c55e" : "#ef4444",
-                          transition: "width 0.3s",
                         }}
                       />
                     </div>
@@ -157,9 +155,9 @@ export default function AnalyticsPage() {
               )}
             </div>
 
-            {/* Day of Week Distribution */}
-            <div style={{ backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", padding: "20px" }}>
-              <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", marginBottom: "16px" }}>
+            {/* Day of Week */}
+            <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5">
+              <div className="text-xs tracking-widest mb-4" style={{ color: "#888" }}>
                 DAY OF WEEK PERFORMANCE
               </div>
               <ResponsiveContainer width="100%" height={160}>
@@ -178,22 +176,22 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Row 2: Behavioral Errors */}
-          <div style={{ backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", padding: "20px", marginBottom: "16px" }}>
-            <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", marginBottom: "16px" }}>
+          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5 mb-4">
+            <div className="text-xs tracking-widest mb-4" style={{ color: "#888" }}>
               BEHAVIORAL ERROR ANALYSIS
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* FOMO */}
               {(() => {
                 const count = safeStats.behavioralStats.fomoCount;
                 const sev = getSeverity(count);
                 return (
-                  <div style={{ backgroundColor: "#111", border: `1px solid ${sev.color}22`, borderRadius: "4px", padding: "16px" }}>
-                    <div style={{ fontSize: "10px", color: sev.color, letterSpacing: "0.12em", marginBottom: "8px" }}>
+                  <div className="bg-[#111] rounded p-4" style={{ border: `1px solid ${sev.color}22` }}>
+                    <div className="text-xs tracking-widest mb-2" style={{ color: sev.color }}>
                       {sev.label}
                     </div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "4px" }}>FOMO ENTRY</div>
-                    <div style={{ fontSize: "24px", fontWeight: 700, color: sev.color }}>{count}</div>
+                    <div className="text-sm font-bold mb-1">FOMO ENTRY</div>
+                    <div className="text-xl md:text-2xl font-bold" style={{ color: sev.color }}>{count}</div>
                   </div>
                 );
               })()}
@@ -202,12 +200,12 @@ export default function AnalyticsPage() {
                 const count = safeStats.behavioralStats.vengeanceCount;
                 const sev = getSeverity(count);
                 return (
-                  <div style={{ backgroundColor: "#111", border: `1px solid ${sev.color}22`, borderRadius: "4px", padding: "16px" }}>
-                    <div style={{ fontSize: "10px", color: sev.color, letterSpacing: "0.12em", marginBottom: "8px" }}>
+                  <div className="bg-[#111] rounded p-4" style={{ border: `1px solid ${sev.color}22` }}>
+                    <div className="text-xs tracking-widest mb-2" style={{ color: sev.color }}>
                       {sev.label}
                     </div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "4px" }}>VENGEANCE TRADE</div>
-                    <div style={{ fontSize: "24px", fontWeight: 700, color: sev.color }}>{count}</div>
+                    <div className="text-sm font-bold mb-1">VENGEANCE TRADE</div>
+                    <div className="text-xl md:text-2xl font-bold" style={{ color: sev.color }}>{count}</div>
                   </div>
                 );
               })()}
@@ -215,12 +213,12 @@ export default function AnalyticsPage() {
               {(() => {
                 const count = safeStats.behavioralStats.trendAlignedCount;
                 return (
-                  <div style={{ backgroundColor: "#111", border: "1px solid #22c55e22", borderRadius: "4px", padding: "16px" }}>
-                    <div style={{ fontSize: "10px", color: "#22c55e", letterSpacing: "0.12em", marginBottom: "8px" }}>
+                  <div className="bg-[#111] rounded p-4" style={{ border: "1px solid #22c55e22" }}>
+                    <div className="text-xs tracking-widest mb-2" style={{ color: "#22c55e" }}>
                       POSITIVE
                     </div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "4px" }}>TREND ALIGNED</div>
-                    <div style={{ fontSize: "24px", fontWeight: 700, color: "#22c55e" }}>{count}</div>
+                    <div className="text-sm font-bold mb-1">TREND ALIGNED</div>
+                    <div className="text-xl md:text-2xl font-bold" style={{ color: "#22c55e" }}>{count}</div>
                   </div>
                 );
               })()}
@@ -228,7 +226,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Row 3: Bottom stat cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "16px" }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             {[
               {
                 label: "EXPECTANCY",
@@ -257,22 +255,22 @@ export default function AnalyticsPage() {
             ].map((card) => (
               <div
                 key={card.label}
-                style={{ backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", padding: "20px" }}
+                className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5"
               >
-                <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.12em", marginBottom: "8px" }}>
+                <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>
                   {card.label}
                 </div>
-                <div style={{ fontSize: "26px", fontWeight: 700, color: card.valueColor ?? "#ffffff" }}>
+                <div className="text-xl md:text-2xl font-bold" style={{ color: card.valueColor ?? "#ffffff" }}>
                   {card.value}
                 </div>
-                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>{card.sub}</div>
+                <div className="text-xs mt-1" style={{ color: "#555" }}>{card.sub}</div>
               </div>
             ))}
           </div>
 
           {/* Row 4: Daily PnL Chart */}
-          <div style={{ backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", padding: "20px", marginBottom: "16px" }}>
-            <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", marginBottom: "16px" }}>
+          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5 mb-4">
+            <div className="text-xs tracking-widest mb-4" style={{ color: "#888" }}>
               DAILY P&L — EQUITY CURVE
             </div>
             {dailyPnl.length > 0 ? (
@@ -285,43 +283,29 @@ export default function AnalyticsPage() {
                     contentStyle={{ backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", color: "#fff", fontFamily: "monospace", fontSize: "11px" }}
                     cursor={{ fill: "rgba(255,255,255,0.03)" }}
                   />
-                  <Bar
-                    dataKey="pnl"
-                    radius={[2, 2, 0, 0]}
-                    fill="#ffffff"
-                    /* color bars by sign */
-                    {...{}}
-                  />
+                  <Bar dataKey="pnl" radius={[2, 2, 0, 0]} fill="#ffffff" {...{}} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div style={{ color: "#555", fontSize: "11px", textAlign: "center", padding: "40px 0" }}>
+              <div className="text-xs text-center py-10" style={{ color: "#555" }}>
                 NO DAILY DATA AVAILABLE
               </div>
             )}
           </div>
 
-          {/* Footer status */}
+          {/* Footer */}
           <div
-            style={{
-              backgroundColor: "#1c1c1c",
-              border: "1px solid #2a2a2a",
-              borderRadius: "4px",
-              padding: "14px 20px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
+            className="bg-[#1c1c1c] border border-[#2a2a2a] rounded px-4 md:px-5 py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
           >
-            <span style={{ fontSize: "11px", color: "#555", letterSpacing: "0.1em" }}>
+            <span className="text-xs tracking-widest" style={{ color: "#555" }}>
               ANALYTIC INSIGHT // {safeStats.totalTrades} EXECUTION{safeStats.totalTrades !== 1 ? "S" : ""} PROCESSED
             </span>
-            <div style={{ display: "flex", gap: "24px" }}>
-              <span style={{ fontSize: "11px", color: "#888" }}>
+            <div className="flex gap-4 md:gap-6">
+              <span className="text-xs" style={{ color: "#888" }}>
                 PROTOCOL INTEGRITY:{" "}
                 <span style={{ color: "#22c55e" }}>VERIFIED</span>
               </span>
-              <span style={{ fontSize: "11px", color: "#888" }}>
+              <span className="text-xs" style={{ color: "#888" }}>
                 SYSTEM STATUS:{" "}
                 <span style={{ color: "#22c55e" }}>NOMINAL</span>
               </span>

@@ -137,149 +137,68 @@ export default function CalendarPage() {
     }
   }
 
-  const containerStyle: React.CSSProperties = {
-    minHeight: "100vh",
-    backgroundColor: "#111111",
-    color: "#ffffff",
-    fontFamily: "monospace",
-    padding: "24px",
-  };
-
-  const headerStyle: React.CSSProperties = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "24px",
-  };
-
-  const statsStyle: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "1px",
-    marginBottom: "24px",
-    backgroundColor: "#2a2a2a",
-  };
-
-  const statCardStyle: React.CSSProperties = {
-    backgroundColor: "#1c1c1c",
-    padding: "20px",
-  };
-
-  const calendarGridStyle: React.CSSProperties = {
-    backgroundColor: "#1c1c1c",
-    border: "1px solid #2a2a2a",
-    borderRadius: "4px",
-    padding: "20px",
-  };
-
-  const dayHeaderStyle: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "repeat(7, 1fr)",
-    gap: "4px",
-    marginBottom: "8px",
-  };
-
-  const calendarDaysStyle: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "repeat(7, 1fr)",
-    gap: "4px",
-  };
-
   return (
-    <div style={containerStyle}>
+    <div className="min-h-screen text-white font-mono p-4 md:p-6">
       {/* Header */}
-      <div style={headerStyle}>
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "0.1em", margin: 0 }}>
+          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
             CALENDAR HEATMAP
           </h1>
-          <p style={{ fontSize: "11px", color: "#555", margin: "4px 0 0", letterSpacing: "0.05em" }}>
+          <p className="text-xs text-gray-600 mt-1 tracking-wide">
             PERFORMANCE VISUALIZATION // DAILY P&L TRACKING
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div className="flex gap-2 items-center">
           <button
             onClick={goToPrevMonth}
-            style={{
-              background: "transparent",
-              border: "1px solid #2a2a2a",
-              color: "#888",
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontSize: "12px",
-              fontFamily: "monospace",
-            }}
+            className="bg-transparent border border-[#2a2a2a] text-gray-500 px-3 py-2 cursor-pointer text-xs font-mono rounded"
           >
             ← PREV
           </button>
-          <span style={{ fontSize: "14px", fontWeight: 700, letterSpacing: "0.1em", color: "#fff", minWidth: "160px", textAlign: "center" }}>
+          <span className="text-sm font-bold tracking-widest text-white min-w-[120px] md:min-w-[160px] text-center">
             {monthNames[currentMonth]} {currentYear}
           </span>
           <button
             onClick={goToNextMonth}
-            style={{
-              background: "transparent",
-              border: "1px solid #2a2a2a",
-              color: "#888",
-              padding: "8px 16px",
-              cursor: "pointer",
-              fontSize: "12px",
-              fontFamily: "monospace",
-            }}
+            className="bg-transparent border border-[#2a2a2a] text-gray-500 px-3 py-2 cursor-pointer text-xs font-mono rounded"
           >
             NEXT →
           </button>
         </div>
       </div>
 
-      {/* Month Stats */}
-      <div style={statsStyle}>
-        <div style={statCardStyle}>
-          <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.12em", marginBottom: "8px" }}>
-            MONTH P&L
+      {/* Month Stats - 2 col mobile, 4 col desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-[#2a2a2a] mb-6 rounded overflow-hidden">
+        {[
+          { label: "MONTH P&L", value: `${monthPnl >= 0 ? "+" : ""}${monthPnl.toLocaleString("en-US", { style: "currency", currency: "USD" })}`, color: monthPnl >= 0 ? "#22c55e" : "#ef4444" },
+          { label: "TOTAL TRADES", value: `${monthTrades}`, color: "#fff" },
+          { label: "ACTIVE DAYS", value: `${monthDaysWithData}`, color: "#fff" },
+          { label: "WIN RATE (DAYS)", value: `${dailyData.length > 0 ? Math.round((dailyData.filter((d) => d.pnl > 0).length / Math.max(dailyData.filter((d) => d.trades > 0).length, 1)) * 100) : 0}%`, color: "#fff" },
+        ].map((s) => (
+          <div key={s.label} className="bg-[#1c1c1c] p-4 md:p-5">
+            <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>{s.label}</div>
+            <div className="text-lg md:text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
           </div>
-          <div style={{ fontSize: "24px", fontWeight: 700, color: monthPnl >= 0 ? "#22c55e" : "#ef4444" }}>
-            {monthPnl >= 0 ? "+" : ""}{monthPnl.toLocaleString("en-US", { style: "currency", currency: "USD" })}
-          </div>
-        </div>
-        <div style={statCardStyle}>
-          <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.12em", marginBottom: "8px" }}>
-            TOTAL TRADES
-          </div>
-          <div style={{ fontSize: "24px", fontWeight: 700 }}>{monthTrades}</div>
-        </div>
-        <div style={statCardStyle}>
-          <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.12em", marginBottom: "8px" }}>
-            ACTIVE DAYS
-          </div>
-          <div style={{ fontSize: "24px", fontWeight: 700 }}>{monthDaysWithData}</div>
-        </div>
-        <div style={statCardStyle}>
-          <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.12em", marginBottom: "8px" }}>
-            WIN RATE (DAYS)
-          </div>
-          <div style={{ fontSize: "24px", fontWeight: 700 }}>
-            {dailyData.length > 0 ? Math.round((dailyData.filter((d) => d.pnl > 0).length / Math.max(dailyData.filter((d) => d.trades > 0).length, 1)) * 100) : 0}%
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Calendar Grid */}
-      <div style={calendarGridStyle}>
+      <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-3 md:p-5">
         {/* Day headers */}
-        <div style={dayHeaderStyle}>
+        <div className="grid grid-cols-7 gap-1 mb-2">
           {dayNames.map((d) => (
-            <div key={d} style={{ textAlign: "center", fontSize: "10px", color: "#555", letterSpacing: "0.1em", fontWeight: 700, padding: "8px 0" }}>
+            <div key={d} className="text-center text-xs text-gray-600 tracking-widest font-bold py-2">
               {d}
             </div>
           ))}
         </div>
 
         {/* Calendar days */}
-        <div style={calendarDaysStyle}>
+        <div className="grid grid-cols-7 gap-1">
           {monthDays.map((day, idx) => {
             if (!day) {
-              return <div key={`empty-${idx}`} style={{ minHeight: "60px" }} />;
+              return <div key={`empty-${idx}`} className="min-h-[40px] md:min-h-[60px]" />;
             }
 
             const dayData = dailyData.find((d) => d.date === day.date) || day;
@@ -291,28 +210,24 @@ export default function CalendarPage() {
               <div
                 key={day.date}
                 onClick={() => hasTrades && handleDayClick(dayData)}
+                className="min-h-[40px] md:min-h-[60px] rounded p-1.5 md:p-2 relative transition-opacity cursor-default"
                 style={{
-                  minHeight: "60px",
                   background: hasTrades ? getPnLColor(dayData.pnl) : "#111",
                   opacity: hasTrades ? 0.3 + intensity * 0.7 : 0.3,
-                  borderRadius: "4px",
-                  padding: "8px",
                   cursor: hasTrades ? "pointer" : "default",
-                  position: "relative",
                   border: isToday ? "2px solid #fff" : "1px solid transparent",
-                  transition: "opacity 0.2s",
                 }}
               >
-                <div style={{ fontSize: "12px", fontWeight: 700, color: hasTrades ? "#fff" : "#555" }}>
+                <div className="text-xs md:text-sm font-bold" style={{ color: hasTrades ? "#fff" : "#555" }}>
                   {parseInt(day.date.split("-")[2], 10)}
                 </div>
                 {hasTrades && (
-                  <div style={{ fontSize: "9px", color: "#fff", opacity: 0.8, marginTop: "4px" }}>
+                  <div className="hidden md:block text-xs mt-1" style={{ color: "#fff", opacity: 0.8 }}>
                     {dayData.pnl > 0 ? "+" : ""}{dayData.pnl.toFixed(0)}
                   </div>
                 )}
                 {hasTrades && (
-                  <div style={{ fontSize: "9px", color: "#fff", opacity: 0.6 }}>
+                  <div className="hidden md:block text-xs" style={{ color: "#fff", opacity: 0.6 }}>
                     {dayData.trades} trade{dayData.trades !== 1 ? "s" : ""}
                   </div>
                 )}
@@ -322,120 +237,132 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {/* Day Detail Panel */}
+      {/* Day Detail Panel - bottom sheet on mobile, side panel on desktop */}
       {selectedDay && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            right: 0,
-            width: "400px",
-            height: "100vh",
-            backgroundColor: "#1c1c1c",
-            borderLeft: "1px solid #2a2a2a",
-            padding: "24px",
-            overflowY: "auto",
-            zIndex: 100,
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
-            <div>
-              <h2 style={{ fontSize: "16px", fontWeight: 700, margin: 0 }}>
-                {new Date(selectedDay.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-              </h2>
-              <p style={{ fontSize: "11px", color: "#555", margin: "4px 0 0" }}>
-                {selectedDay.trades} TRADE{selectedDay.trades !== 1 ? "S" : ""}
-              </p>
-            </div>
-            <button
-              onClick={() => setSelectedDay(null)}
-              style={{
-                background: "transparent",
-                border: "1px solid #2a2a2a",
-                color: "#888",
-                padding: "8px 16px",
-                cursor: "pointer",
-                fontSize: "11px",
-                fontFamily: "monospace",
-              }}
-            >
-              CLOSE
-            </button>
-          </div>
+        <>
+          {/* Mobile overlay */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setSelectedDay(null)}
+          />
 
-          <div style={{ marginBottom: "20px" }}>
-            <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.12em", marginBottom: "8px" }}>
-              DAILY P&L
+          {/* Mobile bottom sheet */}
+          <div className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-[#1c1c1c] border-t border-[#2a2a2a] rounded-t-xl max-h-[80vh] overflow-y-auto p-5">
+            <div className="flex justify-between items-start mb-5">
+              <div>
+                <h2 className="text-base font-bold m-0">
+                  {new Date(selectedDay.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                </h2>
+                <p className="text-xs text-gray-600 mt-1">
+                  {selectedDay.trades} TRADE{selectedDay.trades !== 1 ? "S" : ""}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedDay(null)}
+                className="bg-transparent border border-[#2a2a2a] text-gray-500 px-3 py-1.5 cursor-pointer text-xs font-mono rounded"
+              >
+                CLOSE
+              </button>
             </div>
-            <div style={{ fontSize: "28px", fontWeight: 700, color: selectedDay.pnl >= 0 ? "#22c55e" : "#ef4444" }}>
-              {selectedDay.pnl >= 0 ? "+" : ""}{selectedDay.pnl.toLocaleString("en-US", { style: "currency", currency: "USD" })}
-            </div>
-          </div>
 
-          {/* Trades for this day */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {dayTrades.map((trade) => {
-              const isWin = Number(trade.pnl) >= 0;
-              return (
-                <div
-                  key={trade.id}
-                  style={{
-                    backgroundColor: "#111",
-                    border: "1px solid #2a2a2a",
-                    borderRadius: "4px",
-                    padding: "12px",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                    <span style={{ fontWeight: 700 }}>{trade.symbol}</span>
-                    <span style={{ color: isWin ? "#22c55e" : "#ef4444", fontWeight: 700 }}>
-                      {isWin ? "+" : ""}{Number(trade.pnl).toFixed(2)}
-                    </span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px", color: "#888" }}>
-                    <div>
-                      <span style={{ color: "#555" }}>SIDE:</span> {trade.direction === "buy" ? "LONG" : "SHORT"}
+            <div className="mb-5">
+              <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>DAILY P&L</div>
+              <div className="text-2xl font-bold" style={{ color: selectedDay.pnl >= 0 ? "#22c55e" : "#ef4444" }}>
+                {selectedDay.pnl >= 0 ? "+" : ""}{selectedDay.pnl.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {dayTrades.map((trade) => {
+                const isWin = Number(trade.pnl) >= 0;
+                return (
+                  <div key={trade.id} className="bg-[#111] border border-[#2a2a2a] rounded p-3">
+                    <div className="flex justify-between mb-2">
+                      <span className="font-bold text-sm">{trade.symbol}</span>
+                      <span className="font-bold text-sm" style={{ color: isWin ? "#22c55e" : "#ef4444" }}>
+                        {isWin ? "+" : ""}{Number(trade.pnl).toFixed(2)}
+                      </span>
                     </div>
-                    <div>
-                      <span style={{ color: "#555" }}>ENTRY:</span> {trade.entry_price}
-                    </div>
-                    <div>
-                      <span style={{ color: "#555" }}>EXIT:</span> {trade.exit_price}
-                    </div>
-                    <div>
-                      <span style={{ color: "#555" }}>STRATEGY:</span> {trade.strategy || "N/A"}
+                    <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: "#888" }}>
+                      <div><span style={{ color: "#555" }}>SIDE:</span> {trade.direction === "buy" ? "LONG" : "SHORT"}</div>
+                      <div><span style={{ color: "#555" }}>ENTRY:</span> {trade.entry_price}</div>
+                      <div><span style={{ color: "#555" }}>EXIT:</span> {trade.exit_price}</div>
+                      <div><span style={{ color: "#555" }}>STRATEGY:</span> {trade.strategy || "N/A"}</div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+
+          {/* Desktop side panel */}
+          <div
+            className="hidden md:block fixed top-0 right-0 w-[400px] h-screen bg-[#1c1c1c] border-l border-[#2a2a2a] p-6 overflow-y-auto z-50"
+          >
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-base font-bold m-0">
+                  {new Date(selectedDay.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                </h2>
+                <p className="text-xs text-gray-600 mt-1">
+                  {selectedDay.trades} TRADE{selectedDay.trades !== 1 ? "S" : ""}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedDay(null)}
+                className="bg-transparent border border-[#2a2a2a] text-gray-500 px-4 py-2 cursor-pointer text-xs font-mono rounded"
+              >
+                CLOSE
+              </button>
+            </div>
+
+            <div className="mb-5">
+              <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>DAILY P&L</div>
+              <div className="text-3xl font-bold" style={{ color: selectedDay.pnl >= 0 ? "#22c55e" : "#ef4444" }}>
+                {selectedDay.pnl >= 0 ? "+" : ""}{selectedDay.pnl.toLocaleString("en-US", { style: "currency", currency: "USD" })}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {dayTrades.map((trade) => {
+                const isWin = Number(trade.pnl) >= 0;
+                return (
+                  <div key={trade.id} className="bg-[#111] border border-[#2a2a2a] rounded p-3">
+                    <div className="flex justify-between mb-2">
+                      <span className="font-bold">{trade.symbol}</span>
+                      <span className="font-bold" style={{ color: isWin ? "#22c55e" : "#ef4444" }}>
+                        {isWin ? "+" : ""}{Number(trade.pnl).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: "#888" }}>
+                      <div><span style={{ color: "#555" }}>SIDE:</span> {trade.direction === "buy" ? "LONG" : "SHORT"}</div>
+                      <div><span style={{ color: "#555" }}>ENTRY:</span> {trade.entry_price}</div>
+                      <div><span style={{ color: "#555" }}>EXIT:</span> {trade.exit_price}</div>
+                      <div><span style={{ color: "#555" }}>STRATEGY:</span> {trade.strategy || "N/A"}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Legend */}
-      <div
-        style={{
-          marginTop: "16px",
-          display: "flex",
-          justifyContent: "center",
-          gap: "24px",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "16px", height: "16px", backgroundColor: "#ef4444", borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#888" }}>LOSS</span>
+      <div className="mt-4 flex flex-wrap justify-center gap-4 md:gap-6 items-center">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-red-500 rounded" />
+          <span className="text-xs" style={{ color: "#888" }}>LOSS</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "16px", height: "16px", backgroundColor: "#2a2a2a", borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#888" }}>NO TRADES</span>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-[#2a2a2a] rounded" />
+          <span className="text-xs" style={{ color: "#888" }}>NO TRADES</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "16px", height: "16px", backgroundColor: "#22c55e", borderRadius: "2px" }} />
-          <span style={{ fontSize: "11px", color: "#888" }}>PROFIT</span>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-green-500 rounded" />
+          <span className="text-xs" style={{ color: "#888" }}>PROFIT</span>
         </div>
-        <span style={{ fontSize: "10px", color: "#555", marginLeft: "16px" }}>
+        <span className="text-xs" style={{ color: "#555" }}>
           OPACITY INDICATES P&L MAGNITUDE
         </span>
       </div>
