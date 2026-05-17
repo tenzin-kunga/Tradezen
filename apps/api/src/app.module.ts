@@ -23,6 +23,7 @@ import { EmbeddingService } from './ai/embedding.service';
 import { MemoryService } from './ai/memory.service';
 import { JournalAnalysisWorkflow } from './ai/workflows/journal-analysis.workflow';
 import { CoachingWorkflow } from './ai/workflows/coaching.workflow';
+import { CoachingEngineService } from './ai/coaching-engine.service';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { CoachingWorkflow } from './ai/workflows/coaching.workflow';
     MemoryService,
     JournalAnalysisWorkflow,
     CoachingWorkflow,
+    CoachingEngineService,
   ],
 })
 export class AppModule implements NestModule {

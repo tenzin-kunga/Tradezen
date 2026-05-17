@@ -3,6 +3,7 @@ import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { ChatThreadService } from './chat-thread.service';
 import { JournalIntelligenceService } from '../ai/journal-intelligence.service';
+import { CoachingEngineService } from '../ai/coaching-engine.service';
 import { QueuesModule } from '../queues/queues.module';
 import { JournalAnalysisWorkflow } from '../ai/workflows/journal-analysis.workflow';
 import { EmbeddingService } from '../ai/embedding.service';
@@ -10,7 +11,7 @@ import { EmbeddingService } from '../ai/embedding.service';
 @Module({
   imports: [QueuesModule],
   controllers: [ChatController],
-  providers: [ChatService, ChatThreadService, JournalIntelligenceService, JournalAnalysisWorkflow, EmbeddingService],
+  providers: [ChatService, ChatThreadService, JournalIntelligenceService, CoachingEngineService, JournalAnalysisWorkflow, EmbeddingService],
   exports: [ChatService, ChatThreadService, JournalIntelligenceService],
 })
 export class ChatModule {}

@@ -264,3 +264,17 @@ export const aiInsights = pgTable('ai_insights', {
   typeIdx: index('idx_insights_type').on(table.userId, table.insightType),
   createdIdx: index('idx_insights_created').on(table.userId, table.createdAt),
 }));
+
+export const coachingSessions = pgTable('coaching_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  severity: varchar('severity', { length: 20 }).notNull(),
+  triggers: jsonb('triggers').notNull(),
+  message: text('message').notNull(),
+  analyticsSnapshot: jsonb('analytics_snapshot'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  userIdIdx: index('idx_coaching_user').on(table.userId),
+  severityIdx: index('idx_coaching_severity').on(table.userId, table.severity),
+  createdIdx: index('idx_coaching_created').on(table.userId, table.createdAt),
+}));

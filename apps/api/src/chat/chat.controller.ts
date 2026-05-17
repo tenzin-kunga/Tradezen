@@ -21,6 +21,7 @@ import { ChatThreadService } from './chat-thread.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { JobStatusService } from '../queues/job-status.service';
 import { JournalIntelligenceService } from '../ai/journal-intelligence.service';
+import { CoachingEngineService } from '../ai/coaching-engine.service';
 
 @ApiTags('chat')
 @ApiBearerAuth()
@@ -31,6 +32,7 @@ export class ChatController {
     private readonly chatService: ChatService,
     private readonly threadService: ChatThreadService,
     private readonly journalIntelligenceService: JournalIntelligenceService,
+    private readonly coachingEngineService: CoachingEngineService,
     @InjectQueue('ai-processing') private aiQueue: Queue,
     private readonly jobStatusService: JobStatusService,
   ) {}
@@ -206,5 +208,26 @@ export class ChatController {
     @Query('limit') limit?: string,
   ) {
     return this.journalIntelligenceService.getInsights(userId, type, limit ? parseInt(limit) : 10);
+  }
+
+  @Post('ai/coaching/evaluate')
+  @ApiOperation({ summary: 'Evaluate and generate AI coaching' })
+  async evaluateCoaching(@CurrentUser('id') userId: string) {
+    return this.coachingEngineService.evaluateAndCoach(userId);
+  }
+
+  @Get('ai/coaching/history')
+  @ApiOperation({ summary: 'Get coaching session history' })
+  async getCoachingHistory(
+    @CurrentUser('id') userId: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.coachingEngineService.getCoachingHistory(userId, parseInt(limit ?? '10') || 10);
+  }
+
+  @Get('ai/coaching/active')
+  @ApiOperation({ summary: 'Get latest active coaching recommendation' })
+  async getActiveCoaching(@CurrentUser('id') userId: string) {
+    return this.coachingEngineService.getActiveCoaching(userId);
   }
 }
