@@ -17,6 +17,8 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
 import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
 import { SnapshotService } from './analytics/snapshot.service';
 import { BehavioralService } from './analytics/behavioral.service';
+import { EventPublisherService } from './common/services/event-publisher.service';
+import { EventSubscriberService } from './common/services/event-subscriber.service';
 
 @Module({
   imports: [
@@ -68,6 +70,8 @@ import { BehavioralService } from './analytics/behavioral.service';
     { provide: APP_GUARD, useClass: ThrottlerEventsGuard },
     SnapshotService,
     BehavioralService,
+    EventPublisherService,
+    EventSubscriberService,
   ],
 })
 export class AppModule implements NestModule {
