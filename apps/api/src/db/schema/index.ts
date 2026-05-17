@@ -161,54 +161,106 @@ export const auditLog = pgTable(
   ],
 );
 
-export const analyticsSnapshots = pgTable('analytics_snapshots', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id),
-  snapshotDate: date('snapshot_date').notNull(),
-  metrics: jsonb('metrics').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => ({
-  userDateIdx: index('idx_snapshots_user_date').on(table.userId, table.snapshotDate),
-  userDateUnique: uniqueIndex('uq_snapshots_user_date').on(table.userId, table.snapshotDate),
-}));
+export const analyticsSnapshots = pgTable(
+  'analytics_snapshots',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id),
+    snapshotDate: date('snapshot_date').notNull(),
+    metrics: jsonb('metrics').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    userDateIdx: index('idx_snapshots_user_date').on(
+      table.userId,
+      table.snapshotDate,
+    ),
+    userDateUnique: uniqueIndex('uq_snapshots_user_date').on(
+      table.userId,
+      table.snapshotDate,
+    ),
+  }),
+);
 
 const vector = (name: string, opts: { dimensions: number }) =>
   customType<{ data: number[] }>({
     dataType: () => `vector(${opts.dimensions})`,
   })(name);
 
-export const embeddings = pgTable('embeddings', {
+export const embeddings = pgTable(
+  'embeddings',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    sourceType: varchar('source_type', { length: 50 }).notNull(),
+    sourceId: uuid('source_id').notNull(),
+    content: text('content').notNull(),
+    embedding: vector('embedding', { dimensions: 1536 }),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('idx_embeddings_user').on(table.userId),
+    sourceIdx: index('idx_embeddings_source').on(
+      table.sourceType,
+      table.sourceId,
+    ),
+  }),
+);
+
+export const chatThreads = pgTable(
+  'chat_threads',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('idx_chat_threads_user').on(table.userId),
+    updatedIdx: index('idx_chat_threads_updated').on(
+      table.userId,
+      table.updatedAt,
+    ),
+  }),
+);
+
+export const chatMessages = pgTable(
+  'chat_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    threadId: uuid('thread_id')
+      .notNull()
+      .references(() => chatThreads.id, { onDelete: 'cascade' }),
+    role: varchar('role', { length: 20 }).notNull(),
+    content: text('content').notNull(),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    threadIdx: index('idx_chat_messages_thread').on(table.threadId),
+    createdIdx: index('idx_chat_messages_created').on(
+      table.threadId,
+      table.createdAt,
+    ),
+  }),
+);
+
+export const aiInsights = pgTable('ai_insights', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  sourceType: varchar('source_type', { length: 50 }).notNull(),
-  sourceId: uuid('source_id').notNull(),
-  content: text('content').notNull(),
-  embedding: vector('embedding', { dimensions: 1536 }),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => ({
-  userIdIdx: index('idx_embeddings_user').on(table.userId),
-  sourceIdx: index('idx_embeddings_source').on(table.sourceType, table.sourceId),
-}));
-
-export const chatThreads = pgTable('chat_threads', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  title: text('title'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => ({
-  userIdIdx: index('idx_chat_threads_user').on(table.userId),
-  updatedIdx: index('idx_chat_threads_updated').on(table.userId, table.updatedAt),
-}));
-
-export const chatMessages = pgTable('chat_messages', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  threadId: uuid('thread_id').notNull().references(() => chatThreads.id, { onDelete: 'cascade' }),
-  role: varchar('role', { length: 20 }).notNull(),
+  insightType: varchar('insight_type', { length: 50 }).notNull(),
   content: text('content').notNull(),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => ({
-  threadIdx: index('idx_chat_messages_thread').on(table.threadId),
-  createdIdx: index('idx_chat_messages_created').on(table.threadId, table.createdAt),
+  userIdIdx: index('idx_insights_user').on(table.userId),
+  typeIdx: index('idx_insights_type').on(table.userId, table.insightType),
+  createdIdx: index('idx_insights_created').on(table.userId, table.createdAt),
 }));

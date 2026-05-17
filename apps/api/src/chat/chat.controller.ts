@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Query, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Queue } from 'bullmq';
@@ -9,6 +20,7 @@ import { ChatService } from './chat.service';
 import { ChatThreadService } from './chat-thread.service';
 import { CreateChatDto } from './dto/create-chat.dto';
 import { JobStatusService } from '../queues/job-status.service';
+import { JournalIntelligenceService } from '../ai/journal-intelligence.service';
 
 @ApiTags('chat')
 @ApiBearerAuth()
@@ -18,6 +30,7 @@ export class ChatController {
   constructor(
     private readonly chatService: ChatService,
     private readonly threadService: ChatThreadService,
+    private readonly journalIntelligenceService: JournalIntelligenceService,
     @InjectQueue('ai-processing') private aiQueue: Queue,
     private readonly jobStatusService: JobStatusService,
   ) {}
@@ -119,16 +132,20 @@ export class ChatController {
     @Body('dateFrom') dateFrom: string,
     @Body('dateTo') dateTo: string,
   ) {
-    const job = await this.aiQueue.add('journal-summarize', {
-      userId,
-      dateFrom,
-      dateTo,
-    }, {
-      attempts: 2,
-      backoff: { type: 'exponential', delay: 2000 },
-      removeOnComplete: { age: 86400 },
-      removeOnFail: { age: 604800 },
-    });
+    const job = await this.aiQueue.add(
+      'journal-summarize',
+      {
+        userId,
+        dateFrom,
+        dateTo,
+      },
+      {
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: { age: 86400 },
+        removeOnFail: { age: 604800 },
+      },
+    );
 
     return { jobId: job.id!, message: 'Journal summarization started.' };
   }
@@ -139,15 +156,19 @@ export class ChatController {
     @CurrentUser('id') userId: string,
     @Body('days') days?: number,
   ) {
-    const job = await this.aiQueue.add('pattern-analysis', {
-      userId,
-      days: days || 30,
-    }, {
-      attempts: 2,
-      backoff: { type: 'exponential', delay: 2000 },
-      removeOnComplete: { age: 86400 },
-      removeOnFail: { age: 604800 },
-    });
+    const job = await this.aiQueue.add(
+      'pattern-analysis',
+      {
+        userId,
+        days: days || 30,
+      },
+      {
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: { age: 86400 },
+        removeOnFail: { age: 604800 },
+      },
+    );
 
     return { jobId: job.id!, message: 'Pattern analysis started.' };
   }
@@ -161,6 +182,29 @@ export class ChatController {
   @Get('jobs')
   @ApiOperation({ summary: 'Get AI job history' })
   async getJobHistory(@Query('limit') limit?: string) {
-    return this.jobStatusService.getJobHistory('ai-processing', parseInt(limit ?? '10') || 10);
+    return this.jobStatusService.getJobHistory(
+      'ai-processing',
+      parseInt(limit ?? '10') || 10,
+    );
+  }
+
+  @Post('ai/analyze-journals')
+  @ApiOperation({ summary: 'Analyze trading journals with AI' })
+  async analyzeJournals(
+    @CurrentUser('id') userId: string,
+    @Body('dateFrom') dateFrom: string,
+    @Body('dateTo') dateTo: string,
+  ) {
+    return this.journalIntelligenceService.analyzeJournals(userId, dateFrom, dateTo);
+  }
+
+  @Get('ai/insights')
+  @ApiOperation({ summary: 'Get AI-generated insights' })
+  async getInsights(
+    @CurrentUser('id') userId: string,
+    @Query('type') type?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.journalIntelligenceService.getInsights(userId, type, limit ? parseInt(limit) : 10);
   }
 }
