@@ -13,6 +13,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { QueuesModule } from './queues/queues.module';
+import { ReportModule } from './reports/report.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
 import { SnapshotService } from './analytics/snapshot.service';
@@ -71,6 +72,7 @@ import { JournalsService } from './journals/journals.service';
     ChatModule,
     GatewayModule,
     QueuesModule,
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [

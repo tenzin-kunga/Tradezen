@@ -436,3 +436,16 @@ export async function markAllNotificationsRead() {
   const res = await authFetch(`${API}/chat/notifications/read-all`, { method: 'POST' });
   return handleResponse<{ message: string }>(res);
 }
+
+// ─── Reports ────────────────────────────────────────
+
+export async function getWeeklyReport() {
+  const res = await authFetch(`${API}/reports/weekly`);
+  return handleResponse<any>(res);
+}
+
+export async function downloadCSV(): Promise<Blob> {
+  const res = await authFetch(`${API}/reports/export/csv`);
+  if (!res.ok) throw new Error('CSV export failed');
+  return res.blob();
+}

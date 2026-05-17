@@ -34,6 +34,7 @@
     "@nestjs/swagger": "^11.2.7",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.21",
+    "@react-pdf/renderer": "^4.5.1",
     "@sentry/node": "^10.53.1",
     "@sentry/profiling-node": "^10.53.1",
     "@trpc/server": "^11.17.0",
