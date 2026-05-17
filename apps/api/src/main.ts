@@ -72,6 +72,8 @@ async function bootstrap() {
           connectSrc: [
             "'self'",
             process.env.WEB_URL ?? 'http://localhost:3000',
+            'ws://localhost:3001',
+            'wss://localhost:3001',
           ],
           fontSrc: ["'self'"],
           objectSrc: ["'none'"],
