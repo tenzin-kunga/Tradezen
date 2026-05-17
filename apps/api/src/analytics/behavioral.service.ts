@@ -37,7 +37,12 @@ interface RevengeTradingAnalysis {
 
 interface TimePatternAnalysis {
   byHour: { hour: number; pnl: number; winRate: number; trades: number }[];
-  bySession: { session: string; pnl: number; winRate: number; trades: number }[];
+  bySession: {
+    session: string;
+    pnl: number;
+    winRate: number;
+    trades: number;
+  }[];
   bestHour: number;
   worstHour: number;
 }
@@ -64,10 +69,7 @@ export class BehavioralService {
       .where(
         and(
           eq(trades.userId, userId),
-          gte(
-            trades.tradeDate,
-            new Date(Date.now() - days * 86400000),
-          ),
+          gte(trades.tradeDate, new Date(Date.now() - days * 86400000)),
         ),
       )
       .orderBy(asc(trades.tradeDate));
@@ -109,7 +111,12 @@ export class BehavioralService {
         ),
       ) / 100;
 
-    return { flaggedTrades, noStopLossTrades, oversizedPositionTrades, fomoScore };
+    return {
+      flaggedTrades,
+      noStopLossTrades,
+      oversizedPositionTrades,
+      fomoScore,
+    };
   }
 
   private detectRevengeTrading(trades: Trade[]): RevengeTradingAnalysis {
@@ -154,15 +161,18 @@ export class BehavioralService {
         ),
       ) / 100;
 
-    return { rapidReentryTrades, increasingSizeAfterLoss, frequencySpike, revengeScore };
+    return {
+      rapidReentryTrades,
+      increasingSizeAfterLoss,
+      frequencySpike,
+      revengeScore,
+    };
   }
 
   private getMaxDailyTrades(trades: Trade[]): number {
     const dailyCounts = new Map<string, number>();
     for (const t of trades) {
-      const key = new Date(
-        t.tradeDate ?? t.createdAt ?? 0,
-      ).toDateString();
+      const key = new Date(t.tradeDate ?? t.createdAt ?? 0).toDateString();
       dailyCounts.set(key, (dailyCounts.get(key) || 0) + 1);
     }
     return Math.max(...dailyCounts.values(), 0);
@@ -175,9 +185,7 @@ export class BehavioralService {
     >();
 
     for (const t of trades) {
-      const hour = new Date(
-        t.tradeDate ?? t.createdAt ?? 0,
-      ).getUTCHours();
+      const hour = new Date(t.tradeDate ?? t.createdAt ?? 0).getUTCHours();
       const existing = byHour.get(hour) || { pnl: 0, wins: 0, trades: 0 };
       existing.pnl += Number(t.pnl);
       existing.trades++;
@@ -209,13 +217,8 @@ export class BehavioralService {
           new Date(t.tradeDate ?? t.createdAt ?? 0).getUTCHours(),
         ),
       );
-      const pnl = sessionTrades.reduce(
-        (sum, t) => sum + Number(t.pnl),
-        0,
-      );
-      const wins = sessionTrades.filter(
-        (t) => Number(t.pnl) > 0,
-      ).length;
+      const pnl = sessionTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
+      const wins = sessionTrades.filter((t) => Number(t.pnl) > 0).length;
       return {
         session: session.name,
         pnl: Math.round(pnl * 100) / 100,
@@ -260,9 +263,8 @@ export class BehavioralService {
     const withStrategy = trades.filter((t) => t.strategy).length;
     const lowFOMO = trades.filter((t) => !t.fomoCheck).length;
     const consistency =
-      Math.round(
-        ((withStrategy / total) * 50 + (lowFOMO / total) * 50) * 100,
-      ) / 100;
+      Math.round(((withStrategy / total) * 50 + (lowFOMO / total) * 50) * 100) /
+      100;
 
     return { lossChasing, discipline, consistency };
   }

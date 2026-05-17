@@ -18,11 +18,7 @@ export const journalsRouter = router({
     .input(queryJournalsSchema)
     .query(async ({ ctx, input }) => {
       const service = new JournalsService();
-      return service.findAll(
-        ctx.userId,
-        input.limit ?? 30,
-        input.offset ?? 0,
-      );
+      return service.findAll(ctx.userId, input.limit ?? 30, input.offset ?? 0);
     }),
 
   findOne: protectedProcedure
@@ -71,10 +67,8 @@ export const journalsRouter = router({
       return service.remove(ctx.userId, input.id);
     }),
 
-  getStreak: protectedProcedure
-    .input(z.void())
-    .query(async ({ ctx }) => {
-      const service = new JournalsService();
-      return service.getStreak(ctx.userId);
-    }),
+  getStreak: protectedProcedure.input(z.void()).query(async ({ ctx }) => {
+    const service = new JournalsService();
+    return service.getStreak(ctx.userId);
+  }),
 });

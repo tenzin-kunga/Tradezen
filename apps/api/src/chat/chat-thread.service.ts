@@ -13,7 +13,12 @@ export class ChatThreadService {
     return thread;
   }
 
-  async listThreads(userId: string, limit = 20): Promise<Array<{ id: string; title: string | null; updatedAt: Date | null }>> {
+  async listThreads(
+    userId: string,
+    limit = 20,
+  ): Promise<
+    Array<{ id: string; title: string | null; updatedAt: Date | null }>
+  > {
     return db
       .select({
         id: chatThreads.id,
@@ -26,7 +31,10 @@ export class ChatThreadService {
       .limit(limit);
   }
 
-  async getThread(userId: string, threadId: string): Promise<{ id: string; title: string | null } | null> {
+  async getThread(
+    userId: string,
+    threadId: string,
+  ): Promise<{ id: string; title: string | null } | null> {
     const thread = await db.query.chatThreads.findFirst({
       where: and(eq(chatThreads.id, threadId), eq(chatThreads.userId, userId)),
     });
@@ -43,7 +51,17 @@ export class ChatThreadService {
     await db.delete(chatThreads).where(eq(chatThreads.id, threadId));
   }
 
-  async getMessages(threadId: string, limit = 50): Promise<Array<{ role: string; content: string; metadata: unknown; createdAt: Date | null }>> {
+  async getMessages(
+    threadId: string,
+    limit = 50,
+  ): Promise<
+    Array<{
+      role: string;
+      content: string;
+      metadata: unknown;
+      createdAt: Date | null;
+    }>
+  > {
     return db
       .select({
         role: chatMessages.role,
@@ -57,8 +75,16 @@ export class ChatThreadService {
       .limit(limit);
   }
 
-  async addMessage(threadId: string, role: string, content: string, metadata?: Record<string, unknown>): Promise<void> {
+  async addMessage(
+    threadId: string,
+    role: string,
+    content: string,
+    metadata?: Record<string, unknown>,
+  ): Promise<void> {
     await db.insert(chatMessages).values({ threadId, role, content, metadata });
-    await db.update(chatThreads).set({ updatedAt: new Date() }).where(eq(chatThreads.id, threadId));
+    await db
+      .update(chatThreads)
+      .set({ updatedAt: new Date() })
+      .where(eq(chatThreads.id, threadId));
   }
 }

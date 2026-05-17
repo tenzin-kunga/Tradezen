@@ -1,5 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { eq, and, like, ilike, desc, asc, sql, count, lt, gte, lte, inArray } from 'drizzle-orm';
+import {
+  eq,
+  and,
+  like,
+  ilike,
+  desc,
+  asc,
+  sql,
+  count,
+  lt,
+  gte,
+  lte,
+  inArray,
+} from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { trades, tags, tradeTags } from '../db/schema';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
@@ -43,7 +56,9 @@ export interface StrategyComparison {
 function calculateSharpe(dailyReturns: number[], riskFreeRate = 0.05): number {
   if (dailyReturns.length === 0) return 0;
   const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
-  const variance = dailyReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / dailyReturns.length;
+  const variance =
+    dailyReturns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) /
+    dailyReturns.length;
   const std = Math.sqrt(variance);
   if (std === 0) return 0;
   return ((mean - riskFreeRate / 252) / std) * Math.sqrt(252);
@@ -52,15 +67,22 @@ function calculateSharpe(dailyReturns: number[], riskFreeRate = 0.05): number {
 function calculateSortino(dailyReturns: number[], riskFreeRate = 0.05): number {
   if (dailyReturns.length === 0) return 0;
   const mean = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
-  const downsideReturns = dailyReturns.filter(r => r < 0);
-  if (downsideReturns.length === 0) return dailyReturns.length > 0 ? Infinity : 0;
-  const downsideVariance = downsideReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0) / downsideReturns.length;
+  const downsideReturns = dailyReturns.filter((r) => r < 0);
+  if (downsideReturns.length === 0)
+    return dailyReturns.length > 0 ? Infinity : 0;
+  const downsideVariance =
+    downsideReturns.reduce((sum, r) => sum + Math.pow(r, 2), 0) /
+    downsideReturns.length;
   const downsideStd = Math.sqrt(downsideVariance);
   if (downsideStd === 0) return 0;
   return ((mean - riskFreeRate / 252) / downsideStd) * Math.sqrt(252);
 }
 
-function calculateCalmar(totalPnl: number, maxDrawdown: number, tradingDays: number): number {
+function calculateCalmar(
+  totalPnl: number,
+  maxDrawdown: number,
+  tradingDays: number,
+): number {
   if (maxDrawdown === 0 || tradingDays === 0) return 0;
   const annualReturn = (totalPnl / tradingDays) * 252;
   return annualReturn / Math.abs(maxDrawdown);
@@ -69,8 +91,9 @@ function calculateCalmar(totalPnl: number, maxDrawdown: number, tradingDays: num
 function sampleEquityCurve(cumulativePnl: number[], targetPoints = 100) {
   if (cumulativePnl.length <= targetPoints) return cumulativePnl;
   const step = cumulativePnl.length / targetPoints;
-  return Array.from({ length: targetPoints }, (_, i) =>
-    cumulativePnl[Math.floor(i * step)]
+  return Array.from(
+    { length: targetPoints },
+    (_, i) => cumulativePnl[Math.floor(i * step)],
   );
 }
 
@@ -107,11 +130,12 @@ function computeMaxConsecutive(pnls: number[]) {
 
 @Injectable()
 export class TradesService {
-  private analyticsCache = new Map<string, { data: unknown; expiresAt: number }>();
+  private analyticsCache = new Map<
+    string,
+    { data: unknown; expiresAt: number }
+  >();
 
-  constructor(
-    private readonly eventPublisher: EventPublisherService,
-  ) {}
+  constructor(private readonly eventPublisher: EventPublisherService) {}
 
   async findAllCursor(userId: string, cursor?: string, limit = 20) {
     const conditions = [eq(trades.userId, userId)];
@@ -130,9 +154,8 @@ export class TradesService {
     const hasMore = rows.length > limit;
     const items = rows.slice(0, limit);
     const lastItem = items.length > 0 ? items[items.length - 1] : null;
-    const nextCursor = hasMore && lastItem?.createdAt
-      ? lastItem.createdAt.toISOString()
-      : null;
+    const nextCursor =
+      hasMore && lastItem?.createdAt ? lastItem.createdAt.toISOString() : null;
 
     return { items, nextCursor, hasMore };
   }
@@ -186,7 +209,10 @@ export class TradesService {
       .returning();
 
     const trade = result[0];
-    await this.eventPublisher.publish(`trades:${userId}`, ['trade:created', trade]);
+    await this.eventPublisher.publish(`trades:${userId}`, [
+      'trade:created',
+      trade,
+    ]);
     return trade;
   }
 
@@ -351,7 +377,10 @@ export class TradesService {
 
     if (!result[0]) throw new NotFoundException(`Trade ${id} not found`);
     const updatedTrade = result[0];
-    await this.eventPublisher.publish(`trades:${userId}`, ['trade:updated', updatedTrade]);
+    await this.eventPublisher.publish(`trades:${userId}`, [
+      'trade:updated',
+      updatedTrade,
+    ]);
     return updatedTrade;
   }
 
@@ -367,7 +396,10 @@ export class TradesService {
       .delete(trades)
       .where(and(eq(trades.id, id), eq(trades.userId, userId)));
 
-    await this.eventPublisher.publish(`trades:${userId}`, ['trade:deleted', { id }]);
+    await this.eventPublisher.publish(`trades:${userId}`, [
+      'trade:deleted',
+      { id },
+    ]);
 
     if (trade.chartImage) {
       const imagePath = path.join(process.cwd(), trade.chartImage);
@@ -667,18 +699,21 @@ export class TradesService {
     const maxDrawdown = Number((maxDdRes[0] as any)?.max_drawdown ?? 0);
 
     const dailyReturns = pnls.map((pnl) => {
-      const prevEquity = pnls.slice(0, pnls.indexOf(pnl)).reduce((a, b) => a + b, 0);
+      const prevEquity = pnls
+        .slice(0, pnls.indexOf(pnl))
+        .reduce((a, b) => a + b, 0);
       return prevEquity !== 0 ? pnl / prevEquity : 0;
     });
 
     const sharpeRatio = calculateSharpe(dailyReturns);
     const sortinoRatio = calculateSortino(dailyReturns);
 
-    const tradingDays = new Set(
-      allTrades
-        .filter((t) => t.trade_date)
-        .map((t) => new Date(t.trade_date).toDateString())
-    ).size || allTrades.length;
+    const tradingDays =
+      new Set(
+        allTrades
+          .filter((t) => t.trade_date)
+          .map((t) => new Date(t.trade_date).toDateString()),
+      ).size || allTrades.length;
 
     const calmarRatio = calculateCalmar(totalPnl, maxDrawdown, tradingDays);
 
@@ -705,12 +740,17 @@ export class TradesService {
 
     const sampledCurve = sampleEquityCurve(cumulativePnl, 100);
     const startDate = allTrades[0]?.trade_date || allTrades[0]?.created_at;
-    const endDate = allTrades[allTrades.length - 1]?.trade_date || allTrades[allTrades.length - 1]?.created_at;
+    const endDate =
+      allTrades[allTrades.length - 1]?.trade_date ||
+      allTrades[allTrades.length - 1]?.created_at;
     const equityCurve = sampledCurve.map((value, i) => ({
       date: new Date(
         new Date(startDate).getTime() +
-          ((new Date(endDate).getTime() - new Date(startDate).getTime()) * i) / (sampledCurve.length - 1 || 1)
-      ).toISOString().split('T')[0],
+          ((new Date(endDate).getTime() - new Date(startDate).getTime()) * i) /
+            (sampledCurve.length - 1 || 1),
+      )
+        .toISOString()
+        .split('T')[0],
       value: Math.round(value * 100) / 100,
     }));
 
@@ -724,7 +764,11 @@ export class TradesService {
     }
 
     const sortedSymbols = Array.from(symbolMap.entries())
-      .map(([symbol, data]) => ({ symbol, pnl: Math.round(data.pnl * 100) / 100, trades: data.trades }))
+      .map(([symbol, data]) => ({
+        symbol,
+        pnl: Math.round(data.pnl * 100) / 100,
+        trades: data.trades,
+      }))
       .sort((a, b) => b.pnl - a.pnl);
 
     const topSymbols = sortedSymbols.slice(0, 5);
@@ -738,18 +782,27 @@ export class TradesService {
 
     const winRateByDirection = {
       buy: {
-        rate: buyTrades.length > 0 ? Math.round((buyWins / buyTrades.length) * 10000) / 100 : 0,
+        rate:
+          buyTrades.length > 0
+            ? Math.round((buyWins / buyTrades.length) * 10000) / 100
+            : 0,
         count: buyTrades.length,
       },
       sell: {
-        rate: sellTrades.length > 0 ? Math.round((sellWins / sellTrades.length) * 10000) / 100 : 0,
+        rate:
+          sellTrades.length > 0
+            ? Math.round((sellWins / sellTrades.length) * 10000) / 100
+            : 0,
         count: sellTrades.length,
       },
     };
 
     return {
       sharpeRatio: Math.round(sharpeRatio * 100) / 100,
-      sortinoRatio: sortinoRatio === Infinity ? 999999 : Math.round(sortinoRatio * 100) / 100,
+      sortinoRatio:
+        sortinoRatio === Infinity
+          ? 999999
+          : Math.round(sortinoRatio * 100) / 100,
       calmarRatio: Math.round(calmarRatio * 100) / 100,
       currentStreak: { type: streakType, count: streakCount },
       equityCurve,
@@ -778,40 +831,64 @@ export class TradesService {
 
     const byStrategy: StrategyPerformance[] = [];
     for (const [strategy, stratTrades] of strategyMap) {
-      const wins = stratTrades.filter(t => Number(t.pnl) > 0);
-      const losses = stratTrades.filter(t => Number(t.pnl) <= 0);
+      const wins = stratTrades.filter((t) => Number(t.pnl) > 0);
+      const losses = stratTrades.filter((t) => Number(t.pnl) <= 0);
       const totalPnl = stratTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
       const grossProfit = wins.reduce((sum, t) => sum + Number(t.pnl), 0);
-      const grossLoss = Math.abs(losses.reduce((sum, t) => sum + Number(t.pnl), 0));
+      const grossLoss = Math.abs(
+        losses.reduce((sum, t) => sum + Number(t.pnl), 0),
+      );
 
       byStrategy.push({
         strategy,
         totalTrades: stratTrades.length,
-        winRate: stratTrades.length > 0 ? Math.round((wins.length / stratTrades.length) * 10000) / 100 : 0,
-        profitFactor: grossLoss > 0 ? Math.round((grossProfit / grossLoss) * 100) / 100 : grossProfit > 0 ? Infinity : 0,
-        expectancy: stratTrades.length > 0 ? Math.round((totalPnl / stratTrades.length) * 100) / 100 : 0,
+        winRate:
+          stratTrades.length > 0
+            ? Math.round((wins.length / stratTrades.length) * 10000) / 100
+            : 0,
+        profitFactor:
+          grossLoss > 0
+            ? Math.round((grossProfit / grossLoss) * 100) / 100
+            : grossProfit > 0
+              ? Infinity
+              : 0,
+        expectancy:
+          stratTrades.length > 0
+            ? Math.round((totalPnl / stratTrades.length) * 100) / 100
+            : 0,
         totalPnl: Math.round(totalPnl * 100) / 100,
       });
     }
 
     byStrategy.sort((a, b) => b.totalPnl - a.totalPnl);
     const bestStrategy = byStrategy.length > 0 ? byStrategy[0].strategy : '';
-    const worstStrategy = byStrategy.length > 0 ? byStrategy[byStrategy.length - 1].strategy : '';
+    const worstStrategy =
+      byStrategy.length > 0 ? byStrategy[byStrategy.length - 1].strategy : '';
 
     return { byStrategy, bestStrategy, worstStrategy };
   }
 
   async getTagAnalytics(userId: string): Promise<{
     byTag: TagPerformance[];
-    byCategory: { category: string; totalTrades: number; winRate: number; totalPnl: number }[];
-    topTagCombinations: { tags: string[]; trades: number; pnl: number; winRate: number }[];
+    byCategory: {
+      category: string;
+      totalTrades: number;
+      winRate: number;
+      totalPnl: number;
+    }[];
+    topTagCombinations: {
+      tags: string[];
+      trades: number;
+      pnl: number;
+      winRate: number;
+    }[];
   }> {
     const tradeRows = await db
       .select()
       .from(trades)
       .where(eq(trades.userId, userId));
 
-    const tradeIds = tradeRows.map(t => t.id);
+    const tradeIds = tradeRows.map((t) => t.id);
     if (tradeIds.length === 0) {
       return { byTag: [], byCategory: [], topTagCombinations: [] };
     }
@@ -830,18 +907,30 @@ export class TradesService {
     const tagDetails = await db.select().from(tags);
     const tagLookup = new Map<string, { name: string; category: string }>();
     for (const tag of tagDetails) {
-      tagLookup.set(tag.id, { name: tag.name, category: tag.category ?? 'uncategorized' });
+      tagLookup.set(tag.id, {
+        name: tag.name,
+        category: tag.category ?? 'uncategorized',
+      });
     }
 
-    const tagStats = new Map<string, { trades: number; wins: number; pnl: number; category: string }>();
+    const tagStats = new Map<
+      string,
+      { trades: number; wins: number; pnl: number; category: string }
+    >();
     for (const [tradeId, tagIds] of tagMap) {
-      const trade = tradeRows.find(t => t.id === tradeId);
+      const trade = tradeRows.find((t) => t.id === tradeId);
       if (!trade) continue;
       for (const tagId of tagIds) {
         const info = tagLookup.get(tagId);
         if (!info) continue;
         const key = info.name;
-        if (!tagStats.has(key)) tagStats.set(key, { trades: 0, wins: 0, pnl: 0, category: info.category });
+        if (!tagStats.has(key))
+          tagStats.set(key, {
+            trades: 0,
+            wins: 0,
+            pnl: 0,
+            category: info.category,
+          });
         const stat = tagStats.get(key)!;
         stat.trades++;
         if (Number(trade.pnl) > 0) stat.wins++;
@@ -849,37 +938,55 @@ export class TradesService {
       }
     }
 
-    const byTag: TagPerformance[] = Array.from(tagStats.entries()).map(([tag, stat]) => ({
-      tag,
-      category: stat.category,
-      totalTrades: stat.trades,
-      winRate: stat.trades > 0 ? Math.round((stat.wins / stat.trades) * 10000) / 100 : 0,
-      totalPnl: Math.round(stat.pnl * 100) / 100,
-    }));
+    const byTag: TagPerformance[] = Array.from(tagStats.entries()).map(
+      ([tag, stat]) => ({
+        tag,
+        category: stat.category,
+        totalTrades: stat.trades,
+        winRate:
+          stat.trades > 0
+            ? Math.round((stat.wins / stat.trades) * 10000) / 100
+            : 0,
+        totalPnl: Math.round(stat.pnl * 100) / 100,
+      }),
+    );
 
-    const categoryMap = new Map<string, { trades: number; wins: number; pnl: number }>();
+    const categoryMap = new Map<
+      string,
+      { trades: number; wins: number; pnl: number }
+    >();
     for (const stat of tagStats.values()) {
-      if (!categoryMap.has(stat.category)) categoryMap.set(stat.category, { trades: 0, wins: 0, pnl: 0 });
+      if (!categoryMap.has(stat.category))
+        categoryMap.set(stat.category, { trades: 0, wins: 0, pnl: 0 });
       const cat = categoryMap.get(stat.category)!;
       cat.trades += stat.trades;
       cat.wins += stat.wins;
       cat.pnl += stat.pnl;
     }
 
-    const byCategory = Array.from(categoryMap.entries()).map(([category, stat]) => ({
-      category,
-      totalTrades: stat.trades,
-      winRate: stat.trades > 0 ? Math.round((stat.wins / stat.trades) * 10000) / 100 : 0,
-      totalPnl: Math.round(stat.pnl * 100) / 100,
-    }));
+    const byCategory = Array.from(categoryMap.entries()).map(
+      ([category, stat]) => ({
+        category,
+        totalTrades: stat.trades,
+        winRate:
+          stat.trades > 0
+            ? Math.round((stat.wins / stat.trades) * 10000) / 100
+            : 0,
+        totalPnl: Math.round(stat.pnl * 100) / 100,
+      }),
+    );
 
-    const comboMap = new Map<string, { trades: number; wins: number; pnl: number }>();
+    const comboMap = new Map<
+      string,
+      { trades: number; wins: number; pnl: number }
+    >();
     for (const [tradeId, tagIds] of tagMap) {
       if (tagIds.length < 2) continue;
-      const trade = tradeRows.find(t => t.id === tradeId);
+      const trade = tradeRows.find((t) => t.id === tradeId);
       if (!trade) continue;
       const combo = [...tagIds].sort().join('+');
-      if (!comboMap.has(combo)) comboMap.set(combo, { trades: 0, wins: 0, pnl: 0 });
+      if (!comboMap.has(combo))
+        comboMap.set(combo, { trades: 0, wins: 0, pnl: 0 });
       const c = comboMap.get(combo)!;
       c.trades++;
       if (Number(trade.pnl) > 0) c.wins++;
@@ -888,10 +995,13 @@ export class TradesService {
 
     const topTagCombinations = Array.from(comboMap.entries())
       .map(([combo, stat]) => ({
-        tags: combo.split('+').map(id => tagLookup.get(id)?.name ?? id),
+        tags: combo.split('+').map((id) => tagLookup.get(id)?.name ?? id),
         trades: stat.trades,
         pnl: Math.round(stat.pnl * 100) / 100,
-        winRate: stat.trades > 0 ? Math.round((stat.wins / stat.trades) * 10000) / 100 : 0,
+        winRate:
+          stat.trades > 0
+            ? Math.round((stat.wins / stat.trades) * 10000) / 100
+            : 0,
       }))
       .sort((a, b) => b.trades - a.trades)
       .slice(0, 10);
@@ -899,10 +1009,14 @@ export class TradesService {
     return { byTag, byCategory, topTagCombinations };
   }
 
-  async compareStrategies(userId: string, strategyA: string, strategyB: string): Promise<StrategyComparison> {
+  async compareStrategies(
+    userId: string,
+    strategyA: string,
+    strategyB: string,
+  ): Promise<StrategyComparison> {
     const all = await this.getStrategyAnalytics(userId);
-    const a = all.byStrategy.find(s => s.strategy === strategyA);
-    const b = all.byStrategy.find(s => s.strategy === strategyB);
+    const a = all.byStrategy.find((s) => s.strategy === strategyA);
+    const b = all.byStrategy.find((s) => s.strategy === strategyB);
 
     if (!a || !b) {
       throw new Error(`Strategy not found: ${!a ? strategyA : strategyB}`);
@@ -917,7 +1031,8 @@ export class TradesService {
       winner,
       metrics: {
         winRateDiff: Math.round((a.winRate - b.winRate) * 100) / 100,
-        profitFactorDiff: Math.round((a.profitFactor - b.profitFactor) * 100) / 100,
+        profitFactorDiff:
+          Math.round((a.profitFactor - b.profitFactor) * 100) / 100,
         expectancyDiff: Math.round((a.expectancy - b.expectancy) * 100) / 100,
         pnlDiff,
       },

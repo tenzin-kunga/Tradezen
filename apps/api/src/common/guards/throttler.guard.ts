@@ -5,7 +5,9 @@ import { ThrottlerGuard, type ThrottlerRequest } from '@nestjs/throttler';
 export class ThrottlerEventsGuard extends ThrottlerGuard {
   private readonly logger = new Logger('ThrottlerEvents');
 
-  protected async handleRequest(requestProps: ThrottlerRequest): Promise<boolean> {
+  protected async handleRequest(
+    requestProps: ThrottlerRequest,
+  ): Promise<boolean> {
     const result = await super.handleRequest(requestProps);
     if (!result) {
       const { context } = requestProps;

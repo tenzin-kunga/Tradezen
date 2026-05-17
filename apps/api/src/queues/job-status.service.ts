@@ -23,7 +23,10 @@ export class JobStatusService {
     @InjectQueue('ai-processing') private aiQueue: Queue,
   ) {}
 
-  async getJobStatus(queueName: string, jobId: string): Promise<JobStatus | null> {
+  async getJobStatus(
+    queueName: string,
+    jobId: string,
+  ): Promise<JobStatus | null> {
     const queue = queueName === 'csv-import' ? this.csvQueue : this.aiQueue;
     const job = await queue.getJob(jobId);
     if (!job) return null;

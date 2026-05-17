@@ -67,18 +67,25 @@ export class TradesController {
   }
 
   @Get('analytics/advanced')
-  @ApiOperation({ summary: 'Get advanced analytics with Sharpe, Sortino, Calmar ratios' })
+  @ApiOperation({
+    summary: 'Get advanced analytics with Sharpe, Sortino, Calmar ratios',
+  })
   getAdvancedAnalytics(@CurrentUser('id') userId: string) {
     return this.service.getAdvancedAnalytics(userId);
   }
 
   @Get('analytics/behavioral')
-  @ApiOperation({ summary: 'Get behavioral analytics: FOMO, revenge trading, time patterns' })
+  @ApiOperation({
+    summary: 'Get behavioral analytics: FOMO, revenge trading, time patterns',
+  })
   getBehavioralAnalytics(
     @CurrentUser('id') userId: string,
     @Query('days') days?: string,
   ) {
-    return this.behavioralService.analyzeBehavior(userId, days ? parseInt(days) : 90);
+    return this.behavioralService.analyzeBehavior(
+      userId,
+      days ? parseInt(days) : 90,
+    );
   }
 
   @Get('analytics/strategy')
@@ -125,7 +132,10 @@ export class TradesController {
     @Query('userId') userId: string,
     @Query('days') days?: string,
   ) {
-    return this.snapshotService.getSnapshotHistory(userId, days ? parseInt(days) : 30);
+    return this.snapshotService.getSnapshotHistory(
+      userId,
+      days ? parseInt(days) : 30,
+    );
   }
 
   @Get('daily-pnl')
@@ -152,7 +162,10 @@ export class TradesController {
     FileInterceptor('file', {
       limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+        if (
+          file.mimetype === 'text/csv' ||
+          file.originalname.endsWith('.csv')
+        ) {
           cb(null, true);
         } else {
           cb(new BadRequestException('Only CSV files are allowed'), false);
@@ -166,18 +179,25 @@ export class TradesController {
   ): Promise<ImportJobResponse> {
     if (!file) throw new BadRequestException('No CSV file provided');
     const csvContent = file.buffer.toString('utf-8');
-    const job = await this.csvQueue.add('import', {
-      userId,
-      csvContent,
-      fileName: file.originalname,
-    }, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000 },
-      removeOnComplete: { age: 86400 },
-      removeOnFail: { age: 604800 },
-    });
+    const job = await this.csvQueue.add(
+      'import',
+      {
+        userId,
+        csvContent,
+        fileName: file.originalname,
+      },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: { age: 86400 },
+        removeOnFail: { age: 604800 },
+      },
+    );
 
-    return { jobId: job.id!, message: 'CSV import started. Poll status with job ID.' };
+    return {
+      jobId: job.id!,
+      message: 'CSV import started. Poll status with job ID.',
+    };
   }
 
   @Get('import/jobs/:jobId')
@@ -189,7 +209,10 @@ export class TradesController {
   @Get('import/jobs')
   @ApiOperation({ summary: 'Get CSV import job history' })
   async getImportJobHistory(@Query('limit') limit?: string) {
-    return this.jobStatusService.getJobHistory('csv-import', limit ? parseInt(limit) : 10);
+    return this.jobStatusService.getJobHistory(
+      'csv-import',
+      limit ? parseInt(limit) : 10,
+    );
   }
 
   @Get(':id')

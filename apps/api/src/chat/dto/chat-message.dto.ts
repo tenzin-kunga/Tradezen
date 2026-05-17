@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsString, MaxLength, MinLength, IsOptional } from 'class-validator';
+import {
+  IsIn,
+  IsString,
+  MaxLength,
+  MinLength,
+  IsOptional,
+} from 'class-validator';
 
 export enum ChatRole {
   SYSTEM = 'system',

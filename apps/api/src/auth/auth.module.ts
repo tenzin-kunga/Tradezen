@@ -12,7 +12,20 @@ import { TwoFactorService } from './services/two-factor.service';
 @Module({
   imports: [PassportModule, JwtModule.register({})],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, BruteForceService, AuditService, SuspiciousLoginService, TwoFactorService],
-  exports: [AuthService, BruteForceService, AuditService, SuspiciousLoginService, TwoFactorService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    BruteForceService,
+    AuditService,
+    SuspiciousLoginService,
+    TwoFactorService,
+  ],
+  exports: [
+    AuthService,
+    BruteForceService,
+    AuditService,
+    SuspiciousLoginService,
+    TwoFactorService,
+  ],
 })
 export class AuthModule {}

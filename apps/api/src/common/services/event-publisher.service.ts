@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import Redis from 'ioredis';
 
 @Injectable()
@@ -24,7 +29,9 @@ export class EventPublisherService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.pubClient.publish(channel, JSON.stringify(data));
     } catch (error) {
-      this.logger.error(`Failed to publish to ${channel}: ${(error as Error).message}`);
+      this.logger.error(
+        `Failed to publish to ${channel}: ${(error as Error).message}`,
+      );
     }
   }
 }

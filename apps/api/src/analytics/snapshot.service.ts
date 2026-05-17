@@ -40,7 +40,9 @@ export class SnapshotService {
 
       this.logger.log(`Snapshot created for user ${userId}`);
     } catch (error) {
-      this.logger.error(`Snapshot failed for user ${userId}: ${(error as Error).message}`);
+      this.logger.error(
+        `Snapshot failed for user ${userId}: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -54,14 +56,18 @@ export class SnapshotService {
   }
 
   async getSnapshotHistory(userId: string, days = 30): Promise<unknown[]> {
-    const cutoffDate = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+    const cutoffDate = new Date(Date.now() - days * 86400000)
+      .toISOString()
+      .split('T')[0];
     return db
       .select()
       .from(analyticsSnapshots)
-      .where(and(
-        eq(analyticsSnapshots.userId, parseInt(userId)),
-        gte(analyticsSnapshots.snapshotDate, cutoffDate),
-      ))
+      .where(
+        and(
+          eq(analyticsSnapshots.userId, parseInt(userId)),
+          gte(analyticsSnapshots.snapshotDate, cutoffDate),
+        ),
+      )
       .orderBy(desc(analyticsSnapshots.snapshotDate));
   }
 

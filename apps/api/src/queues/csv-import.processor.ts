@@ -21,18 +21,28 @@ interface CsvImportProgress {
 export class CsvImportProcessor extends WorkerHost {
   private readonly logger = new Logger('CsvImportProcessor');
 
-  async process(job: Job<CsvImportJobData>): Promise<{ imported: number; errors: string[] }> {
+  async process(
+    job: Job<CsvImportJobData>,
+  ): Promise<{ imported: number; errors: string[] }> {
     const { userId, csvContent, fileName } = job.data;
     this.logger.log(`Processing CSV import for user ${userId}: ${fileName}`);
 
-    const lines = csvContent.split('\n').filter(line => line.trim());
+    const lines = csvContent.split('\n').filter((line) => line.trim());
     if (lines.length < 2) {
       throw new Error('CSV file must have header and at least one data row');
     }
 
     const header = this.parseCsvLine(lines[0]);
-    const requiredColumns = ['symbol', 'direction', 'entry_price', 'exit_price', 'lot_size'];
-    const missingColumns = requiredColumns.filter(col => !header.includes(col));
+    const requiredColumns = [
+      'symbol',
+      'direction',
+      'entry_price',
+      'exit_price',
+      'lot_size',
+    ];
+    const missingColumns = requiredColumns.filter(
+      (col) => !header.includes(col),
+    );
     if (missingColumns.length > 0) {
       throw new Error(`Missing required columns: ${missingColumns.join(', ')}`);
     }
@@ -61,7 +71,9 @@ export class CsvImportProcessor extends WorkerHost {
       }
     }
 
-    this.logger.log(`CSV import complete: ${imported} imported, ${errors.length} errors`);
+    this.logger.log(
+      `CSV import complete: ${imported} imported, ${errors.length} errors`,
+    );
     return { imported, errors };
   }
 
@@ -118,9 +130,10 @@ export class CsvImportProcessor extends WorkerHost {
       throw new Error("Invalid direction (must be 'buy' or 'sell')");
     }
 
-    const pnl = direction === 'buy'
-      ? (exit - entry) * lot * 100000
-      : (entry - exit) * lot * 100000;
+    const pnl =
+      direction === 'buy'
+        ? (exit - entry) * lot * 100000
+        : (entry - exit) * lot * 100000;
 
     return {
       userId,
@@ -134,7 +147,9 @@ export class CsvImportProcessor extends WorkerHost {
       strategy: get('strategy') || null,
       notes: get('notes') || null,
       stopLoss: get('stop_loss') ? String(parseFloat(get('stop_loss'))) : null,
-      takeProfit: get('take_profit') ? String(parseFloat(get('take_profit'))) : null,
+      takeProfit: get('take_profit')
+        ? String(parseFloat(get('take_profit')))
+        : null,
       fomoCheck: get('fomo_check')?.toLowerCase() === 'true',
       vengeanceTrade: get('vengeance_trade')?.toLowerCase() === 'true',
       trendAlignment: get('trend_alignment')?.toLowerCase() === 'true',

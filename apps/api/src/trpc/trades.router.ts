@@ -4,7 +4,11 @@ import { z } from 'zod';
 import { TradesService } from '../trades/trades.service';
 import { BehavioralService } from '../analytics/behavioral.service';
 import { EventPublisherService } from '../common/services/event-publisher.service';
-import type { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from '../trades/dto';
+import type {
+  CreateTradeDto,
+  UpdateTradeDto,
+  QueryTradesDto,
+} from '../trades/dto';
 
 const queryTradesSchema = z.object({
   page: z.number().min(1).optional(),
@@ -76,12 +80,10 @@ export const tradesRouter = router({
       return service.remove(ctx.userId, input.id);
     }),
 
-  getAnalytics: protectedProcedure
-    .input(z.void())
-    .query(async ({ ctx }) => {
-      const service = new TradesService(eventPublisher);
-      return service.getAnalytics(ctx.userId);
-    }),
+  getAnalytics: protectedProcedure.input(z.void()).query(async ({ ctx }) => {
+    const service = new TradesService(eventPublisher);
+    return service.getAnalytics(ctx.userId);
+  }),
 
   getDailyPnl: protectedProcedure
     .input(z.object({ from: z.string().optional(), to: z.string().optional() }))
@@ -111,18 +113,20 @@ export const tradesRouter = router({
       return service.getStrategyAnalytics(ctx.userId);
     }),
 
-  getTagAnalytics: protectedProcedure
-    .input(z.void())
-    .query(async ({ ctx }) => {
-      const service = new TradesService(eventPublisher);
-      return service.getTagAnalytics(ctx.userId);
-    }),
+  getTagAnalytics: protectedProcedure.input(z.void()).query(async ({ ctx }) => {
+    const service = new TradesService(eventPublisher);
+    return service.getTagAnalytics(ctx.userId);
+  }),
 
   compareStrategies: protectedProcedure
     .input(z.object({ strategyA: z.string(), strategyB: z.string() }))
     .query(async ({ ctx, input }) => {
       const service = new TradesService(eventPublisher);
-      return service.compareStrategies(ctx.userId, input.strategyA, input.strategyB);
+      return service.compareStrategies(
+        ctx.userId,
+        input.strategyA,
+        input.strategyB,
+      );
     }),
 
   getCsvImportJobStatus: protectedProcedure

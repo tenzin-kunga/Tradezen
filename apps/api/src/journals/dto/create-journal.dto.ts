@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsEnum, IsDateString, MaxLength } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsDateString,
+  MaxLength,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum JournalMood {

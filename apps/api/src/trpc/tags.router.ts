@@ -14,12 +14,10 @@ const createTagInput = createTagSchema.extend({
 });
 
 export const tagsRouter = router({
-  findAll: protectedProcedure
-    .input(z.void())
-    .query(async ({ ctx }) => {
-      const service = new TagsService();
-      return service.findAll(ctx.userId);
-    }),
+  findAll: protectedProcedure.input(z.void()).query(async ({ ctx }) => {
+    const service = new TagsService();
+    return service.findAll(ctx.userId);
+  }),
 
   findOne: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
@@ -40,7 +38,10 @@ export const tagsRouter = router({
       z.object({
         id: z.string().uuid(),
         name: z.string().min(1).max(30).optional(),
-        color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
         category: tagCategoryEnum.optional(),
       }),
     )
@@ -72,9 +73,7 @@ export const tagsRouter = router({
     }),
 
   getTradesForTag: protectedProcedure
-    .input(
-      z.object({ id: z.string().uuid() }).merge(queryTagTradesSchema),
-    )
+    .input(z.object({ id: z.string().uuid() }).merge(queryTagTradesSchema))
     .query(async ({ ctx, input }) => {
       const service = new TagsService();
       return service.getTradesForTag(

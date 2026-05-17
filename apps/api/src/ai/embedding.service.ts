@@ -10,19 +10,23 @@ export class EmbeddingService {
   private readonly embeddingModel = 'openai/text-embedding-3-small';
 
   async generateEmbedding(text: string): Promise<number[]> {
-    const response = await fetch(`${process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1'}/embeddings`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER ?? 'http://localhost:3000',
-        'X-Title': process.env.OPENROUTER_APP_TITLE ?? 'TradeZen',
+    const response = await fetch(
+      `${process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1'}/embeddings`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer':
+            process.env.OPENROUTER_HTTP_REFERER ?? 'http://localhost:3000',
+          'X-Title': process.env.OPENROUTER_APP_TITLE ?? 'TradeZen',
+        },
+        body: JSON.stringify({
+          model: this.embeddingModel,
+          input: [text],
+        }),
       },
-      body: JSON.stringify({
-        model: this.embeddingModel,
-        input: [text],
-      }),
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`Embedding API error: ${response.status}`);
@@ -32,7 +36,13 @@ export class EmbeddingService {
     return data.data[0].embedding;
   }
 
-  async storeEmbedding(userId: string, sourceType: string, sourceId: string, content: string, embedding: number[]): Promise<void> {
+  async storeEmbedding(
+    userId: string,
+    sourceType: string,
+    sourceId: string,
+    content: string,
+    embedding: number[],
+  ): Promise<void> {
     await db.insert(embeddings).values({
       userId,
       sourceType,
@@ -42,12 +52,29 @@ export class EmbeddingService {
     });
   }
 
-  async embedAndStore(userId: string, sourceType: string, sourceId: string, content: string): Promise<void> {
+  async embedAndStore(
+    userId: string,
+    sourceType: string,
+    sourceId: string,
+    content: string,
+  ): Promise<void> {
     const embedding = await this.generateEmbedding(content);
     await this.storeEmbedding(userId, sourceType, sourceId, content, embedding);
   }
 
-  async searchSimilar(userId: string, query: string, limit = 5, sourceType?: string): Promise<Array<{ sourceType: string; sourceId: string; content: string; similarity: number }>> {
+  async searchSimilar(
+    userId: string,
+    query: string,
+    limit = 5,
+    sourceType?: string,
+  ): Promise<
+    Array<{
+      sourceType: string;
+      sourceId: string;
+      content: string;
+      similarity: number;
+    }>
+  > {
     const queryEmbedding = await this.generateEmbedding(query);
     const vectorStr = `[${queryEmbedding.join(',')}]`;
 
@@ -64,6 +91,11 @@ export class EmbeddingService {
       LIMIT ${limit}
     `);
 
-    return results as unknown as Array<{ sourceType: string; sourceId: string; content: string; similarity: number }>;
+    return results as unknown as Array<{
+      sourceType: string;
+      sourceId: string;
+      content: string;
+      similarity: number;
+    }>;
   }
 }

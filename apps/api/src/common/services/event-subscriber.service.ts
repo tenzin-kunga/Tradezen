@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import Redis from 'ioredis';
 import { TradesGateway } from '../../gateway/trades.gateway';
 
@@ -20,7 +25,9 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
         const data = JSON.parse(message);
         this.handleEvent(channel, data);
       } catch (error) {
-        this.logger.error(`Failed to parse message from ${channel}: ${(error as Error).message}`);
+        this.logger.error(
+          `Failed to parse message from ${channel}: ${(error as Error).message}`,
+        );
       }
     });
 

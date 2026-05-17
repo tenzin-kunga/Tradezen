@@ -256,8 +256,10 @@ export class AuthService {
     },
   ) {
     const updateData: Record<string, string | number> = {};
-    if (dto.initial_capital !== undefined) updateData.initialCapital = dto.initial_capital;
-    if (dto.default_lot_size !== undefined) updateData.defaultLotSize = dto.default_lot_size;
+    if (dto.initial_capital !== undefined)
+      updateData.initialCapital = dto.initial_capital;
+    if (dto.default_lot_size !== undefined)
+      updateData.defaultLotSize = dto.default_lot_size;
     if (dto.timezone !== undefined) updateData.timezone = dto.timezone;
     if (dto.theme !== undefined) updateData.theme = dto.theme;
 
