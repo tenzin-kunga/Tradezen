@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { db } from '../db/drizzle';
-import { journals } from '../db/schema';
+import { journals } from '@tradezen/db';
 import { CreateJournalDto, UpdateJournalDto } from './dto';
 
 @Injectable()

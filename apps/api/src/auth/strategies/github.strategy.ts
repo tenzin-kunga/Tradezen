@@ -1,14 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback } from 'passport-github2';
-import { OAuthService } from './oauth.service';
+import { Strategy } from 'passport-github2';
+import { OAuthService } from '../oauth.service';
 
 @Injectable()
 export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
   constructor(private readonly oauthService: OAuthService) {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error('GitHub OAuth credentials not configured');
+    }
     super({
-      clientID: process.env.GITHUB_CLIENT_ID ?? '',
-      clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
+      clientID: clientId,
+      clientSecret: clientSecret,
       callbackURL:
         process.env.GITHUB_CALLBACK_URL ??
         'http://localhost:3001/auth/github/callback',
@@ -20,8 +25,8 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     accessToken: string,
     refreshToken: string,
     profile: any,
-    done: VerifyCallback,
-  ): Promise<any> {
+    done: (error: any, user?: any, info?: any) => void,
+  ): Promise<void> {
     try {
       const email =
         profile.emails?.[0]?.value ??

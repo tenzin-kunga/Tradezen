@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '../../db/drizzle';
-import { auditLog } from '../../db/schema';
+import { auditLog } from '@tradezen/db';
 
 export type AuditAction =
   | 'LOGIN_SUCCESS'
@@ -20,7 +20,7 @@ export class AuditService {
   private readonly logger = new Logger('Audit');
 
   async log(params: {
-    userId?: number;
+    userId?: string;
     action: AuditAction;
     resource?: string;
     resourceId?: number;

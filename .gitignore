@@ -34,6 +34,11 @@ build
 dist
 .cache/
 .temp/
+*.tsbuildinfo
+
+# TypeScript emit artifacts (NestJS builds to dist/; never commit src-side .js)
+apps/api/src/**/*.js
+apps/api/src/**/*.js.map
 
 # ── Testing ──────────────────────────────────────────────────────────────────
 coverage

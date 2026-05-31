@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { StateGraph, Annotation, END } from '@langchain/langgraph';
 import { db } from '../../db/drizzle';
-import { journals, trades } from '../../db/schema';
+import { journals, trades } from '@tradezen/db';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { createLLM } from '../langgraph.config';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';

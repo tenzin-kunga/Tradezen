@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { eq, and, count, desc } from 'drizzle-orm';
 import { db } from '../db/drizzle';
-import { tags, tradeTags, trades } from '../db/schema';
+import { tags, tradeTags, trades } from '@tradezen/db';
 import { CreateTagDto, UpdateTagDto } from './dto';
 import { TagCategory } from './dto/create-tag.dto';
 

@@ -1,4 +1,3 @@
-```bat
 @echo off
 title TRADEZEN — Startup
 color 0A
@@ -140,4 +139,3 @@ echo   Backend  : http://localhost:3001
 echo   Swagger  : http://localhost:3001/api/docs
 echo.
 pause
-```

@@ -2,7 +2,9 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { db } from '../db/drizzle';
-import { trades } from '../db/schema';
+import { trades } from '@tradezen/db';
+import { CsvUtils } from '../common/utils/csv';
+import { EventPublisherService } from '../common/services/event-publisher.service';
 
 interface CsvImportJobData {
   userId: string;
@@ -20,6 +22,20 @@ interface CsvImportProgress {
 @Processor('csv-import')
 export class CsvImportProcessor extends WorkerHost {
   private readonly logger = new Logger('CsvImportProcessor');
+  private readonly csvUtils = new CsvUtils();
+
+  constructor(private readonly eventPublisher: EventPublisherService) {
+    super();
+  }
+
+  private async emitJobEvent(
+    userId: string,
+    jobId: string,
+    event: string,
+    payload: unknown,
+  ) {
+    await this.eventPublisher.publish(`jobs:${userId}`, [event, payload]);
+  }
 
   async process(
     job: Job<CsvImportJobData>,
@@ -32,7 +48,7 @@ export class CsvImportProcessor extends WorkerHost {
       throw new Error('CSV file must have header and at least one data row');
     }
 
-    const header = this.parseCsvLine(lines[0]);
+    const header = this.csvUtils.parseCsvLine(lines[0]);
     const requiredColumns = [
       'symbol',
       'direction',
@@ -59,6 +75,11 @@ export class CsvImportProcessor extends WorkerHost {
         errors: errors.slice(-10),
       };
       await job.updateProgress(progress);
+      await this.emitJobEvent(userId, String(job.id), 'job:progress', {
+        jobId: job.id,
+        queue: 'csv-import',
+        progress,
+      });
 
       try {
         const values = this.parseCsvLine(lines[i]);
@@ -74,7 +95,13 @@ export class CsvImportProcessor extends WorkerHost {
     this.logger.log(
       `CSV import complete: ${imported} imported, ${errors.length} errors`,
     );
-    return { imported, errors };
+    const result = { imported, errors };
+    await this.emitJobEvent(userId, String(job.id), 'job:completed', {
+      jobId: job.id,
+      queue: 'csv-import',
+      result,
+    });
+    return result;
   }
 
   private parseCsvLine(line: string): string[] {
@@ -130,10 +157,12 @@ export class CsvImportProcessor extends WorkerHost {
       throw new Error("Invalid direction (must be 'buy' or 'sell')");
     }
 
+    const contractSize =
+      Number(values[columnMap['contract_size'] ?? '']) || 100000;
     const pnl =
       direction === 'buy'
-        ? (exit - entry) * lot * 100000
-        : (entry - exit) * lot * 100000;
+        ? (exit - entry) * lot * contractSize
+        : (entry - exit) * lot * contractSize;
 
     return {
       userId,

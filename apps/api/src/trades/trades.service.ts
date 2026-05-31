@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   eq,
   and,
-  like,
   ilike,
   desc,
   asc,
@@ -14,7 +13,8 @@ import {
   inArray,
 } from 'drizzle-orm';
 import { db } from '../db/drizzle';
-import { trades, tags, tradeTags } from '../db/schema';
+import { trades, tags, tradeTags } from '@tradezen/db';
+import { CsvUtils } from '../common/utils/csv';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import { EventPublisherService } from '../common/services/event-publisher.service';
 import * as fs from 'fs';
@@ -134,6 +134,7 @@ export class TradesService {
     string,
     { data: unknown; expiresAt: number }
   >();
+  private readonly csvUtils = new CsvUtils();
 
   constructor(private readonly eventPublisher: EventPublisherService) {}
 
@@ -421,7 +422,7 @@ export class TradesService {
     if (!checkRes[0]) throw new NotFoundException(`Trade ${id} not found`);
 
     const imageUrl = `/uploads/${filename}`;
-    const result = await db
+    await db
       .update(trades)
       .set({ chartImage: imageUrl })
       .where(and(eq(trades.id, id), eq(trades.userId, userId)))
@@ -1122,7 +1123,7 @@ export class TradesService {
         const line = lines[i].trim();
         if (!line) continue;
 
-        const row = this.parseCsvLine(line);
+        const row = this.csvUtils.parseCsvLine(line);
 
         try {
           const symbol = getValue(row, 'symbol');
@@ -1146,10 +1147,12 @@ export class TradesService {
             continue;
           }
 
+          const contractSize =
+            parseFloat(getValue(row, 'contract_size')) || 100000;
           const pnl =
             direction === 'buy'
-              ? (exitPrice - entryPrice) * lotSize * 100000
-              : (entryPrice - exitPrice) * lotSize * 100000;
+              ? (exitPrice - entryPrice) * lotSize * contractSize
+              : (entryPrice - exitPrice) * lotSize * contractSize;
 
           const stopLoss = parseFloat(getValue(row, 'stop_loss')) || null;
           const takeProfit = parseFloat(getValue(row, 'take_profit')) || null;
@@ -1187,32 +1190,5 @@ export class TradesService {
 
       return { imported, errors };
     });
-  }
-
-  private parseCsvLine(line: string): string[] {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-
-      if (char === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (char === ',' && !inQuotes) {
-        result.push(current);
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-
-    result.push(current);
-    return result;
   }
 }

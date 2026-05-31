@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue, Job, JobState } from 'bullmq';
+import { Queue, JobState } from 'bullmq';
 
 export interface JobStatus {
   id: string;

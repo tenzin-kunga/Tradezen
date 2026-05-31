@@ -2,8 +2,9 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { db } from '../db/drizzle';
-import { journals, trades } from '../db/schema';
+import { journals, trades } from '@tradezen/db';
 import { eq, and, gte, lte } from 'drizzle-orm';
+import { EventPublisherService } from '../common/services/event-publisher.service';
 
 interface JournalSummarizeJobData {
   userId: string;
@@ -19,6 +20,32 @@ interface PatternAnalysisJobData {
 @Processor('ai-processing')
 export class AiProcessingProcessor extends WorkerHost {
   private readonly logger = new Logger('AiProcessingProcessor');
+
+  constructor(private readonly eventPublisher: EventPublisherService) {
+    super();
+  }
+
+  private async emitJobEvent(
+    userId: string,
+    jobId: string,
+    event: string,
+    payload: unknown,
+  ) {
+    await this.eventPublisher.publish(`jobs:${userId}`, [event, payload]);
+  }
+
+  private async updateJobProgress(
+    job: Job,
+    userId: string,
+    progress: Record<string, unknown>,
+  ) {
+    await job.updateProgress(progress);
+    await this.emitJobEvent(userId, String(job.id), 'job:progress', {
+      jobId: job.id,
+      queue: 'ai-processing',
+      progress,
+    });
+  }
 
   async process(
     job: Job<JournalSummarizeJobData | PatternAnalysisJobData>,
@@ -52,13 +79,19 @@ export class AiProcessingProcessor extends WorkerHost {
       );
 
     if (journalRows.length === 0) {
-      return {
+      const result = {
         summary: 'No journals found for the specified date range.',
         journalCount: 0,
       };
+      await this.emitJobEvent(userId, String(job.id), 'job:completed', {
+        jobId: job.id,
+        queue: 'ai-processing',
+        result,
+      });
+      return result;
     }
 
-    await job.updateProgress({
+    await this.updateJobProgress(job, userId, {
       stage: 'building_prompt',
       total: journalRows.length,
     });
@@ -69,7 +102,13 @@ export class AiProcessingProcessor extends WorkerHost {
     this.logger.log(
       `Journal summarization complete: ${journalRows.length} journals`,
     );
-    return { summary, journalCount: journalRows.length };
+    const result = { summary, journalCount: journalRows.length };
+    await this.emitJobEvent(userId, String(job.id), 'job:completed', {
+      jobId: job.id,
+      queue: 'ai-processing',
+      result,
+    });
+    return result;
   }
 
   private async analyzePatterns(
@@ -89,19 +128,34 @@ export class AiProcessingProcessor extends WorkerHost {
       );
 
     if (tradeRows.length < 10) {
-      return {
+      const result = {
         insights: ['Not enough trades for pattern analysis (minimum 10).'],
       };
+      await this.emitJobEvent(userId, String(job.id), 'job:completed', {
+        jobId: job.id,
+        queue: 'ai-processing',
+        result,
+      });
+      return result;
     }
 
-    await job.updateProgress({ stage: 'analyzing', total: tradeRows.length });
+    await this.updateJobProgress(job, userId, {
+      stage: 'analyzing',
+      total: tradeRows.length,
+    });
 
     const prompt = this.buildPatternAnalysisPrompt(tradeRows);
     const response = await this.callOpenRouter(prompt);
     const insights = this.parseInsights(response);
 
     this.logger.log(`Pattern analysis complete: ${insights.length} insights`);
-    return { insights };
+    const result = { insights };
+    await this.emitJobEvent(userId, String(job.id), 'job:completed', {
+      jobId: job.id,
+      queue: 'ai-processing',
+      result,
+    });
+    return result;
   }
 
   private buildSummarizationPrompt(journalRows: any[]): string {
@@ -190,7 +244,7 @@ export class AiProcessingProcessor extends WorkerHost {
 
   private parseInsights(response: string): string[] {
     return response
-      .split(/\n[\d\*\-•]+\s*/)
+      .split(/\n[\d*\-•]+\s*/)
       .map((s) => s.trim())
       .filter((s) => s.length > 10);
   }

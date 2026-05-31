@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '../db/drizzle';
-import { coachingSessions } from '../db/schema';
+import { coachingSessions } from '@tradezen/db';
 import { eq, desc } from 'drizzle-orm';
 import { CoachingWorkflow } from './workflows/coaching.workflow';
 import { TradesService } from '../trades/trades.service';
@@ -27,7 +27,10 @@ export class CoachingEngineService {
     const advanced = await this.tradesService.getAdvancedAnalytics(userId);
     const behavioral = await this.behavioralService.analyzeBehavior(userId);
 
-    const combinedAnalytics = { ...(analytics as Record<string, unknown>), ...(advanced as Record<string, unknown>) };
+    const combinedAnalytics = {
+      ...(analytics as Record<string, unknown>),
+      ...(advanced as Record<string, unknown>),
+    };
     const scores = {
       fomoScore: behavioral.fomo.fomoScore,
       revengeScore: behavioral.revenge.revengeScore,
@@ -55,11 +58,24 @@ export class CoachingEngineService {
       );
     }
 
-    this.logger.log(`Coaching: severity=${result.severity}, triggers=${result.triggers.length}`);
+    this.logger.log(
+      `Coaching: severity=${result.severity}, triggers=${result.triggers.length}`,
+    );
     return result;
   }
 
-  async getCoachingHistory(userId: string, limit = 10): Promise<Array<{ id: string; severity: string; message: string; triggers: string[]; createdAt: Date | null }>> {
+  async getCoachingHistory(
+    userId: string,
+    limit = 10,
+  ): Promise<
+    Array<{
+      id: string;
+      severity: string;
+      message: string;
+      triggers: string[];
+      createdAt: Date | null;
+    }>
+  > {
     const sessions = await db
       .select()
       .from(coachingSessions)
@@ -67,7 +83,7 @@ export class CoachingEngineService {
       .orderBy(desc(coachingSessions.createdAt))
       .limit(limit);
 
-    return sessions.map(s => ({
+    return sessions.map((s) => ({
       id: s.id,
       severity: s.severity,
       message: s.message,
@@ -76,7 +92,9 @@ export class CoachingEngineService {
     }));
   }
 
-  async getActiveCoaching(userId: string): Promise<{ severity: string; message: string; triggers: string[] } | null> {
+  async getActiveCoaching(
+    userId: string,
+  ): Promise<{ severity: string; message: string; triggers: string[] } | null> {
     const latest = await db
       .select()
       .from(coachingSessions)

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { db } from '../db/drizzle';
-import { chatThreads, chatMessages } from '../db/schema';
+import { chatThreads, chatMessages } from '@tradezen/db';
 import { eq, and, desc, asc } from 'drizzle-orm';
 
 @Injectable()
@@ -53,6 +53,7 @@ export class ChatThreadService {
 
   async getMessages(
     threadId: string,
+    userId: string,
     limit = 50,
   ): Promise<
     Array<{
@@ -62,6 +63,15 @@ export class ChatThreadService {
       createdAt: Date | null;
     }>
   > {
+    // First verify the thread belongs to the user
+    const thread = await db.query.chatThreads.findFirst({
+      where: and(eq(chatThreads.id, threadId), eq(chatThreads.userId, userId)),
+    });
+
+    if (!thread) {
+      throw new NotFoundException('Thread not found or access denied');
+    }
+
     return db
       .select({
         role: chatMessages.role,

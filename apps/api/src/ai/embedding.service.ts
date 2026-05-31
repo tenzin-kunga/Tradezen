@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '../db/drizzle';
-import { embeddings } from '../db/schema';
+import { embeddings } from '@tradezen/db';
 import { eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 

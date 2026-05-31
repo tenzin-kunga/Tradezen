@@ -71,10 +71,23 @@ export class ReportService {
   }
 
   async generateCSV(userId: string): Promise<string> {
-    const trades = await this.tradesService.findAll(userId, { page: 1, limit: 10000 });
+    const trades = await this.tradesService.findAll(userId, {
+      page: 1,
+      limit: 10000,
+    });
     const items = (trades as any).data || trades;
 
-    const headers = ['Date', 'Symbol', 'Direction', 'Entry', 'Exit', 'Lot', 'PnL', 'Strategy', 'Notes'];
+    const headers = [
+      'Date',
+      'Symbol',
+      'Direction',
+      'Entry',
+      'Exit',
+      'Lot',
+      'PnL',
+      'Strategy',
+      'Notes',
+    ];
     const rows = items.map((t: any) => [
       t.tradeDate,
       t.symbol,
@@ -87,7 +100,10 @@ export class ReportService {
       t.notes || '',
     ]);
 
-    const csvContent = [headers.join(','), ...rows.map((r: any[]) => r.map(v => `"${v}"`).join(','))].join('\n');
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((r: any[]) => r.map((v) => `"${v}"`).join(',')),
+    ].join('\n');
     return csvContent;
   }
 }

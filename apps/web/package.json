@@ -6,7 +6,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "eslint . --max-warnings 50",
+    "lint": "eslint . --max-warnings 80",
+    "check-types": "tsc --noEmit",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

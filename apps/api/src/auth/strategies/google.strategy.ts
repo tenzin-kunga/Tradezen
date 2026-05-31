@@ -1,14 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback } from 'passport-google-oauth20';
-import { OAuthService } from './oauth.service';
+import { Strategy } from 'passport-google-oauth20';
+import { OAuthService } from '../oauth.service';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(private readonly oauthService: OAuthService) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error('Google OAuth credentials not configured');
+    }
     super({
-      clientID: process.env.GOOGLE_CLIENT_ID ?? '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      clientID: clientId,
+      clientSecret: clientSecret,
       callbackURL:
         process.env.GOOGLE_CALLBACK_URL ??
         'http://localhost:3001/auth/google/callback',
@@ -20,8 +25,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     accessToken: string,
     refreshToken: string,
     profile: any,
-    done: VerifyCallback,
-  ): Promise<any> {
+    done: (error: any, user?: any, info?: any) => void,
+  ): Promise<void> {
     try {
       const user = await this.oauthService.validateOAuthUser({
         provider: 'google',

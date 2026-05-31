@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { db } from '../../db/drizzle';
-import { users } from '../../db/schema';
-import { generateSecret, generate, verify } from 'otplib';
+import { users } from '@tradezen/db';
+import { generateSecret, verify } from 'otplib';
 import { generateTOTP } from '@otplib/uri';
 import * as crypto from 'crypto';
 
@@ -39,8 +39,8 @@ export class TwoFactorService {
     });
     if (!user?.twoFactorSecret) return false;
 
-    const { valid } = await verify({ token, secret: user.twoFactorSecret });
-    return valid;
+    const result = await verify({ token, secret: user.twoFactorSecret });
+    return result.valid === true;
   }
 
   async generateBackupCodes(userId: number): Promise<string[]> {

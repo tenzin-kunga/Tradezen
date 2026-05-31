@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '../db/drizzle';
-import { trades } from '../db/schema';
+import { trades } from '@tradezen/db';
 import { eq, and, gte, asc } from 'drizzle-orm';
 
 interface Trade {

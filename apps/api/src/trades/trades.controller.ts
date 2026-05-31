@@ -8,10 +8,13 @@ import {
   Param,
   Query,
   UseInterceptors,
+  UseGuards,
   UploadedFile,
   BadRequestException,
   Res,
 } from '@nestjs/common';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -23,13 +26,7 @@ import { BehavioralService } from '../analytics/behavioral.service';
 import { SnapshotService } from '../analytics/snapshot.service';
 import { JobStatusService } from '../queues/job-status.service';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
-import { CurrentUser } from '../auth/current-user.decorator';
 import type { Express, Response } from 'express';
-
-interface ImportResult {
-  imported: number;
-  errors: string[];
-}
 
 interface ImportJobResponse {
   jobId: string;
@@ -110,26 +107,29 @@ export class TradesController {
     return this.service.compareStrategies(userId, strategyA, strategyB);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('analytics/snapshot')
   @ApiOperation({ summary: 'Create an analytics snapshot' })
-  async createSnapshot(@Body('userId') userId: string) {
+  async createSnapshot(@CurrentUser('id') userId: string) {
     await this.snapshotService.createSnapshot(userId);
     return { message: 'Snapshot created' };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('analytics/snapshot')
   @ApiOperation({ summary: 'Get an analytics snapshot by date' })
   async getSnapshot(
-    @Query('userId') userId: string,
+    @CurrentUser('id') userId: string,
     @Query('date') date: string,
   ) {
     return this.snapshotService.getSnapshot(userId, date);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('analytics/snapshot/history')
   @ApiOperation({ summary: 'Get analytics snapshot history' })
   async getSnapshotHistory(
-    @Query('userId') userId: string,
+    @CurrentUser('id') userId: string,
     @Query('days') days?: string,
   ) {
     return this.snapshotService.getSnapshotHistory(

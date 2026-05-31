@@ -23,7 +23,7 @@ services:
     environment:
       # Use environment variables with sensible defaults
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: ${DB_NAME:-tradezen}
       PGDATA: /var/lib/postgresql/data/pgdata
     networks:
@@ -97,8 +97,8 @@ services:
       tradezen-net:
         ipv4_address: 172.28.1.20
     environment:
-      # Database
-      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-tradezen}?sslmode=disable
+       # Database
+       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-tradezen}?sslmode=disable
       # Or individual params:
       # DB_USER: ${DB_USER:-postgres}
       # DB_PASSWORD: ${DB_PASSWORD}

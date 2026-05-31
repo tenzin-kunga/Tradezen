@@ -4,19 +4,16 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  private getJwtSecret(): string {
+  constructor() {
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       throw new UnauthorizedException('JWT configuration missing');
     }
-    return secret;
-  }
 
-  constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET ?? 'development-secret-only', // fallback for dev, validated in prod
+      secretOrKey: secret,
     });
   }
 

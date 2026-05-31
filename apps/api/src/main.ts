@@ -21,7 +21,6 @@ import { appRouter, createContext } from './trpc';
 // This function is temporarily disabled for development mode.
 // Enable in production by uncommenting the call below.
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function _validateEnv() {
   const required = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DB_PASSWORD'];
   const missing = required.filter((key) => !process.env[key]);
@@ -45,10 +44,9 @@ function _validateEnv() {
 }
 
 // Run validation in production (skip in dev for convenience)
-// TEMPORARILY DISABLED FOR DEV MODE
-// if (process.env.NODE_ENV === 'production') {
-//   validateEnv();
-// }
+if (process.env.NODE_ENV === 'production') {
+  _validateEnv();
+}
 
 async function bootstrap() {
   initSentry();

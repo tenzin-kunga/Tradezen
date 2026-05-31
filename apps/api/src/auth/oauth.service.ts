@@ -1,8 +1,8 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, and } from 'drizzle-orm';
 import { db } from '../db/drizzle';
-import { users, accounts } from '../db/schema';
+import { users, accounts } from '@tradezen/db';
 import type { Response } from 'express';
 
 export interface OAuthProfile {
@@ -44,11 +44,9 @@ export class OAuthService {
     return secret;
   }
 
-  async validateOAuthUser(
-    profile: OAuthProfile,
-  ): Promise<OAuthUserResponse> {
+  async validateOAuthUser(profile: OAuthProfile): Promise<OAuthUserResponse> {
     const existingAccount = await db.query.accounts.findFirst({
-      where: or(
+      where: and(
         eq(accounts.provider, profile.provider),
         eq(accounts.providerId, profile.providerId),
       ),
@@ -64,7 +62,7 @@ export class OAuthService {
         profile.refreshToken,
       );
 
-      return this.generateTokens(existingAccount.user, true);
+      return this.generateTokens(existingAccount.user);
     }
 
     const existingUser = await db.query.users.findFirst({
@@ -72,7 +70,7 @@ export class OAuthService {
     });
 
     if (existingUser) {
-      const [account] = await db
+      await db
         .insert(accounts)
         .values({
           userId: existingUser.id,
@@ -90,7 +88,7 @@ export class OAuthService {
         .set({ authMethod: 'both' })
         .where(eq(users.id, existingUser.id));
 
-      return this.generateTokens(existingUser, true);
+      return this.generateTokens(existingUser);
     }
 
     const username = await this.getUniqueUsername(profile.username);
@@ -120,13 +118,10 @@ export class OAuthService {
       refreshToken: profile.refreshToken,
     });
 
-    return this.generateTokens(newUser, false);
+    return this.generateTokens(newUser);
   }
 
-  async linkAccount(
-    userId: string,
-    profile: OAuthProfile,
-  ): Promise<void> {
+  async linkAccount(userId: string, profile: OAuthProfile): Promise<void> {
     const existingAccount = await db.query.accounts.findFirst({
       where: or(
         eq(accounts.provider, profile.provider),
@@ -147,7 +142,10 @@ export class OAuthService {
       ),
     });
 
-    if (existingUserAccount && existingUserAccount.provider === profile.provider) {
+    if (
+      existingUserAccount &&
+      existingUserAccount.provider === profile.provider
+    ) {
       await db
         .update(accounts)
         .set({
@@ -191,19 +189,12 @@ export class OAuthService {
     });
 
     if (accountCount.length <= 1 && user.authMethod === 'oauth') {
-      throw new ConflictException(
-        'Cannot unlink your only login method',
-      );
+      throw new ConflictException('Cannot unlink your only login method');
     }
 
     await db
       .delete(accounts)
-      .where(
-        or(
-          eq(accounts.userId, userId),
-          eq(accounts.provider, provider),
-        ),
-      );
+      .where(and(eq(accounts.userId, userId), eq(accounts.provider, provider)));
 
     const remainingAccounts = await db.query.accounts.findMany({
       where: eq(accounts.userId, userId),
@@ -290,10 +281,7 @@ export class OAuthService {
       .where(eq(accounts.id, accountId));
   }
 
-  private generateTokens(
-    user: any,
-    isExisting: boolean,
-  ): OAuthUserResponse {
+  private generateTokens(user: any): OAuthUserResponse {
     const payload = {
       sub: user.id,
       email: user.email,

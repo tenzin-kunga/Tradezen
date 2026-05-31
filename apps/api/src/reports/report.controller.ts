@@ -13,10 +13,7 @@ export class ReportController {
   }
 
   @Get('export/csv')
-  async exportCSV(
-    @CurrentUser('id') userId: string,
-    @Res() res: Response,
-  ) {
+  async exportCSV(@CurrentUser('id') userId: string, @Res() res: Response) {
     const csv = await this.reportService.generateCSV(userId);
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename=trades.csv');

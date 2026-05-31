@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getTrades, deleteTrade, exportCsv, importCsv } from "@/lib/api";
+import { getTrades, deleteTrade, exportCsv, importCsv, getImportJobStatus } from "@/lib/api";
 import StatCard from "@/components/StatCard";
 import { useRealtime } from "@/hooks/use-realtime";
 
@@ -42,6 +42,13 @@ export default function TradeLog() {
   const [resultFilter, setResultFilter] = useState("ALL");
   const [page, setPage] = useState(1);
   const [importResult, setImportResult] = useState<{ imported: number; errors: string[] } | null>(null);
+  const [importJobId, setImportJobId] = useState<string | null>(null);
+  const importJobIdRef = useRef<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{ processed: number; total: number; imported: number; errors: string[] } | null>(null);
+
+  useEffect(() => {
+    importJobIdRef.current = importJobId;
+  }, [importJobId]);
 
   const showAnomaly = useMemo(() => {
     if (trades.length < 3) return false;
@@ -85,6 +92,39 @@ export default function TradeLog() {
     fetchTrades();
   });
 
+  useRealtime('job:progress', (data) => {
+    const payload = data as {
+      jobId?: string;
+      queue?: string;
+      progress?: { processed: number; total: number; imported: number; errors: string[] };
+    };
+    if (payload.queue !== 'csv-import' || !payload.jobId || payload.jobId !== importJobIdRef.current) {
+      return;
+    }
+    if (payload.progress) {
+      setImportProgress(payload.progress);
+    }
+  });
+
+  useRealtime('job:completed', (data) => {
+    const payload = data as {
+      jobId?: string;
+      queue?: string;
+      result?: { imported: number; errors: string[] };
+    };
+    if (payload.queue !== 'csv-import' || !payload.jobId || payload.jobId !== importJobIdRef.current) {
+      return;
+    }
+    if (payload.result) {
+      setImportResult(payload.result);
+      setImportProgress(null);
+      setImportJobId(null);
+      if (payload.result.imported > 0) {
+        fetchTrades();
+      }
+    }
+  });
+
   const [allSymbols, setAllSymbols] = useState<string[]>([]);
   const [allStrategies, setAllStrategies] = useState<string[]>([]);
   useEffect(() => {
@@ -125,15 +165,54 @@ export default function TradeLog() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setImportResult(null);
+    setImportProgress(null);
+
     try {
-      const result = await importCsv(file);
-      setImportResult(result);
-      if (result.imported > 0) {
-        fetchTrades();
-      }
+      const { jobId } = await importCsv(file);
+      setImportJobId(jobId);
+
+      const poll = async () => {
+        const status = await getImportJobStatus(jobId);
+        if (!status) return;
+
+        if (typeof status.progress === 'object' && status.progress !== null) {
+          setImportProgress(status.progress as {
+            processed: number;
+            total: number;
+            imported: number;
+            errors: string[];
+          });
+        }
+
+        if (status.state === 'completed' && status.result) {
+          setImportResult(status.result);
+          setImportProgress(null);
+          setImportJobId(null);
+          if (status.result.imported > 0) {
+            fetchTrades();
+          }
+          return;
+        }
+
+        if (status.state === 'failed') {
+          setImportResult({
+            imported: 0,
+            errors: [status.failedReason ?? 'Import failed'],
+          });
+          setImportProgress(null);
+          setImportJobId(null);
+          return;
+        }
+
+        window.setTimeout(poll, 1500);
+      };
+
+      void poll();
     } catch (err) {
       console.error(err);
       setImportResult({ imported: 0, errors: [err instanceof Error ? err.message : "Import failed"] });
+      setImportJobId(null);
     }
 
     if (fileInputRef.current) {
@@ -219,6 +298,21 @@ export default function TradeLog() {
           </div>
         </div>
       </div>
+
+      {importProgress && (
+        <div className="glass-card p-3 md:p-4 mb-4" style={{
+          background: "rgba(59,130,246,0.05)",
+          border: "1px solid rgba(59,130,246,0.35)",
+        }}>
+          <div className="text-xs font-semibold mb-2" style={{ color: "var(--accent-primary, #3b82f6)" }}>
+            IMPORTING CSV… {importProgress.processed}/{importProgress.total} rows
+          </div>
+          <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {importProgress.imported} imported
+            {importProgress.errors.length > 0 ? ` · ${importProgress.errors.length} row errors` : ""}
+          </div>
+        </div>
+      )}
 
       {importResult && (
         <div className="glass-card p-3 md:p-4 mb-4" style={{

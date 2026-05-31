@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '../db/drizzle';
-import { analyticsSnapshots, users } from '../db/schema';
+import { analyticsSnapshots, users } from '@tradezen/db';
 import { eq, and, gte, desc } from 'drizzle-orm';
 import { TradesService } from '../trades/trades.service';
 import { BehavioralService } from './behavioral.service';
@@ -26,7 +26,7 @@ export class SnapshotService {
       await db
         .insert(analyticsSnapshots)
         .values({
-          userId: parseInt(userId),
+          userId,
           snapshotDate: new Date().toISOString().split('T')[0],
           metrics: { analytics, advanced, behavioral, strategy },
         })
@@ -34,7 +34,7 @@ export class SnapshotService {
           target: [analyticsSnapshots.userId, analyticsSnapshots.snapshotDate],
           set: {
             metrics: { analytics, advanced, behavioral, strategy },
-            createdAt: new Date(),
+            // Removed createdAt from update to preserve original creation timestamp
           },
         });
 
@@ -49,7 +49,7 @@ export class SnapshotService {
   async getSnapshot(userId: string, date: string): Promise<unknown> {
     return db.query.analyticsSnapshots.findFirst({
       where: and(
-        eq(analyticsSnapshots.userId, parseInt(userId)),
+        eq(analyticsSnapshots.userId, userId),
         eq(analyticsSnapshots.snapshotDate, date),
       ),
     });
@@ -64,7 +64,7 @@ export class SnapshotService {
       .from(analyticsSnapshots)
       .where(
         and(
-          eq(analyticsSnapshots.userId, parseInt(userId)),
+          eq(analyticsSnapshots.userId, userId),
           gte(analyticsSnapshots.snapshotDate, cutoffDate),
         ),
       )

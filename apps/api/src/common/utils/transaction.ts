@@ -27,7 +27,6 @@ export async function withTransaction<T>(
         // Ignore rollback errors
       }
 
-      const pgError = error as { code?: string };
       const isRetryable = (err: unknown): boolean => {
         if (!(err instanceof Error)) return false;
         const pgErr = err as { code?: string };

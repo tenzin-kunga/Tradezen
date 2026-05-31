@@ -7,7 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { eq, or } from 'drizzle-orm';
 import { db } from '../db/drizzle';
-import { users } from '../db/schema';
+import { users } from '@tradezen/db';
 import { RegisterDto, LoginDto } from './dto';
 import type { Response } from 'express';
 import { BruteForceService } from '../common/services/brute-force.service';
@@ -103,6 +103,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // OAuth users don't have passwords, so they can't login with password
+    if (user.passwordHash == null) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       await this.bruteForce.recordFailedAttempt(identifier, ip);
@@ -123,7 +127,7 @@ export class AuthService {
     );
 
     await this.audit.log({
-      userId: Number(user.id),
+      userId: user.id,
       action: 'LOGIN_SUCCESS',
       ip,
       userAgent,

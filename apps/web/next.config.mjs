@@ -12,6 +12,20 @@ const nextConfig = {
     ],
   },
   poweredByHeader: false,
+  onDemandEntries: {
+    maxInactiveAge: 60 * 1000,
+    pagesBufferLength: 5,
+  },
+  experimental: {
+    optimizePackageImports: ['@sentry/nextjs'],
+    isrMemoryCacheSize: 0,
+  },
+  typescript: {
+    tsconfigPath: './tsconfig.json',
+  },
+  webpack: (config, { isServer }) => {
+    return config;
+  },
 };
 
 export default withSentryConfig(nextConfig, {
