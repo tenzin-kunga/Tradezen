@@ -101,25 +101,26 @@ export function NotificationBell() {
     <div className="relative notification-bell-container">
       <button
         onClick={fetchNotifications}
-        className="relative p-2 text-gray-400 hover:text-white transition-colors"
+        className="relative p-2 transition-colors"
+        style={{ color: "var(--text-muted)" }}
         aria-label="Notifications"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {count > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
+          <span className="absolute -top-1 -right-1 text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse" style={{ background: "var(--accent-loss)", color: "var(--text-primary)" }}>
             {count > 99 ? '99+' : count}
           </span>
         )}
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-96 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden">
-          <div className="p-3 border-b border-gray-700 flex justify-between items-center bg-gray-850">
-            <span className="font-semibold text-white">Notifications</span>
+        <div className="absolute right-0 mt-2 w-96 rounded-lg shadow-xl z-50 overflow-hidden" style={{ background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+          <div className="p-3 flex justify-between items-center" style={{ borderBottom: "1px solid var(--border)" }}>
+            <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Notifications</span>
             {count > 0 && (
-              <button onClick={markAllRead} className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+              <button onClick={markAllRead} className="text-sm transition-colors" style={{ color: "var(--accent-cyan)" }}>
                 Mark all read
               </button>
             )}
@@ -127,15 +128,15 @@ export function NotificationBell() {
           
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="p-4 text-center text-gray-400">
-                <div className="animate-spin w-6 h-6 border-2 border-gray-600 border-t-cyan-400 rounded-full mx-auto"></div>
+              <div className="p-4 text-center" style={{ color: "var(--text-muted)" }}>
+                <div className="animate-spin w-6 h-6 border-2 rounded-full mx-auto" style={{ borderColor: "var(--border)", borderTopColor: "var(--accent-cyan)" }}></div>
               </div>
             ) : notifications.length > 0 ? (
               notifications.map(n => (
                 <NotificationItem key={n.id} notification={n} onRead={handleRead} />
               ))
             ) : (
-              <div className="p-6 text-center text-gray-400">
+              <div className="p-6 text-center" style={{ color: "var(--text-muted)" }}>
                 <div className="text-3xl mb-2">🔔</div>
                 <div>No unread notifications</div>
               </div>
@@ -143,10 +144,11 @@ export function NotificationBell() {
           </div>
           
           {notifications.length > 0 && (
-            <div className="p-2 border-t border-gray-700 bg-gray-850">
+            <div className="p-2" style={{ borderTop: "1px solid var(--border)" }}>
               <button
                 onClick={() => window.location.href = '/settings?tab=notifications'}
-                className="w-full text-center text-xs text-gray-400 hover:text-white py-2 transition-colors"
+                className="w-full text-center text-xs py-2 transition-colors"
+                style={{ color: "var(--text-muted)" }}
               >
                 Notification Settings →
               </button>
@@ -160,10 +162,12 @@ export function NotificationBell() {
 
 function showToast(notification: Notification) {
   const toast = document.createElement('div');
-  toast.className = 'fixed top-4 right-4 bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-xl z-50 animate-slide-in';
+  toast.className = 'fixed top-4 right-4 rounded-lg p-4 shadow-xl z-50 animate-slide-in';
+  toast.style.background = 'var(--bg-surface)';
+  toast.style.border = '1px solid var(--border)';
   toast.innerHTML = `
-    <div class="font-medium text-sm text-white">${notification.title}</div>
-    <div class="text-xs text-gray-400 mt-1">${notification.message}</div>
+    <div class="font-medium text-sm" style="color: var(--text-primary)">${notification.title}</div>
+    <div class="text-xs mt-1" style="color: var(--text-muted)">${notification.message}</div>
   `;
   document.body.appendChild(toast);
   

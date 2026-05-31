@@ -46,7 +46,7 @@ export function NotificationPreferences() {
 
   if (loading) {
     return (
-      <div className="p-4 text-center text-gray-400">
+      <div className="p-4 text-center" style={{ color: "var(--text-muted)" }}>
         Loading preferences...
       </div>
     );
@@ -57,26 +57,29 @@ export function NotificationPreferences() {
       {notificationTypes.map(({ type, label, description }) => (
         <div
           key={type}
-          className="flex items-center justify-between p-3 border border-gray-700 rounded-lg hover:border-gray-600 transition-colors"
+          className="flex items-center justify-between p-3 rounded-lg transition-colors"
+          style={{ border: "1px solid var(--border)" }}
         >
           <div className="flex-1">
-            <div className="font-medium text-sm text-white">{label}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{description}</div>
+            <div className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>{label}</div>
+            <div className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{description}</div>
           </div>
           <button
             onClick={() => handleToggle(type, !preferences[type])}
             disabled={saving === type}
-            className={`
-              relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-              ${preferences[type] ? 'bg-cyan-500' : 'bg-gray-600'}
-              ${saving === type ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            `}
+            className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+            style={{
+              backgroundColor: preferences[type] ? "var(--accent-cyan)" : "var(--border)",
+              cursor: saving === type ? "not-allowed" : "pointer",
+              opacity: saving === type ? 0.5 : 1,
+            }}
           >
             <span
-              className={`
-                inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                ${preferences[type] ? 'translate-x-6' : 'translate-x-1'}
-              `}
+              className="inline-block h-4 w-4 transform rounded-full transition-transform"
+              style={{
+                backgroundColor: "var(--text-primary)",
+                transform: preferences[type] ? "translateX(24px)" : "translateX(4px)",
+              }}
             />
           </button>
         </div>

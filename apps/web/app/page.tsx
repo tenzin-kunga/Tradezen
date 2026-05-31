@@ -66,7 +66,7 @@ export default function Dashboard() {
   const recent = trades.slice(0, 5);
 
   const pnlStr = analytics ? fmt(analytics.totalPnl) : "--";
-  const pnlColor = analytics ? (analytics.totalPnl >= 0 ? "#10b981" : "#ef4444") : undefined;
+  const pnlColor = analytics ? (analytics.totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)") : undefined;
   const winRateStr = analytics ? `${analytics.winRate}%` : "--";
   const pfStr = analytics ? String(analytics.profitFactor) : "--";
   const rrStr = analytics ? (analytics.avgRR > 0 ? `1:${analytics.avgRR.toFixed(1)}` : "--") : "--";
@@ -115,14 +115,14 @@ export default function Dashboard() {
                   return (
                     <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}>
                       <td className="whitespace-nowrap" style={{ padding: "12px 16px 12px 0", fontWeight: 700 }}>{t.symbol}</td>
-                      <td className="whitespace-nowrap" style={{ padding: "12px 16px 12px 0", fontWeight: 700, color: isLong ? "#10b981" : "#ef4444" }}>
+                      <td className="whitespace-nowrap" style={{ padding: "12px 16px 12px 0", fontWeight: 700, color: isLong ? "var(--accent-profit)" : "var(--accent-loss)" }}>
                         {isLong ? "LONG" : "SHORT"}
                       </td>
-                      <td className="whitespace-nowrap" style={{ padding: "12px 16px 12px 0", fontWeight: 700, color: isWin ? "#10b981" : "#ef4444" }}>
+                      <td className="whitespace-nowrap" style={{ padding: "12px 16px 12px 0", fontWeight: 700, color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>
                         {isWin ? "WIN" : "LOSS"}
                       </td>
                       <td className="mono-data whitespace-nowrap" style={{ padding: "12px 16px 12px 0" }}>{t.exit_price}</td>
-                      <td className="mono-data whitespace-nowrap" style={{ padding: "12px 0 12px 0", fontWeight: 700, color: isWin ? "#10b981" : "#ef4444" }}>
+                      <td className="mono-data whitespace-nowrap" style={{ padding: "12px 0 12px 0", fontWeight: 700, color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>
                         {fmt(t.pnl)}
                       </td>
                     </tr>

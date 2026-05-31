@@ -45,8 +45,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "monospace",
-          color: "#555",
+          fontFamily: "var(--font-mono)",
+          color: "var(--text-muted)",
           fontSize: 12,
           letterSpacing: "0.2em",
         }}
@@ -75,11 +75,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Mobile header */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 border-b" style={{ background: "#111111", borderColor: "#2a2a2a" }}>
+      <header className="md:hidden flex items-center justify-between px-4 py-3 border-b" style={{ background: "var(--bg-surface)", borderColor: "var(--border)" }}>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="p-2"
-          style={{ background: "none", border: "none", color: "#fff", cursor: "pointer" }}
+          style={{ background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer" }}
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
             <rect x="2" y="4" width="16" height="2" />
@@ -87,7 +87,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <rect x="2" y="14" width="16" height="2" />
           </svg>
         </button>
-        <span className="text-white font-bold tracking-widest" style={{ fontSize: 14, letterSpacing: "0.2em" }}>
+        <span className="font-bold tracking-widest" style={{ fontSize: 14, letterSpacing: "0.2em", color: "var(--text-primary)" }}>
           TRADEZEN
         </span>
         <div style={{ width: 36 }} />

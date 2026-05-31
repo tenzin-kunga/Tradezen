@@ -340,7 +340,7 @@ export default function TradeLog() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
-        <div className="fade-up"><StatCard label="TOTAL P&L" value={loading ? "..." : fmt(totalPnl)} valueColor={totalPnl >= 0 ? "#10b981" : "#ef4444"} /></div>
+        <div className="fade-up"><StatCard label="TOTAL P&L" value={loading ? "..." : fmt(totalPnl)} valueColor={totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)"} /></div>
         <div className="fade-up"><StatCard label="WIN RATE" value={loading ? "..." : winRate} /></div>
         <div className="fade-up"><StatCard label="AVG R:R" value={loading ? "..." : avgRR} /></div>
         <div className="fade-up"><StatCard label="ACTIVE TRADES" value={`${total}`} /></div>
@@ -404,7 +404,7 @@ export default function TradeLog() {
                     <div className="absolute bottom-0 left-0 right-0 p-3" style={{ background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.8))" }}>
                       <div className="flex justify-between gap-2">
                         <span className="font-bold text-sm">{t.symbol}</span>
-                        <span className="font-bold text-sm" style={{ color: isWin ? "#10b981" : "#ef4444" }}>{isWin ? "WIN" : "LOSS"}</span>
+                        <span className="font-bold text-sm" style={{ color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>{isWin ? "WIN" : "LOSS"}</span>
                       </div>
                       <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t.strategy || "No strategy"}</div>
                     </div>
@@ -414,11 +414,11 @@ export default function TradeLog() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <div className="label-caps mb-1">DIRECTION</div>
-                        <div className="font-semibold text-sm" style={{ color: isLong ? "#10b981" : "#ef4444" }}>{isLong ? "LONG" : "SHORT"}</div>
+                        <div className="font-semibold text-sm" style={{ color: isLong ? "var(--accent-profit)" : "var(--accent-loss)" }}>{isLong ? "LONG" : "SHORT"}</div>
                       </div>
                       <div>
                         <div className="label-caps mb-1">RESULT</div>
-                        <div className="mono-data font-semibold text-sm" style={{ color: isWin ? "#10b981" : "#ef4444" }}>{fmt(Number(t.pnl))}</div>
+                        <div className="mono-data font-semibold text-sm" style={{ color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>{fmt(Number(t.pnl))}</div>
                       </div>
                     </div>
 

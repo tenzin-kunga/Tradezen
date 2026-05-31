@@ -16,6 +16,8 @@ module.exports = {
           primary: 'var(--bg-primary)',
           surface: 'var(--bg-surface)',
           glass: 'var(--bg-glass)',
+          card: 'var(--bg-card)',
+          panel: 'var(--bg-panel)',
         },
         border: {
           DEFAULT: 'var(--border)',
@@ -38,7 +40,10 @@ module.exports = {
           DEFAULT: 'var(--accent-cyan)',
           glow: 'var(--accent-cyan-glow)',
         },
-        warn: 'var(--accent-warn)',
+        warn: {
+          DEFAULT: 'var(--accent-warn)',
+          glow: 'var(--accent-warn-glow)',
+        },
       },
       borderRadius: {
         sm: 'var(--radius-sm)',

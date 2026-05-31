@@ -13,9 +13,9 @@ import {
 import { useRealtime } from "@/hooks/use-realtime";
 
 function getSeverity(count: number): { label: string; color: string } {
-  if (count > 5) return { label: "CRITICAL", color: "#ef4444" };
-  if (count > 2) return { label: "MODERATE", color: "#e8603c" };
-  return { label: "WARNING", color: "#888888" };
+  if (count > 5) return { label: "CRITICAL", color: "var(--accent-loss)" };
+  if (count > 2) return { label: "MODERATE", color: "var(--accent-warn)" };
+  return { label: "WARNING", color: "var(--text-muted)" };
 }
 
 export default function AnalyticsPage() {
@@ -79,44 +79,44 @@ export default function AnalyticsPage() {
     : 1;
 
   return (
-    <div className="min-h-screen text-white font-mono">
+    <div className="min-h-screen" style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
         <div>
           <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
             PROTOCOL ANALYTICS
           </h1>
-          <p className="text-xs text-gray-600 mt-1 tracking-wide">
+          <p className="text-xs mt-1 tracking-wide" style={{ color: "var(--text-dim)" }}>
             SYSTEM_VERSION_4.2 // AGGREGATED_DATA_7D
           </p>
         </div>
         {!error && (
           <div className="text-right">
-            <div className="text-xs tracking-widest" style={{ color: "#888" }}>NET P/L</div>
-            <div className="text-xl md:text-2xl font-bold" style={{ color: safeStats.totalPnl >= 0 ? "#22c55e" : "#ef4444" }}>
+            <div className="text-xs tracking-widest" style={{ color: "var(--text-muted)" }}>NET P/L</div>
+            <div className="text-xl md:text-2xl font-bold" style={{ color: safeStats.totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}>
               {safeStats.totalPnl >= 0 ? "+" : ""}${safeStats.totalPnl.toFixed(2)}
             </div>
-            <div className="text-xs mt-1" style={{ color: "#888" }}>
-              WIN RATE: <span className="text-white">{safeStats.winRate}%</span>
+            <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+              WIN RATE: <span style={{ color: "var(--text-primary)" }}>{safeStats.winRate}%</span>
             </div>
           </div>
         )}
       </div>
 
       {loading && (
-        <div className="text-center py-16 tracking-widest" style={{ color: "#888" }}>
+        <div className="text-center py-16 tracking-widest" style={{ color: "var(--text-muted)" }}>
           LOADING PROTOCOL DATA...
         </div>
       )}
 
       {!loading && error && (
-        <div className="text-center py-16 tracking-widest" style={{ color: "#ff7f50" }}>
+        <div className="text-center py-16 tracking-widest" style={{ color: "var(--accent-warn)" }}>
           ERROR LOADING ANALYTICS: {error}
         </div>
       )}
 
       {!loading && !error && safeStats.totalTrades === 0 && (
-        <div className="text-center py-16 tracking-widest" style={{ color: "#555" }}>
+        <div className="text-center py-16 tracking-widest" style={{ color: "var(--text-dim)" }}>
           NO TRADE DATA AVAILABLE
         </div>
       )}
@@ -126,27 +126,27 @@ export default function AnalyticsPage() {
           {/* Row 1: Strategy + Day of Week */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
             {/* Strategy Efficiency */}
-            <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5">
-              <div className="text-xs tracking-widest mb-4" style={{ color: "#888" }}>
+            <div className="rounded p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 STRATEGY EFFICIENCY BREAKDOWN
               </div>
               {safeStats.byStrategy.length === 0 ? (
-                <div className="text-sm" style={{ color: "#555" }}>NO STRATEGY DATA</div>
+                <div className="text-sm" style={{ color: "var(--text-dim)" }}>NO STRATEGY DATA</div>
               ) : (
                 safeStats.byStrategy.map((s: any) => (
                   <div key={s.name} className="mb-3.5">
                     <div className="flex justify-between mb-1">
-                      <span className="text-xs tracking-wide" style={{ color: "#ccc" }}>#{s.name}</span>
-                      <span className="text-xs" style={{ color: "#888" }}>
+                      <span className="text-xs tracking-wide" style={{ color: "var(--text-primary)" }}>#{s.name}</span>
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                         {(s.winRate * 100).toFixed(0)}% WIN · {s.trades} TRADES
                       </span>
                     </div>
-                    <div className="h-1 bg-[#2a2a2a] rounded">
+                    <div className="h-1 rounded" style={{ backgroundColor: "var(--border)" }}>
                       <div
                         className="h-1 rounded transition-all"
                         style={{
                           width: `${(Math.abs(s.pnl) / maxStratPnl) * 100}%`,
-                          backgroundColor: s.pnl >= 0 ? "#22c55e" : "#ef4444",
+                          backgroundColor: s.pnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)",
                         }}
                       />
                     </div>
@@ -156,28 +156,28 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Day of Week */}
-            <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5">
-              <div className="text-xs tracking-widest mb-4" style={{ color: "#888" }}>
+            <div className="rounded p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 DAY OF WEEK PERFORMANCE
               </div>
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={safeStats.byDayOfWeek} margin={{ top: 4, right: 4, bottom: 4, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
-                  <XAxis dataKey="day" tick={{ fill: "#888", fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#888", fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", color: "#fff", fontFamily: "monospace", fontSize: "11px" }}
+                    contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: "11px" }}
                     cursor={{ fill: "rgba(255,255,255,0.03)" }}
                   />
-                  <Bar dataKey="pnl" fill="#ffffff" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="pnl" fill="var(--text-primary)" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           {/* Row 2: Behavioral Errors */}
-          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5 mb-4">
-            <div className="text-xs tracking-widest mb-4" style={{ color: "#888" }}>
+          <div className="rounded p-4 md:p-5 mb-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+            <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
               BEHAVIORAL ERROR ANALYSIS
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -186,7 +186,7 @@ export default function AnalyticsPage() {
                 const count = safeStats.behavioralStats.fomoCount;
                 const sev = getSeverity(count);
                 return (
-                  <div className="bg-[#111] rounded p-4" style={{ border: `1px solid ${sev.color}22` }}>
+                  <div className="rounded p-4" style={{ backgroundColor: "var(--bg-primary)", border: `1px solid ${sev.color}22` }}>
                     <div className="text-xs tracking-widest mb-2" style={{ color: sev.color }}>
                       {sev.label}
                     </div>
@@ -200,7 +200,7 @@ export default function AnalyticsPage() {
                 const count = safeStats.behavioralStats.vengeanceCount;
                 const sev = getSeverity(count);
                 return (
-                  <div className="bg-[#111] rounded p-4" style={{ border: `1px solid ${sev.color}22` }}>
+                  <div className="rounded p-4" style={{ backgroundColor: "var(--bg-primary)", border: `1px solid ${sev.color}22` }}>
                     <div className="text-xs tracking-widest mb-2" style={{ color: sev.color }}>
                       {sev.label}
                     </div>
@@ -213,12 +213,12 @@ export default function AnalyticsPage() {
               {(() => {
                 const count = safeStats.behavioralStats.trendAlignedCount;
                 return (
-                  <div className="bg-[#111] rounded p-4" style={{ border: "1px solid #22c55e22" }}>
-                    <div className="text-xs tracking-widest mb-2" style={{ color: "#22c55e" }}>
+                  <div className="rounded p-4" style={{ backgroundColor: "var(--bg-primary)", border: "1px solid var(--accent-profit)22" }}>
+                    <div className="text-xs tracking-widest mb-2" style={{ color: "var(--accent-profit)" }}>
                       POSITIVE
                     </div>
                     <div className="text-sm font-bold mb-1">TREND ALIGNED</div>
-                    <div className="text-xl md:text-2xl font-bold" style={{ color: "#22c55e" }}>{count}</div>
+                    <div className="text-xl md:text-2xl font-bold" style={{ color: "var(--accent-profit)" }}>{count}</div>
                   </div>
                 );
               })()}
@@ -232,62 +232,63 @@ export default function AnalyticsPage() {
                 label: "EXPECTANCY",
                 value: `$${safeStats.expectancy.toFixed(2)}`,
                 sub: "PER TRADE",
-                valueColor: safeStats.expectancy >= 0 ? "#22c55e" : "#ef4444",
+                valueColor: safeStats.expectancy >= 0 ? "var(--accent-profit)" : "var(--accent-loss)",
               },
               {
                 label: "PROFIT FACTOR",
                 value: safeStats.profitFactor === Infinity ? "∞" : safeStats.profitFactor.toFixed(2),
                 sub: `BEST: $${safeStats.bestTrade} / WORST: $${safeStats.worstTrade}`,
-                valueColor: safeStats.profitFactor >= 1.5 ? "#22c55e" : "#ef4444",
+                valueColor: safeStats.profitFactor >= 1.5 ? "var(--accent-profit)" : "var(--accent-loss)",
               },
               {
                 label: "MAX DRAWDOWN",
                 value: `$${safeStats.maxDrawdown.toFixed(2)}`,
                 sub: "PEAK TO TROUGH",
-                valueColor: safeStats.maxDrawdown > 500 ? "#ef4444" : safeStats.maxDrawdown > 200 ? "#e8603c" : "#22c55e",
+                valueColor: safeStats.maxDrawdown > 500 ? "var(--accent-loss)" : safeStats.maxDrawdown > 200 ? "var(--accent-warn)" : "var(--accent-profit)",
               },
               {
                 label: "STREAK",
                 value: `W${safeStats.maxConsecutiveWins} / L${safeStats.maxConsecutiveLosses}`,
                 sub: "MAX CONSECUTIVE",
-                valueColor: "#ffffff",
+                valueColor: "var(--text-primary)",
               },
             ].map((card) => (
               <div
                 key={card.label}
-                className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5"
+                className="rounded p-4 md:p-5"
+                style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}
               >
-                <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>
+                <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
                   {card.label}
                 </div>
-                <div className="text-xl md:text-2xl font-bold" style={{ color: card.valueColor ?? "#ffffff" }}>
+                <div className="text-xl md:text-2xl font-bold" style={{ color: card.valueColor ?? "var(--text-primary)" }}>
                   {card.value}
                 </div>
-                <div className="text-xs mt-1" style={{ color: "#555" }}>{card.sub}</div>
+                <div className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>{card.sub}</div>
               </div>
             ))}
           </div>
 
           {/* Row 4: Daily PnL Chart */}
-          <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5 mb-4">
-            <div className="text-xs tracking-widest mb-4" style={{ color: "#888" }}>
+          <div className="rounded p-4 md:p-5 mb-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+            <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
               DAILY P&L — EQUITY CURVE
             </div>
             {dailyPnl.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={dailyPnl} margin={{ top: 4, right: 4, bottom: 4, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: "#888", fontSize: 9 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "#888", fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: "var(--text-muted)", fontSize: 9 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", color: "#fff", fontFamily: "monospace", fontSize: "11px" }}
+                    contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: "11px" }}
                     cursor={{ fill: "rgba(255,255,255,0.03)" }}
                   />
-                  <Bar dataKey="pnl" radius={[2, 2, 0, 0]} fill="#ffffff" {...{}} />
+                  <Bar dataKey="pnl" radius={[2, 2, 0, 0]} fill="var(--text-primary)" {...{}} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="text-xs text-center py-10" style={{ color: "#555" }}>
+              <div className="text-xs text-center py-10" style={{ color: "var(--text-dim)" }}>
                 NO DAILY DATA AVAILABLE
               </div>
             )}
@@ -295,19 +296,20 @@ export default function AnalyticsPage() {
 
           {/* Footer */}
           <div
-            className="bg-[#1c1c1c] border border-[#2a2a2a] rounded px-4 md:px-5 py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
+            className="rounded px-4 md:px-5 py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3"
+            style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}
           >
-            <span className="text-xs tracking-widest" style={{ color: "#555" }}>
+            <span className="text-xs tracking-widest" style={{ color: "var(--text-dim)" }}>
               ANALYTIC INSIGHT // {safeStats.totalTrades} EXECUTION{safeStats.totalTrades !== 1 ? "S" : ""} PROCESSED
             </span>
             <div className="flex gap-4 md:gap-6">
-              <span className="text-xs" style={{ color: "#888" }}>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                 PROTOCOL INTEGRITY:{" "}
-                <span style={{ color: "#22c55e" }}>VERIFIED</span>
+                <span style={{ color: "var(--accent-profit)" }}>VERIFIED</span>
               </span>
-              <span className="text-xs" style={{ color: "#888" }}>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                 SYSTEM STATUS:{" "}
-                <span style={{ color: "#22c55e" }}>NOMINAL</span>
+                <span style={{ color: "var(--accent-profit)" }}>NOMINAL</span>
               </span>
             </div>
           </div>

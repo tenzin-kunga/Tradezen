@@ -7,7 +7,7 @@ function RRDisplay({ entry, stopLoss, takeProfit }: { entry: string; stopLoss: s
   const e = parseFloat(entry);
   const sl = parseFloat(stopLoss);
   const tp = parseFloat(takeProfit);
-  if (!e || !sl || !tp || Math.abs(e - sl) === 0) return <span style={{ color: "#555" }}>--</span>;
+  if (!e || !sl || !tp || Math.abs(e - sl) === 0) return <span style={{ color: "var(--text-dim)" }}>--</span>;
   const risk = Math.abs(e - sl);
   const reward = Math.abs(tp - e);
   const rr = reward / risk;
@@ -15,12 +15,12 @@ function RRDisplay({ entry, stopLoss, takeProfit }: { entry: string; stopLoss: s
   const maxReward = reward;
   return (
     <div>
-      <div className="text-3xl md:text-4xl font-bold" style={{ color: rr >= 2 ? "#22c55e" : rr >= 1 ? "#e8603c" : "#ef4444" }}>
+      <div className="text-3xl md:text-4xl font-bold" style={{ color: rr >= 2 ? "var(--accent-profit)" : rr >= 1 ? "var(--accent-warn)" : "var(--accent-loss)" }}>
         1:{rr.toFixed(2)}
       </div>
-      <div className="text-xs mt-2 flex flex-col gap-1" style={{ color: "#888" }}>
-        <span>RISK AMT: <span className="text-white">{riskAmt.toFixed(4)}</span></span>
-        <span>MAX REWARD: <span style={{ color: "#22c55e" }}>{maxReward.toFixed(4)}</span></span>
+      <div className="text-xs mt-2 flex flex-col gap-1" style={{ color: "var(--text-muted)" }}>
+        <span>RISK AMT: <span style={{ color: "var(--text-primary)" }}>{riskAmt.toFixed(4)}</span></span>
+        <span>MAX REWARD: <span style={{ color: "var(--accent-profit)" }}>{maxReward.toFixed(4)}</span></span>
       </div>
     </div>
   );
@@ -47,7 +47,7 @@ function TogglePill({
           width: 32,
           height: 18,
           borderRadius: 9,
-          backgroundColor: value ? "#ffffff" : "#333333",
+          backgroundColor: value ? "var(--text-primary)" : "var(--border)",
         }}
       >
         <div
@@ -57,11 +57,11 @@ function TogglePill({
             width: 12,
             height: 12,
             borderRadius: 6,
-            backgroundColor: value ? "#111111" : "#888888",
+            backgroundColor: value ? "var(--bg-primary)" : "var(--text-muted)",
           }}
         />
       </div>
-      <span className="text-xs tracking-widest" style={{ color: value ? "#ffffff" : "#888888" }}>
+      <span className="text-xs tracking-widest" style={{ color: value ? "var(--text-primary)" : "var(--text-muted)" }}>
         {label}
       </span>
     </button>
@@ -165,25 +165,25 @@ export default function AddTradePage() {
     }
   }
 
-  const inputCls = "w-full bg-[#111111] border border-[#2a2a2a] rounded px-3 py-2.5 text-white text-sm font-mono outline-none box-border focus:border-[#22d3ee]";
-  const labelCls = "block text-xs text-gray-500 tracking-widest mb-1.5";
-  const sectionCls = "bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:p-5 mb-4";
+  const inputCls = "w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded px-3 py-2.5 text-sm outline-none box-border focus:border-[var(--accent-cyan)]";
+  const labelCls = "block text-xs tracking-widest mb-1.5";
+  const sectionCls = "bg-[var(--bg-surface)] border border-[var(--border)] rounded p-4 md:p-5 mb-4";
 
   return (
-    <div className="min-h-screen text-white font-mono">
+    <div className="min-h-screen font-mono" style={{ color: "var(--text-primary)" }}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
         <div>
           <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
             LOG NEW EXECUTION
           </h1>
-          <p className="text-xs text-gray-600 mt-1 tracking-wide">
+          <p className="text-xs mt-1 tracking-wide" style={{ color: "var(--text-muted)" }}>
             ENTRY_PROTOCOL // COMMIT TO LEDGER
           </p>
         </div>
-        <div className="text-right text-xs" style={{ color: "#888" }}>
+        <div className="text-right text-xs" style={{ color: "var(--text-muted)" }}>
           <div className="tracking-widest">SYSTEM CLOCK</div>
-          <div className="text-lg font-bold text-white mt-1 tracking-wide">
+          <div className="text-lg font-bold mt-1 tracking-wide" style={{ color: "var(--text-primary)" }}>
             {utcTime}
           </div>
         </div>
@@ -196,7 +196,7 @@ export default function AddTradePage() {
           <div>
             {/* Section 01: Instrument */}
             <div className={sectionCls}>
-              <div className="text-xs text-gray-600 tracking-widest mb-4">
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 01 // INSTRUMENT PARAMETERS
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
@@ -212,11 +212,12 @@ export default function AddTradePage() {
                         key={d}
                         type="button"
                         onClick={() => setDirection(d)}
-                        className="flex-1 py-2.5 font-mono text-xs font-bold tracking-widest border border-[#2a2a2a] cursor-pointer"
+                        className="flex-1 py-2.5 font-mono text-xs font-bold tracking-widest border cursor-pointer"
                         style={{
-                          backgroundColor: direction === d ? (d === "LONG" ? "#ffffff" : "#ef4444") : "#111111",
-                          color: direction === d ? (d === "LONG" ? "#000000" : "#ffffff") : "#888888",
-                          borderRadius: d === "LONG" ? "4px 0 0 4px" : "0 4px 4px 0",
+                          borderColor: "var(--border)",
+                          backgroundColor: direction === d ? (d === "LONG" ? "var(--text-primary)" : "var(--accent-loss)") : "var(--bg-primary)",
+                          color: direction === d ? (d === "LONG" ? "var(--bg-primary)" : "var(--text-primary)") : "var(--text-muted)",
+                          borderRadius: d === "LONG" ? "var(--radius-sm) 0 0 var(--radius-sm)" : "0 var(--radius-sm) var(--radius-sm) 0",
                         }}
                       >
                         {d}
@@ -276,7 +277,7 @@ export default function AddTradePage() {
 
             {/* Section 02: Strategy + Notes */}
             <div className={sectionCls}>
-              <div className="text-xs text-gray-600 tracking-widest mb-4">
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 02 // EXECUTION METADATA
               </div>
               <div className="mb-3">
@@ -300,17 +301,19 @@ export default function AddTradePage() {
                 <button
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
-                  className="bg-transparent border border-dashed border-[#2a2a2a] rounded text-gray-500 cursor-pointer font-mono text-xs font-bold tracking-widest px-5 py-2.5 hover:border-[#555] hover:text-white transition-colors"
+                  className="bg-transparent border border-dashed rounded cursor-pointer font-mono text-xs font-bold tracking-widest px-5 py-2.5 transition-colors"
+                  style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
                 >
                   + ADD IMAGE
                 </button>
                 {chartImage && (
                   <div className="mt-3 relative inline-block">
-                    <img src={chartImage} alt="Chart screenshot" className="max-w-full max-h-[200px] md:max-h-[300px] border border-[#2a2a2a] rounded block" />
+                    <img src={chartImage} alt="Chart screenshot" className="max-w-full max-h-[200px] md:max-h-[300px] rounded block" style={{ border: "1px solid var(--border)" }} />
                     <button
                       type="button"
                       onClick={() => { setChartImage(null); setChartFile(null); if (imageInputRef.current) imageInputRef.current.value = ""; }}
-                      className="absolute top-1.5 right-1.5 bg-black/70 border border-[#444] rounded text-white font-mono text-xs font-bold tracking-wide px-2 py-1"
+                      className="absolute top-1.5 right-1.5 bg-black/70 rounded font-mono text-xs font-bold tracking-wide px-2 py-1"
+                      style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}
                     >
                       REMOVE
                     </button>
@@ -321,7 +324,7 @@ export default function AddTradePage() {
 
             {/* Section 03: Behavioral flags */}
             <div className={sectionCls}>
-              <div className="text-xs text-gray-600 tracking-widest mb-4">
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 03 // BEHAVIORAL FLAGS
               </div>
               <div className="flex flex-col gap-1">
@@ -335,19 +338,19 @@ export default function AddTradePage() {
           {/* Right column: RR panel - below on mobile, sticky sidebar on desktop */}
           <div>
             <div className={`${sectionCls} lg:sticky lg:top-10`}>
-              <div className="text-xs text-gray-600 tracking-widest mb-4">
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 LIVE R:R CALCULATOR
               </div>
               <div className="mb-5">
-                <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>
+                <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
                   RISK/REWARD RATIO
                 </div>
                 <RRDisplay entry={entry} stopLoss={stopLoss} takeProfit={takeProfit} />
               </div>
 
               {/* Profit & Loss */}
-              <div className="border-t border-[#2a2a2a] pt-4 mb-5">
-                <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>
+              <div className="border-t pt-4 mb-5" style={{ borderColor: "var(--border)" }}>
+                <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
                   ESTIMATED P&L
                 </div>
                 {(() => {
@@ -355,7 +358,7 @@ export default function AddTradePage() {
                   const x = parseFloat(exit);
                   const q = parseFloat(quantity);
                   const cs = parseFloat(contractSize) || 1;
-                  if (!e || !x || !q) return <span className="text-3xl md:text-4xl font-bold" style={{ color: "#555" }}>--</span>;
+                  if (!e || !x || !q) return <span className="text-3xl md:text-4xl font-bold" style={{ color: "var(--text-dim)" }}>--</span>;
                   const rawPnl = direction === "LONG" ? (x - e) * q * cs : (e - x) * q * cs;
                   const comm = parseFloat(commission) || 0;
                   const pnl = rawPnl - comm;
@@ -364,10 +367,10 @@ export default function AddTradePage() {
                   const decimals = absPnl > 0 && absPnl < 0.01 ? 5 : absPnl < 1 ? 4 : 2;
                   return (
                     <div>
-                      <div className="text-3xl md:text-4xl font-bold" style={{ color: isProfit ? "#22c55e" : "#ef4444" }}>
+                      <div className="text-3xl md:text-4xl font-bold" style={{ color: isProfit ? "var(--accent-profit)" : "var(--accent-loss)" }}>
                         {isProfit ? "+" : ""}{pnl.toFixed(decimals)}
                       </div>
-                      <div className="text-xs mt-1" style={{ color: "#888" }}>
+                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
                         {isProfit ? "PROFIT" : "LOSS"}
                       </div>
                     </div>
@@ -375,7 +378,7 @@ export default function AddTradePage() {
                 })()}
               </div>
 
-              <div className="border-t border-[#2a2a2a] pt-4 mb-5">
+              <div className="border-t pt-4 mb-5" style={{ borderColor: "var(--border)" }}>
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <div
                     onClick={() => setApplyRiskShield(!applyRiskShield)}
@@ -384,7 +387,7 @@ export default function AddTradePage() {
                       width: 32,
                       height: 18,
                       borderRadius: 9,
-                      backgroundColor: applyRiskShield ? "#ffffff" : "#333333",
+                      backgroundColor: applyRiskShield ? "var(--text-primary)" : "var(--border)",
                     }}
                   >
                     <div
@@ -394,19 +397,19 @@ export default function AddTradePage() {
                         width: 12,
                         height: 12,
                         borderRadius: 6,
-                        backgroundColor: applyRiskShield ? "#111111" : "#888888",
+                        backgroundColor: applyRiskShield ? "var(--bg-primary)" : "var(--text-muted)",
                       }}
                     />
                   </div>
-                  <span className="text-xs tracking-wide" style={{ color: applyRiskShield ? "#fff" : "#888" }}>
+                  <span className="text-xs tracking-wide" style={{ color: applyRiskShield ? "var(--text-primary)" : "var(--text-muted)" }}>
                     APPLY RISK LIMIT SHIELD
                   </span>
                 </label>
               </div>
 
               {/* Confidence bars */}
-              <div className="border-t border-[#2a2a2a] pt-4">
-                <div className="text-xs tracking-widest mb-3" style={{ color: "#555" }}>
+              <div className="border-t pt-4" style={{ borderColor: "var(--border)" }}>
+                <div className="text-xs tracking-widest mb-3" style={{ color: "var(--text-dim)" }}>
                   CONFIDENCE METRICS
                 </div>
                 {[
@@ -416,17 +419,17 @@ export default function AddTradePage() {
                 ].map((bar) => (
                   <div key={bar.label} className="mb-2.5">
                     <div className="flex justify-between mb-1">
-                      <span className="text-xs" style={{ color: "#888" }}>{bar.label}</span>
-                      <span className="text-xs" style={{ color: bar.pct >= 70 ? "#22c55e" : bar.pct >= 40 ? "#e8603c" : "#ef4444" }}>
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>{bar.label}</span>
+                      <span className="text-xs" style={{ color: bar.pct >= 70 ? "var(--accent-profit)" : bar.pct >= 40 ? "var(--accent-warn)" : "var(--accent-loss)" }}>
                         {bar.pct}%
                       </span>
                     </div>
-                    <div className="h-[3px] bg-[#2a2a2a] rounded">
+                    <div className="h-[3px] rounded" style={{ backgroundColor: "var(--border)" }}>
                       <div
                         className="h-[3px] rounded transition-all"
                         style={{
                           width: `${bar.pct}%`,
-                          backgroundColor: bar.pct >= 70 ? "#22c55e" : bar.pct >= 40 ? "#e8603c" : "#ef4444",
+                          backgroundColor: bar.pct >= 70 ? "var(--accent-profit)" : bar.pct >= 40 ? "var(--accent-warn)" : "var(--accent-loss)",
                         }}
                       />
                     </div>
@@ -439,12 +442,13 @@ export default function AddTradePage() {
 
         {/* Bottom bar */}
         <div
-          className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-4 md:px-5 md:py-4 flex flex-col sm:flex-row justify-between items-center gap-3 mt-4"
+          className="rounded p-4 md:px-5 md:py-4 flex flex-col sm:flex-row justify-between items-center gap-3 mt-4"
+          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}
         >
           {error ? (
-            <span className="text-sm text-red-500 tracking-wide">{error}</span>
+            <span className="text-sm tracking-wide" style={{ color: "var(--accent-loss)" }}>{error}</span>
           ) : (
-            <span className="text-xs text-gray-600 tracking-wide">
+            <span className="text-xs tracking-wide" style={{ color: "var(--text-muted)" }}>
               ALL FIELDS VALIDATED // READY TO COMMIT
             </span>
           )}
@@ -453,8 +457,8 @@ export default function AddTradePage() {
             disabled={submitting}
             className="px-6 md:px-8 py-3 font-mono text-xs font-bold tracking-widest rounded disabled:cursor-not-allowed transition-colors"
             style={{
-              backgroundColor: submitting ? "#333" : "#ffffff",
-              color: submitting ? "#888" : "#000000",
+              backgroundColor: submitting ? "var(--border)" : "var(--text-primary)",
+              color: submitting ? "var(--text-muted)" : "var(--bg-primary)",
               border: "none",
             }}
           >

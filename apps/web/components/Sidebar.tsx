@@ -94,15 +94,15 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       className="flex flex-col h-screen md:h-auto"
       style={{
         width: 240,
-        background: "#111111",
-        borderRight: "1px solid #2a2a2a",
+        background: "var(--bg-surface)",
+        borderRight: "1px solid var(--border)",
       }}
     >
       {/* Logo + close button */}
       <div className="px-6 py-6 flex items-center justify-between">
         <span
-          className="text-white font-bold tracking-widest"
-          style={{ fontSize: 18, letterSpacing: "0.2em" }}
+          className="font-bold tracking-widest"
+          style={{ fontSize: 18, letterSpacing: "0.2em", color: "var(--text-primary)" }}
         >
           TRADEZEN
         </span>
@@ -111,7 +111,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           <button
             onClick={onClose}
             className="md:hidden p-1"
-            style={{ background: "none", border: "none", color: "#888", cursor: "pointer" }}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
               <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -126,8 +126,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         onClick={handleNavClick}
         className="mx-4 mb-4 px-3 py-3 flex items-center gap-3"
         style={{
-          background: pathname === "/settings" ? "#2a2a2a" : "#1c1c1c",
-          border: "1px solid #2a2a2a",
+          background: pathname === "/settings" ? "var(--border-hover)" : "var(--bg-glass)",
+          border: "1px solid var(--border)",
           textDecoration: "none",
           cursor: "pointer",
           transition: "background 0.15s",
@@ -138,24 +138,24 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           style={{
             width: 32,
             height: 32,
-            background: "#2a2a2a",
-            color: "#888",
+            background: "var(--border)",
+            color: "var(--text-muted)",
           }}
         >
           {initials}
         </div>
         <div>
-          <div className="text-white text-xs font-bold tracking-wider">
+          <div className="text-xs font-bold tracking-wider" style={{ color: "var(--text-primary)" }}>
             {user?.username?.toUpperCase() || "OPERATOR"}
           </div>
-          <div className="text-xs" style={{ color: "#888" }}>
+          <div className="text-xs" style={{ color: "var(--text-muted)" }}>
             V-2.4.0
           </div>
         </div>
       </Link>
 
       {/* Divider */}
-      <div style={{ height: 1, background: "#2a2a2a", margin: "0 16px 8px" }} />
+      <div style={{ height: 1, background: "var(--border)", margin: "0 16px 8px" }} />
 
       {/* Nav Items */}
       <nav className="flex flex-col px-3 gap-1 flex-1">
@@ -169,8 +169,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               onClick={handleNavClick}
               className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold tracking-widest transition-colors"
               style={{
-                background: isActive ? "#ffffff" : "transparent",
-                color: isActive ? "#111111" : "#888888",
+                background: isActive ? "var(--text-primary)" : "transparent",
+                color: isActive ? "var(--bg-primary)" : "var(--text-muted)",
                 letterSpacing: "0.1em",
                 textDecoration: "none",
               }}
@@ -188,8 +188,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             onClick={handleNavClick}
             className="flex items-center justify-center px-3 py-3 text-xs font-bold tracking-widest transition-colors"
             style={{
-              background: "#ffffff",
-              color: "#111111",
+              background: "var(--text-primary)",
+              color: "var(--bg-primary)",
               letterSpacing: "0.15em",
               textDecoration: "none",
             }}
@@ -202,13 +202,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Bottom Controls */}
       <div
         className="px-3 py-4 flex flex-col gap-1"
-        style={{ borderTop: "1px solid #2a2a2a" }}
+        style={{ borderTop: "1px solid var(--border)" }}
       >
         <button
           onClick={() => { logout(); onClose?.(); }}
           className="flex items-center gap-3 px-3 py-2 text-xs font-bold tracking-widest w-full text-left"
           style={{
-            color: "#888",
+            color: "var(--text-muted)",
             letterSpacing: "0.1em",
             background: "none",
             border: "none",

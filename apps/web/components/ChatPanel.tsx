@@ -231,9 +231,9 @@ export default function ChatPanel() {
         onClick={() => setOpen((value) => !value)}
         className="fixed right-4 bottom-4 md:right-6 md:bottom-6 z-40 px-3 py-2 md:px-4 md:py-2.5 text-[10px] md:text-[11px] font-bold tracking-widest"
         style={{
-          background: "#ffffff",
-          color: "#111111",
-          border: "1px solid #d0d0d0",
+          background: "var(--text-primary)",
+          color: "var(--bg-primary)",
+          border: "1px solid var(--border)",
           cursor: "pointer",
         }}
       >
@@ -286,7 +286,7 @@ export default function ChatPanel() {
                 <button
                   onClick={() => setOpen(false)}
                   className="p-1"
-                  style={{ background: "none", border: "none", color: "#888", cursor: "pointer" }}
+                  style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                     <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -306,8 +306,8 @@ export default function ChatPanel() {
                   className="max-w-[90%] px-3 py-2 text-xs leading-relaxed"
                   style={{
                     alignSelf: message.role === "user" ? "flex-end" : "flex-start",
-                    background: message.role === "user" ? "#ffffff" : "var(--bg-panel)",
-                    color: message.role === "user" ? "#111111" : "var(--text-primary)",
+                    background: message.role === "user" ? "var(--text-primary)" : "var(--bg-panel)",
+                    color: message.role === "user" ? "var(--bg-primary)" : "var(--text-primary)",
                     border: "1px solid var(--border)",
                     wordBreak: "break-word",
                     overflowWrap: "break-word",
@@ -352,9 +352,9 @@ export default function ChatPanel() {
                 disabled={!canSend}
                 className="w-16 text-[10px] font-bold tracking-widest"
                 style={{
-                  background: canSend ? "#ffffff" : "#777777",
-                  color: "#111111",
-                  border: "1px solid #d0d0d0",
+                  background: canSend ? "var(--text-primary)" : "var(--border)",
+                  color: canSend ? "var(--bg-primary)" : "var(--text-dim)",
+                  border: "1px solid var(--border)",
                   cursor: canSend ? "pointer" : "not-allowed",
                 }}
               >
@@ -429,8 +429,8 @@ export default function ChatPanel() {
                   style={{
                     alignSelf: message.role === "user" ? "flex-end" : "flex-start",
                     maxWidth: "90%",
-                    background: message.role === "user" ? "#ffffff" : "var(--bg-panel)",
-                    color: message.role === "user" ? "#111111" : "var(--text-primary)",
+                    background: message.role === "user" ? "var(--text-primary)" : "var(--bg-panel)",
+                    color: message.role === "user" ? "var(--bg-primary)" : "var(--text-primary)",
                     border: "1px solid var(--border)",
                     padding: "8px 10px",
                     fontSize: 12,
@@ -496,9 +496,9 @@ export default function ChatPanel() {
                 disabled={!canSend}
                 style={{
                   width: 80,
-                  background: canSend ? "#ffffff" : "#777777",
-                  color: "#111111",
-                  border: "1px solid #d0d0d0",
+                  background: canSend ? "var(--text-primary)" : "var(--border)",
+                  color: canSend ? "var(--bg-primary)" : "var(--text-dim)",
+                  border: "1px solid var(--border)",
                   fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: "0.1em",
@@ -522,7 +522,7 @@ export default function ChatPanel() {
                 width: 30,
                 height: 30,
                 cursor: "nwse-resize",
-                background: "linear-gradient(135deg, transparent 60%, #666 60%)",
+                background: "linear-gradient(135deg, transparent 60%, var(--text-dim) 60%)",
               }}
             />
             <div

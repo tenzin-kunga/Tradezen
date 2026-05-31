@@ -43,7 +43,8 @@ export function NotificationItem({
 
   return (
     <div
-      className="p-3 border-b border-gray-700 hover:bg-gray-750 transition-colors cursor-pointer"
+      className="p-3 transition-colors cursor-pointer"
+      style={{ borderBottom: "1px solid var(--border)" }}
       onClick={handleMarkRead}
     >
       <div className="flex items-start gap-3">
@@ -54,9 +55,9 @@ export function NotificationItem({
           {config.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm text-white">{notification.title}</div>
-          <div className="text-xs text-gray-400 mt-1 line-clamp-2">{notification.message}</div>
-          <div className="text-xs text-gray-500 mt-1">{timeAgo}</div>
+          <div className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>{notification.title}</div>
+          <div className="text-xs mt-1 line-clamp-2" style={{ color: "var(--text-muted)" }}>{notification.message}</div>
+          <div className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>{timeAgo}</div>
         </div>
       </div>
     </div>

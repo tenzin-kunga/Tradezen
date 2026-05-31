@@ -32,9 +32,9 @@ function getMonthDays(year: number, month: number): (DayData | null)[] {
 }
 
 function getPnLColor(pnl: number): string {
-  if (pnl > 0) return "#22c55e";
-  if (pnl < 0) return "#ef4444";
-  return "#2a2a2a";
+  if (pnl > 0) return "var(--accent-profit)";
+  if (pnl < 0) return "var(--accent-loss)";
+  return "var(--border)";
 }
 
 function getHeatIntensity(pnl: number, maxPnl: number): number {
@@ -138,30 +138,32 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="min-h-screen text-white font-mono p-4 md:p-6">
+    <div className="min-h-screen p-4 md:p-6" style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
         <div>
           <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
             CALENDAR HEATMAP
           </h1>
-          <p className="text-xs text-gray-600 mt-1 tracking-wide">
+          <p className="text-xs mt-1 tracking-wide" style={{ color: "var(--text-dim)" }}>
             PERFORMANCE VISUALIZATION // DAILY P&L TRACKING
           </p>
         </div>
         <div className="flex gap-2 items-center">
           <button
             onClick={goToPrevMonth}
-            className="bg-transparent border border-[#2a2a2a] text-gray-500 px-3 py-2 cursor-pointer text-xs font-mono rounded"
+            className="bg-transparent border px-3 py-2 cursor-pointer text-xs rounded"
+            style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
           >
             ← PREV
           </button>
-          <span className="text-sm font-bold tracking-widest text-white min-w-[120px] md:min-w-[160px] text-center">
+          <span className="text-sm font-bold tracking-widest min-w-[120px] md:min-w-[160px] text-center" style={{ color: "var(--text-primary)" }}>
             {monthNames[currentMonth]} {currentYear}
           </span>
           <button
             onClick={goToNextMonth}
-            className="bg-transparent border border-[#2a2a2a] text-gray-500 px-3 py-2 cursor-pointer text-xs font-mono rounded"
+            className="bg-transparent border px-3 py-2 cursor-pointer text-xs rounded"
+            style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
           >
             NEXT →
           </button>
@@ -169,26 +171,26 @@ export default function CalendarPage() {
       </div>
 
       {/* Month Stats - 2 col mobile, 4 col desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-[#2a2a2a] mb-6 rounded overflow-hidden">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px mb-6 rounded overflow-hidden" style={{ backgroundColor: "var(--border)" }}>
         {[
-          { label: "MONTH P&L", value: `${monthPnl >= 0 ? "+" : ""}${monthPnl.toLocaleString("en-US", { style: "currency", currency: "USD" })}`, color: monthPnl >= 0 ? "#22c55e" : "#ef4444" },
-          { label: "TOTAL TRADES", value: `${monthTrades}`, color: "#fff" },
-          { label: "ACTIVE DAYS", value: `${monthDaysWithData}`, color: "#fff" },
-          { label: "WIN RATE (DAYS)", value: `${dailyData.length > 0 ? Math.round((dailyData.filter((d) => d.pnl > 0).length / Math.max(dailyData.filter((d) => d.trades > 0).length, 1)) * 100) : 0}%`, color: "#fff" },
+          { label: "MONTH P&L", value: `${monthPnl >= 0 ? "+" : ""}${monthPnl.toLocaleString("en-US", { style: "currency", currency: "USD" })}`, color: monthPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" },
+          { label: "TOTAL TRADES", value: `${monthTrades}`, color: "var(--text-primary)" },
+          { label: "ACTIVE DAYS", value: `${monthDaysWithData}`, color: "var(--text-primary)" },
+          { label: "WIN RATE (DAYS)", value: `${dailyData.length > 0 ? Math.round((dailyData.filter((d) => d.pnl > 0).length / Math.max(dailyData.filter((d) => d.trades > 0).length, 1)) * 100) : 0}%`, color: "var(--text-primary)" },
         ].map((s) => (
-          <div key={s.label} className="bg-[#1c1c1c] p-4 md:p-5">
-            <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>{s.label}</div>
+          <div key={s.label} className="p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)" }}>
+            <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>{s.label}</div>
             <div className="text-lg md:text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded p-3 md:p-5">
+      <div className="border rounded p-3 md:p-5" style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}>
         {/* Day headers */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {dayNames.map((d) => (
-            <div key={d} className="text-center text-xs text-gray-600 tracking-widest font-bold py-2">
+            <div key={d} className="text-center text-xs tracking-widest font-bold py-2" style={{ color: "var(--text-dim)" }}>
               {d}
             </div>
           ))}
@@ -212,22 +214,22 @@ export default function CalendarPage() {
                 onClick={() => hasTrades && handleDayClick(dayData)}
                 className="min-h-[40px] md:min-h-[60px] rounded p-1.5 md:p-2 relative transition-opacity cursor-default"
                 style={{
-                  background: hasTrades ? getPnLColor(dayData.pnl) : "#111",
+                  background: hasTrades ? getPnLColor(dayData.pnl) : "var(--bg-primary)",
                   opacity: hasTrades ? 0.3 + intensity * 0.7 : 0.3,
                   cursor: hasTrades ? "pointer" : "default",
-                  border: isToday ? "2px solid #fff" : "1px solid transparent",
+                  border: isToday ? "2px solid var(--text-primary)" : "1px solid transparent",
                 }}
               >
-                <div className="text-xs md:text-sm font-bold" style={{ color: hasTrades ? "#fff" : "#555" }}>
+                <div className="text-xs md:text-sm font-bold" style={{ color: hasTrades ? "var(--text-primary)" : "var(--text-dim)" }}>
                   {parseInt(day.date.split("-")[2], 10)}
                 </div>
                 {hasTrades && (
-                  <div className="hidden md:block text-xs mt-1" style={{ color: "#fff", opacity: 0.8 }}>
+                  <div className="hidden md:block text-xs mt-1" style={{ color: "var(--text-primary)", opacity: 0.8 }}>
                     {dayData.pnl > 0 ? "+" : ""}{dayData.pnl.toFixed(0)}
                   </div>
                 )}
                 {hasTrades && (
-                  <div className="hidden md:block text-xs" style={{ color: "#fff", opacity: 0.6 }}>
+                  <div className="hidden md:block text-xs" style={{ color: "var(--text-primary)", opacity: 0.6 }}>
                     {dayData.trades} trade{dayData.trades !== 1 ? "s" : ""}
                   </div>
                 )}
@@ -247,27 +249,28 @@ export default function CalendarPage() {
           />
 
           {/* Mobile bottom sheet */}
-          <div className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-[#1c1c1c] border-t border-[#2a2a2a] rounded-t-xl max-h-[80vh] overflow-y-auto p-5">
+          <div className="fixed inset-x-0 bottom-0 z-50 md:hidden rounded-t-xl max-h-[80vh] overflow-y-auto p-5" style={{ backgroundColor: "var(--bg-surface)", borderTop: "1px solid var(--border)" }}>
             <div className="flex justify-between items-start mb-5">
               <div>
                 <h2 className="text-base font-bold m-0">
                   {new Date(selectedDay.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
                 </h2>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>
                   {selectedDay.trades} TRADE{selectedDay.trades !== 1 ? "S" : ""}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedDay(null)}
-                className="bg-transparent border border-[#2a2a2a] text-gray-500 px-3 py-1.5 cursor-pointer text-xs font-mono rounded"
+                className="bg-transparent border px-3 py-1.5 cursor-pointer text-xs rounded"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
               >
                 CLOSE
               </button>
             </div>
 
             <div className="mb-5">
-              <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>DAILY P&L</div>
-              <div className="text-2xl font-bold" style={{ color: selectedDay.pnl >= 0 ? "#22c55e" : "#ef4444" }}>
+              <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>DAILY P&L</div>
+              <div className="text-2xl font-bold" style={{ color: selectedDay.pnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}>
                 {selectedDay.pnl >= 0 ? "+" : ""}{selectedDay.pnl.toLocaleString("en-US", { style: "currency", currency: "USD" })}
               </div>
             </div>
@@ -276,18 +279,18 @@ export default function CalendarPage() {
               {dayTrades.map((trade) => {
                 const isWin = Number(trade.pnl) >= 0;
                 return (
-                  <div key={trade.id} className="bg-[#111] border border-[#2a2a2a] rounded p-3">
+                  <div key={trade.id} className="border rounded p-3" style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)" }}>
                     <div className="flex justify-between mb-2">
                       <span className="font-bold text-sm">{trade.symbol}</span>
-                      <span className="font-bold text-sm" style={{ color: isWin ? "#22c55e" : "#ef4444" }}>
+                      <span className="font-bold text-sm" style={{ color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>
                         {isWin ? "+" : ""}{Number(trade.pnl).toFixed(2)}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: "#888" }}>
-                      <div><span style={{ color: "#555" }}>SIDE:</span> {trade.direction === "buy" ? "LONG" : "SHORT"}</div>
-                      <div><span style={{ color: "#555" }}>ENTRY:</span> {trade.entry_price}</div>
-                      <div><span style={{ color: "#555" }}>EXIT:</span> {trade.exit_price}</div>
-                      <div><span style={{ color: "#555" }}>STRATEGY:</span> {trade.strategy || "N/A"}</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                      <div><span style={{ color: "var(--text-dim)" }}>SIDE:</span> {trade.direction === "buy" ? "LONG" : "SHORT"}</div>
+                      <div><span style={{ color: "var(--text-dim)" }}>ENTRY:</span> {trade.entry_price}</div>
+                      <div><span style={{ color: "var(--text-dim)" }}>EXIT:</span> {trade.exit_price}</div>
+                      <div><span style={{ color: "var(--text-dim)" }}>STRATEGY:</span> {trade.strategy || "N/A"}</div>
                     </div>
                   </div>
                 );
@@ -297,28 +300,30 @@ export default function CalendarPage() {
 
           {/* Desktop side panel */}
           <div
-            className="hidden md:block fixed top-0 right-0 w-[400px] h-screen bg-[#1c1c1c] border-l border-[#2a2a2a] p-6 overflow-y-auto z-50"
+            className="hidden md:block fixed top-0 right-0 w-[400px] h-screen border-l p-6 overflow-y-auto z-50"
+            style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)" }}
           >
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-base font-bold m-0">
                   {new Date(selectedDay.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
                 </h2>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>
                   {selectedDay.trades} TRADE{selectedDay.trades !== 1 ? "S" : ""}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedDay(null)}
-                className="bg-transparent border border-[#2a2a2a] text-gray-500 px-4 py-2 cursor-pointer text-xs font-mono rounded"
+                className="bg-transparent border px-4 py-2 cursor-pointer text-xs rounded"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
               >
                 CLOSE
               </button>
             </div>
 
             <div className="mb-5">
-              <div className="text-xs tracking-widest mb-2" style={{ color: "#888" }}>DAILY P&L</div>
-              <div className="text-3xl font-bold" style={{ color: selectedDay.pnl >= 0 ? "#22c55e" : "#ef4444" }}>
+              <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>DAILY P&L</div>
+              <div className="text-3xl font-bold" style={{ color: selectedDay.pnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}>
                 {selectedDay.pnl >= 0 ? "+" : ""}{selectedDay.pnl.toLocaleString("en-US", { style: "currency", currency: "USD" })}
               </div>
             </div>
@@ -327,18 +332,18 @@ export default function CalendarPage() {
               {dayTrades.map((trade) => {
                 const isWin = Number(trade.pnl) >= 0;
                 return (
-                  <div key={trade.id} className="bg-[#111] border border-[#2a2a2a] rounded p-3">
+                  <div key={trade.id} className="border rounded p-3" style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)" }}>
                     <div className="flex justify-between mb-2">
                       <span className="font-bold">{trade.symbol}</span>
-                      <span className="font-bold" style={{ color: isWin ? "#22c55e" : "#ef4444" }}>
+                      <span className="font-bold" style={{ color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>
                         {isWin ? "+" : ""}{Number(trade.pnl).toFixed(2)}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: "#888" }}>
-                      <div><span style={{ color: "#555" }}>SIDE:</span> {trade.direction === "buy" ? "LONG" : "SHORT"}</div>
-                      <div><span style={{ color: "#555" }}>ENTRY:</span> {trade.entry_price}</div>
-                      <div><span style={{ color: "#555" }}>EXIT:</span> {trade.exit_price}</div>
-                      <div><span style={{ color: "#555" }}>STRATEGY:</span> {trade.strategy || "N/A"}</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
+                      <div><span style={{ color: "var(--text-dim)" }}>SIDE:</span> {trade.direction === "buy" ? "LONG" : "SHORT"}</div>
+                      <div><span style={{ color: "var(--text-dim)" }}>ENTRY:</span> {trade.entry_price}</div>
+                      <div><span style={{ color: "var(--text-dim)" }}>EXIT:</span> {trade.exit_price}</div>
+                      <div><span style={{ color: "var(--text-dim)" }}>STRATEGY:</span> {trade.strategy || "N/A"}</div>
                     </div>
                   </div>
                 );
@@ -351,18 +356,18 @@ export default function CalendarPage() {
       {/* Legend */}
       <div className="mt-4 flex flex-wrap justify-center gap-4 md:gap-6 items-center">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-500 rounded" />
-          <span className="text-xs" style={{ color: "#888" }}>LOSS</span>
+          <div className="w-4 h-4 rounded" style={{ backgroundColor: "var(--accent-loss)" }} />
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>LOSS</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-[#2a2a2a] rounded" />
-          <span className="text-xs" style={{ color: "#888" }}>NO TRADES</span>
+          <div className="w-4 h-4 rounded" style={{ backgroundColor: "var(--border)" }} />
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>NO TRADES</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-500 rounded" />
-          <span className="text-xs" style={{ color: "#888" }}>PROFIT</span>
+          <div className="w-4 h-4 rounded" style={{ backgroundColor: "var(--accent-profit)" }} />
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>PROFIT</span>
         </div>
-        <span className="text-xs" style={{ color: "#555" }}>
+        <span className="text-xs" style={{ color: "var(--text-dim)" }}>
           OPACITY INDICATES P&L MAGNITUDE
         </span>
       </div>

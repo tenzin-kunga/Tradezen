@@ -52,17 +52,17 @@ export default function RegisterPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-8"
-      style={{ backgroundColor: "#111111", fontFamily: "monospace" }}
+      style={{ backgroundColor: "var(--bg-primary)", fontFamily: "var(--font-mono)" }}
     >
       <div className="w-full max-w-md">
         <div className="text-center mb-8 md:mb-10">
           <h1
-            className="text-white font-bold tracking-widest text-xl md:text-2xl m-0"
-            style={{ letterSpacing: "0.2em" }}
+            className="font-bold tracking-widest text-xl md:text-2xl m-0"
+            style={{ letterSpacing: "0.2em", color: "var(--text-primary)" }}
           >
             TRADEZEN
           </h1>
-          <p className="text-xs md:text-sm mt-2" style={{ color: "#555", letterSpacing: "0.1em" }}>
+          <p className="text-xs md:text-sm mt-2" style={{ color: "var(--text-dim)", letterSpacing: "0.1em" }}>
             CREATE OPERATOR ACCOUNT
           </p>
         </div>
@@ -70,14 +70,14 @@ export default function RegisterPage() {
         <div
           className="p-6 md:p-8"
           style={{
-            backgroundColor: "#1c1c1c",
-            border: "1px solid #2a2a2a",
-            borderRadius: "4px",
+            backgroundColor: "var(--bg-surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-sm)",
           }}
         >
           <div
             className="text-xs mb-6"
-            style={{ color: "#555", letterSpacing: "0.15em" }}
+            style={{ color: "var(--text-dim)", letterSpacing: "0.15em" }}
           >
             OPERATOR REGISTRATION
           </div>
@@ -87,8 +87,8 @@ export default function RegisterPage() {
               className="text-xs tracking-wide mb-5 p-3"
               style={{
                 background: "rgba(239,68,68,0.1)",
-                border: "1px solid #ef4444",
-                color: "#ef4444",
+                border: "1px solid var(--accent-loss)",
+                color: "var(--accent-loss)",
                 letterSpacing: "0.05em",
               }}
             >
@@ -100,11 +100,12 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => handleOAuthLogin("google")}
-              className="w-full py-3 text-xs font-bold tracking-widest font-mono rounded flex items-center justify-center gap-2 transition-colors"
+              className="w-full py-3 text-xs font-bold tracking-widest rounded flex items-center justify-center gap-2 transition-colors"
               style={{
-                backgroundColor: "#fff",
-                color: "#111",
-                border: "1px solid #333",
+                backgroundColor: "var(--text-primary)",
+                color: "var(--bg-primary)",
+                border: "1px solid var(--border)",
+                fontFamily: "var(--font-mono)",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -119,11 +120,12 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => handleOAuthLogin("github")}
-              className="w-full py-3 text-xs font-bold tracking-widest font-mono rounded flex items-center justify-center gap-2 transition-colors"
+              className="w-full py-3 text-xs font-bold tracking-widest rounded flex items-center justify-center gap-2 transition-colors"
               style={{
-                backgroundColor: "#333",
-                color: "#fff",
-                border: "1px solid #444",
+                backgroundColor: "var(--border)",
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-hover)",
+                fontFamily: "var(--font-mono)",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -134,17 +136,23 @@ export default function RegisterPage() {
           </div>
 
           <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-[#2a2a2a]" />
-            <span className="text-xs text-[#555] tracking-widest">OR REGISTER WITH EMAIL</span>
-            <div className="flex-1 h-px bg-[#2a2a2a]" />
+            <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
+            <span className="text-xs tracking-widest" style={{ color: "var(--text-dim)" }}>OR REGISTER WITH EMAIL</span>
+            <div className="flex-1 h-px" style={{ background: "var(--border)" }} />
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs text-gray-500 tracking-widest mb-1.5">EMAIL</label>
+              <label className="block text-xs tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>EMAIL</label>
               <input
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-3.5 py-3 text-white text-sm font-mono outline-none box-border focus:border-[#22d3ee]"
+                className="w-full rounded px-3.5 py-3 text-sm outline-none box-border"
                 type="email"
+                style={{
+                  background: "var(--bg-primary)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-mono)",
+                }}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="operator@tradezen.io"
@@ -152,9 +160,15 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 tracking-widest mb-1.5">USERNAME</label>
+              <label className="block text-xs tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>USERNAME</label>
               <input
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-3.5 py-3 text-white text-sm font-mono outline-none box-border focus:border-[#22d3ee]"
+                className="w-full rounded px-3.5 py-3 text-sm outline-none box-border"
+                style={{
+                  background: "var(--bg-primary)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-mono)",
+                }}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="operator_01"
@@ -162,10 +176,16 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 tracking-widest mb-1.5">PASSWORD</label>
+              <label className="block text-xs tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>PASSWORD</label>
               <input
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-3.5 py-3 text-white text-sm font-mono outline-none box-border focus:border-[#22d3ee]"
+                className="w-full rounded px-3.5 py-3 text-sm outline-none box-border"
                 type="password"
+                style={{
+                  background: "var(--bg-primary)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-mono)",
+                }}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -173,10 +193,16 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 tracking-widest mb-1.5">CONFIRM PASSWORD</label>
+              <label className="block text-xs tracking-widest mb-1.5" style={{ color: "var(--text-muted)" }}>CONFIRM PASSWORD</label>
               <input
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded px-3.5 py-3 text-white text-sm font-mono outline-none box-border focus:border-[#22d3ee]"
+                className="w-full rounded px-3.5 py-3 text-sm outline-none box-border"
                 type="password"
+                style={{
+                  background: "var(--bg-primary)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-mono)",
+                }}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
@@ -186,11 +212,12 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 text-xs font-bold tracking-widest font-mono rounded disabled:cursor-not-allowed"
+              className="w-full py-3 text-xs font-bold tracking-widest rounded disabled:cursor-not-allowed"
               style={{
-                backgroundColor: loading ? "#333" : "#ffffff",
-                color: loading ? "#888" : "#111111",
+                backgroundColor: loading ? "var(--border)" : "var(--text-primary)",
+                color: loading ? "var(--text-dim)" : "var(--bg-primary)",
                 border: "none",
+                fontFamily: "var(--font-mono)",
               }}
             >
               {loading ? "CREATING ACCOUNT..." : "REGISTER"}
@@ -199,13 +226,13 @@ export default function RegisterPage() {
 
           <div
             className="text-center mt-5 text-xs"
-            style={{ color: "#555" }}
+            style={{ color: "var(--text-dim)" }}
           >
             ALREADY REGISTERED?{" "}
             <Link
               href="/login"
               className="no-underline tracking-wide"
-              style={{ color: "#888" }}
+              style={{ color: "var(--text-muted)" }}
             >
               LOGIN
             </Link>

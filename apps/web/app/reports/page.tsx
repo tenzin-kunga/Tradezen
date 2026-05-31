@@ -55,102 +55,180 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Reports</h1>
-
-        <div className="flex gap-4 mb-8">
+    <div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
+        <div>
+          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
+            WEEKLY REPORTS
+          </h1>
+          <p className="text-xs mt-1 tracking-wide" style={{ color: "var(--text-dim)" }}>
+            PERFORMANCE ANALYSIS // AUTOMATED INSIGHTS
+          </p>
+        </div>
+        <div className="flex gap-3">
           <button
             onClick={fetchWeeklyReport}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+            className="btn-primary text-xs disabled:opacity-50"
           >
-            {loading ? 'Generating...' : 'Generate Weekly Report'}
+            {loading ? 'GENERATING...' : 'GENERATE'}
           </button>
           <button
             onClick={downloadCSV}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
+            className="btn-glass text-xs"
           >
-            Download CSV
+            DOWNLOAD
           </button>
         </div>
+      </div>
 
-        {report && (
-          <div className="space-y-6">
-            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-              <h2 className="text-lg font-semibold mb-4">Weekly Summary: {report.period}</h2>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div>
-                  <div className="text-sm text-gray-400">Trades</div>
-                  <div className="text-xl font-bold">{report.summary.totalTrades}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-400">PnL</div>
-                  <div className={`text-xl font-bold ${report.summary.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    ${report.summary.totalPnl.toFixed(2)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-400">Win Rate</div>
-                  <div className="text-xl font-bold">{report.summary.winRate}%</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-400">Profit Factor</div>
-                  <div className="text-xl font-bold">{report.summary.profitFactor}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-400">Expectancy</div>
-                  <div className="text-xl font-bold">${report.summary.expectancy.toFixed(2)}</div>
-                </div>
-              </div>
+      {!report && !loading && (
+        <div className="text-center py-16 tracking-widest" style={{ color: "var(--text-dim)" }}>
+          NO REPORT DATA AVAILABLE
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-center py-16 tracking-widest" style={{ color: "var(--text-muted)" }}>
+          GENERATING PROTOCOL REPORT...
+        </div>
+      )}
+
+      {report && (
+        <div className="space-y-4">
+          {/* Summary */}
+          <div className="glass-card p-4 md:p-6">
+            <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
+              WEEKLY SUMMARY — {report.period}
             </div>
-
-            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-              <h2 className="text-lg font-semibold mb-4">Behavioral Scores</h2>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <div className="text-sm text-gray-400">FOMO</div>
-                  <div className={`text-xl font-bold ${report.behavioral.fomoScore > 70 ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {report.behavioral.fomoScore}/100
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-400">Discipline</div>
-                  <div className={`text-xl font-bold ${report.behavioral.discipline < 50 ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {report.behavioral.discipline}/100
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-400">Consistency</div>
-                  <div className={`text-xl font-bold ${report.behavioral.consistency < 60 ? 'text-red-400' : 'text-emerald-400'}`}>
-                    {report.behavioral.consistency}/100
-                  </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div>
+                <div className="label-caps mb-1">TRADES</div>
+                <div className="mono-data text-xl md:text-2xl font-bold">{report.summary.totalTrades}</div>
+              </div>
+              <div>
+                <div className="label-caps mb-1">P&L</div>
+                <div
+                  className="mono-data text-xl md:text-2xl font-bold"
+                  style={{ color: report.summary.totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}
+                >
+                  {report.summary.totalPnl >= 0 ? '+' : ''}${report.summary.totalPnl.toFixed(2)}
                 </div>
               </div>
-            </div>
-
-            {report.coaching && (
-              <div className={`rounded-lg p-6 border ${
-                report.coaching.severity === 'critical' ? 'bg-red-900/20 border-red-800' :
-                report.coaching.severity === 'medium' ? 'bg-yellow-900/20 border-yellow-800' :
-                'bg-gray-900 border-gray-800'
-              }`}>
-                <h2 className="text-lg font-semibold mb-2">Coaching ({report.coaching.severity})</h2>
-                <p className="text-gray-300">{report.coaching.message}</p>
+              <div>
+                <div className="label-caps mb-1">WIN RATE</div>
+                <div className="mono-data text-xl md:text-2xl font-bold">{report.summary.winRate}%</div>
               </div>
-            )}
-
-            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-              <h2 className="text-lg font-semibold mb-4">Key Insights</h2>
-              <ul className="space-y-2">
-                {report.topInsights.map((insight, i) => (
-                  <li key={i} className="text-gray-300">• {insight}</li>
-                ))}
-              </ul>
+              <div>
+                <div className="label-caps mb-1">PROFIT FACTOR</div>
+                <div
+                  className="mono-data text-xl md:text-2xl font-bold"
+                  style={{ color: report.summary.profitFactor >= 1.5 ? "var(--accent-profit)" : "var(--accent-loss)" }}
+                >
+                  {report.summary.profitFactor}
+                </div>
+              </div>
+              <div>
+                <div className="label-caps mb-1">EXPECTANCY</div>
+                <div
+                  className="mono-data text-xl md:text-2xl font-bold"
+                  style={{ color: report.summary.expectancy >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}
+                >
+                  ${report.summary.expectancy.toFixed(2)}
+                </div>
+              </div>
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Behavioral Scores */}
+          <div className="glass-card p-4 md:p-6">
+            <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
+              BEHAVIORAL ANALYSIS
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="glass-card p-4">
+                <div className="label-caps mb-2">FOMO INDEX</div>
+                <div
+                  className="mono-data text-xl md:text-2xl font-bold"
+                  style={{ color: report.behavioral.fomoScore > 70 ? "var(--accent-loss)" : "var(--accent-profit)" }}
+                >
+                  {report.behavioral.fomoScore}/100
+                </div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="label-caps mb-2">DISCIPLINE</div>
+                <div
+                  className="mono-data text-xl md:text-2xl font-bold"
+                  style={{ color: report.behavioral.discipline < 50 ? "var(--accent-loss)" : "var(--accent-profit)" }}
+                >
+                  {report.behavioral.discipline}/100
+                </div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="label-caps mb-2">CONSISTENCY</div>
+                <div
+                  className="mono-data text-xl md:text-2xl font-bold"
+                  style={{ color: report.behavioral.consistency < 60 ? "var(--accent-loss)" : "var(--accent-profit)" }}
+                >
+                  {report.behavioral.consistency}/100
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Coaching */}
+          {report.coaching && (
+            <div
+              className="glass-card p-4 md:p-6"
+              style={{
+                borderColor: report.coaching.severity === 'critical'
+                  ? "var(--accent-loss)"
+                  : report.coaching.severity === 'medium'
+                    ? "var(--accent-warn)"
+                    : "var(--border)",
+                background: report.coaching.severity === 'critical'
+                  ? "rgba(239, 68, 68, 0.05)"
+                  : report.coaching.severity === 'medium'
+                    ? "rgba(245, 158, 11, 0.05)"
+                    : "var(--bg-glass)",
+              }}
+            >
+              <div
+                className="text-xs tracking-widest mb-2"
+                style={{
+                  color: report.coaching.severity === 'critical'
+                    ? "var(--accent-loss)"
+                    : report.coaching.severity === 'medium'
+                      ? "var(--accent-warn)"
+                      : "var(--text-muted)",
+                }}
+              >
+                COACHING — {report.coaching.severity.toUpperCase()}
+              </div>
+              <p className="text-sm" style={{ color: "var(--text-primary)", margin: 0 }}>
+                {report.coaching.message}
+              </p>
+            </div>
+          )}
+
+          {/* Insights */}
+          <div className="glass-card p-4 md:p-6">
+            <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
+              KEY INSIGHTS
+            </div>
+            <div className="flex flex-col gap-3">
+              {report.topInsights.map((insight, i) => (
+                <div key={i} className="glass-card p-3">
+                  <div className="text-sm" style={{ color: "var(--text-primary)" }}>
+                    {insight}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

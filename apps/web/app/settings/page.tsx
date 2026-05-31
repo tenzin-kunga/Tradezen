@@ -61,7 +61,8 @@ export default function SettingsPage() {
     }
   }
 
-  const inputCls = "w-full border rounded px-3 py-2.5 text-sm font-mono outline-none box-border focus:border-[#22d3ee]";
+  const inputCls = "w-full border rounded px-3 py-2.5 text-sm outline-none box-border focus:border-[#22d3ee]";
+  const inputStyle = { fontFamily: "var(--font-mono)" };
   const labelCls = "block text-xs tracking-widest mb-1.5";
   const sectionCls = "border rounded p-4 md:p-5 mb-4";
 
@@ -80,25 +81,25 @@ export default function SettingsPage() {
 
       {/* Profile Info */}
       <div className={sectionCls} style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-        <div className="text-xs tracking-widest mb-4" style={{ color: "#555" }}>
+        <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-dim)" }}>
           01 // ACCOUNT PROFILE
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className={labelCls} style={{ color: "var(--text-muted)" }}>USERNAME</label>
-            <div className={`${inputCls} cursor-not-allowed`} style={{ backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               {user?.username?.toUpperCase() || "--"}
             </div>
           </div>
           <div>
             <label className={labelCls} style={{ color: "var(--text-muted)" }}>EMAIL</label>
-            <div className={`${inputCls} cursor-not-allowed`} style={{ backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               {user?.email || "--"}
             </div>
           </div>
           <div>
             <label className={labelCls} style={{ color: "var(--text-muted)" }}>MEMBER SINCE</label>
-            <div className={`${inputCls} cursor-not-allowed`} style={{ backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "--"}
             </div>
           </div>
@@ -107,7 +108,7 @@ export default function SettingsPage() {
 
       {/* Capital & Trading Defaults */}
       <div className={sectionCls} style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-        <div className="text-xs tracking-widest mb-4" style={{ color: "#555" }}>
+        <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-dim)" }}>
           02 // TRADING PARAMETERS
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
@@ -121,6 +122,7 @@ export default function SettingsPage() {
               value={initialCapital}
               onChange={(e) => setInitialCapital(e.target.value)}
               placeholder="10000"
+              style={inputStyle}
             />
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
               Starting account balance for P&L tracking
@@ -136,6 +138,7 @@ export default function SettingsPage() {
               value={defaultLotSize}
               onChange={(e) => setDefaultLotSize(e.target.value)}
               placeholder="0.01"
+              style={inputStyle}
             />
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
               Pre-filled lot size on new trades
@@ -148,6 +151,7 @@ export default function SettingsPage() {
             className={`${inputCls} bg-[var(--bg-primary)] text-[var(--text-primary)] border-[var(--border)] cursor-pointer`}
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
+            style={inputStyle}
           >
             <option value="UTC">UTC</option>
             <option value="America/New_York">America/New_York (EST)</option>
@@ -165,7 +169,7 @@ export default function SettingsPage() {
 
       {/* Appearance */}
       <div className={sectionCls} style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-        <div className="text-xs tracking-widest mb-4" style={{ color: "#555" }}>
+        <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-dim)" }}>
           03 // APPEARANCE
         </div>
         <div>
@@ -176,12 +180,13 @@ export default function SettingsPage() {
                 key={t}
                 type="button"
                 onClick={() => setTheme(t)}
-                className="flex-1 py-3 font-mono text-xs font-bold tracking-widest border cursor-pointer transition-all"
+                className="flex-1 py-3 text-xs font-bold tracking-widest border cursor-pointer transition-all"
                 style={{
                   borderColor: "var(--border)",
-                  backgroundColor: theme === t ? (t === "dark" ? "#ffffff" : "#111111") : "var(--bg-primary)",
-                  color: theme === t ? (t === "dark" ? "#000000" : "#ffffff") : "var(--text-muted)",
-                  borderRadius: t === "dark" ? "4px 0 0 4px" : "0 4px 4px 0",
+                  backgroundColor: theme === t ? (t === "dark" ? "var(--text-primary)" : "var(--bg-primary)") : "var(--bg-primary)",
+                  color: theme === t ? (t === "dark" ? "var(--bg-primary)" : "var(--text-primary)") : "var(--text-muted)",
+                  borderRadius: t === "dark" ? "var(--radius-sm) 0 0 var(--radius-sm)" : "0 var(--radius-sm) var(--radius-sm) 0",
+                  fontFamily: "var(--font-mono)",
                 }}
               >
                 {t === "dark" ? "◼ DARK MODE" : "◻ LIGHT MODE"}
@@ -193,13 +198,13 @@ export default function SettingsPage() {
 
       {/* Risk Management */}
       <div className={sectionCls} style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
-        <div className="text-xs tracking-widest mb-4" style={{ color: "#555" }}>
+        <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-dim)" }}>
           04 // RISK MANAGEMENT
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className={labelCls} style={{ color: "var(--text-muted)" }}>MAX RISK PER TRADE (%)</label>
-            <div className={`${inputCls} cursor-not-allowed`} style={{ backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               2.00
             </div>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
@@ -208,7 +213,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className={labelCls} style={{ color: "var(--text-muted)" }}>MAX DAILY DRAWDOWN (%)</label>
-            <div className={`${inputCls} cursor-not-allowed`} style={{ backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               5.00
             </div>
             <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
@@ -233,11 +238,11 @@ export default function SettingsPage() {
         style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
       >
         {error ? (
-          <span className="text-sm tracking-wide" style={{ color: "#ef4444" }}>{error}</span>
+          <span className="text-sm tracking-wide" style={{ color: "var(--accent-loss)" }}>{error}</span>
         ) : saved ? (
-          <span className="text-sm tracking-wide" style={{ color: "#22c55e" }}>SETTINGS SAVED SUCCESSFULLY</span>
+          <span className="text-sm tracking-wide" style={{ color: "var(--accent-profit)" }}>SETTINGS SAVED SUCCESSFULLY</span>
         ) : (
-          <span className="text-xs tracking-wide" style={{ color: "#555" }}>
+          <span className="text-xs tracking-wide" style={{ color: "var(--text-dim)" }}>
             MODIFY PARAMETERS // SAVE TO PERSIST
           </span>
         )}
@@ -245,11 +250,13 @@ export default function SettingsPage() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="px-8 py-3 font-mono text-xs font-bold tracking-widest rounded transition-colors disabled:cursor-not-allowed"
+          className="px-8 py-3 text-xs font-bold tracking-widest rounded transition-colors disabled:cursor-not-allowed"
           style={{
-            backgroundColor: saving ? "#333" : "#ffffff",
-            color: saving ? "#888" : "#000000",
+            backgroundColor: saving ? "var(--border)" : "var(--text-primary)",
+            color: saving ? "var(--text-muted)" : "var(--bg-primary)",
             border: "none",
+            borderRadius: "var(--radius-sm)",
+            fontFamily: "var(--font-mono)",
           }}
         >
           {saving ? "SAVING..." : "SAVE SETTINGS"}
