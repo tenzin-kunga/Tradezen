@@ -12,6 +12,8 @@ import {
   integer,
   index,
   unique,
+  uniqueIndex,
+  customType,
 } from 'drizzle-orm/pg-core';
 
 export const users = pgTable(
@@ -20,7 +22,8 @@ export const users = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     email: text('email').notNull().unique(),
     username: text('username').notNull().unique(),
-    passwordHash: text('password_hash').notNull(),
+    passwordHash: text('password_hash'),
+    authMethod: text('auth_method').notNull().default('password'),
     createdAt: timestamp('created_at').defaultNow(),
     twoFactorEnabled: boolean('two_factor_enabled').default(false),
     twoFactorSecret: varchar('two_factor_secret', { length: 32 }),
@@ -143,7 +146,7 @@ export const auditLog = pgTable(
   'audit_log',
   {
     id: serial('id').primaryKey(),
-    userId: integer('user_id').references(() => users.id),
+    userId: uuid('user_id').references(() => users.id),
     action: varchar('action', { length: 100 }).notNull(),
     resource: varchar('resource', { length: 100 }),
     resourceId: integer('resource_id'),
@@ -156,5 +159,203 @@ export const auditLog = pgTable(
     index('idx_audit_log_user_id').on(table.userId),
     index('idx_audit_log_action').on(table.action),
     index('idx_audit_log_created_at').on(table.createdAt),
+  ],
+);
+
+export const analyticsSnapshots = pgTable(
+  'analytics_snapshots',
+  {
+    id: serial('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    snapshotDate: date('snapshot_date').notNull(),
+    metrics: jsonb('metrics').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    userDateIdx: index('idx_snapshots_user_date').on(
+      table.userId,
+      table.snapshotDate,
+    ),
+    userDateUnique: uniqueIndex('uq_snapshots_user_date').on(
+      table.userId,
+      table.snapshotDate,
+    ),
+  }),
+);
+
+const vector = (name: string, opts: { dimensions: number }) =>
+  customType<{ data: number[] }>({
+    dataType: () => `vector(${opts.dimensions})`,
+  })(name);
+
+export const embeddings = pgTable(
+  'embeddings',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    sourceType: varchar('source_type', { length: 50 }).notNull(),
+    sourceId: uuid('source_id').notNull(),
+    content: text('content').notNull(),
+    embedding: vector('embedding', { dimensions: 1536 }),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('idx_embeddings_user').on(table.userId),
+    sourceIdx: index('idx_embeddings_source').on(
+      table.sourceType,
+      table.sourceId,
+    ),
+  }),
+);
+
+export const chatThreads = pgTable(
+  'chat_threads',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('idx_chat_threads_user').on(table.userId),
+    updatedIdx: index('idx_chat_threads_updated').on(
+      table.userId,
+      table.updatedAt,
+    ),
+  }),
+);
+
+export const chatMessages = pgTable(
+  'chat_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    threadId: uuid('thread_id')
+      .notNull()
+      .references(() => chatThreads.id, { onDelete: 'cascade' }),
+    role: varchar('role', { length: 20 }).notNull(),
+    content: text('content').notNull(),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    threadIdx: index('idx_chat_messages_thread').on(table.threadId),
+    createdIdx: index('idx_chat_messages_created').on(
+      table.threadId,
+      table.createdAt,
+    ),
+  }),
+);
+
+export const aiInsights = pgTable(
+  'ai_insights',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    insightType: varchar('insight_type', { length: 50 }).notNull(),
+    content: text('content').notNull(),
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('idx_insights_user').on(table.userId),
+    typeIdx: index('idx_insights_type').on(table.userId, table.insightType),
+    createdIdx: index('idx_insights_created').on(table.userId, table.createdAt),
+  }),
+);
+
+export const coachingSessions = pgTable(
+  'coaching_sessions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    severity: varchar('severity', { length: 20 }).notNull(),
+    triggers: jsonb('triggers').notNull(),
+    message: text('message').notNull(),
+    analyticsSnapshot: jsonb('analytics_snapshot'),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    userIdIdx: index('idx_coaching_user').on(table.userId),
+    severityIdx: index('idx_coaching_severity').on(
+      table.userId,
+      table.severity,
+    ),
+    createdIdx: index('idx_coaching_created').on(table.userId, table.createdAt),
+  }),
+);
+
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 50 }).notNull(),
+    title: varchar('title', { length: 200 }).notNull(),
+    message: text('message').notNull(),
+    metadata: jsonb('metadata'),
+    isRead: boolean('is_read').default(false),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    userIdx: index('idx_notifications_user').on(table.userId),
+    unreadIdx: index('idx_notifications_unread').on(table.userId, table.isRead),
+    createdIdx: index('idx_notifications_created').on(
+      table.userId,
+      table.createdAt,
+    ),
+  }),
+);
+
+export const notificationPreferences = pgTable(
+  'notification_preferences',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: varchar('type', { length: 50 }).notNull(),
+    enabled: boolean('enabled').default(true),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  },
+  (table) => [
+    unique().on(table.userId, table.type),
+    index('idx_notification_prefs_user').on(table.userId),
+  ],
+);
+
+export const accounts = pgTable(
+  'accounts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    providerId: text('provider_id').notNull(),
+    providerEmail: text('provider_email'),
+    providerUsername: text('provider_username'),
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    expiresAt: timestamp('expires_at'),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => [
+    unique().on(table.provider, table.providerId),
+    index('idx_accounts_user').on(table.userId),
+    index('idx_accounts_provider').on(table.provider),
   ],
 );
