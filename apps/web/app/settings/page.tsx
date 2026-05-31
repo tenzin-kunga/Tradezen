@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { updateSettings } from "@/lib/api";
+import { NotificationPreferences } from "@/components/NotificationPreferences";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -215,6 +216,15 @@ export default function SettingsPage() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Notification Preferences */}
+      <div className={sectionCls}>
+        <h2 className="text-sm font-bold tracking-widest mb-4">NOTIFICATION PREFERENCES</h2>
+        <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+          Choose which alerts and reminders you want to receive
+        </p>
+        <NotificationPreferences />
       </div>
 
       {/* Save bar */}
