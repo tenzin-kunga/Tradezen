@@ -6,9 +6,11 @@ import {
   NotFoundException,
   Param,
   Post,
+  Put,
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -16,6 +18,7 @@ import { Queue } from 'bullmq';
 import type { Request, Response } from 'express';
 import { InjectQueue } from '@nestjs/bullmq';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ChatService } from './chat.service';
 import { ChatThreadService } from './chat-thread.service';
 import { CreateChatDto } from './dto/create-chat.dto';
@@ -80,10 +83,14 @@ export class ChatController {
     return this.threadService.deleteThread(userId, threadId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('threads/:id/messages')
   @ApiOperation({ summary: 'Get messages for a chat thread' })
-  async getMessages(@Param('id') threadId: string) {
-    return this.threadService.getMessages(threadId);
+  async getMessages(
+    @CurrentUser('id') userId: string,
+    @Param('id') threadId: string,
+  ) {
+    return this.threadService.getMessages(threadId, userId);
   }
 
   @Post('stream')
@@ -199,7 +206,11 @@ export class ChatController {
     @Body('dateFrom') dateFrom: string,
     @Body('dateTo') dateTo: string,
   ) {
-    return this.journalIntelligenceService.analyzeJournals(userId, dateFrom, dateTo);
+    return this.journalIntelligenceService.analyzeJournals(
+      userId,
+      dateFrom,
+      dateTo,
+    );
   }
 
   @Get('ai/insights')
@@ -209,7 +220,11 @@ export class ChatController {
     @Query('type') type?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.journalIntelligenceService.getInsights(userId, type, limit ? parseInt(limit) : 10);
+    return this.journalIntelligenceService.getInsights(
+      userId,
+      type,
+      limit ? parseInt(limit) : 10,
+    );
   }
 
   @Post('ai/coaching/evaluate')
@@ -224,7 +239,10 @@ export class ChatController {
     @CurrentUser('id') userId: string,
     @Query('limit') limit?: string,
   ) {
-    return this.coachingEngineService.getCoachingHistory(userId, parseInt(limit ?? '10') || 10);
+    return this.coachingEngineService.getCoachingHistory(
+      userId,
+      parseInt(limit ?? '10') || 10,
+    );
   }
 
   @Get('ai/coaching/active')
@@ -239,7 +257,10 @@ export class ChatController {
     @CurrentUser('id') userId: string,
     @Query('limit') limit?: string,
   ) {
-    return this.notificationService.getUnread(userId, limit ? parseInt(limit) : 20);
+    return this.notificationService.getUnread(
+      userId,
+      limit ? parseInt(limit) : 20,
+    );
   }
 
   @Post('notifications/:id/read')
@@ -264,5 +285,22 @@ export class ChatController {
   async getNotificationCount(@CurrentUser('id') userId: string) {
     const count = await this.notificationService.getCount(userId);
     return { count };
+  }
+
+  @Get('notifications/preferences')
+  @ApiOperation({ summary: 'Get notification preferences' })
+  async getNotificationPreferences(@CurrentUser('id') userId: string) {
+    return this.notificationService.getPreferences(userId);
+  }
+
+  @Put('notifications/preferences')
+  @ApiOperation({ summary: 'Update notification preference' })
+  async updateNotificationPreference(
+    @CurrentUser('id') userId: string,
+    @Body('type') type: string,
+    @Body('enabled') enabled: boolean,
+  ) {
+    await this.notificationService.updatePreference(userId, type, enabled);
+    return { message: 'Preference updated' };
   }
 }

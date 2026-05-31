@@ -204,14 +204,33 @@ export const exportCsv = async () => {
   return res.text();
 };
 
-export const importCsv = async (file: File): Promise<{ imported: number; errors: string[] }> => {
+export const importCsv = async (
+  file: File,
+): Promise<{ jobId: string; message: string }> => {
   const formData = new FormData();
   formData.append("file", file);
   const res = await authFetch(`${API}/trades/import/csv`, {
     method: "POST",
     body: formData,
   });
-  return handleResponse<{ imported: number; errors: string[] }>(res);
+  return handleResponse<{ jobId: string; message: string }>(res);
+};
+
+export type ImportJobStatus = {
+  id: string;
+  name: string;
+  progress: number | Record<string, unknown>;
+  state: string;
+  result?: { imported: number; errors: string[] };
+  failedReason?: string;
+};
+
+export const getImportJobStatus = async (
+  jobId: string,
+): Promise<ImportJobStatus | null> => {
+  const res = await authFetch(`${API}/trades/import/jobs/${jobId}`);
+  if (res.status === 404) return null;
+  return handleResponse<ImportJobStatus>(res);
 };
 
 // ─── Journals ──────────────────────────────────────
@@ -434,6 +453,19 @@ export async function markNotificationRead(id: string) {
 
 export async function markAllNotificationsRead() {
   const res = await authFetch(`${API}/chat/notifications/read-all`, { method: 'POST' });
+  return handleResponse<{ message: string }>(res);
+}
+
+export async function getNotificationPreferences() {
+  const res = await authFetch(`${API}/chat/notifications/preferences`);
+  return handleResponse<Record<string, boolean>>(res);
+}
+
+export async function updateNotificationPreference(type: string, enabled: boolean) {
+  const res = await authFetch(`${API}/chat/notifications/preferences`, {
+    method: 'PUT',
+    body: JSON.stringify({ type, enabled }),
+  });
   return handleResponse<{ message: string }>(res);
 }
 
