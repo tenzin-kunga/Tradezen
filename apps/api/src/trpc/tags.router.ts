@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from './index';
+import { router, protectedProcedure } from './trpc';
 import { createTagSchema, tagCategoryEnum } from '@tradezen/db';
 import { z } from 'zod';
 import { TagsService } from '../tags/tags.service';

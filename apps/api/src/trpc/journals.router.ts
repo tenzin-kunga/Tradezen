@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from './index';
+import { router, protectedProcedure } from './trpc';
 import { createJournalSchema, journalMoodEnum } from '@tradezen/db';
 import { z } from 'zod';
 import { JournalsService } from '../journals/journals.service';

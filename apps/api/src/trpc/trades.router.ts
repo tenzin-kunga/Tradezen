@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from './index';
+import { router, protectedProcedure } from './trpc';
 import { createTradeSchema } from '@tradezen/db';
 import { z } from 'zod';
 import { TradesService } from '../trades/trades.service';

@@ -1,4 +1,4 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { Global, Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
@@ -30,6 +30,7 @@ import { NotificationTriggersService } from './common/services/notification-trig
 import { TradesService } from './trades/trades.service';
 import { JournalsService } from './journals/journals.service';
 
+@Global()
 @Module({
   imports: [
     ThrottlerModule.forRoot([
@@ -79,6 +80,21 @@ import { JournalsService } from './journals/journals.service';
     AppService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: ThrottlerEventsGuard },
+    SnapshotService,
+    BehavioralService,
+    EventPublisherService,
+    EventSubscriberService,
+    EmbeddingService,
+    MemoryService,
+    JournalAnalysisWorkflow,
+    CoachingWorkflow,
+    CoachingEngineService,
+    NotificationService,
+    NotificationTriggersService,
+    TradesService,
+    JournalsService,
+  ],
+  exports: [
     SnapshotService,
     BehavioralService,
     EventPublisherService,
