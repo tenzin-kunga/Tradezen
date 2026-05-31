@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { db } from '../../db/drizzle';
 import { notifications, notificationPreferences } from '@tradezen/db';
 import { eq, and, desc, sql } from 'drizzle-orm';
+import { TradesGateway } from '../../gateway/trades.gateway';
 
 export type NotificationType =
   | 'coaching'
@@ -14,6 +15,8 @@ export type NotificationType =
 
 @Injectable()
 export class NotificationService {
+  constructor(private readonly gateway: TradesGateway) {}
+
   async create(
     userId: string,
     type: NotificationType,
@@ -21,13 +24,28 @@ export class NotificationService {
     message: string,
     metadata?: Record<string, unknown>,
   ): Promise<void> {
-    await db.insert(notifications).values({
-      userId,
+    const [notification] = await db
+      .insert(notifications)
+      .values({
+        userId,
+        type,
+        title,
+        message,
+        metadata,
+      })
+      .returning();
+
+    this.gateway.emitToUser(userId, 'notification:created', {
+      id: notification.id,
       type,
       title,
       message,
+      createdAt: notification.createdAt,
       metadata,
     });
+
+    const count = await this.getCount(userId);
+    this.gateway.emitToUser(userId, 'notification:count', { count });
   }
 
   async getUnread(

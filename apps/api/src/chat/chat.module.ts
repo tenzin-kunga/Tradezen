@@ -8,11 +8,25 @@ import { QueuesModule } from '../queues/queues.module';
 import { JournalAnalysisWorkflow } from '../ai/workflows/journal-analysis.workflow';
 import { EmbeddingService } from '../ai/embedding.service';
 import { NotificationService } from '../common/services/notification.service';
+import { GatewayModule } from '../gateway/gateway.module';
 
 @Module({
-  imports: [QueuesModule],
+  imports: [QueuesModule, GatewayModule],
   controllers: [ChatController],
-  providers: [ChatService, ChatThreadService, JournalIntelligenceService, CoachingEngineService, JournalAnalysisWorkflow, EmbeddingService, NotificationService],
-  exports: [ChatService, ChatThreadService, JournalIntelligenceService, NotificationService],
+  providers: [
+    ChatService,
+    ChatThreadService,
+    JournalIntelligenceService,
+    CoachingEngineService,
+    JournalAnalysisWorkflow,
+    EmbeddingService,
+    NotificationService,
+  ],
+  exports: [
+    ChatService,
+    ChatThreadService,
+    JournalIntelligenceService,
+    NotificationService,
+  ],
 })
 export class ChatModule {}
