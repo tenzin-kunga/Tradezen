@@ -68,7 +68,7 @@ push/PR → [security → lint → test → e2e] (all branches)
 
 ### New Capabilities
 
-- **Security scanning:** npm audit, Trivy filesystem scan, secret pattern detection
+- **Security scanning:** `bun pm audit`, Trivy filesystem scan, secret pattern detection
 - **Multi-Node testing:** Unit tests on Node 18/20/22
 - **Coverage reporting:** Upload to Codecov
 - **E2E integration:** Full stack tests with real Postgres + Redis
@@ -127,7 +127,7 @@ RENDER_SERVICE_ID         # Render service ID
 # 1. Clone and install
 git clone https://github.com/tampered-sin/Tradezen.git
 cd Tradezen
-npm install
+bun install
 
 # 2. Set up environment (optional but recommended)
 cp .env.docker.example .env.docker
@@ -136,12 +136,16 @@ cp .env.docker.example .env.docker
 # 3. Start infrastructure
 docker-compose --env-file .env.docker up -d
 
-# 4. Start dev servers (two terminals)
+# 4. Start dev servers
+# From repo root (builds @tradezen/db + starts both apps)
+bun run dev
+
+# Or individually:
 # Terminal 1 — API
-cd apps/api && npm run start:dev
+cd apps/api && bun run dev
 
 # Terminal 2 — Web
-cd apps/web && npm run dev
+cd apps/web && bun run dev
 
 # 5. Open http://localhost:3000
 ```

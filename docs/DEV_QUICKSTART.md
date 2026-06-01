@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Node.js** 20+ ([nvm](https://github.com/nvm-sh/nvm) recommended)
+- **Bun 1.3+** (recommended) or Node.js 20+
 - **Docker Desktop** (includes Docker Compose)
 - **Git**
 
@@ -13,7 +13,7 @@ git clone https://github.com/tampered-sin/Tradezen.git
 cd Tradezen
 
 # Install dependencies (monorepo)
-npm install
+bun install
 ```
 
 ## 2. Environment Setup
@@ -49,7 +49,7 @@ docker-compose --env-file .env.docker up -d postgres redis
 # Wait for Postgres to be ready (10-15s)
 docker-compose exec postgres pg_isready -U postgres
 
-# Optional: Initialize DB with migrations
+# Optional: Initialize DB with migrations (uses npm inside container)
 docker-compose exec api npm run migrate
 ```
 
@@ -61,15 +61,16 @@ Double-click `start.bat` — it will start Docker, launch API and Web in separat
 **Option B: Manual (cross-platform)**
 
 ```bash
+# From repo root — builds @tradezen/db, then starts both apps
+bun run dev
+# → API: http://localhost:3001  Web: http://localhost:3000
+
+# Or individually:
 # Terminal 1 — API (NestJS)
-cd apps/api
-npm run start:dev
-# → http://localhost:3001
+cd apps/api && bun run dev
 
 # Terminal 2 — Web (Next.js)
-cd apps/web
-npm run dev
-# → http://localhost:3000
+cd apps/web && bun run dev
 ```
 
 ## 5. Verify Installation
@@ -89,7 +90,7 @@ Create account → log in → add a trade → see it in the trade log.
 ```bash
 docker-compose down -v  # WARNING: deletes all data
 docker-compose up -d postgres
-docker-compose exec api npm run migrate
+docker-compose exec api npm run migrate  # npm inside container
 ```
 
 ### View Logs
@@ -106,26 +107,26 @@ docker-compose logs -f api
 
 ```bash
 # Unit tests
-npm test
+bun run test
 
 # E2E tests (requires DB running)
 docker-compose up -d postgres redis
-npm run test:e2e --workspace=@tradezen/api
+bun run test:e2e --filter=api
 ```
 
 ### Lint & Format
 
 ```bash
-npm run lint
-npm run check-types
-npm run format
+bun run lint
+bun run check-types
+bun run format
 ```
 
 ### Build for Production
 
 ```bash
 # Build all packages
-npm run build
+bun run build
 
 # Build Docker images
 docker-compose --env-file .env.docker build
@@ -187,7 +188,7 @@ docker-compose logs postgres
 docker-compose exec postgres psql -U postgres -d tradezen -c "\dt"
 
 # Run migrations manually
-docker-compose exec api npm run migrate
+docker-compose exec api npm run migrate  # npm inside container
 ```
 
 ---

@@ -11,7 +11,7 @@ A professional trading journal web app with a Glass Depth design system. Track t
 | **Frontend** | Next.js 14.2.25, React 18.2.0, Tailwind CSS v3.4, Recharts |
 | **Backend** | NestJS 11, PostgreSQL (raw `pg`), Passport JWT, Redis |
 | **Database** | PostgreSQL 16-alpine (Docker) / Neon (production) |
-| **Monorepo** | npm workspaces |
+| **Monorepo** | Bun workspaces (Turborepo) |
 | **Deployment** | Vercel (web) + Render (API) + Neon (DB) / Docker Compose (local) |
 
 ## Features
@@ -51,7 +51,7 @@ tradezen/
 
 ### Prerequisites
 
-- Node.js 20+
+- **Bun 1.3+** (recommended) or Node.js 20+
 - Docker Desktop (for local PostgreSQL + Redis)
 
 ### Quick Start (One-Click)
@@ -72,7 +72,7 @@ This script handles:
 # Clone and install
 git clone https://github.com/tampered-sin/Tradezen.git
 cd Tradezen
-npm install
+bun install
 
 # Configure environment
 cp .env.docker.example .env.docker
@@ -82,7 +82,7 @@ cp .env.docker.example .env.docker
 docker compose --env-file .env.docker up -d postgres redis
 
 # Start both apps
-npx turbo dev
+bun run dev
 ```
 
 ### Environment Variables
@@ -137,7 +137,7 @@ The `docker-compose.yml` provides a production-ready local stack:
 - **Container Hardening**: Non-root users, minimal base images, `dumb-init` signal handling
 - **Secret Management**: `.env.docker.example` template, rotation scripts, pre-commit hooks
 - **Production Mode**: Swagger disabled, env validation enforced
-- **CI/CD Security**: Trivy scanning, npm audit, secret detection
+- **CI/CD Security**: Trivy scanning, `bun pm audit`, secret detection
 
 See [SECURITY.md](docs/SECURITY.md) for full hardening guide.
 
@@ -173,7 +173,7 @@ Full interactive docs at `/api/docs` (development only).
 
 GitHub Actions workflow (`.github/workflows/ci.yml`):
 
-1. **Security Audit** — npm audit, Trivy filesystem scan, secret detection
+1. **Security Audit** — `bun pm audit`, Trivy filesystem scan, secret detection
 2. **Lint & Type Check** — ESLint + TypeScript validation
 3. **Unit Tests** — Jest test suite
 4. **Build & Deploy** — Docker Buildx with caching, auto-deploy on `main`

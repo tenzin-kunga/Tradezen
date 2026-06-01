@@ -45,7 +45,7 @@
 **New jobs:**
 
 1. **Security Audit** — Runs on every PR/push
-   - `npm audit` — dependency vulnerabilities
+   - `bun pm audit` — dependency vulnerabilities
    - Trivy scanner — filesystem + Docker image vulnerabilities
    - SARIF upload to GitHub Security tab
 

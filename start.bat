@@ -115,7 +115,7 @@ echo      Launching API  → http://localhost:3001
 start "TRADEZEN API" cmd /k ^
 "cd /d %~dp0apps\api && ^
 set NODE_ENV=development && ^
-npm run dev"
+bun run dev"
 
 :: ──────────────────────────────────────────────────────
 :: Start Next.js Web
@@ -127,7 +127,7 @@ echo      Launching Web  → http://localhost:3000
 start "TRADEZEN WEB" cmd /k ^
 "cd /d %~dp0apps\web && ^
 set NODE_ENV=development && ^
-npm run dev"
+bun run dev"
 
 echo.
 echo  ===================================================

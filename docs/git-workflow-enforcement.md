@@ -69,7 +69,7 @@ Examples:
 
 1. Create feature branch from `develop`
 2. Implement changes with conventional commits
-3. Run local checks: `npm run lint && npm run check-types && npm test`
+3. Run local checks: `bun run lint && bun run check-types && bun run test`
 4. Push branch and create PR to `develop`
 5. Fill out PR template (`.github/PULL_REQUEST_TEMPLATE.md`)
 6. Wait for CI checks to pass
@@ -81,7 +81,7 @@ Examples:
 ## Enforcement Mechanisms
 
 ### Automated (CI/CD)
-- [x] Security audit (Trivy + npm audit)
+- [x] Security audit (Trivy + `bun pm audit`)
 - [x] Lint checks (ESLint)
 - [x] Type checks (TypeScript)
 - [x] Unit tests (Jest)

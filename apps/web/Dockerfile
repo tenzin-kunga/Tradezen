@@ -2,28 +2,29 @@
 # Multi-stage build with optimized production output
 
 # ── Stage 1: Dependencies ──────────────────────────────────────────────────
-FROM node:20-alpine AS deps
+FROM oven/bun:1-alpine AS deps
 WORKDIR /app
 
 # Copy root package files
-COPY package*.json ./
+COPY package.json bun.lock ./
 
 # Copy workspace package files
 COPY packages/types/package.json ./packages/types/
 COPY packages/ui/package.json ./packages/ui/
+COPY packages/db/package.json ./packages/db/
 COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
 
 # Install all dependencies
-RUN npm ci
+RUN bun install --frozen-lockfile
 
-# ── Stage 2: Build ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+# ── Stage 2: Build ──────────────────────────────────────────────────────────────
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package*.json ./
+COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/packages ./packages
 
 # Copy web source directly to apps/web
@@ -31,8 +32,8 @@ COPY apps/web ./apps/web
 
 # Build Next.js app (standalone output at apps/web/.next/standalone)
 WORKDIR /app/apps/web
-ENV PATH="/app/node_modules/.bin:$PATH"
-RUN npx next build
+ENV NEXT_OUTPUT=standalone
+RUN bun run build
 
 # ── Stage 3: Runner (standalone) ──────────────────────────────────────────
 FROM node:20-alpine AS runner

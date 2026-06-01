@@ -3,7 +3,7 @@
 ## Project Context
 - **Stack:** Turso + SQLite (local), Clerk (auth), Drizzle ORM, React 19 + Vite, TanStack Query
 - **Apps:** `apps/api` (Express + tRPC), `apps/web` (Vite + React)
-- **Commands:** `npm run dev`, `npm run lint`, `npm run check-types`
+- **Commands:** `bun run dev`, `bun run lint`, `bun run check-types`
 - **Key files:** `PLAN.md` (phases 0-5), `AGENTS.md` (this file)
 
 ---
@@ -32,7 +32,7 @@ Use: `context-mode_ctx_fetch_and_index(url, source)` then `context-mode_ctx_sear
 ## REDIRECTED — use sandbox
 
 ### Shell (>20 lines output)
-Shell ONLY for: `git`, `mkdir`, `rm`, `mv`, `cd`, `ls`, `npm install`, `pip install`.
+Shell ONLY for: `git`, `mkdir`, `rm`, `mv`, `cd`, `ls`, `bun install`, `pip install`.
 Otherwise: `context-mode_ctx_batch_execute(commands, queries)` or `context-mode_ctx_execute(language: "shell", code: "...")`
 
 ### File reading (for analysis)
@@ -57,7 +57,7 @@ For multi-URL fetches or multi-API calls, **always** include `concurrency: N` (1
 - `context-mode_ctx_batch_execute(commands: [3+ network commands], concurrency: 5)` — gh, curl, dig, docker inspect, multi-region cloud queries
 - `context-mode_ctx_fetch_and_index(requests: [{url, source}, ...], concurrency: 5)` — multi-URL batch fetch
 
-**Use concurrency 4-8** for I/O-bound work (network calls, API queries). **Keep concurrency 1** for CPU-bound (npm test, build, lint) or commands sharing state (ports, lock files, same-repo writes).
+**Use concurrency 4-8** for I/O-bound work (network calls, API queries). **Keep concurrency 1** for CPU-bound (bun run test, build, lint) or commands sharing state (ports, lock files, same-repo writes).
 
 GitHub API rate-limit: cap at 4 for `gh` calls.
 

@@ -4,11 +4,6 @@ import { z } from 'zod';
 import { TradesService } from '../trades/trades.service';
 import { BehavioralService } from '../analytics/behavioral.service';
 import { EventPublisherService } from '../common/services/event-publisher.service';
-import type {
-  CreateTradeDto,
-  UpdateTradeDto,
-  QueryTradesDto,
-} from '../trades/dto';
 
 const queryTradesSchema = z.object({
   page: z.number().min(1).optional(),
@@ -29,7 +24,7 @@ export const tradesRouter = router({
     .input(queryTradesSchema)
     .query(async ({ ctx, input }) => {
       const service = new TradesService(eventPublisher);
-      return service.findAll(ctx.userId, input as QueryTradesDto);
+      return service.findAll(ctx.userId, input);
     }),
 
   findOne: protectedProcedure
@@ -43,7 +38,7 @@ export const tradesRouter = router({
     .input(createTradeSchema)
     .mutation(async ({ ctx, input }) => {
       const service = new TradesService(eventPublisher);
-      return service.create(ctx.userId, input as CreateTradeDto);
+      return service.create(ctx.userId, input);
     }),
 
   update: protectedProcedure
@@ -70,7 +65,7 @@ export const tradesRouter = router({
     .mutation(async ({ ctx, input }) => {
       const service = new TradesService(eventPublisher);
       const { id, ...data } = input;
-      return service.update(ctx.userId, id, data as UpdateTradeDto);
+      return service.update(ctx.userId, id, data);
     }),
 
   remove: protectedProcedure

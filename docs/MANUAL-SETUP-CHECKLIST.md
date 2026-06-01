@@ -98,12 +98,12 @@ The schema has new tables and columns. Run:
 ```bash
 # Option A: Drizzle push (dev only, drops data)
 cd apps/api
-npm run db:push
+bun run db:push
 
 # Option B: Create migration (recommended)
 cd apps/api
-npx drizzle-kit generate
-npx drizzle-kit migrate
+bunx drizzle-kit generate
+bunx drizzle-kit migrate
 ```
 
 ### New schema changes:
@@ -146,7 +146,7 @@ cp apps/api/.env.example .env.docker
 docker-compose --env-file .env.docker up -d
 
 # Run migrations inside container
-docker-compose exec api npm run migrate
+docker-compose exec api npm run migrate  # npm inside container
 ```
 
 ---
@@ -231,8 +231,8 @@ OPENAI_API_KEY=sk-...
 
 ### Render (API):
 1. Connect repo → `apps/api`
-2. Build command: `npm install && npm run build --workspace=api`
-3. Start command: `npm run start:prod --workspace=api`
+2. Build command: `bun install && bun run build --filter=api`
+3. Start command: `bun run start:prod`
 4. Add all env vars from section 1
 5. Attach PostgreSQL database
 

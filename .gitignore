@@ -103,6 +103,7 @@ docker-compose*.yml
 # package-lock.json (keep)
 # yarn.lock (keep)
 # pnpm-lock.yaml (keep)
+bun.lock (keep)
 
 # ── Temporary Files ───────────────────────────────────────────────────────────
 tmp/
@@ -112,3 +113,6 @@ temp/
 # ── Backups ───────────────────────────────────────────────────────────────────
 backups/
 
+
+# Uploads
+apps/api/uploads/

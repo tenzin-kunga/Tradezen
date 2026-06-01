@@ -20,7 +20,7 @@
 
 **Acceptance Criteria:**
 
-* `npm run dev` runs without errors
+* `bun run dev` runs without errors
 * Repo structure matches architecture
 
 ---

@@ -100,8 +100,8 @@ All modifications are optional for local development but recommended for product
 **Expanded from basic build to full deployment pipeline:**
 
 #### Job 1: Security Audit
-- `npm audit` for dependency vulnerabilities
-- Trivy filesystem scan (OS packages, npm deps)
+- `bun pm audit` for dependency vulnerabilities
+- Trivy filesystem scan (OS packages, Bun deps)
 - Pattern-based secret leak detection
 - Results uploaded to GitHub Security tab (SARIF)
 
@@ -286,7 +286,7 @@ services:
 - **Rate limiting** — Add `@nestjs/throttler` to API
 - **Security headers** — Configure nginx or Helmet.js middleware
 - **Request size limits** — Prevent large payload DoS
-- **Regular updates** — Weekly `npm audit`, monthly base image updates
+- **Regular updates** — Weekly `bun pm audit`, monthly base image updates
 - **Backup verification** — Test restore process monthly
 - **Access logs** — Ship to centralized log aggregation (Papertrail, Loki)
 

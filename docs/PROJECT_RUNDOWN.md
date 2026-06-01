@@ -55,7 +55,7 @@ The app emphasizes:
 | Styling | **Tailwind CSS v4** |
 | Charts | **Recharts 2** |
 | React | **React 19** |
-| Package Manager | **npm 11.4.2** |
+| Package Manager | **Bun 1.3.13** |
 
 ### Backend
 
@@ -74,7 +74,7 @@ The app emphasizes:
 |-----------|------------|
 | Database | **PostgreSQL** (Neon serverless in production) |
 | Cache | **Redis** (optional, for future real-time features) |
-| Monorepo | **Turborepo** with **npm workspaces** |
+| Monorepo | **Turborepo** with **Bun workspaces** |
 | Deployment (Web) | **Vercel** |
 | Deployment (API) | **Render** or **Railway** |
 | Deployment (Database) | **Neon** (PostgreSQL serverless) |
@@ -535,7 +535,7 @@ All have sensible defaults for local development:
 ### Prerequisites
 
 - **Node.js**: 20+ (check with `node --version`)
-- **npm**: 11.4.2+ (check with `npm --version`)
+- **Bun**: 1.3+ (check with `bun --version`)
 - **Docker**: Required for PostgreSQL + Redis (download from [docker.com](https://www.docker.com))
 - **Git**: For version control
 
@@ -551,10 +551,10 @@ cd Tradezen
 #### 2. Install Dependencies
 
 ```bash
-npm install
+bun install
 ```
 
-This installs packages for the root, all `apps/`, and all `packages/` using npm workspaces.
+This installs packages for the root, all `apps/`, and all `packages/` using Bun workspaces.
 
 #### 3. Start Local Services
 
@@ -579,7 +579,7 @@ This is a wrapper around `docker-compose up -d` for Windows users.
 #### 4. Run Migrations
 
 ```bash
-npm run migrate
+bun run migrate
 ```
 
 This runs numbered migration files from `apps/api/migrations/` to initialize the database schema.
@@ -589,7 +589,7 @@ This runs numbered migration files from `apps/api/migrations/` to initialize the
 **Option A: Both apps (API + Web) together**
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 Turbo runs both in parallel:
@@ -600,10 +600,10 @@ Turbo runs both in parallel:
 
 ```bash
 # Terminal 1: API
-cd apps/api && npm run start:dev
+cd apps/api && bun run start:dev
 
 # Terminal 2: Web
-cd apps/web && npm run dev
+cd apps/web && bun run dev
 ```
 
 #### 6. Access the Application
@@ -633,28 +633,28 @@ docker-compose down
 
 ### Project Organization
 
-This is a **monorepo** using **Turborepo** and **npm workspaces**. Shared code lives in `packages/`, apps in `apps/`.
+This is a **monorepo** using **Turborepo** and **Bun workspaces**. Shared code lives in `packages/`, apps in `apps/`.
 
 ### Working with the Monorepo
 
 **Running scripts across all packages:**
 
 ```bash
-npm run build        # Build all packages
-npm run dev          # Start dev mode for all
-npm run lint         # Lint all packages
-npm run format       # Format all files with Prettier
-npm run check-types  # TypeScript check across all
+bun run build        # Build all packages
+bun run dev          # Start dev mode for all
+bun run lint         # Lint all packages
+bun run format       # Format all files with Prettier
+bun run check-types  # TypeScript check across all
 ```
 
 **Working on a specific app:**
 
 ```bash
 cd apps/api
-npm run start:dev    # Start API in watch mode
+bun run start:dev    # Start API in watch mode
 
 cd apps/web
-npm run dev          # Start web in dev mode
+bun run dev          # Start web in dev mode
 ```
 
 ### Code Standards
@@ -664,9 +664,9 @@ npm run dev          # Start web in dev mode
 Lint your code:
 
 ```bash
-npm run lint         # Lint all packages
-cd apps/api && npm run lint         # Lint just API
-cd apps/web && npm run lint         # Lint just web
+bun run lint         # Lint all packages
+cd apps/api && bun run lint         # Lint just API
+cd apps/web && bun run lint         # Lint just web
 ```
 
 #### Prettier
@@ -674,7 +674,7 @@ cd apps/web && npm run lint         # Lint just web
 Format your code:
 
 ```bash
-npm run format       # Format all files
+bun run format       # Format all files
 ```
 
 #### TypeScript
@@ -682,7 +682,7 @@ npm run format       # Format all files
 Type check all packages:
 
 ```bash
-npm run check-types
+bun run check-types
 ```
 
 ### Testing
@@ -691,17 +691,17 @@ npm run check-types
 
 ```bash
 cd apps/api
-npm run test          # Run tests once
-npm run test:watch    # Watch mode
-npm run test:cov      # With coverage
-npm run test:e2e      # End-to-end tests
+bun run test          # Run tests once
+bun run test:watch    # Watch mode
+bun run test:cov      # With coverage
+bun run test:e2e      # End-to-end tests
 ```
 
 ### Making Changes
 
 1. **Create a branch** for your feature/fix
 2. **Make changes** in relevant files
-3. **Run tests** and lint checks: `npm run lint && npm run check-types`
+3. **Run tests** and lint checks: `bun run lint && bun run check-types`
 4. **Commit** with clear, descriptive message
 5. **Push** and create a pull request
 
@@ -711,20 +711,20 @@ npm run test:e2e      # End-to-end tests
 
 ```bash
 cd apps/api
-npm install package-name
+bun install package-name
 ```
 
 **To shared packages:**
 
 ```bash
 cd packages/types
-npm install package-name
+bun install package-name
 ```
 
 **To root (dev dependencies only):**
 
 ```bash
-npm install --save-dev package-name
+bun install --save-dev package-name
 ```
 
 ---
@@ -739,8 +739,8 @@ The frontend is automatically deployed to **Vercel** on every push to `main` bra
 
 ```bash
 cd apps/web
-npm run build
-npm run start
+bun run build
+bun run start
 ```
 
 **Environment variables needed on Vercel:**
@@ -782,7 +782,7 @@ PostgreSQL is hosted on **Neon** (serverless, cold-start friendly).
 
 ```bash
 export DATABASE_URL="postgresql://..."
-npm run migrate
+bun run migrate
 ```
 
 ### CI/CD Pipeline
@@ -934,7 +934,7 @@ CREATE TABLE my_table (
 3. Run migrations:
 
 ```bash
-npm run migrate
+bun run migrate
 ```
 
 ### Creating a New API Endpoint
@@ -988,7 +988,7 @@ export default function MyPage() {
 Enable debug logging by setting `NODE_ENV=debug`:
 
 ```bash
-NODE_ENV=debug npm run start:dev
+NODE_ENV=debug bun run start:dev
 ```
 
 Or add console logs in services:
@@ -1073,7 +1073,7 @@ docker-compose up -d
 
 ```bash
 # Check migration runner output
-npm run migrate
+bun run migrate
 
 # Manually check database
 psql -h localhost -U postgres -d tradezen -c "\dt"
@@ -1089,7 +1089,7 @@ lsof -i :3001
 netstat -ano | findstr :3001
 
 # Kill the process or use a different port:
-PORT=3002 npm run start:dev
+PORT=3002 bun run start:dev
 ```
 
 ### Frontend can't reach API
@@ -1102,8 +1102,8 @@ PORT=3002 npm run start:dev
 ### TypeScript errors
 
 ```bash
-npm run check-types      # Full check
-cd apps/api && npm run start:dev # Watch mode type errors
+bun run check-types      # Full check
+cd apps/api && bun run start:dev # Watch mode type errors
 ```
 
 ---

@@ -3,18 +3,19 @@
 # Build context: repository root
 
 # ── Stage 1: Dependencies (cached separately) ────────────────────────────
-FROM node:20-alpine AS deps
+FROM oven/bun:1-alpine AS deps
 WORKDIR /app
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
 # Copy root package.json and lockfile
-COPY package*.json ./
+COPY package.json bun.lock ./
 
 # Copy workspace packages
 COPY packages/types/package.json ./packages/types/
 COPY packages/ui/package.json ./packages/ui/
+COPY packages/db/package.json ./packages/db/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
@@ -22,15 +23,15 @@ COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY apps/api/package.json ./apps/api/
 
 # Install all dependencies (including dev deps for build)
-RUN npm ci
+RUN bun install --frozen-lockfile
 
-# ── Stage 2: Build ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+# ── Stage 2: Build ──────────────────────────────────────────────────────────────
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package*.json ./
+COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/packages ./packages
 
 # Copy source code from build context
@@ -38,7 +39,7 @@ COPY . .
 
 # Build TypeScript → JavaScript (from api workspace)
 WORKDIR /app/apps/api
-RUN npm run build
+RUN bun run build
 
 # ── Stage 3: Runner (minimal attack surface) ──────────────────────────────
 FROM node:20-alpine AS runner

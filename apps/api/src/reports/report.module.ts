@@ -10,6 +10,11 @@ import { EmbeddingService } from '../ai/embedding.service';
 @Module({
   imports: [TradesModule, JournalsModule],
   controllers: [ReportController],
-  providers: [ReportService, CoachingEngineService, CoachingWorkflow, EmbeddingService],
+  providers: [
+    ReportService,
+    CoachingEngineService,
+    CoachingWorkflow,
+    EmbeddingService,
+  ],
 })
 export class ReportModule {}

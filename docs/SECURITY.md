@@ -63,7 +63,7 @@ All changes are **backward-compatible** and can be adopted incrementally.
 
 | Job | Purpose | Triggers |
 |-----|---------|----------|
-| **security** | npm audit, Trivy vulnerability scan, secret pattern detection | Every push/PR |
+| **security** | `bun pm audit`, Trivy vulnerability scan, secret pattern detection | Every push/PR |
 | **lint** | ESLint + TypeScript type checking | Every push/PR |
 | **test** | Unit tests with coverage (Node 18/20/22 matrix) | Every push/PR |
 | **e2e** | Integration tests with Postgres + Redis | After unit tests |

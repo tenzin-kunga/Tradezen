@@ -216,7 +216,7 @@ docker logs tradezen-api
 
 ```bash
 # 1. Install Railway CLI
-npm i -g @railway/cli
+bun install -g @railway/cli
 
 # 2. Login
 railway login
@@ -253,7 +253,7 @@ curl http://localhost:3000
 
 ```bash
 # Install Vercel CLI
-npm i -g vercel
+bun install -g vercel
 
 # Login
 vercel login
