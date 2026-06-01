@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import PDFDocument from 'pdfkit';
 import { TradesService } from '../trades/trades.service';
 import { BehavioralService } from '../analytics/behavioral.service';
 import { JournalsService } from '../journals/journals.service';
@@ -68,6 +69,50 @@ export class ReportService {
         `Sharpe ratio: ${(advanced as any).sharpeRatio}`,
       ],
     };
+  }
+
+  async generatePDF(userId: string): Promise<Buffer> {
+    const report = await this.generateWeeklyReport(userId);
+    const doc = new PDFDocument({ margin: 50 });
+    const chunks: Buffer[] = [];
+
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    return new Promise((resolve, reject) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      const { summary, behavioral, coaching, period } = report;
+
+      doc.fontSize(20).text('TradeZen — Weekly Report', { align: 'center' });
+      doc.fontSize(12).text(period, { align: 'center' }).moveDown(1.5);
+
+      doc.fontSize(14).text('Performance Summary').moveDown(0.5);
+      doc.fontSize(10).text(`Total Trades: ${summary.totalTrades}`);
+      doc.text(`Total P&L: $${summary.totalPnl.toFixed(2)}`);
+      doc.text(`Win Rate: ${summary.winRate}%`);
+      doc.text(`Profit Factor: ${summary.profitFactor}`);
+      doc.text(`Expectancy: $${summary.expectancy.toFixed(2)}`);
+      doc.moveDown(1);
+
+      doc.fontSize(14).text('Behavioral').moveDown(0.5);
+      doc.fontSize(10).text(`FOMO Score: ${behavioral.fomoScore}`);
+      doc.text(`Discipline: ${behavioral.discipline}`);
+      doc.text(`Consistency: ${behavioral.consistency}`);
+      doc.moveDown(1);
+
+      if (coaching) {
+        doc.fontSize(14).text('Coaching').moveDown(0.5);
+        doc.fontSize(10).text(coaching.message);
+      }
+
+      doc.moveDown(1);
+      doc.fontSize(14).text('Top Insights').moveDown(0.5);
+      doc.fontSize(10);
+      report.topInsights.forEach((i) => doc.text(`• ${i}`));
+
+      doc.end();
+    });
   }
 
   async generateCSV(userId: string): Promise<string> {
