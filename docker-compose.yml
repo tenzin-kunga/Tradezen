@@ -77,9 +77,8 @@ services:
         reservations:
           memory: 128M
           cpus: '0.10'
-    # Do not expose to host in production
-    # ports:
-    #   - "127.0.0.1:6379:6379"
+    ports:
+      - "127.0.0.1:6379:6379"
 
   # ── API (NestJS) ──────────────────────────────────────────────────────────
   api:
@@ -97,47 +96,26 @@ services:
       tradezen-net:
         ipv4_address: 172.28.1.20
     environment:
-       # Database
-       DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-tradezen}?sslmode=disable
-       # Or individual params:
-      # DB_USER: ${DB_USER:-postgres}
-      # DB_PASSWORD: ${DB_PASSWORD}
-      # DB_HOST: postgres
-      # DB_PORT: 5432
-      # DB_NAME: ${DB_NAME:-tradezen}
-
-      # JWT Secrets (MUST be set in production)
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-tradezen}?sslmode=disable
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-
-      # CORS & URLs
       WEB_URL: ${WEB_URL:-http://localhost:3000}
       NODE_ENV: production
-
-      # API configuration
       PORT: 3001
-
-      # Redis
       REDIS_HOST: redis
       REDIS_PORT: '6379'
-
-      # OpenRouter (AI chat)
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
       OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-qwen/qwen3-next-80b-a3b-instruct:free}
       OPENROUTER_AVAILABLE_MODELS: ${OPENROUTER_AVAILABLE_MODELS}
       OPENROUTER_HTTP_REFERER: ${OPENROUTER_HTTP_REFERER}
       OPENROUTER_APP_TITLE: ${OPENROUTER_APP_TITLE:-TradeZen}
-
-      # OAuth Providers
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3001/auth/google/callback}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-http://localhost:3001/auth/github/callback}
-
-      # Sentry
       SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:
       postgres:

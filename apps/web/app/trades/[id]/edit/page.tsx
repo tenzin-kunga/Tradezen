@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { getTrade, updateTrade, uploadTradeImage } from "@/lib/api";
+import { useToast } from "@/components/Toast";
+import { getTrade, updateTrade, uploadTradeImage, getTagsForTrade, tagTrade, untagTrade } from "@/lib/api";
+import TagPicker from "@/components/TagPicker";
+import type { Tag } from "@/components/TagPicker";
 
 function RRDisplay({ entry, stopLoss, takeProfit }: { entry: string; stopLoss: string; takeProfit: string }) {
   const e = parseFloat(entry);
@@ -64,6 +67,7 @@ const sectionStyle: React.CSSProperties = {
 
 export default function EditTradePage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const params = useParams();
   const tradeId = params.id as string;
 
@@ -84,9 +88,17 @@ export default function EditTradePage() {
   const [error, setError] = useState("");
   const [chartImage, setChartImage] = useState<string | null>(null);
   const [chartFile, setChartFile] = useState<File | null>(null);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const initialTagIdsRef = useRef<Set<string>>(new Set());
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    getTagsForTrade(tradeId)
+      .then((tags) => {
+        setSelectedTags(tags);
+        initialTagIdsRef.current = new Set(tags.map((t: Tag) => t.id));
+      })
+      .catch(() => {});
     getTrade(tradeId)
       .then((t: any) => {
         setSymbol(t.symbol || "");
@@ -141,6 +153,14 @@ export default function EditTradePage() {
       if (chartFile) {
         await uploadTradeImage(tradeId, chartFile);
       }
+      const currentIds = new Set(selectedTags.map((t) => t.id));
+      const toAdd = selectedTags.filter((t) => !initialTagIdsRef.current.has(t.id));
+      const toRemove = Array.from(initialTagIdsRef.current).filter((id) => !currentIds.has(id));
+      await Promise.all([
+        ...toAdd.map((t) => tagTrade(t.id, tradeId)),
+        ...toRemove.map((id) => untagTrade(id, tradeId)),
+      ]);
+      addToast("success", "Trade updated");
       router.push("/trades");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Update failed.");
@@ -242,6 +262,10 @@ export default function EditTradePage() {
               <div style={{ marginBottom: "12px" }}>
                 <label style={labelStyle}>STRATEGY TAG</label>
                 <input style={inputStyle} value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="e.g. BREAKOUT, REVERSAL, SMC..." />
+              </div>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={labelStyle}>TAGS</label>
+                <TagPicker selectedTags={selectedTags} onChange={setSelectedTags} />
               </div>
               <div>
                 <label style={labelStyle}>TRADE NOTES</label>

@@ -31,6 +31,15 @@ export class TagsController {
     return this.tagsService.findAll(userId);
   }
 
+  @Get('trade/:tradeId')
+  @ApiOperation({ summary: 'Get all tags for a trade' })
+  getTagsForTrade(
+    @CurrentUser('id') userId: string,
+    @Param('tradeId') tradeId: string,
+  ) {
+    return this.tagsService.getTagsForTrade(userId, tradeId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a tag by ID' })
   findOne(@CurrentUser('id') userId: string, @Param('id') id: string) {

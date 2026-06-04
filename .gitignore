@@ -116,3 +116,9 @@ backups/
 
 # Uploads
 apps/api/uploads/
+
+# Dev runtime logs (stdout/stderr captures from start.bat / WMI-spawned dev servers)
+*.err
+
+# GSD planning workflow artifacts (local only)
+.planning/

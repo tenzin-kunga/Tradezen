@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   eq,
   and,
+  or,
   ilike,
   desc,
   asc,
   sql,
   count,
   lt,
+  gt,
   gte,
   lte,
   inArray,
@@ -15,6 +17,7 @@ import {
 import { db } from '../db/drizzle';
 import { trades, tags, tradeTags } from '@tradezen/db';
 import { CsvUtils } from '../common/utils/csv';
+import { CursorPagination } from '../common/utils/cursor-pagination';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import { EventPublisherService } from '../common/services/event-publisher.service';
 import * as fs from 'fs';
@@ -228,11 +231,13 @@ export class TradesService {
       strategy,
       from,
       to,
+      cursor,
+      tagId,
     } = query;
 
     const allowedSorts = ['created_at', 'pnl', 'symbol'];
     const safeSort = allowedSorts.includes(sort) ? sort : 'created_at';
-    const safeOrder = order === 'asc' ? 'ASC' : 'DESC';
+    const safeOrder = order === 'asc' ? 'asc' : 'desc';
 
     const conditions = [eq(trades.userId, userId)];
 
@@ -252,38 +257,88 @@ export class TradesService {
       conditions.push(sql`${trades.createdAt} <= ${to}`);
     }
 
+    const sortField =
+      safeSort === 'pnl'
+        ? trades.pnl
+        : safeSort === 'symbol'
+          ? trades.symbol
+          : trades.createdAt;
+
+    if (tagId) {
+      conditions.push(eq(tradeTags.tagId, tagId));
+    }
+
+    if (cursor) {
+      const decoded = CursorPagination.decodeCursor(cursor);
+      const cursorOp = safeOrder === 'asc' ? gt : lt;
+      const cursorEq = and(
+        eq(sortField, decoded.sortValue),
+        cursorOp(trades.id, decoded.id),
+      )!;
+      const cursorCond = cursorOp(sortField, decoded.sortValue);
+
+      const combined = or(cursorCond, cursorEq)!;
+      conditions.push(combined);
+    }
+
     const whereClause = and(...conditions);
 
-    const countResult = await db
-      .select({ count: count() })
-      .from(trades)
-      .where(whereClause);
-    const total = Number(countResult[0]?.count ?? 0);
-
-    const offset = (page - 1) * limit;
     const orderBy =
       safeSort === 'pnl'
-        ? safeOrder === 'ASC'
+        ? safeOrder === 'asc'
           ? asc(trades.pnl)
           : desc(trades.pnl)
         : safeSort === 'symbol'
-          ? safeOrder === 'ASC'
+          ? safeOrder === 'asc'
             ? asc(trades.symbol)
             : desc(trades.symbol)
-          : safeOrder === 'ASC'
+          : safeOrder === 'asc'
             ? asc(trades.createdAt)
             : desc(trades.createdAt);
 
-    const data = await db
-      .select()
-      .from(trades)
+    const fetchLimit = cursor ? limit + 1 : limit;
+
+    const queryBuilder = db.select().from(trades);
+    if (tagId) {
+      queryBuilder.innerJoin(tradeTags, eq(trades.id, tradeTags.tradeId));
+    }
+
+    const data = await queryBuilder
       .where(whereClause)
       .orderBy(orderBy)
-      .limit(limit)
-      .offset(offset);
+      .limit(fetchLimit);
+
+    if (cursor) {
+      const hasMore = data.length > limit;
+      if (hasMore) data.pop();
+
+      const last = data[data.length - 1];
+      const nextCursor = last
+        ? CursorPagination.encodeCursor(
+            last.id,
+            safeSort === 'created_at'
+              ? (last.createdAt ?? new Date().toISOString())
+              : safeSort === 'pnl'
+                ? (last.pnl ?? 0)
+                : (last.symbol ?? ''),
+          )
+        : null;
+
+      return { data, meta: { nextCursor, hasMore } };
+    }
+
+    const countQuery = db.select({ count: count() }).from(trades);
+    if (tagId) {
+      countQuery.innerJoin(tradeTags, eq(trades.id, tradeTags.tradeId));
+    }
+    const countResult = await countQuery.where(whereClause);
+    const total = Number(countResult[0]?.count ?? 0);
+    const offset = (page - 1) * limit;
+
+    const paginated = data.slice(offset, offset + limit);
 
     return {
-      data,
+      data: paginated,
       meta: {
         total,
         page,

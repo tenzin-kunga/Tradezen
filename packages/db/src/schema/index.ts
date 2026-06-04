@@ -337,6 +337,28 @@ export const notificationPreferences = pgTable(
   ],
 );
 
+export const goals = pgTable(
+  'goals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+    target: numeric('target').notNull(),
+    period: text('period').notNull().default('monthly'),
+    direction: text('direction').notNull().default('higher'),
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  },
+  (table) => [
+    index('idx_goals_user').on(table.userId),
+    index('idx_goals_type').on(table.userId, table.type),
+  ],
+);
+
 export const accounts = pgTable(
   'accounts',
   {

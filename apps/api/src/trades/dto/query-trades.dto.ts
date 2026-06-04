@@ -52,4 +52,16 @@ export class QueryTradesDto {
   @IsOptional()
   @IsString()
   to?: string;
+
+  @ApiPropertyOptional({
+    description: 'Cursor for keyset pagination (base64-encoded)',
+  })
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by tag ID' })
+  @IsOptional()
+  @IsString()
+  tagId?: string;
 }

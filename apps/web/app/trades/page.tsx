@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getTrades, deleteTrade, exportCsv, importCsv, getImportJobStatus } from "@/lib/api";
+import { getTrades, deleteTrade, exportCsv, importCsv, getImportJobStatus, getTags } from "@/lib/api";
 import StatCard from "@/components/StatCard";
 import { useRealtime } from "@/hooks/use-realtime";
+import { useToast } from "@/components/Toast";
+import { StatCardSkeleton, TradeLogSkeleton } from "@/components/Skeleton";
 
 type Trade = {
   id: string; symbol: string; direction: string;
@@ -23,8 +25,18 @@ function fmt(n: number) {
   return n >= 0 ? `+$${abs}` : `-$${abs}`;
 }
 
+function fmtDate(d: string | null | undefined) {
+  if (!d) return "--";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "--";
+  return dt.toISOString().replace("T", " ").slice(0, 16);
+}
+
 function getSessionBucket(dateStr: string) {
-  const h = new Date(dateStr).getUTCHours();
+  if (!dateStr) return "--";
+  const dt = new Date(dateStr);
+  if (isNaN(dt.getTime())) return "--";
+  const h = dt.getUTCHours();
   if (h >= 13 && h < 18) return "NY OPEN";
   if (h >= 7 && h < 13) return "LONDON";
   return "ASIAN";
@@ -32,6 +44,7 @@ function getSessionBucket(dateStr: string) {
 
 export default function TradeLog() {
   const router = useRouter();
+  const { addToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +52,9 @@ export default function TradeLog() {
   const [toDate, setToDate] = useState("");
   const [assetFilter, setAssetFilter] = useState("ALL ASSETS");
   const [strategyFilter, setStrategyFilter] = useState("ANY STRATEGY");
+  const [tagFilter, setTagFilter] = useState("");
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [resultFilter, setResultFilter] = useState("ALL");
   const [page, setPage] = useState(1);
   const [importResult, setImportResult] = useState<{ imported: number; errors: string[] } | null>(null);
@@ -65,6 +81,7 @@ export default function TradeLog() {
         order: "desc",
         symbol: assetFilter !== "ALL ASSETS" ? assetFilter : undefined,
         strategy: strategyFilter !== "ANY STRATEGY" ? strategyFilter : undefined,
+        tagId: tagFilter || undefined,
         from: fromDate || undefined,
         to: toDate || undefined,
       });
@@ -74,7 +91,7 @@ export default function TradeLog() {
     } finally {
       setLoading(false);
     }
-  }, [assetFilter, strategyFilter, fromDate, toDate]);
+  }, [assetFilter, strategyFilter, fromDate, toDate, tagFilter]);
 
   useEffect(() => {
     fetchTrades();
@@ -119,10 +136,14 @@ export default function TradeLog() {
       setImportResult(payload.result);
       setImportProgress(null);
       setImportJobId(null);
-      if (payload.result.imported > 0) {
-        fetchTrades();
+        if (payload.result.imported > 0) {
+          fetchTrades();
+          addToast("success", `Imported ${payload.result.imported} trades`);
+        }
+        if (payload.result.errors?.length > 0) {
+          addToast("warn", `${payload.result.errors.length} rows had errors`);
+        }
       }
-    }
   });
 
   const [allSymbols, setAllSymbols] = useState<string[]>([]);
@@ -134,15 +155,17 @@ export default function TradeLog() {
       setAllSymbols(syms);
       setAllStrategies(strats);
     }).catch(() => {});
+    getTags().then(setAvailableTags).catch(() => {});
   }, []);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this trade?")) return;
     try {
       await deleteTrade(id);
+      addToast("success", "Trade deleted");
       fetchTrades();
     } catch (err) {
-      console.error(err);
+      addToast("error", "Failed to delete trade");
     }
   }
 
@@ -156,8 +179,10 @@ export default function TradeLog() {
       a.download = "trades.csv";
       a.click();
       URL.revokeObjectURL(url);
+      addToast("success", "CSV exported");
     } catch (err) {
       console.error(err);
+      addToast("error", "CSV export failed");
     }
   }
 
@@ -220,11 +245,15 @@ export default function TradeLog() {
     }
   }
 
-  const filteredTrades = useMemo(() => trades.filter((t) => {
-    if (resultFilter === "WIN" && Number(t.pnl) <= 0) return false;
-    if (resultFilter === "LOSS" && Number(t.pnl) >= 0) return false;
-    return true;
-  }), [trades, resultFilter]);
+  const filteredTrades = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return trades.filter((t) => {
+      if (resultFilter === "WIN" && Number(t.pnl) <= 0) return false;
+      if (resultFilter === "LOSS" && Number(t.pnl) >= 0) return false;
+      if (q && !t.symbol.toLowerCase().includes(q) && !(t.notes || "").toLowerCase().includes(q) && !(t.strategy || "").toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [trades, resultFilter, searchQuery]);
 
   const total = filteredTrades.length;
   const totalPages = Math.max(1, Math.ceil(total / 10));
@@ -252,6 +281,10 @@ export default function TradeLog() {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-end flex-wrap">
             <div>
+              <div className="label-caps mb-2">SEARCH</div>
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Symbol, notes, strategy..." className="input-glass text-xs" style={{ minWidth: 160 }} />
+            </div>
+            <div>
               <div className="label-caps mb-2">DATE RANGE</div>
               <div className="flex gap-2">
                 <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-glass text-xs" />
@@ -270,6 +303,15 @@ export default function TradeLog() {
               <select value={strategyFilter} onChange={(e) => setStrategyFilter(e.target.value)} className="select-glass text-xs">
                 <option>ANY STRATEGY</option>
                 {allStrategies.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="label-caps mb-2">TAG</div>
+              <select value={tagFilter} onChange={(e) => { setTagFilter(e.target.value); setPage(1); }} className="select-glass text-xs">
+                <option value="">ALL TAGS</option>
+                {availableTags.map((t: any) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -340,9 +382,9 @@ export default function TradeLog() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
-        <div className="fade-up"><StatCard label="TOTAL P&L" value={loading ? "..." : fmt(totalPnl)} valueColor={totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)"} /></div>
-        <div className="fade-up"><StatCard label="WIN RATE" value={loading ? "..." : winRate} /></div>
-        <div className="fade-up"><StatCard label="AVG R:R" value={loading ? "..." : avgRR} /></div>
+        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="TOTAL P&L" value={fmt(totalPnl)} valueColor={totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)"} />}</div>
+        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="WIN RATE" value={winRate} />}</div>
+        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="AVG R:R" value={avgRR} />}</div>
         <div className="fade-up"><StatCard label="ACTIVE TRADES" value={`${total}`} /></div>
       </div>
 
@@ -357,7 +399,7 @@ export default function TradeLog() {
         {filteredTrades.length === 0 ? (
           <div style={{ color: "var(--text-muted)", padding: "40px 0", textAlign: "center" }}>
             {loading ? (
-              "Loading trades..."
+              <TradeLogSkeleton />
             ) : trades.length === 0 ? (
               <>
                 <div className="mb-3 font-semibold" style={{ color: "var(--text-primary)" }}>No trades found.</div>
@@ -433,7 +475,7 @@ export default function TradeLog() {
                       </div>
                       <div className="glass-card p-3 col-span-2 sm:col-span-1">
                         <div className="label-caps mb-1">DATE</div>
-                        <div className="mono-data font-semibold text-xs">{t.trade_date ? new Date(t.trade_date).toISOString().replace("T", " ").slice(0, 16) : new Date(t.created_at).toISOString().replace("T", " ").slice(0, 16)}</div>
+                        <div className="mono-data font-semibold text-xs">{fmtDate(t.trade_date ?? t.created_at)}</div>
                       </div>
                     </div>
 
@@ -444,15 +486,15 @@ export default function TradeLog() {
                       </div>
                       <div className="glass-card p-3">
                         <div className="label-caps mb-1">SL</div>
-                        <div className="mono-data font-semibold text-sm">{t.stop_loss?.toFixed(5) ?? "--"}</div>
+                        <div className="mono-data font-semibold text-sm">{t.stop_loss != null ? Number(t.stop_loss).toFixed(5) : "--"}</div>
                       </div>
                       <div className="glass-card p-3">
                         <div className="label-caps mb-1">TP</div>
-                        <div className="mono-data font-semibold text-sm">{t.take_profit?.toFixed(5) ?? "--"}</div>
+                        <div className="mono-data font-semibold text-sm">{t.take_profit != null ? Number(t.take_profit).toFixed(5) : "--"}</div>
                       </div>
                       <div className="glass-card p-3">
                         <div className="label-caps mb-1">COMMISSION</div>
-                        <div className="mono-data font-semibold text-sm">${t.commission?.toFixed(2) ?? "0.00"}</div>
+                        <div className="mono-data font-semibold text-sm">${Number(t.commission ?? 0).toFixed(2)}</div>
                       </div>
                     </div>
 

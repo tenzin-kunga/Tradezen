@@ -1,7 +1,10 @@
 ﻿"use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createTrade, uploadTradeImage } from "@/lib/api";
+import { useToast } from "@/components/Toast";
+import { createTrade, uploadTradeImage, tagTrade } from "@/lib/api";
+import TagPicker from "@/components/TagPicker";
+import type { Tag } from "@/components/TagPicker";
 
 function RRDisplay({ entry, stopLoss, takeProfit }: { entry: string; stopLoss: string; takeProfit: string }) {
   const e = parseFloat(entry);
@@ -70,6 +73,7 @@ function TogglePill({
 
 export default function AddTradePage() {
   const router = useRouter();
+  const { addToast } = useToast();
 
   const [symbol, setSymbol] = useState("");
   const [direction, setDirection] = useState<"LONG" | "SHORT">("LONG");
@@ -86,6 +90,7 @@ export default function AddTradePage() {
   const [commission, setCommission] = useState("");
   const [contractSize, setContractSize] = useState("100000");
   const [applyRiskShield, setApplyRiskShield] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [utcTime, setUtcTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -158,6 +163,10 @@ export default function AddTradePage() {
       if (chartFile && trade?.id) {
         await uploadTradeImage(trade.id, chartFile);
       }
+      if (trade?.id && selectedTags.length > 0) {
+        await Promise.all(selectedTags.map((t) => tagTrade(t.id, trade.id)));
+      }
+      addToast("success", `Trade ${trade?.id?.slice(0, 8) || ""} created`);
       router.push("/trades");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Submission failed.");
@@ -283,6 +292,10 @@ export default function AddTradePage() {
               <div className="mb-3">
                 <label className={labelCls}>STRATEGY TAG</label>
                 <input className={inputCls} value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="e.g. BREAKOUT, REVERSAL, SMC..." />
+              </div>
+              <div className="mb-3">
+                <label className={labelCls}>TAGS</label>
+                <TagPicker selectedTags={selectedTags} onChange={setSelectedTags} />
               </div>
               <div>
                 <label className={labelCls}>TRADE NOTES</label>

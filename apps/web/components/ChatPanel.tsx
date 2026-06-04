@@ -2,11 +2,55 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getChatModels, streamChat, type ChatMessage } from "@/lib/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
+
+function MarkdownContent({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
+  if (!content) return <>{isStreaming ? "..." : ""}</>;
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeSanitize]}
+      components={{
+        code({ className, children }) {
+          if (className == null) return <code className="text-xs px-1 py-0.5 rounded" style={{ background: "var(--bg-glass)", color: "inherit" }}>{children}</code>;
+          return <pre className="overflow-x-auto text-xs p-3 rounded my-1" style={{ background: "var(--bg-glass)" }}><code className={className}>{children}</code></pre>;
+        },
+        a({ href, children }) { return <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-cyan)" }}>{children}</a>; },
+        p({ children }) { return <p className="my-1 last:mb-0" style={{ color: "inherit" }}>{children}</p>; },
+        ul({ children }) { return <ul className="list-disc pl-4 my-1">{children}</ul>; },
+        ol({ children }) { return <ol className="list-decimal pl-4 my-1">{children}</ol>; },
+        li({ children }) { return <li className="my-0.5">{children}</li>; },
+        strong({ children }) { return <strong className="font-bold">{children}</strong>; },
+        em({ children }) { return <em className="italic">{children}</em>; },
+        h1({ children }) { return <h1 className="text-sm font-bold my-2">{children}</h1>; },
+        h2({ children }) { return <h2 className="text-xs font-bold my-1.5">{children}</h2>; },
+        h3({ children }) { return <h3 className="text-xs font-semibold my-1">{children}</h3>; },
+        blockquote({ children }) { return <blockquote className="border-l-2 pl-2 my-1 opacity-80" style={{ borderColor: "var(--border)" }}>{children}</blockquote>; },
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+}
 
 const MODEL_STORAGE_KEY = "tradezen.chat.model";
-const CHAT_SIZE_STORAGE_KEY = "tradezen.chat.size";
+const CHAT_SIZE_STORAGE_KEY = "tradezen.chat.box.v3";
+const CHAT_PANEL_DEFAULT = { w: 720, h: 780 };
 const FALLBACK_MODEL = "default";
 const MAX_CHAT_MESSAGES = 80;
+
+function cleanMarkdownArtifacts(text: string): string {
+  let s = text;
+  s = s.replace(/\*\*\s+([^*\n]+?)\s+\*\*/g, "**$1**");
+  s = s.replace(/\*\s+([^*\n]+?)\s+\*/g, "*$1*");
+  s = s.replace(/`\s+([^`\n]+?)\s+`/g, "`$1`");
+  s = s.replace(/__\s+([^_\n]+?)\s+__/g, "__$1__");
+  s = s.replace(/(^|\n)\s*\|\s*/g, "$1");
+  s = s.replace(/\s*\|\s*(\n|$)/g, "$1");
+  return s;
+}
 
 function capChatMessages(list: ChatMessage[]): ChatMessage[] {
   return list.length > MAX_CHAT_MESSAGES ? list.slice(-MAX_CHAT_MESSAGES) : list;
@@ -25,14 +69,22 @@ export default function ChatPanel() {
       content: "I can help review trades, risk, and journaling patterns. What are you working on today?",
     },
   ]);
-  const [width, setWidth] = useState(380);
-  const [height, setHeight] = useState(520);
+  const [width, setWidth] = useState(720);
+  const [height, setHeight] = useState(780);
+  const [left, setLeft] = useState(0);
+  const [top, setTop] = useState(0);
+  const [ready, setReady] = useState(false);
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const resizeRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
   const isResizingRef = useRef(false);
+  const isDraggingRef = useRef(false);
+  const dragStateRef = useRef({ startX: 0, startY: 0, startLeft: 0, startTop: 0 });
   const streamAbortRef = useRef<AbortController | null>(null);
   const tokenBufferRef = useRef("");
   const tokenFlushRafRef = useRef<number | null>(null);
+  const resizeDirRef = useRef<"n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw" | null>(null);
+  const sendingRef = useRef(false);
 
   const flushTokenBufferToState = useCallback(() => {
     const chunk = tokenBufferRef.current;
@@ -43,12 +95,12 @@ export default function ChatPanel() {
       const updated = [...prev];
       const last = updated[updated.length - 1];
       if (last.role !== "assistant") {
-        updated.push({ role: "assistant", content: chunk });
+        updated.push({ role: "assistant", content: cleanMarkdownArtifacts(chunk) });
         return capChatMessages(updated);
       }
       updated[updated.length - 1] = {
         ...last,
-        content: `${last.content}${chunk}`,
+        content: cleanMarkdownArtifacts(`${last.content}${chunk}`),
       };
       return capChatMessages(updated);
     });
@@ -117,52 +169,129 @@ export default function ChatPanel() {
   }, [open, flushTokenBufferToState]);
 
   useEffect(() => {
-    window.localStorage.setItem(MODEL_STORAGE_KEY, model);
+    try { window.localStorage.setItem(MODEL_STORAGE_KEY, model); } catch {}
   }, [model]);
 
   useEffect(() => {
-    const savedSize = window.localStorage.getItem(CHAT_SIZE_STORAGE_KEY);
-    if (savedSize) {
+    const saved = window.localStorage.getItem(CHAT_SIZE_STORAGE_KEY);
+    if (saved) {
       try {
-        const { w, h } = JSON.parse(savedSize);
-        setWidth(w);
-        setHeight(h);
+        const { w, h, l, t } = JSON.parse(saved);
+        if (typeof w === "number" && typeof h === "number") {
+          setWidth(w);
+          setHeight(h);
+        }
+        if (typeof l === "number" && typeof t === "number") {
+          setLeft(l);
+          setTop(t);
+        }
       } catch {
         // Use defaults
       }
+    } else {
+      const w = CHAT_PANEL_DEFAULT.w;
+      const h = CHAT_PANEL_DEFAULT.h;
+      setLeft(Math.max(0, window.innerWidth - w - 24));
+      setTop(Math.max(0, window.innerHeight - h - 88));
     }
+    setReady(true);
   }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizingRef.current) return;
-
-      const panel = document.querySelector('section[style*="position: fixed"]') as HTMLElement;
+      const panel = panelRef.current;
       if (!panel) return;
 
-      const rect = panel.getBoundingClientRect();
-      const newWidth = Math.max(300, e.clientX - rect.left);
-      const newHeight = Math.max(200, e.clientY - rect.top);
+      if (isDraggingRef.current) {
+        const d = dragStateRef.current;
+        const dx = e.clientX - d.startX;
+        const dy = e.clientY - d.startY;
+        const nextLeft = Math.max(0, Math.min(window.innerWidth - 60, d.startLeft + dx));
+        const nextTop = Math.max(0, Math.min(window.innerHeight - 60, d.startTop + dy));
+        setLeft(nextLeft);
+        setTop(nextTop);
+        try { window.localStorage.setItem(CHAT_SIZE_STORAGE_KEY, JSON.stringify({ w: width, h: height, l: nextLeft, t: nextTop })); } catch {}
+        return;
+      }
 
-      setWidth(newWidth);
-      setHeight(newHeight);
-      window.localStorage.setItem(CHAT_SIZE_STORAGE_KEY, JSON.stringify({ w: newWidth, h: newHeight }));
+      if (!isResizingRef.current || !resizeDirRef.current) return;
+
+      const rect = panel.getBoundingClientRect();
+      const dir = resizeDirRef.current;
+      const MIN_W = 320;
+      const MIN_H = 240;
+      const MAX_W = window.innerWidth;
+      const MAX_H = window.innerHeight;
+
+      let nextW = width;
+      let nextH = height;
+      let nextL = left;
+      let nextT = top;
+
+      if (dir.includes("e")) {
+        nextW = Math.max(MIN_W, Math.min(MAX_W - left, e.clientX - rect.left));
+      }
+      if (dir.includes("w")) {
+        const proposedW = Math.max(MIN_W, rect.right - e.clientX);
+        const actualW = Math.min(proposedW, rect.right);
+        if (actualW >= MIN_W) {
+          nextW = actualW;
+          nextL = rect.right - actualW;
+        }
+      }
+      if (dir.includes("s")) {
+        nextH = Math.max(MIN_H, Math.min(MAX_H - top, e.clientY - rect.top));
+      }
+      if (dir.includes("n")) {
+        const proposedH = Math.max(MIN_H, rect.bottom - e.clientY);
+        const actualH = Math.min(proposedH, rect.bottom);
+        if (actualH >= MIN_H) {
+          nextH = actualH;
+          nextT = rect.bottom - actualH;
+        }
+      }
+
+      setWidth(nextW);
+      setHeight(nextH);
+      setLeft(nextL);
+      setTop(nextT);
+      try { window.localStorage.setItem(CHAT_SIZE_STORAGE_KEY, JSON.stringify({ w: nextW, h: nextH, l: nextL, t: nextT })); } catch {}
     };
 
     const handleMouseUp = () => {
       isResizingRef.current = false;
+      isDraggingRef.current = false;
+      resizeDirRef.current = null;
     };
 
-    if (isResizingRef.current) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
+    const handleHeaderMouseDown = (e: MouseEvent) => {
+      if (!panelRef.current) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("select, button, input, textarea, [data-no-drag]")) return;
+      isDraggingRef.current = true;
+      const d = dragStateRef.current;
+      d.startX = e.clientX;
+      d.startY = e.clientY;
+      d.startLeft = left;
+      d.startTop = top;
+      e.preventDefault();
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    const header = headerRef.current;
+    if (header) {
+      header.addEventListener("mousedown", handleHeaderMouseDown);
     }
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
+      if (header) {
+        header.removeEventListener("mousedown", handleHeaderMouseDown);
+      }
     };
-  }, []);
+  }, [width, height, left, top]);
 
   useEffect(() => {
     if (!viewportRef.current) return;
@@ -173,7 +302,8 @@ export default function ChatPanel() {
 
   const onSend = async () => {
     const text = input.trim();
-    if (!text || isStreaming) return;
+    if (!text || isStreaming || sendingRef.current) return;
+    sendingRef.current = true;
 
     setInput("");
     setError(null);
@@ -191,7 +321,23 @@ export default function ChatPanel() {
         signal,
         model: model === FALLBACK_MODEL ? undefined : model,
         messages: nextMessages,
-        systemPrompt: "You are a trading assistant. Respond with clear, well-formatted text. Ensure proper spacing between words in every response.",
+        systemPrompt: `You are a trading assistant. STRICT MARKDOWN FORMATTING RULES:
+- Use **bold** (NO spaces between ** and the text) for section headers
+- Use - bullet points for lists (one per line, NOT separated by |)
+- Use real newlines (blank line) between paragraphs
+- Use \`code\` for numbers
+- NEVER use | as a separator
+- NEVER put spaces inside ** like ** text ** (always write **text**)
+- Keep responses concise and scannable
+
+Example output:
+**Risk Analysis**
+Your current drawdown is **3.2%** of equity.
+- Max loss this week: -$420
+- Win rate: 58%
+- Profit factor: 1.8
+
+Key takeaway: Reduce position size on EUR/USD.`,
         onToken: (token) => {
           tokenBufferRef.current += token;
           scheduleTokenFlush();
@@ -203,6 +349,7 @@ export default function ChatPanel() {
           }
           flushTokenBufferToState();
           setIsStreaming(false);
+          sendingRef.current = false;
         },
       });
     } catch (err) {
@@ -212,6 +359,7 @@ export default function ChatPanel() {
       }
       tokenBufferRef.current = "";
       setIsStreaming(false);
+      sendingRef.current = false;
       setError(err instanceof Error ? err.message : "Failed to stream response");
       setMessages((prev) => {
         const updated = [...prev];
@@ -313,7 +461,7 @@ export default function ChatPanel() {
                     overflowWrap: "break-word",
                   }}
                 >
-                  {message.content || (isStreaming && message.role === "assistant" ? "..." : "")}
+                  <MarkdownContent content={message.content} isStreaming={isStreaming} />
                 </div>
               ))}
             </div>
@@ -365,15 +513,16 @@ export default function ChatPanel() {
 
           {/* Desktop floating panel */}
           <section
+            ref={panelRef}
             className="hidden md:block"
             style={{
               position: "fixed",
-              right: 24,
-              bottom: 72,
+              left: left,
+              top: top,
               zIndex: 40,
               width: width,
               height: height,
-              display: "flex",
+              display: ready ? "flex" : "none",
               flexDirection: "column",
               border: "1px solid var(--border)",
               background: "var(--bg-card)",
@@ -382,6 +531,7 @@ export default function ChatPanel() {
             }}
           >
             <header
+              ref={headerRef}
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -389,6 +539,7 @@ export default function ChatPanel() {
                 padding: "12px 14px",
                 borderBottom: "1px solid var(--border)",
                 gap: 8,
+                cursor: "grab",
               }}
             >
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em" }}>TRADE ASSISTANT</span>
@@ -444,7 +595,7 @@ export default function ChatPanel() {
                     fontKerning: "auto",
                   } as React.CSSProperties}
                 >
-                  {message.content || (isStreaming && message.role === "assistant" ? "..." : "")}
+                  <MarkdownContent content={message.content} isStreaming={isStreaming} />
                 </div>
               ))}
             </div>
@@ -509,49 +660,48 @@ export default function ChatPanel() {
               </button>
             </div>
 
-            {/* Resize handle */}
+            {/* Resize handles — 4 corners + 4 edges */}
+            {/* Corners */}
             <div
-              ref={resizeRef}
-              onMouseDown={() => {
-                isResizingRef.current = true;
-              }}
-              style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                width: 30,
-                height: 30,
-                cursor: "nwse-resize",
-                background: "linear-gradient(135deg, transparent 60%, var(--text-dim) 60%)",
-              }}
+              onMouseDown={(e) => { e.preventDefault(); isResizingRef.current = true; resizeDirRef.current = "nw"; }}
+              title="Drag to resize"
+              style={{ position: "absolute", top: 0, left: 0, width: 14, height: 14, cursor: "nwse-resize", zIndex: 3 }}
             />
             <div
-              onMouseDown={() => {
-                isResizingRef.current = true;
-              }}
-              style={{
-                position: "absolute",
-                top: 0,
-                right: 0,
-                width: 5,
-                height: "100%",
-                cursor: "ew-resize",
-                background: "transparent",
-              }}
+              onMouseDown={(e) => { e.preventDefault(); isResizingRef.current = true; resizeDirRef.current = "ne"; }}
+              title="Drag to resize"
+              style={{ position: "absolute", top: 0, right: 0, width: 14, height: 14, cursor: "nesw-resize", zIndex: 3 }}
             />
             <div
-              onMouseDown={() => {
-                isResizingRef.current = true;
-              }}
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                width: "100%",
-                height: 5,
-                cursor: "ns-resize",
-                background: "transparent",
-              }}
+              onMouseDown={(e) => { e.preventDefault(); isResizingRef.current = true; resizeDirRef.current = "sw"; }}
+              title="Drag to resize"
+              style={{ position: "absolute", bottom: 0, left: 0, width: 14, height: 14, cursor: "nesw-resize", zIndex: 3 }}
+            />
+            <div
+              onMouseDown={(e) => { e.preventDefault(); isResizingRef.current = true; resizeDirRef.current = "se"; }}
+              title="Drag to resize"
+              style={{ position: "absolute", bottom: 0, right: 0, width: 14, height: 14, cursor: "nwse-resize", zIndex: 3 }}
+            />
+            {/* Edges */}
+            <div
+              onMouseDown={(e) => { e.preventDefault(); isResizingRef.current = true; resizeDirRef.current = "n"; }}
+              title="Drag to resize height"
+              style={{ position: "absolute", top: 0, left: 14, right: 14, height: 6, cursor: "ns-resize", zIndex: 2 }}
+            />
+            <div
+              onMouseDown={(e) => { e.preventDefault(); isResizingRef.current = true; resizeDirRef.current = "s"; }}
+              title="Drag to resize height"
+              style={{ position: "absolute", bottom: 0, left: 14, right: 14, height: 6, cursor: "ns-resize", zIndex: 2 }}
+            />
+            <div
+              onMouseDown={(e) => { e.preventDefault(); isResizingRef.current = true; resizeDirRef.current = "w"; }}
+              title="Drag to resize width"
+              style={{ position: "absolute", top: 14, bottom: 14, left: 0, width: 6, cursor: "ew-resize", zIndex: 2 }}
+            />
+            <div
+              onMouseDown={(e) => { e.preventDefault(); isResizingRef.current = true; resizeDirRef.current = "e"; }}
+              title="Drag to resize width"
+              style={{ position: "absolute", top: 14, bottom: 14, right: 0, width: 6, cursor: "ew-resize", zIndex: 2 }}
             />
           </section>
         </>

@@ -13,6 +13,7 @@
   "dependencies": {
     "@sentry/nextjs": "^10.53.1",
     "@swc/helpers": "^0.5.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.100.10",
     "@trpc/client": "^11.17.0",
     "@trpc/react-query": "^11.17.0",
@@ -22,7 +23,10 @@
     "postcss": "^8.4.31",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-markdown": "^10.1.0",
     "recharts": "^2.12.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "socket.io-client": "^4.8.3",
     "styled-jsx": "^5.1.6"
   },

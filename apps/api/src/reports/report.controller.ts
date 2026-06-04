@@ -21,7 +21,10 @@ export class ReportController {
   async exportPDF(@CurrentUser('id') userId: string, @Res() res: Response) {
     const pdf = await this.reportService.generatePDF(userId);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=weekly-report.pdf');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=weekly-report.pdf',
+    );
     res.send(pdf);
   }
 

@@ -54,12 +54,47 @@ const navItems = [
     ),
   },
   {
+    label: "CALENDAR",
+    href: "/calendar",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="2" y="2" width="10" height="10" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="2" y1="6" x2="12" y2="6" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="4" y1="0" x2="4" y2="4" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="10" y1="0" x2="10" y2="4" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    ),
+  },
+  {
+    label: "CALCULATOR",
+    href: "/calculator",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="0" y="0" width="14" height="2" />
+        <rect x="0" y="4" width="10" height="2" />
+        <rect x="0" y="8" width="12" height="2" />
+        <rect x="0" y="12" width="8" height="2" />
+      </svg>
+    ),
+  },
+  {
     label: "NEW TRADE",
     href: "/add-trade",
     icon: (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
         <rect x="6" y="0" width="2" height="14" />
         <rect x="0" y="6" width="14" height="2" />
+      </svg>
+    ),
+  },
+  {
+    label: "GOALS",
+    href: "/goals",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="7" cy="7" r="3" fill="currentColor" />
+        <circle cx="7" cy="7" r="1" fill="var(--bg-primary)" />
       </svg>
     ),
   },

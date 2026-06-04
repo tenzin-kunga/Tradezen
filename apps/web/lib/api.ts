@@ -145,6 +145,7 @@ export const getTrades = async (params?: {
   strategy?: string;
   from?: string;
   to?: string;
+  tagId?: string;
 }) => {
   const query = new URLSearchParams();
   if (params) {
@@ -186,6 +187,11 @@ export const uploadTradeImage = async (id: string, file: File) => {
 
 export const getAnalytics = async () => {
   const res = await authFetch(`${API}/trades/analytics`);
+  return handleResponse<any>(res);
+};
+
+export const getAdvancedAnalytics = async () => {
+  const res = await authFetch(`${API}/trades/analytics/advanced`);
   return handleResponse<any>(res);
 };
 
@@ -295,6 +301,11 @@ export const tagTrade = async (tagId: string, tradeId: string) => {
 export const untagTrade = async (tagId: string, tradeId: string) => {
   const res = await authFetch(`${API}/tags/${tagId}/trades/${tradeId}`, { method: "DELETE" });
   return handleResponse<any>(res);
+};
+
+export const getTagsForTrade = async (tradeId: string) => {
+  const res = await authFetch(`${API}/tags/trade/${tradeId}`);
+  return handleResponse<any[]>(res);
 };
 
 // ─── Chat ──────────────────────────────────────────
@@ -468,6 +479,41 @@ export async function updateNotificationPreference(type: string, enabled: boolea
   });
   return handleResponse<{ message: string }>(res);
 }
+
+// ─── Goals ──────────────────────────────────────────
+
+export const getGoals = async () => {
+  const res = await authFetch(`${API}/goals`);
+  return handleResponse<any[]>(res);
+};
+
+export const createGoal = async (data: {
+  type: string;
+  target: number;
+  period?: string;
+  direction?: string;
+  startDate: string;
+  endDate?: string;
+}) => {
+  const res = await authFetch(`${API}/goals`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res);
+};
+
+export const updateGoal = async (id: string, data: Record<string, any>) => {
+  const res = await authFetch(`${API}/goals/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res);
+};
+
+export const deleteGoal = async (id: string) => {
+  const res = await authFetch(`${API}/goals/${id}`, { method: "DELETE" });
+  return handleResponse<{ deleted: boolean }>(res);
+};
 
 // ─── Reports ────────────────────────────────────────
 

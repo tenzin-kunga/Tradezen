@@ -9,6 +9,7 @@ import { TradesModule } from './trades/trades.module';
 import { AuthModule } from './auth/auth.module';
 import { JournalsModule } from './journals/journals.module';
 import { TagsModule } from './tags/tags.module';
+import { GoalsModule } from './goals/goals.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
 import { GatewayModule } from './gateway/gateway.module';
@@ -70,6 +71,7 @@ import { JournalsService } from './journals/journals.service';
     TradesModule,
     JournalsModule,
     TagsModule,
+    GoalsModule,
     ChatModule,
     GatewayModule,
     QueuesModule,
