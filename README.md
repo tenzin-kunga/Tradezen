@@ -4,6 +4,8 @@ A professional trading journal web app with a Glass Depth design system. Track t
 
 **Live:** [tradezen-web.vercel.app](https://tradezen-web.vercel.app)
 
+[![CI/CD Pipeline](https://github.com/tampered-sin/Tradezen/actions/workflows/ci.yml/badge.svg)](https://github.com/tampered-sin/Tradezen/actions/workflows/ci.yml)
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -198,6 +200,55 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 | [Neon](https://neon.tech) | PostgreSQL database |
 
 Auto-deploys on push to `main`.
+
+## CI/CD Pipeline
+
+Defined in `.github/workflows/ci.yml`. Two environments, gated by branch:
+
+| Branch | Deploys to | Trigger |
+|---|---|---|
+| `develop` | **staging** (Render preview service + Vercel preview) | auto on push |
+| `main` | **production** (Render + Vercel) | auto on push, requires approval via GitHub Environment |
+
+### Pipeline jobs
+
+1. **changes** — `dorny/paths-filter` to detect which apps changed; downstream jobs skip when irrelevant
+2. **security** — `bun pm audit`, Trivy filesystem scan (CRITICAL/HIGH), hardcoded-secret grep
+3. **lint** — ESLint + TypeScript type check
+4. **test** — unit tests with Postgres+Redis sidecars, coverage → Codecov
+5. **e2e** — full NestJS E2E suite against Postgres+Redis
+6. **build-api / build-web** — multi-arch (amd64+arm64) Docker images pushed to `ghcr.io/$repo/{api,web}`, Trivy image scan on API
+7. **deploy-staging** — Render API + Vercel preview; polls deploy status, then smoke-tests `/health` and web URL
+8. **deploy-production** — same, on Render prod + Vercel prod; **auto-rollback** via Render API if smoke tests fail
+
+### Concurrency
+
+- `cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}` — cancels stale runs on PRs and develop, never on main
+- `concurrency: production` and `concurrency: staging` — only one deploy runs at a time per env
+
+### Required GitHub Secrets
+
+Set in repo **Settings → Secrets and variables → Actions**:
+
+| Secret | Purpose |
+|---|---|
+| `GITHUB_TOKEN` | auto-provisioned; used for `ghcr.io` push |
+| `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` | only if publishing to Docker Hub (not used currently) |
+| `CODECOV_TOKEN` | upload coverage on main |
+| `RENDER_API_KEY` | Render API authentication |
+| `RENDER_SERVICE_ID` | production Render service |
+| `RENDER_STAGING_SERVICE_ID` | staging Render service |
+| `PRODUCTION_API_URL` | e.g. `https://api.tradezen.app` — for prod smoke tests |
+| `STAGING_API_URL` | e.g. `https://api-staging.tradezen.app` — for staging smoke tests |
+| `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` / `VERCEL_ORG_ID` | Vercel deploy |
+
+### Local validation
+
+```bash
+# Install actionlint to check workflow syntax locally
+curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash
+./actionlint .github/workflows/*.yml
+```
 
 ## License
 

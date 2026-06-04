@@ -78,7 +78,7 @@ logs
 .gitmodules
 
 # ── CI/CD ─────────────────────────────────────────────────────────────────────
-.github/
+# Note: .github/ is intentionally NOT ignored — workflows MUST be committed
 .gitlab-ci.yml
 .travis.yml
 .circleci/
@@ -122,3 +122,6 @@ apps/api/uploads/
 
 # GSD planning workflow artifacts (local only)
 .planning/
+
+# OpenCode configuration and plans (local agent artifacts)
+.opencode/
