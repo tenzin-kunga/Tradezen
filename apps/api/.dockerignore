@@ -1,10 +1,83 @@
+# .dockerignore — TradeZen API
+# Exclude files from Docker build context
+
+# Dependencies
 node_modules
+npm-debug.log
+
+# Build outputs
 dist
-uploads
+build
+*.js.map
+*.d.ts.map
+
+# Environment & secrets
 .env
 .env.*
-*.md
+!.env.example
+secrets/
+credentials/
+
+# Tests
+test
+*.spec.ts
+*.test.ts
+coverage
+.jest-cache
+
+# Code quality
+.eslintcache
+.prettiercache
+
+# Version control
 .git
 .gitignore
-coverage
-test
+.gitattributes
+.gitmodules
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (user-generated content — mount separately in prod)
+uploads/*
+!uploads/.gitkeep
+
+# Migrations (copied explicitly in Dockerfile, not via context)
+# migrations/  # Commented out — we copy explicitly
+
+# Docs (optional — exclude to reduce image size)
+*.md
+!README.md
+docs/
+
+# Logs
+logs
+*.log
+.pnpm-debug.log
+
+# Turborepo
+.turbo
+
+# Certificates & keys
+*.pem
+*.key
+*.crt
+ssl/
+certs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp

@@ -8,26 +8,19 @@ type StatCardProps = {
 export default function StatCard({ label, value, subtext, valueColor }: StatCardProps) {
   return (
     <div
-      className="p-6"
-      style={{
-        background: "#1c1c1c",
-        border: "1px solid #2a2a2a",
-      }}
+      className="glass-card glass-card-interactive p-6"
     >
-      <div
-        className="text-xs font-bold tracking-widest mb-3"
-        style={{ color: "#888888", letterSpacing: "0.12em" }}
-      >
+      <div className="label-caps mb-3">
         {label}
       </div>
       <div
-        className="text-3xl font-bold"
-        style={{ color: valueColor ?? "#ffffff" }}
+        className="mono-data text-3xl font-bold"
+        style={{ color: valueColor ?? 'var(--text-primary)' }}
       >
         {value}
       </div>
       {subtext && (
-        <div className="text-sm mt-1" style={{ color: "#888888" }}>
+        <div className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>
           {subtext}
         </div>
       )}

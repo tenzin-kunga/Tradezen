@@ -9,6 +9,8 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Area,
+  AreaChart,
 } from "recharts";
 
 type DataPoint = { date: string; equity: number };
@@ -33,30 +35,17 @@ export default function EquityChart({ data }: Props) {
   const filtered = useMemo(() => filterByTab(data, activeTab), [data, activeTab]);
 
   return (
-    <div
-      className="p-6"
-      style={{ background: "#1c1c1c", border: "1px solid #2a2a2a" }}
-    >
-      {/* Header */}
+    <div className="glass-card p-6">
       <div className="flex items-center justify-between mb-6">
-        <span
-          className="text-xs font-bold tracking-widest"
-          style={{ color: "#888888", letterSpacing: "0.12em" }}
-        >
-          EQUITY GROWTH (TOTAL)
+        <span className="label-caps">
+          EQUITY GROWTH
         </span>
         <div className="flex gap-1">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className="px-3 py-1 text-xs font-bold tracking-wider transition-colors"
-              style={{
-                color: activeTab === tab ? "#ffffff" : "#888888",
-                borderBottom: activeTab === tab ? "2px solid #ffffff" : "2px solid transparent",
-                background: "transparent",
-                letterSpacing: "0.1em",
-              }}
+              className={`btn-glass ${activeTab === tab ? 'active' : ''}`}
             >
               {tab}
             </button>
@@ -64,48 +53,64 @@ export default function EquityChart({ data }: Props) {
         </div>
       </div>
 
-      {/* Chart */}
       {filtered.length === 0 ? (
         <div
           className="flex items-center justify-center"
-          style={{ height: 260, color: "#888888", fontSize: 12, letterSpacing: "0.1em" }}
+          style={{ height: 260, color: 'var(--text-dim)', fontSize: 11, letterSpacing: '0.1em' }}
         >
           NO DATA
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={260}>
-          <LineChart data={filtered} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+          <AreaChart data={filtered} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+            <defs>
+              <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+              </linearGradient>
+            </defs>
             <CartesianGrid
               strokeDasharray=""
               horizontal
               vertical={false}
-              stroke="#2a2a2a"
+              stroke="var(--border)"
             />
             <XAxis dataKey="date" hide />
             <YAxis
               tickFormatter={(v) => v.toLocaleString()}
-              stroke="#888888"
-              tick={{ fill: "#888888", fontSize: 11 }}
+              stroke="var(--text-muted)"
+              tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
               contentStyle={{
-                background: "#1c1c1c",
-                border: "1px solid #2a2a2a",
-                color: "#fff",
+                background: 'var(--bg-surface)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
                 fontSize: 12,
+                borderRadius: 'var(--radius-sm)',
+                fontFamily: 'var(--font-mono)',
               }}
               formatter={(value: number) => [`$${value.toLocaleString()}`, "Equity"]}
+              labelStyle={{ display: 'none' }}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="equity"
-              stroke="#ffffff"
+              stroke="#22d3ee"
               strokeWidth={2}
+              fill="url(#equityGradient)"
               dot={false}
+              activeDot={{
+                r: 4,
+                fill: '#22d3ee',
+                stroke: 'var(--bg-surface)',
+                strokeWidth: 2,
+              }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       )}
     </div>

@@ -1,13 +1,16 @@
 ﻿"use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createTrade, uploadTradeImage } from "@/lib/api";
+import { useToast } from "@/components/Toast";
+import { createTrade, uploadTradeImage, tagTrade } from "@/lib/api";
+import TagPicker from "@/components/TagPicker";
+import type { Tag } from "@/components/TagPicker";
 
 function RRDisplay({ entry, stopLoss, takeProfit }: { entry: string; stopLoss: string; takeProfit: string }) {
   const e = parseFloat(entry);
   const sl = parseFloat(stopLoss);
   const tp = parseFloat(takeProfit);
-  if (!e || !sl || !tp || Math.abs(e - sl) === 0) return <span style={{ color: "#555" }}>--</span>;
+  if (!e || !sl || !tp || Math.abs(e - sl) === 0) return <span style={{ color: "var(--text-dim)" }}>--</span>;
   const risk = Math.abs(e - sl);
   const reward = Math.abs(tp - e);
   const rr = reward / risk;
@@ -15,12 +18,12 @@ function RRDisplay({ entry, stopLoss, takeProfit }: { entry: string; stopLoss: s
   const maxReward = reward;
   return (
     <div>
-      <div style={{ fontSize: "28px", fontWeight: 700, color: rr >= 2 ? "#22c55e" : rr >= 1 ? "#e8603c" : "#ef4444" }}>
+      <div className="text-3xl md:text-4xl font-bold" style={{ color: rr >= 2 ? "var(--accent-profit)" : rr >= 1 ? "var(--accent-warn)" : "var(--accent-loss)" }}>
         1:{rr.toFixed(2)}
       </div>
-      <div style={{ fontSize: "11px", color: "#888", marginTop: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
-        <span>RISK AMT: <span style={{ color: "#fff" }}>{riskAmt.toFixed(4)}</span></span>
-        <span>MAX REWARD: <span style={{ color: "#22c55e" }}>{maxReward.toFixed(4)}</span></span>
+      <div className="text-xs mt-2 flex flex-col gap-1" style={{ color: "var(--text-muted)" }}>
+        <span>RISK AMT: <span style={{ color: "var(--text-primary)" }}>{riskAmt.toFixed(4)}</span></span>
+        <span>MAX REWARD: <span style={{ color: "var(--accent-profit)" }}>{maxReward.toFixed(4)}</span></span>
       </div>
     </div>
   );
@@ -39,78 +42,38 @@ function TogglePill({
     <button
       type="button"
       onClick={() => onChange(!value)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        background: "none",
-        border: "none",
-        cursor: "pointer",
-        padding: "6px 0",
-      }}
+      className="flex items-center gap-2.5 bg-transparent border-none cursor-pointer py-1.5"
     >
       <div
+        className="w-8 h-4.5 rounded-full relative transition-colors flex-shrink-0"
         style={{
-          width: "32px",
-          height: "18px",
-          borderRadius: "9px",
-          backgroundColor: value ? "#ffffff" : "#333333",
-          position: "relative",
-          transition: "background-color 0.15s",
-          flexShrink: 0,
+          width: 32,
+          height: 18,
+          borderRadius: 9,
+          backgroundColor: value ? "var(--text-primary)" : "var(--border)",
         }}
       >
         <div
+          className="absolute top-[3px] w-3 h-3 rounded-full transition-all"
           style={{
-            position: "absolute",
-            top: "3px",
-            left: value ? "17px" : "3px",
-            width: "12px",
-            height: "12px",
-            borderRadius: "6px",
-            backgroundColor: value ? "#111111" : "#888888",
-            transition: "left 0.15s",
+            left: value ? 17 : 3,
+            width: 12,
+            height: 12,
+            borderRadius: 6,
+            backgroundColor: value ? "var(--bg-primary)" : "var(--text-muted)",
           }}
         />
       </div>
-      <span style={{ fontSize: "11px", letterSpacing: "0.1em", color: value ? "#ffffff" : "#888888" }}>
+      <span className="text-xs tracking-widest" style={{ color: value ? "var(--text-primary)" : "var(--text-muted)" }}>
         {label}
       </span>
     </button>
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  backgroundColor: "#111111",
-  border: "1px solid #2a2a2a",
-  borderRadius: "4px",
-  padding: "10px 12px",
-  color: "#ffffff",
-  fontFamily: "monospace",
-  fontSize: "13px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: "10px",
-  color: "#888",
-  letterSpacing: "0.12em",
-  marginBottom: "6px",
-  display: "block",
-};
-
-const sectionStyle: React.CSSProperties = {
-  backgroundColor: "#1c1c1c",
-  border: "1px solid #2a2a2a",
-  borderRadius: "4px",
-  padding: "20px",
-  marginBottom: "16px",
-};
-
 export default function AddTradePage() {
   const router = useRouter();
+  const { addToast } = useToast();
 
   const [symbol, setSymbol] = useState("");
   const [direction, setDirection] = useState<"LONG" | "SHORT">("LONG");
@@ -127,6 +90,7 @@ export default function AddTradePage() {
   const [commission, setCommission] = useState("");
   const [contractSize, setContractSize] = useState("100000");
   const [applyRiskShield, setApplyRiskShield] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [utcTime, setUtcTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -199,6 +163,10 @@ export default function AddTradePage() {
       if (chartFile && trade?.id) {
         await uploadTradeImage(trade.id, chartFile);
       }
+      if (trade?.id && selectedTags.length > 0) {
+        await Promise.all(selectedTags.map((t) => tagTrade(t.id, trade.id)));
+      }
+      addToast("success", `Trade ${trade?.id?.slice(0, 8) || ""} created`);
       router.push("/trades");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Submission failed.");
@@ -206,66 +174,59 @@ export default function AddTradePage() {
     }
   }
 
+  const inputCls = "w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded px-3 py-2.5 text-sm outline-none box-border focus:border-[var(--accent-cyan)]";
+  const labelCls = "block text-xs tracking-widest mb-1.5";
+  const sectionCls = "bg-[var(--bg-surface)] border border-[var(--border)] rounded p-4 md:p-5 mb-4";
+
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#111111", color: "#ffffff", fontFamily: "monospace" }}>
+    <div className="min-h-screen font-mono" style={{ color: "var(--text-primary)" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "0.1em", margin: 0 }}>
+          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
             LOG NEW EXECUTION
           </h1>
-          <p style={{ fontSize: "11px", color: "#555", margin: "4px 0 0", letterSpacing: "0.05em" }}>
+          <p className="text-xs mt-1 tracking-wide" style={{ color: "var(--text-muted)" }}>
             ENTRY_PROTOCOL // COMMIT TO LEDGER
           </p>
         </div>
-        <div style={{ textAlign: "right", fontSize: "11px", color: "#888" }}>
-          <div style={{ letterSpacing: "0.1em" }}>SYSTEM CLOCK</div>
-          <div style={{ fontSize: "16px", color: "#fff", fontWeight: 700, marginTop: "2px", letterSpacing: "0.05em" }}>
+        <div className="text-right text-xs" style={{ color: "var(--text-muted)" }}>
+          <div className="tracking-widest">SYSTEM CLOCK</div>
+          <div className="text-lg font-bold mt-1 tracking-wide" style={{ color: "var(--text-primary)" }}>
             {utcTime}
           </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "16px" }}>
+        {/* Main grid: single col mobile, 2 col desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
           {/* Left column */}
           <div>
             {/* Section 01: Instrument */}
-            <div style={sectionStyle}>
-              <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.15em", marginBottom: "16px" }}>
+            <div className={sectionCls}>
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 01 // INSTRUMENT PARAMETERS
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label style={labelStyle}>INSTRUMENT TICKER</label>
-                  <input
-                    style={inputStyle}
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value)}
-                    placeholder="e.g. BTCUSD"
-                    autoComplete="off"
-                  />
+                  <label className={labelCls}>INSTRUMENT TICKER</label>
+                  <input className={inputCls} value={symbol} onChange={(e) => setSymbol(e.target.value)} placeholder="e.g. BTCUSD" autoComplete="off" />
                 </div>
                 <div>
-                  <label style={labelStyle}>DIRECTION</label>
-                  <div style={{ display: "flex", gap: "0" }}>
+                  <label className={labelCls}>DIRECTION</label>
+                  <div className="flex">
                     {(["LONG", "SHORT"] as const).map((d) => (
                       <button
                         key={d}
                         type="button"
                         onClick={() => setDirection(d)}
+                        className="flex-1 py-2.5 font-mono text-xs font-bold tracking-widest border cursor-pointer"
                         style={{
-                          flex: 1,
-                          padding: "10px",
-                          fontFamily: "monospace",
-                          fontSize: "12px",
-                          fontWeight: 700,
-                          letterSpacing: "0.1em",
-                          border: "1px solid #2a2a2a",
-                          cursor: "pointer",
-                          backgroundColor: direction === d ? (d === "LONG" ? "#ffffff" : "#ef4444") : "#111111",
-                          color: direction === d ? (d === "LONG" ? "#000000" : "#ffffff") : "#888888",
-                          borderRadius: d === "LONG" ? "4px 0 0 4px" : "0 4px 4px 0",
+                          borderColor: "var(--border)",
+                          backgroundColor: direction === d ? (d === "LONG" ? "var(--text-primary)" : "var(--accent-loss)") : "var(--bg-primary)",
+                          color: direction === d ? (d === "LONG" ? "var(--bg-primary)" : "var(--text-primary)") : "var(--text-muted)",
+                          borderRadius: d === "LONG" ? "var(--radius-sm) 0 0 var(--radius-sm)" : "0 var(--radius-sm) var(--radius-sm) 0",
                         }}
                       >
                         {d}
@@ -274,28 +235,24 @@ export default function AddTradePage() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                 <div>
-                  <label style={labelStyle}>ENTRY PRICE</label>
-                  <input style={inputStyle} type="number" step="any" value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="0.00000" />
+                  <label className={labelCls}>ENTRY PRICE</label>
+                  <input className={inputCls} type="number" step="any" value={entry} onChange={(e) => setEntry(e.target.value)} placeholder="0.00000" />
                 </div>
                 <div>
-                  <label style={labelStyle}>EXIT PRICE</label>
-                  <input style={inputStyle} type="number" step="any" value={exit} onChange={(e) => setExit(e.target.value)} placeholder="0.00000" />
+                  <label className={labelCls}>EXIT PRICE</label>
+                  <input className={inputCls} type="number" step="any" value={exit} onChange={(e) => setExit(e.target.value)} placeholder="0.00000" />
                 </div>
                 <div>
-                  <label style={labelStyle}>QUANTITY / LOT SIZE</label>
-                  <input style={inputStyle} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="0.01" />
+                  <label className={labelCls}>QUANTITY / LOT SIZE</label>
+                  <input className={inputCls} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="0.01" />
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                 <div>
-                  <label style={labelStyle}>CONTRACT SIZE</label>
-                  <select
-                    style={{ ...inputStyle, cursor: "pointer" }}
-                    value={contractSize}
-                    onChange={(e) => setContractSize(e.target.value)}
-                  >
+                  <label className={labelCls}>CONTRACT SIZE</label>
+                  <select className={`${inputCls} cursor-pointer`} value={contractSize} onChange={(e) => setContractSize(e.target.value)}>
                     <option value="100000">100,000 (Standard Lot)</option>
                     <option value="10000">10,000 (Mini Lot)</option>
                     <option value="1000">1,000 (Micro Lot)</option>
@@ -303,48 +260,47 @@ export default function AddTradePage() {
                   </select>
                 </div>
                 <div>
-                  <label style={labelStyle}>STOP LOSS</label>
-                  <input style={inputStyle} type="number" step="any" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="0.00000" />
+                  <label className={labelCls}>STOP LOSS</label>
+                  <input className={inputCls} type="number" step="any" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="0.00000" />
                 </div>
                 <div>
-                  <label style={labelStyle}>TAKE PROFIT</label>
-                  <input style={inputStyle} type="number" step="any" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} placeholder="0.00000" />
+                  <label className={labelCls}>TAKE PROFIT</label>
+                  <input className={inputCls} type="number" step="any" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} placeholder="0.00000" />
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginTop: "12px" }}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label style={labelStyle}>COMMISSION / FEES</label>
-                  <input style={inputStyle} type="number" step="any" min="0" value={commission} onChange={(e) => setCommission(e.target.value)} placeholder="0.00" />
+                  <label className={labelCls}>COMMISSION / FEES</label>
+                  <input className={inputCls} type="number" step="any" min="0" value={commission} onChange={(e) => setCommission(e.target.value)} placeholder="0.00" />
                 </div>
                 <div>
-                  <label style={labelStyle}>TRADE DATE</label>
-                  <input style={{ ...inputStyle, colorScheme: "dark" }} type="date" value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} />
+                  <label className={labelCls}>TRADE DATE</label>
+                  <input className={`${inputCls} dark:[color-scheme:dark]`} type="date" value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} />
                 </div>
                 <div>
-                  <label style={labelStyle}>TRADE TIME (UTC)</label>
-                  <input style={{ ...inputStyle, colorScheme: "dark" }} type="time" value={tradeTime} onChange={(e) => setTradeTime(e.target.value)} />
+                  <label className={labelCls}>TRADE TIME (UTC)</label>
+                  <input className={`${inputCls} dark:[color-scheme:dark]`} type="time" value={tradeTime} onChange={(e) => setTradeTime(e.target.value)} />
                 </div>
               </div>
             </div>
 
             {/* Section 02: Strategy + Notes */}
-            <div style={sectionStyle}>
-              <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.15em", marginBottom: "16px" }}>
+            <div className={sectionCls}>
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 02 // EXECUTION METADATA
               </div>
-              <div style={{ marginBottom: "12px" }}>
-                <label style={labelStyle}>STRATEGY TAG</label>
-                <input
-                  style={inputStyle}
-                  value={strategy}
-                  onChange={(e) => setStrategy(e.target.value)}
-                  placeholder="e.g. BREAKOUT, REVERSAL, SMC..."
-                />
+              <div className="mb-3">
+                <label className={labelCls}>STRATEGY TAG</label>
+                <input className={inputCls} value={strategy} onChange={(e) => setStrategy(e.target.value)} placeholder="e.g. BREAKOUT, REVERSAL, SMC..." />
+              </div>
+              <div className="mb-3">
+                <label className={labelCls}>TAGS</label>
+                <TagPicker selectedTags={selectedTags} onChange={setSelectedTags} />
               </div>
               <div>
-                <label style={labelStyle}>TRADE NOTES</label>
+                <label className={labelCls}>TRADE NOTES</label>
                 <textarea
-                  style={{ ...inputStyle, minHeight: "120px", resize: "vertical" }}
+                  className={`${inputCls} min-h-[100px] resize-y`}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Describe your rationale, setup context, market conditions..."
@@ -352,61 +308,25 @@ export default function AddTradePage() {
               </div>
 
               {/* Chart Image */}
-              <div style={{ marginTop: "12px" }}>
-                <label style={labelStyle}>CHART SCREENSHOT</label>
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={handleImageChange}
-                />
+              <div className="mt-3">
+                <label className={labelCls}>CHART SCREENSHOT</label>
+                <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                 <button
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
-                  style={{
-                    background: "transparent",
-                    border: "1px dashed #2a2a2a",
-                    borderRadius: "4px",
-                    color: "#888",
-                    cursor: "pointer",
-                    fontFamily: "monospace",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    letterSpacing: "0.1em",
-                    padding: "10px 20px",
-                    transition: "border-color 0.15s, color 0.15s",
-                  }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#555"; (e.currentTarget as HTMLButtonElement).style.color = "#fff"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#2a2a2a"; (e.currentTarget as HTMLButtonElement).style.color = "#888"; }}
+                  className="bg-transparent border border-dashed rounded cursor-pointer font-mono text-xs font-bold tracking-widest px-5 py-2.5 transition-colors"
+                  style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
                 >
                   + ADD IMAGE
                 </button>
                 {chartImage && (
-                  <div style={{ marginTop: "12px", position: "relative", display: "inline-block" }}>
-                    <img
-                      src={chartImage}
-                      alt="Chart screenshot"
-                      style={{ maxWidth: "100%", maxHeight: "300px", border: "1px solid #2a2a2a", borderRadius: "4px", display: "block" }}
-                    />
+                  <div className="mt-3 relative inline-block">
+                    <img src={chartImage} alt="Chart screenshot" className="max-w-full max-h-[200px] md:max-h-[300px] rounded block" style={{ border: "1px solid var(--border)" }} />
                     <button
                       type="button"
                       onClick={() => { setChartImage(null); setChartFile(null); if (imageInputRef.current) imageInputRef.current.value = ""; }}
-                      style={{
-                        position: "absolute",
-                        top: "6px",
-                        right: "6px",
-                        background: "rgba(0,0,0,0.7)",
-                        border: "1px solid #444",
-                        borderRadius: "4px",
-                        color: "#fff",
-                        cursor: "pointer",
-                        fontFamily: "monospace",
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        padding: "4px 8px",
-                      }}
+                      className="absolute top-1.5 right-1.5 bg-black/70 rounded font-mono text-xs font-bold tracking-wide px-2 py-1"
+                      style={{ border: "1px solid var(--border)", color: "var(--text-primary)" }}
                     >
                       REMOVE
                     </button>
@@ -416,11 +336,11 @@ export default function AddTradePage() {
             </div>
 
             {/* Section 03: Behavioral flags */}
-            <div style={sectionStyle}>
-              <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.15em", marginBottom: "16px" }}>
+            <div className={sectionCls}>
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 03 // BEHAVIORAL FLAGS
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div className="flex flex-col gap-1">
                 <TogglePill label="FOMO ENTRY — entered without valid setup confirmation" value={fomoCheck} onChange={setFomoCheck} />
                 <TogglePill label="TREND ALIGNMENT — trade aligns with higher-timeframe bias" value={trendAlignment} onChange={setTrendAlignment} />
                 <TogglePill label="VENGEANCE TRADE — entered to recover from previous loss" value={vengeanceTrade} onChange={setVengeanceTrade} />
@@ -428,22 +348,22 @@ export default function AddTradePage() {
             </div>
           </div>
 
-          {/* Right column: RR panel */}
+          {/* Right column: RR panel - below on mobile, sticky sidebar on desktop */}
           <div>
-            <div style={{ ...sectionStyle, position: "sticky", top: "40px" }}>
-              <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.15em", marginBottom: "16px" }}>
+            <div className={`${sectionCls} lg:sticky lg:top-10`}>
+              <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
                 LIVE R:R CALCULATOR
               </div>
-              <div style={{ marginBottom: "20px" }}>
-                <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.1em", marginBottom: "8px" }}>
+              <div className="mb-5">
+                <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
                   RISK/REWARD RATIO
                 </div>
                 <RRDisplay entry={entry} stopLoss={stopLoss} takeProfit={takeProfit} />
               </div>
 
               {/* Profit & Loss */}
-              <div style={{ borderTop: "1px solid #2a2a2a", paddingTop: "16px", marginBottom: "20px" }}>
-                <div style={{ fontSize: "10px", color: "#888", letterSpacing: "0.1em", marginBottom: "8px" }}>
+              <div className="border-t pt-4 mb-5" style={{ borderColor: "var(--border)" }}>
+                <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>
                   ESTIMATED P&L
                 </div>
                 {(() => {
@@ -451,7 +371,7 @@ export default function AddTradePage() {
                   const x = parseFloat(exit);
                   const q = parseFloat(quantity);
                   const cs = parseFloat(contractSize) || 1;
-                  if (!e || !x || !q) return <span style={{ fontSize: "28px", fontWeight: 700, color: "#555" }}>--</span>;
+                  if (!e || !x || !q) return <span className="text-3xl md:text-4xl font-bold" style={{ color: "var(--text-dim)" }}>--</span>;
                   const rawPnl = direction === "LONG" ? (x - e) * q * cs : (e - x) * q * cs;
                   const comm = parseFloat(commission) || 0;
                   const pnl = rawPnl - comm;
@@ -460,10 +380,10 @@ export default function AddTradePage() {
                   const decimals = absPnl > 0 && absPnl < 0.01 ? 5 : absPnl < 1 ? 4 : 2;
                   return (
                     <div>
-                      <div style={{ fontSize: "28px", fontWeight: 700, color: isProfit ? "#22c55e" : "#ef4444" }}>
+                      <div className="text-3xl md:text-4xl font-bold" style={{ color: isProfit ? "var(--accent-profit)" : "var(--accent-loss)" }}>
                         {isProfit ? "+" : ""}{pnl.toFixed(decimals)}
                       </div>
-                      <div style={{ fontSize: "11px", color: "#888", marginTop: "4px" }}>
+                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
                         {isProfit ? "PROFIT" : "LOSS"}
                       </div>
                     </div>
@@ -471,43 +391,38 @@ export default function AddTradePage() {
                 })()}
               </div>
 
-              <div style={{ borderTop: "1px solid #2a2a2a", paddingTop: "16px", marginBottom: "20px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+              <div className="border-t pt-4 mb-5" style={{ borderColor: "var(--border)" }}>
+                <label className="flex items-center gap-2.5 cursor-pointer">
                   <div
                     onClick={() => setApplyRiskShield(!applyRiskShield)}
+                    className="w-8 h-4.5 rounded-full relative transition-colors cursor-pointer flex-shrink-0"
                     style={{
-                      width: "32px",
-                      height: "18px",
-                      borderRadius: "9px",
-                      backgroundColor: applyRiskShield ? "#ffffff" : "#333333",
-                      position: "relative",
-                      transition: "background-color 0.15s",
-                      cursor: "pointer",
-                      flexShrink: 0,
+                      width: 32,
+                      height: 18,
+                      borderRadius: 9,
+                      backgroundColor: applyRiskShield ? "var(--text-primary)" : "var(--border)",
                     }}
                   >
                     <div
+                      className="absolute top-[3px] w-3 h-3 rounded-full transition-all"
                       style={{
-                        position: "absolute",
-                        top: "3px",
-                        left: applyRiskShield ? "17px" : "3px",
-                        width: "12px",
-                        height: "12px",
-                        borderRadius: "6px",
-                        backgroundColor: applyRiskShield ? "#111111" : "#888888",
-                        transition: "left 0.15s",
+                        left: applyRiskShield ? 17 : 3,
+                        width: 12,
+                        height: 12,
+                        borderRadius: 6,
+                        backgroundColor: applyRiskShield ? "var(--bg-primary)" : "var(--text-muted)",
                       }}
                     />
                   </div>
-                  <span style={{ fontSize: "10px", letterSpacing: "0.08em", color: applyRiskShield ? "#fff" : "#888" }}>
+                  <span className="text-xs tracking-wide" style={{ color: applyRiskShield ? "var(--text-primary)" : "var(--text-muted)" }}>
                     APPLY RISK LIMIT SHIELD
                   </span>
                 </label>
               </div>
 
               {/* Confidence bars */}
-              <div style={{ borderTop: "1px solid #2a2a2a", paddingTop: "16px" }}>
-                <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.12em", marginBottom: "12px" }}>
+              <div className="border-t pt-4" style={{ borderColor: "var(--border)" }}>
+                <div className="text-xs tracking-widest mb-3" style={{ color: "var(--text-dim)" }}>
                   CONFIDENCE METRICS
                 </div>
                 {[
@@ -515,21 +430,19 @@ export default function AddTradePage() {
                   { label: "RISK DISCIPLINE", pct: fomoCheck || vengeanceTrade ? 20 : stopLoss ? 85 : 50 },
                   { label: "PROTOCOL SCORE", pct: Math.round(((trendAlignment ? 1 : 0) + (!fomoCheck ? 1 : 0) + (!vengeanceTrade ? 1 : 0) + (stopLoss ? 1 : 0) + (takeProfit ? 1 : 0)) / 5 * 100) },
                 ].map((bar) => (
-                  <div key={bar.label} style={{ marginBottom: "10px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "10px", color: "#888" }}>{bar.label}</span>
-                      <span style={{ fontSize: "10px", color: bar.pct >= 70 ? "#22c55e" : bar.pct >= 40 ? "#e8603c" : "#ef4444" }}>
+                  <div key={bar.label} className="mb-2.5">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>{bar.label}</span>
+                      <span className="text-xs" style={{ color: bar.pct >= 70 ? "var(--accent-profit)" : bar.pct >= 40 ? "var(--accent-warn)" : "var(--accent-loss)" }}>
                         {bar.pct}%
                       </span>
                     </div>
-                    <div style={{ height: "3px", backgroundColor: "#2a2a2a", borderRadius: "2px" }}>
+                    <div className="h-[3px] rounded" style={{ backgroundColor: "var(--border)" }}>
                       <div
+                        className="h-[3px] rounded transition-all"
                         style={{
-                          height: "3px",
-                          borderRadius: "2px",
                           width: `${bar.pct}%`,
-                          backgroundColor: bar.pct >= 70 ? "#22c55e" : bar.pct >= 40 ? "#e8603c" : "#ef4444",
-                          transition: "width 0.3s",
+                          backgroundColor: bar.pct >= 70 ? "var(--accent-profit)" : bar.pct >= 40 ? "var(--accent-warn)" : "var(--accent-loss)",
                         }}
                       />
                     </div>
@@ -542,39 +455,24 @@ export default function AddTradePage() {
 
         {/* Bottom bar */}
         <div
-          style={{
-            backgroundColor: "#1c1c1c",
-            border: "1px solid #2a2a2a",
-            borderRadius: "4px",
-            padding: "16px 20px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: "16px",
-          }}
+          className="rounded p-4 md:px-5 md:py-4 flex flex-col sm:flex-row justify-between items-center gap-3 mt-4"
+          style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}
         >
           {error ? (
-            <span style={{ fontSize: "12px", color: "#ef4444", letterSpacing: "0.05em" }}>{error}</span>
+            <span className="text-sm tracking-wide" style={{ color: "var(--accent-loss)" }}>{error}</span>
           ) : (
-            <span style={{ fontSize: "11px", color: "#555", letterSpacing: "0.08em" }}>
+            <span className="text-xs tracking-wide" style={{ color: "var(--text-muted)" }}>
               ALL FIELDS VALIDATED // READY TO COMMIT
             </span>
           )}
           <button
             type="submit"
             disabled={submitting}
+            className="px-6 md:px-8 py-3 font-mono text-xs font-bold tracking-widest rounded disabled:cursor-not-allowed transition-colors"
             style={{
-              backgroundColor: submitting ? "#333" : "#ffffff",
-              color: submitting ? "#888" : "#000000",
+              backgroundColor: submitting ? "var(--border)" : "var(--text-primary)",
+              color: submitting ? "var(--text-muted)" : "var(--bg-primary)",
               border: "none",
-              borderRadius: "4px",
-              padding: "12px 32px",
-              fontFamily: "monospace",
-              fontSize: "12px",
-              fontWeight: 700,
-              letterSpacing: "0.15em",
-              cursor: submitting ? "not-allowed" : "pointer",
-              transition: "background-color 0.15s",
             }}
           >
             {submitting ? "COMMITTING..." : "COMMIT EXECUTION"}

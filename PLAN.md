@@ -18,7 +18,7 @@ Transform TradeZen from an early MVP into a production-grade trading journal tha
   - `005_tags_tables.sql` — tags + trade_tags junction
 - Add `schema_migrations` tracking table: `(id SERIAL, filename TEXT UNIQUE, executed_at TIMESTAMP DEFAULT NOW())`
 - Migration runner: reads `migrations/` dir, sorts by number, skips already-executed, runs new ones in a transaction
-- Add `npm run migrate` script for manual runs
+- Add `bun run migrate` script for manual runs
 
 ### 0.2 Deployment Configuration
 - **Web (Vercel)**: `apps/web/vercel.json` with nextjs preset; `NEXT_PUBLIC_API_URL` env var for prod API

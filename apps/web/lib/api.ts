@@ -145,6 +145,7 @@ export const getTrades = async (params?: {
   strategy?: string;
   from?: string;
   to?: string;
+  tagId?: string;
 }) => {
   const query = new URLSearchParams();
   if (params) {
@@ -189,6 +190,11 @@ export const getAnalytics = async () => {
   return handleResponse<any>(res);
 };
 
+export const getAdvancedAnalytics = async () => {
+  const res = await authFetch(`${API}/trades/analytics/advanced`);
+  return handleResponse<any>(res);
+};
+
 export const getDailyPnl = async (from?: string, to?: string) => {
   const query = new URLSearchParams();
   if (from) query.set("from", from);
@@ -202,6 +208,35 @@ export const exportCsv = async () => {
   const res = await authFetch(`${API}/trades/export/csv`);
   if (!res.ok) throw new Error("Export failed");
   return res.text();
+};
+
+export const importCsv = async (
+  file: File,
+): Promise<{ jobId: string; message: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await authFetch(`${API}/trades/import/csv`, {
+    method: "POST",
+    body: formData,
+  });
+  return handleResponse<{ jobId: string; message: string }>(res);
+};
+
+export type ImportJobStatus = {
+  id: string;
+  name: string;
+  progress: number | Record<string, unknown>;
+  state: string;
+  result?: { imported: number; errors: string[] };
+  failedReason?: string;
+};
+
+export const getImportJobStatus = async (
+  jobId: string,
+): Promise<ImportJobStatus | null> => {
+  const res = await authFetch(`${API}/trades/import/jobs/${jobId}`);
+  if (res.status === 404) return null;
+  return handleResponse<ImportJobStatus>(res);
 };
 
 // ─── Journals ──────────────────────────────────────
@@ -267,3 +302,228 @@ export const untagTrade = async (tagId: string, tradeId: string) => {
   const res = await authFetch(`${API}/tags/${tagId}/trades/${tradeId}`, { method: "DELETE" });
   return handleResponse<any>(res);
 };
+
+export const getTagsForTrade = async (tradeId: string) => {
+  const res = await authFetch(`${API}/tags/trade/${tradeId}`);
+  return handleResponse<any[]>(res);
+};
+
+// ─── Chat ──────────────────────────────────────────
+
+export type ChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+export type StreamChatParams = {
+  messages: ChatMessage[];
+  model?: string;
+  systemPrompt?: string;
+  temperature?: number;
+  /** Abort to stop the stream (e.g. unmount, new message, panel close). */
+  signal?: AbortSignal;
+  onToken: (token: string) => void;
+  onDone?: () => void;
+};
+
+export async function getChatModels() {
+  const res = await authFetch(`${API}/chat/models`);
+  return handleResponse<{ defaultModel: string; models: string[] }>(res);
+}
+
+async function authFetchStream(url: string, opts: RequestInit = {}): Promise<Response> {
+  const headers: Record<string, string> = {
+    ...(opts.headers as Record<string, string> || {}),
+  };
+
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
+  }
+
+  if (!headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const makeRequest = () =>
+    fetch(url, {
+      ...opts,
+      headers,
+      credentials: "include",
+    });
+
+  let res = await makeRequest();
+  if (res.status === 401 && !url.includes("/auth/refresh")) {
+    const refreshed = await refreshToken();
+    if (refreshed) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+      res = await makeRequest();
+    }
+  }
+
+  return res;
+}
+
+function isAbortError(e: unknown): boolean {
+  if (e && typeof e === "object" && "name" in e && (e as { name: string }).name === "AbortError") return true;
+  return false;
+}
+
+export async function streamChat(params: StreamChatParams): Promise<void> {
+  const { messages, model, systemPrompt, temperature, signal, onToken, onDone } = params;
+
+  let res: Response;
+  try {
+    res = await authFetchStream(`${API}/chat/stream`, {
+      method: "POST",
+      signal,
+      body: JSON.stringify({ messages, model, systemPrompt, temperature }),
+    });
+  } catch (e) {
+    if (signal?.aborted || isAbortError(e)) {
+      onDone?.();
+      return;
+    }
+    throw e;
+  }
+
+  if (!res.ok || !res.body) {
+    const body = await res.text().catch(() => "");
+    throw new Error(body || "Chat stream failed");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      let read: ReadableStreamReadResult<Uint8Array>;
+      try {
+        read = await reader.read();
+      } catch (e) {
+        if (signal?.aborted || isAbortError(e)) {
+          onDone?.();
+          return;
+        }
+        throw e;
+      }
+
+      const { done, value } = read;
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() ?? "";
+
+      for (const chunk of chunks) {
+        const lines = chunk.split("\n");
+        let eventName = "message";
+        let data = "";
+
+        for (const line of lines) {
+          if (line.startsWith("event:")) {
+            eventName = line.slice(6).trim();
+          } else if (line.startsWith("data:")) {
+            data += line.slice(5);
+          }
+        }
+
+        if (eventName === "token" && data) {
+          onToken(data);
+        } else if (eventName === "error") {
+          throw new Error(data || "Chat request failed");
+        } else if (eventName === "done") {
+          onDone?.();
+          return;
+        }
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+
+  onDone?.();
+}
+
+// ─── Notifications ──────────────────────────────────
+
+export async function getNotifications(limit = 10) {
+  const res = await authFetch(`${API}/chat/notifications?limit=${limit}`);
+  return handleResponse<any[]>(res);
+}
+
+export async function getNotificationCount() {
+  const res = await authFetch(`${API}/chat/notifications/count`);
+  return handleResponse<{ count: number }>(res);
+}
+
+export async function markNotificationRead(id: string) {
+  const res = await authFetch(`${API}/chat/notifications/${id}/read`, { method: 'POST' });
+  return handleResponse<{ message: string }>(res);
+}
+
+export async function markAllNotificationsRead() {
+  const res = await authFetch(`${API}/chat/notifications/read-all`, { method: 'POST' });
+  return handleResponse<{ message: string }>(res);
+}
+
+export async function getNotificationPreferences() {
+  const res = await authFetch(`${API}/chat/notifications/preferences`);
+  return handleResponse<Record<string, boolean>>(res);
+}
+
+export async function updateNotificationPreference(type: string, enabled: boolean) {
+  const res = await authFetch(`${API}/chat/notifications/preferences`, {
+    method: 'PUT',
+    body: JSON.stringify({ type, enabled }),
+  });
+  return handleResponse<{ message: string }>(res);
+}
+
+// ─── Goals ──────────────────────────────────────────
+
+export const getGoals = async () => {
+  const res = await authFetch(`${API}/goals`);
+  return handleResponse<any[]>(res);
+};
+
+export const createGoal = async (data: {
+  type: string;
+  target: number;
+  period?: string;
+  direction?: string;
+  startDate: string;
+  endDate?: string;
+}) => {
+  const res = await authFetch(`${API}/goals`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res);
+};
+
+export const updateGoal = async (id: string, data: Record<string, any>) => {
+  const res = await authFetch(`${API}/goals/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res);
+};
+
+export const deleteGoal = async (id: string) => {
+  const res = await authFetch(`${API}/goals/${id}`, { method: "DELETE" });
+  return handleResponse<{ deleted: boolean }>(res);
+};
+
+// ─── Reports ────────────────────────────────────────
+
+export async function getWeeklyReport() {
+  const res = await authFetch(`${API}/reports/weekly`);
+  return handleResponse<any>(res);
+}
+
+export async function downloadCSV(): Promise<Blob> {
+  const res = await authFetch(`${API}/reports/export/csv`);
+  if (!res.ok) throw new Error('CSV export failed');
+  return res.blob();
+}

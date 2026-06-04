@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getTrades, deleteTrade, exportCsv } from "@/lib/api";
+import { getTrades, deleteTrade, exportCsv, importCsv, getImportJobStatus, getTags } from "@/lib/api";
 import StatCard from "@/components/StatCard";
+import { useRealtime } from "@/hooks/use-realtime";
+import { useToast } from "@/components/Toast";
+import { StatCardSkeleton, TradeLogSkeleton } from "@/components/Skeleton";
 
 type Trade = {
   id: string; symbol: string; direction: string;
@@ -22,8 +25,18 @@ function fmt(n: number) {
   return n >= 0 ? `+$${abs}` : `-$${abs}`;
 }
 
+function fmtDate(d: string | null | undefined) {
+  if (!d) return "--";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "--";
+  return dt.toISOString().replace("T", " ").slice(0, 16);
+}
+
 function getSessionBucket(dateStr: string) {
-  const h = new Date(dateStr).getUTCHours();
+  if (!dateStr) return "--";
+  const dt = new Date(dateStr);
+  if (isNaN(dt.getTime())) return "--";
+  const h = dt.getUTCHours();
   if (h >= 13 && h < 18) return "NY OPEN";
   if (h >= 7 && h < 13) return "LONDON";
   return "ASIAN";
@@ -31,14 +44,27 @@ function getSessionBucket(dateStr: string) {
 
 export default function TradeLog() {
   const router = useRouter();
+  const { addToast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [assetFilter, setAssetFilter] = useState("ALL ASSETS");
   const [strategyFilter, setStrategyFilter] = useState("ANY STRATEGY");
+  const [tagFilter, setTagFilter] = useState("");
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [resultFilter, setResultFilter] = useState("ALL");
   const [page, setPage] = useState(1);
+  const [importResult, setImportResult] = useState<{ imported: number; errors: string[] } | null>(null);
+  const [importJobId, setImportJobId] = useState<string | null>(null);
+  const importJobIdRef = useRef<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{ processed: number; total: number; imported: number; errors: string[] } | null>(null);
+
+  useEffect(() => {
+    importJobIdRef.current = importJobId;
+  }, [importJobId]);
 
   const showAnomaly = useMemo(() => {
     if (trades.length < 3) return false;
@@ -50,11 +76,12 @@ export default function TradeLog() {
     try {
       const res = await getTrades({
         page: 1,
-        limit: 1000,
+        limit: 100,
         sort: "created_at",
         order: "desc",
         symbol: assetFilter !== "ALL ASSETS" ? assetFilter : undefined,
         strategy: strategyFilter !== "ANY STRATEGY" ? strategyFilter : undefined,
+        tagId: tagFilter || undefined,
         from: fromDate || undefined,
         to: toDate || undefined,
       });
@@ -64,13 +91,61 @@ export default function TradeLog() {
     } finally {
       setLoading(false);
     }
-  }, [assetFilter, strategyFilter, fromDate, toDate]);
+  }, [assetFilter, strategyFilter, fromDate, toDate, tagFilter]);
 
   useEffect(() => {
     fetchTrades();
   }, [fetchTrades]);
 
-  // Get all symbols/strategies for filters (fetch once)
+  useRealtime('trade:created', () => {
+    fetchTrades();
+  });
+
+  useRealtime('trade:updated', () => {
+    fetchTrades();
+  });
+
+  useRealtime('trade:deleted', () => {
+    fetchTrades();
+  });
+
+  useRealtime('job:progress', (data) => {
+    const payload = data as {
+      jobId?: string;
+      queue?: string;
+      progress?: { processed: number; total: number; imported: number; errors: string[] };
+    };
+    if (payload.queue !== 'csv-import' || !payload.jobId || payload.jobId !== importJobIdRef.current) {
+      return;
+    }
+    if (payload.progress) {
+      setImportProgress(payload.progress);
+    }
+  });
+
+  useRealtime('job:completed', (data) => {
+    const payload = data as {
+      jobId?: string;
+      queue?: string;
+      result?: { imported: number; errors: string[] };
+    };
+    if (payload.queue !== 'csv-import' || !payload.jobId || payload.jobId !== importJobIdRef.current) {
+      return;
+    }
+    if (payload.result) {
+      setImportResult(payload.result);
+      setImportProgress(null);
+      setImportJobId(null);
+        if (payload.result.imported > 0) {
+          fetchTrades();
+          addToast("success", `Imported ${payload.result.imported} trades`);
+        }
+        if (payload.result.errors?.length > 0) {
+          addToast("warn", `${payload.result.errors.length} rows had errors`);
+        }
+      }
+  });
+
   const [allSymbols, setAllSymbols] = useState<string[]>([]);
   const [allStrategies, setAllStrategies] = useState<string[]>([]);
   useEffect(() => {
@@ -80,15 +155,17 @@ export default function TradeLog() {
       setAllSymbols(syms);
       setAllStrategies(strats);
     }).catch(() => {});
+    getTags().then(setAvailableTags).catch(() => {});
   }, []);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this trade?")) return;
     try {
       await deleteTrade(id);
+      addToast("success", "Trade deleted");
       fetchTrades();
     } catch (err) {
-      console.error(err);
+      addToast("error", "Failed to delete trade");
     }
   }
 
@@ -102,22 +179,87 @@ export default function TradeLog() {
       a.download = "trades.csv";
       a.click();
       URL.revokeObjectURL(url);
+      addToast("success", "CSV exported");
     } catch (err) {
       console.error(err);
+      addToast("error", "CSV export failed");
     }
   }
 
-  const filteredTrades = useMemo(() => trades.filter((t) => {
-    if (resultFilter === "WIN" && Number(t.pnl) <= 0) return false;
-    if (resultFilter === "LOSS" && Number(t.pnl) >= 0) return false;
-    return true;
-  }), [trades, resultFilter]);
+  async function handleImportCsv(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImportResult(null);
+    setImportProgress(null);
+
+    try {
+      const { jobId } = await importCsv(file);
+      setImportJobId(jobId);
+
+      const poll = async () => {
+        const status = await getImportJobStatus(jobId);
+        if (!status) return;
+
+        if (typeof status.progress === 'object' && status.progress !== null) {
+          setImportProgress(status.progress as {
+            processed: number;
+            total: number;
+            imported: number;
+            errors: string[];
+          });
+        }
+
+        if (status.state === 'completed' && status.result) {
+          setImportResult(status.result);
+          setImportProgress(null);
+          setImportJobId(null);
+          if (status.result.imported > 0) {
+            fetchTrades();
+          }
+          return;
+        }
+
+        if (status.state === 'failed') {
+          setImportResult({
+            imported: 0,
+            errors: [status.failedReason ?? 'Import failed'],
+          });
+          setImportProgress(null);
+          setImportJobId(null);
+          return;
+        }
+
+        window.setTimeout(poll, 1500);
+      };
+
+      void poll();
+    } catch (err) {
+      console.error(err);
+      setImportResult({ imported: 0, errors: [err instanceof Error ? err.message : "Import failed"] });
+      setImportJobId(null);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
+  const filteredTrades = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return trades.filter((t) => {
+      if (resultFilter === "WIN" && Number(t.pnl) <= 0) return false;
+      if (resultFilter === "LOSS" && Number(t.pnl) >= 0) return false;
+      if (q && !t.symbol.toLowerCase().includes(q) && !(t.notes || "").toLowerCase().includes(q) && !(t.strategy || "").toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [trades, resultFilter, searchQuery]);
 
   const total = filteredTrades.length;
   const totalPages = Math.max(1, Math.ceil(total / 10));
   const totalPnl = filteredTrades.reduce((s, t) => s + Number(t.pnl), 0);
   const wins = filteredTrades.filter((t) => t.pnl > 0);
-  const losses = filteredTrades.filter((t) => t.pnl < 0);
+  void filteredTrades.filter((t) => t.pnl < 0);
   const winRate = filteredTrades.length ? ((wins.length / filteredTrades.length) * 100).toFixed(1) + "%" : "--";
   const rrTrades = filteredTrades.filter((t) => t.stop_loss != null && t.take_profit != null && t.stop_loss !== t.entry_price);
   const avgRR = rrTrades.length === 0 ? "--" : "1:" + (rrTrades.reduce((s, t) => s + Math.abs(t.take_profit! - t.entry_price) / Math.abs(t.entry_price - t.stop_loss!), 0) / rrTrades.length).toFixed(1);
@@ -134,99 +276,141 @@ export default function TradeLog() {
 
   return (
     <div>
-      {/* Filter Bar */}
-      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", padding: "16px 24px", display: "flex", gap: 12, alignItems: "center", marginBottom: 1, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.1em", marginBottom: 4, fontWeight: 700 }}>DATE RANGE</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
-              style={{ background: "#222", border: "1px solid #2a2a2a", color: "#888", padding: "8px 12px", fontSize: 12, outline: "none" }} />
-            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
-              style={{ background: "#222", border: "1px solid #2a2a2a", color: "#888", padding: "8px 12px", fontSize: 12, outline: "none" }} />
+      {/* Filters - stack on mobile, row on desktop */}
+      <div className="glass-card p-3 md:p-4 mb-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-end flex-wrap">
+            <div>
+              <div className="label-caps mb-2">SEARCH</div>
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Symbol, notes, strategy..." className="input-glass text-xs" style={{ minWidth: 160 }} />
+            </div>
+            <div>
+              <div className="label-caps mb-2">DATE RANGE</div>
+              <div className="flex gap-2">
+                <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-glass text-xs" />
+                <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-glass text-xs" />
+              </div>
+            </div>
+            <div>
+              <div className="label-caps mb-2">ASSET CLASS</div>
+              <select value={assetFilter} onChange={(e) => setAssetFilter(e.target.value)} className="select-glass text-xs">
+                <option>ALL ASSETS</option>
+                {allSymbols.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="label-caps mb-2">STRATEGY</div>
+              <select value={strategyFilter} onChange={(e) => setStrategyFilter(e.target.value)} className="select-glass text-xs">
+                <option>ANY STRATEGY</option>
+                {allStrategies.map((s) => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="label-caps mb-2">TAG</div>
+              <select value={tagFilter} onChange={(e) => { setTagFilter(e.target.value); setPage(1); }} className="select-glass text-xs">
+                <option value="">ALL TAGS</option>
+                {availableTags.map((t: any) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 items-center">
+            {(["ALL", "WIN", "LOSS"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => { setResultFilter(mode); setPage(1); }}
+                className={`btn-glass text-xs ${resultFilter === mode ? 'active' : ''}`}
+              >
+                {mode}
+              </button>
+            ))}
+            <button onClick={() => { setPage(1); fetchTrades(); }} className="btn-primary text-xs">
+              APPLY
+            </button>
+            <div className="flex gap-2 ml-auto">
+              <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCsv} style={{ display: "none" }} />
+              <button onClick={() => fileInputRef.current?.click()} className="btn-glass text-xs">
+                IMPORT
+              </button>
+              <button onClick={handleExportCsv} className="btn-glass text-xs">
+                EXPORT
+              </button>
+            </div>
           </div>
         </div>
-        <div>
-          <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.1em", marginBottom: 4, fontWeight: 700 }}>ASSET CLASS</div>
-          <select value={assetFilter} onChange={(e) => setAssetFilter(e.target.value)}
-            style={{ background: "#222", border: "1px solid #2a2a2a", color: "#fff", padding: "8px 12px", fontSize: 12, outline: "none" }}>
-            <option>ALL ASSETS</option>
-            {allSymbols.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-        <div>
-          <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.1em", marginBottom: 4, fontWeight: 700 }}>STRATEGY</div>
-          <select value={strategyFilter} onChange={(e) => setStrategyFilter(e.target.value)}
-            style={{ background: "#222", border: "1px solid #2a2a2a", color: "#fff", padding: "8px 12px", fontSize: 12, outline: "none" }}>
-            <option>ANY STRATEGY</option>
-            {allStrategies.map((s) => <option key={s}>{s}</option>)}
-          </select>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          {(["ALL", "WIN", "LOSS"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => { setResultFilter(mode); setPage(1); }}
-              style={{
-                background: resultFilter === mode ? "#fff" : "#222",
-                color: resultFilter === mode ? "#111" : "#888",
-                border: "1px solid #2a2a2a",
-                padding: "8px 16px",
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                cursor: "pointer",
-              }}
-            >
-              {mode}
-            </button>
-          ))}
-          <button onClick={() => { setPage(1); fetchTrades(); }}
-            style={{ alignSelf: "flex-end", background: "#fff", color: "#111", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", border: "none", cursor: "pointer", marginTop: 18 }}>
-            APPLY FILTERS
-          </button>
-        </div>
-        <button onClick={handleExportCsv}
-          style={{ alignSelf: "flex-end", background: "transparent", color: "#888", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", border: "1px solid #2a2a2a", cursor: "pointer", marginTop: 18 }}>
-          EXPORT CSV
-        </button>
       </div>
 
-      {/* Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, marginBottom: 1 }}>
-        <StatCard label="TOTAL P&L" value={loading ? "..." : fmt(totalPnl)} valueColor={totalPnl >= 0 ? "#22c55e" : "#ef4444"} />
-        <StatCard label="WIN RATE" value={loading ? "..." : winRate} />
-        <StatCard label="AVG R:R" value={loading ? "..." : avgRR} />
-        <StatCard label="ACTIVE RISK" value={`${total} TRADES`} />
+      {importProgress && (
+        <div className="glass-card p-3 md:p-4 mb-4" style={{
+          background: "rgba(59,130,246,0.05)",
+          border: "1px solid rgba(59,130,246,0.35)",
+        }}>
+          <div className="text-xs font-semibold mb-2" style={{ color: "var(--accent-primary, #3b82f6)" }}>
+            IMPORTING CSV… {importProgress.processed}/{importProgress.total} rows
+          </div>
+          <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+            {importProgress.imported} imported
+            {importProgress.errors.length > 0 ? ` · ${importProgress.errors.length} row errors` : ""}
+          </div>
+        </div>
+      )}
+
+      {importResult && (
+        <div className="glass-card p-3 md:p-4 mb-4" style={{
+          background: importResult.errors.length > 0 ? "rgba(239,68,68,0.05)" : "rgba(16,185,129,0.05)",
+          border: `1px solid ${importResult.errors.length > 0 ? "var(--accent-loss)" : "var(--accent-profit)"}`,
+        }}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <div className="text-xs font-semibold mb-1" style={{ color: importResult.errors.length > 0 ? "var(--accent-loss)" : "var(--accent-profit)" }}>
+                {importResult.imported > 0 ? `IMPORTED ${importResult.imported} TRADE${importResult.imported !== 1 ? "S" : ""}` : "IMPORT COMPLETED"}
+              </div>
+              {importResult.errors.length > 0 && (
+                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {importResult.errors.slice(0, 3).map((err, i) => (
+                    <div key={i}>{err}</div>
+                  ))}
+                  {importResult.errors.length > 3 && <div>...and {importResult.errors.length - 3} more errors</div>}
+                </div>
+              )}
+            </div>
+            <button onClick={() => setImportResult(null)} className="btn-glass text-xs">DISMISS</button>
+          </div>
+        </div>
+      )}
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
+        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="TOTAL P&L" value={fmt(totalPnl)} valueColor={totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)"} />}</div>
+        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="WIN RATE" value={winRate} />}</div>
+        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="AVG R:R" value={avgRR} />}</div>
+        <div className="fade-up"><StatCard label="ACTIVE TRADES" value={`${total}`} /></div>
       </div>
 
-      {/* Execution Archive */}
-      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", padding: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <span style={{ color: "#fff", fontSize: 13, fontWeight: 700, letterSpacing: "0.08em" }}>EXECUTION ARCHIVE</span>
-          <span style={{ color: "#888", fontSize: 11 }}>SHOWING {Math.min((page - 1) * 10 + 1, total)}–{Math.min(page * 10, total)} OF {total} TRADES</span>
+      {/* Trade cards */}
+      <div className="glass-card p-4 md:p-6 fade-up mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 md:mb-5">
+          <span className="label-caps">EXECUTION ARCHIVE</span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            SHOWING {Math.min((page - 1) * 10 + 1, total)}–{Math.min(page * 10, total)} OF {total} TRADES
+          </span>
         </div>
         {filteredTrades.length === 0 ? (
-          <div style={{ color: "#888", padding: "60px 0", textAlign: "center" }}>
+          <div style={{ color: "var(--text-muted)", padding: "40px 0", textAlign: "center" }}>
             {loading ? (
-              "Loading trades..."
+              <TradeLogSkeleton />
             ) : trades.length === 0 ? (
               <>
-                <div style={{ marginBottom: 12, fontWeight: 700, color: "#fff" }}>
-                  No trades found.
-                </div>
-                <div style={{ marginBottom: 16 }}>Create a new trade to see it appear in the execution archive.</div>
-                <button
-                  onClick={() => router.push("/add-trade")}
-                  style={{ background: "#fff", color: "#111", border: "none", borderRadius: 8, padding: "10px 18px", fontWeight: 700, cursor: "pointer" }}
-                >
+                <div className="mb-3 font-semibold" style={{ color: "var(--text-primary)" }}>No trades found.</div>
+                <div className="mb-4">Create a new trade to see it appear here.</div>
+                <button onClick={() => router.push("/add-trade")} className="btn-primary">
                   Add First Trade
                 </button>
               </>
             ) : (
               <>
-                <div style={{ marginBottom: 12, fontWeight: 700, color: "#fff" }}>
-                  No trades match the current filters.
-                </div>
+                <div className="mb-3 font-semibold" style={{ color: "var(--text-primary)" }}>No trades match filters.</div>
                 <button
                   onClick={() => {
                     setAssetFilter("ALL ASSETS");
@@ -236,7 +420,7 @@ export default function TradeLog() {
                     setToDate("");
                     setPage(1);
                   }}
-                  style={{ background: "#fff", color: "#111", border: "none", borderRadius: 8, padding: "10px 18px", fontWeight: 700, cursor: "pointer" }}
+                  className="btn-primary"
                 >
                   Reset Filters
                 </button>
@@ -244,92 +428,84 @@ export default function TradeLog() {
             )}
           </div>
         ) : (
-          <div style={{ display: "grid", gap: 16 }}>
+          <div className="flex flex-col gap-4">
             {filteredTrades.slice((page - 1) * 10, page * 10).map((t) => {
               const isWin = t.pnl >= 0;
               const isLong = t.direction === "buy";
               return (
-                <div key={t.id} style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 12, overflow: "hidden", display: "grid", gridTemplateColumns: "280px 1fr", gap: 0 }}>
-                  <div style={{ minHeight: 200, background: "#141414", position: "relative" }}>
+                <div key={t.id} className="glass-card overflow-hidden">
+                  {/* Image section - full width mobile, left side desktop */}
+                  <div className="w-full md:w-[280px] min-h-[160px] md:min-h-[200px] relative" style={{ background: "var(--bg-primary)" }}>
                     {t.chart_image ? (
-                      <img src={t.chart_image} alt="Trade chart" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={t.chart_image} alt="Trade chart" className="w-full h-full object-cover" />
                     ) : (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#555", fontSize: 12, padding: 16, textAlign: "center" }}>
-                        No chart image added for this trade.
+                      <div className="flex items-center justify-center h-full text-xs p-4 text-center" style={{ color: "var(--text-dim)" }}>
+                        No chart image
                       </div>
                     )}
-                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 12, background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.8))" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                        <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>{t.symbol}</span>
-                        <span style={{ color: isWin ? "#22c55e" : "#ef4444", fontSize: 12, fontWeight: 700 }}>{isWin ? "WIN" : "LOSS"}</span>
+                    <div className="absolute bottom-0 left-0 right-0 p-3" style={{ background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.8))" }}>
+                      <div className="flex justify-between gap-2">
+                        <span className="font-bold text-sm">{t.symbol}</span>
+                        <span className="font-bold text-sm" style={{ color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>{isWin ? "WIN" : "LOSS"}</span>
                       </div>
-                      <div style={{ color: "#aaa", fontSize: 11, marginTop: 4 }}>{t.strategy || "No strategy tag"}</div>
+                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t.strategy || "No strategy"}</div>
                     </div>
                   </div>
-                  <div style={{ padding: 20, display: "grid", gap: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  {/* Details */}
+                  <div className="p-4 flex flex-col gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 8 }}>DIRECTION</div>
-                        <div style={{ color: isLong ? "#22c55e" : "#ef4444", fontWeight: 700 }}>{isLong ? "LONG" : "SHORT"}</div>
+                        <div className="label-caps mb-1">DIRECTION</div>
+                        <div className="font-semibold text-sm" style={{ color: isLong ? "var(--accent-profit)" : "var(--accent-loss)" }}>{isLong ? "LONG" : "SHORT"}</div>
                       </div>
                       <div>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 8 }}>RESULT</div>
-                        <div style={{ color: isWin ? "#22c55e" : "#ef4444", fontWeight: 700 }}>{fmt(Number(t.pnl))}</div>
+                        <div className="label-caps mb-1">RESULT</div>
+                        <div className="mono-data font-semibold text-sm" style={{ color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>{fmt(Number(t.pnl))}</div>
                       </div>
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
-                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>ENTRY</div>
-                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.entry_price}</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="glass-card p-3">
+                        <div className="label-caps mb-1">ENTRY</div>
+                        <div className="mono-data font-semibold text-sm">{t.entry_price}</div>
                       </div>
-                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>EXIT</div>
-                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.exit_price}</div>
+                      <div className="glass-card p-3">
+                        <div className="label-caps mb-1">EXIT</div>
+                        <div className="mono-data font-semibold text-sm">{t.exit_price}</div>
                       </div>
-                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>DATE</div>
-                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.trade_date ? new Date(t.trade_date).toISOString().replace("T", " ").slice(0, 16) : new Date(t.created_at).toISOString().replace("T", " ").slice(0, 16)}</div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
-                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>LOT</div>
-                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.lot_size}</div>
-                      </div>
-                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>SL</div>
-                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.stop_loss?.toFixed(5) ?? "--"}</div>
-                      </div>
-                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>TP</div>
-                        <div style={{ color: "#fff", fontWeight: 700 }}>{t.take_profit?.toFixed(5) ?? "--"}</div>
-                      </div>
-                      <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: 8, padding: 12 }}>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>COMMISSION</div>
-                        <div style={{ color: "#fff", fontWeight: 700 }}>${t.commission?.toFixed(2) ?? "0.00"}</div>
+                      <div className="glass-card p-3 col-span-2 sm:col-span-1">
+                        <div className="label-caps mb-1">DATE</div>
+                        <div className="mono-data font-semibold text-xs">{fmtDate(t.trade_date ?? t.created_at)}</div>
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-                      <div style={{ flex: 1, minWidth: 220 }}>
-                        <div style={{ color: "#888", fontSize: 10, letterSpacing: "0.12em", marginBottom: 6 }}>NOTES</div>
-                        <div style={{ color: "#ccc", fontSize: 12, lineHeight: 1.6, minHeight: 60 }}>{t.notes || "No additional notes."}</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="glass-card p-3">
+                        <div className="label-caps mb-1">LOT</div>
+                        <div className="mono-data font-semibold text-sm">{t.lot_size}</div>
                       </div>
-                      <div style={{ minWidth: 130, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <button
-                          onClick={() => router.push(`/trades/${t.id}/edit`)}
-                          style={{ background: "#fff", color: "#111", border: "none", borderRadius: 8, padding: "10px 0", fontWeight: 700, cursor: "pointer" }}
-                        >
-                          EDIT
-                        </button>
-                        <button
-                          onClick={() => handleDelete(t.id)}
-                          style={{ background: "transparent", color: "#ef4444", border: "1px solid #ef4444", borderRadius: 8, padding: "10px 0", fontWeight: 700, cursor: "pointer" }}
-                        >
-                          DELETE
-                        </button>
+                      <div className="glass-card p-3">
+                        <div className="label-caps mb-1">SL</div>
+                        <div className="mono-data font-semibold text-sm">{t.stop_loss != null ? Number(t.stop_loss).toFixed(5) : "--"}</div>
+                      </div>
+                      <div className="glass-card p-3">
+                        <div className="label-caps mb-1">TP</div>
+                        <div className="mono-data font-semibold text-sm">{t.take_profit != null ? Number(t.take_profit).toFixed(5) : "--"}</div>
+                      </div>
+                      <div className="glass-card p-3">
+                        <div className="label-caps mb-1">COMMISSION</div>
+                        <div className="mono-data font-semibold text-sm">${Number(t.commission ?? 0).toFixed(2)}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+                      <div className="flex-1 w-full">
+                        <div className="label-caps mb-2">NOTES</div>
+                        <div style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6, minHeight: 40 }}>{t.notes || "No notes."}</div>
+                      </div>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <button onClick={() => router.push(`/trades/${t.id}/edit`)} className="btn-primary text-xs flex-1 sm:flex-initial">EDIT</button>
+                        <button onClick={() => handleDelete(t.id)} className="btn-glass text-xs flex-1 sm:flex-initial" style={{ color: "var(--accent-loss)", borderColor: "var(--accent-loss)" }}>DELETE</button>
                       </div>
                     </div>
                   </div>
@@ -339,51 +515,45 @@ export default function TradeLog() {
           </div>
         )}
 
-        {/* Pagination */}
         {totalPages > 1 && (
-          <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 20 }}>
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ background: "transparent", border: "1px solid #2a2a2a", color: page === 1 ? "#555" : "#fff", padding: "6px 12px", cursor: page === 1 ? "default" : "pointer", fontSize: 12 }}>{"<"}</button>
+          <div className="flex gap-1 justify-center mt-5 flex-wrap">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn-glass text-xs" disabled={page === 1}>{"<"}</button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)}
-                style={{ background: p === page ? "#fff" : "transparent", border: "1px solid #2a2a2a", color: p === page ? "#111" : "#fff", padding: "6px 12px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>{p}</button>
+              <button key={p} onClick={() => setPage(p)} className={`btn-glass text-xs ${p === page ? 'active' : ''}`}>{p}</button>
             ))}
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-              style={{ background: "transparent", border: "1px solid #2a2a2a", color: page === totalPages ? "#555" : "#fff", padding: "6px 12px", cursor: page === totalPages ? "default" : "pointer", fontSize: 12 }}>{">"}</button>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="btn-glass text-xs" disabled={page === totalPages}>{">"}</button>
           </div>
         )}
       </div>
 
-      {/* Bottom Panels */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, marginTop: 1 }}>
-        {/* Session Distribution */}
-        <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", padding: 24 }}>
-          <div style={{ color: "#888", fontSize: 11, letterSpacing: "0.12em", fontWeight: 700, marginBottom: 20, textTransform: "uppercase" }}>SESSION DISTRIBUTION</div>
+      {/* Session + Strategy */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="glass-card p-4 md:p-6 fade-up">
+          <div className="label-caps mb-4">SESSION DISTRIBUTION</div>
           {["NY OPEN", "LONDON", "ASIAN"].map((session) => {
             const pct = Math.round((sessionCounts[session] / sessionTotal) * 100);
             return (
-              <div key={session} style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, letterSpacing: "0.08em" }}>{session}</span>
-                  <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>{pct}%</span>
+              <div key={session} className="mb-4">
+                <div className="flex justify-between mb-1.5">
+                  <span className="font-semibold tracking-wide text-xs">{session}</span>
+                  <span className="mono-data font-semibold">{pct}%</span>
                 </div>
-                <div style={{ height: 4, background: "#222", width: "100%" }}>
-                  <div style={{ height: 4, background: "#fff", width: `${pct}%`, transition: "width 0.3s" }} />
+                <div style={{ height: 4, background: "var(--border)", width: "100%", borderRadius: 2 }}>
+                  <div style={{ height: 4, background: "var(--accent-cyan)", width: `${pct}%`, transition: "width 0.3s", borderRadius: 2 }} />
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Execution Tags */}
-        <div style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", padding: 24 }}>
-          <div style={{ color: "#888", fontSize: 11, letterSpacing: "0.12em", fontWeight: 700, marginBottom: 20, textTransform: "uppercase" }}>EXECUTION TAGS</div>
+        <div className="glass-card p-4 md:p-6 fade-up">
+          <div className="label-caps mb-4">STRATEGY TAGS</div>
           {allStrategies.length === 0 ? (
-            <p style={{ color: "#555", fontSize: 12 }}>No strategy tags logged yet.</p>
+            <p style={{ color: "var(--text-dim)", fontSize: 12 }}>No strategy tags yet.</p>
           ) : (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div className="flex flex-wrap gap-2">
               {allStrategies.map((s) => (
-                <span key={s} style={{ background: "#1c1c1c", border: "1px solid #2a2a2a", color: "#888", padding: "4px 10px", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em" }}>
+                <span key={s} className="glass-card px-3 py-1.5 text-xs font-semibold">
                   #{s}
                 </span>
               ))}
@@ -392,16 +562,13 @@ export default function TradeLog() {
         </div>
       </div>
 
-      {/* Anomalous Risk */}
       {showAnomaly && (
-        <div style={{ marginTop: 1, background: "#1c1c1c", border: "1px solid #e8603c", padding: 24 }}>
-          <div style={{ color: "#ef4444", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 8 }}>ANOMALOUS RISK DETECTED</div>
-          <p style={{ color: "#888", fontSize: 12, margin: "0 0 16px" }}>
-            3 or more consecutive losses detected in your recent trade history. Review your protocol before continuing.
+        <div className="glass-card p-4 md:p-6 fade-up" style={{ borderColor: "var(--accent-warn)" }}>
+          <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "var(--accent-warn)" }}>ANOMALOUS RISK</div>
+          <p className="text-sm mb-4" style={{ color: "var(--text-muted)", margin: "0 0 16px" }}>
+            3+ consecutive losses detected. Review your protocol.
           </p>
-          <button style={{ background: "transparent", border: "1px solid #e8603c", color: "#e8603c", padding: "8px 20px", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", cursor: "pointer" }}>
-            REVIEW PROTOCOL
-          </button>
+          <button className="btn-glass text-xs" style={{ borderColor: "var(--accent-warn)", color: "var(--accent-warn)" }}>REVIEW PROTOCOL</button>
         </div>
       )}
     </div>

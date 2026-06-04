@@ -17,20 +17,6 @@ const moods = [
   { value: "terrible", label: "TERRIBLE", emoji: "🔴", color: "#ef4444" },
 ];
 
-const inputStyle: React.CSSProperties = {
-  width: "100%", backgroundColor: "#111111", border: "1px solid #2a2a2a", borderRadius: "4px",
-  padding: "10px 12px", color: "#ffffff", fontFamily: "monospace", fontSize: "13px",
-  outline: "none", boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: "10px", color: "#888", letterSpacing: "0.12em", marginBottom: "6px", display: "block",
-};
-
-const sectionStyle: React.CSSProperties = {
-  backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", padding: "20px", marginBottom: "16px",
-};
-
 function toDateStr(d: Date) {
   return d.toISOString().slice(0, 10);
 }
@@ -115,31 +101,39 @@ export default function JournalPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", backgroundColor: "#111111", color: "#555", fontFamily: "monospace", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontSize: "12px", letterSpacing: "0.15em" }}>LOADING JOURNAL...</div>
+      <div className="min-h-screen font-mono flex items-center justify-center" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+        <div className="text-xs tracking-widest">LOADING JOURNAL...</div>
       </div>
     );
   }
 
   const entryDates = new Set(entries.map((e) => e.date?.slice(0, 10)));
+  const inputCls = "w-full border px-3 py-2.5 text-sm outline-none box-border focus:border-[#22d3ee]";
+  const labelCls = "block text-xs tracking-widest mb-1.5";
+  const sectionCls = "border p-4 md:p-5 mb-4";
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#111111", color: "#ffffff", fontFamily: "monospace" }}>
+    <div className="min-h-screen p-4 md:p-6 lg:p-10" style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "0.1em", margin: 0 }}>TRADE JOURNAL</h1>
-          <p style={{ fontSize: "11px", color: "#555", margin: "4px 0 0", letterSpacing: "0.05em" }}>
+          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">TRADE JOURNAL</h1>
+          <p className="text-xs mt-1 tracking-wide" style={{ color: "var(--text-dim)" }}>
             DAILY REFLECTION // SELF-AWARENESS ENGINE
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="flex gap-2">
           {(["editor", "history"] as const).map((v) => (
             <button key={v} onClick={() => setView(v)}
+              className={`px-4 py-2 text-xs font-bold tracking-widest rounded border cursor-pointer transition-colors ${
+                view === v ? "" : "bg-transparent"
+              }`}
               style={{
-                background: view === v ? "#fff" : "transparent", color: view === v ? "#111" : "#888",
-                border: "1px solid #2a2a2a", borderRadius: "4px", padding: "8px 16px",
-                fontFamily: "monospace", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer",
+                borderColor: "var(--border)",
+                borderRadius: "var(--radius-sm)",
+                fontFamily: "var(--font-mono)",
+                backgroundColor: view === v ? "var(--text-primary)" : undefined,
+                color: view === v ? "var(--bg-primary)" : "var(--text-muted)",
               }}
             >
               {v.toUpperCase()}
@@ -148,16 +142,16 @@ export default function JournalPage() {
         </div>
       </div>
 
-      {/* Streak Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "24px" }}>
+      {/* Streak Stats - 1 col mobile, 3 col desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         {[
-          { label: "CURRENT STREAK", value: `${streak.currentStreak} DAY${streak.currentStreak !== 1 ? "S" : ""}`, color: streak.currentStreak >= 7 ? "#22c55e" : "#fff" },
-          { label: "LONGEST STREAK", value: `${streak.longestStreak} DAY${streak.longestStreak !== 1 ? "S" : ""}`, color: "#888" },
-          { label: "TOTAL ENTRIES", value: `${streak.totalEntries}`, color: "#888" },
+          { label: "CURRENT STREAK", value: `${streak.currentStreak} DAY${streak.currentStreak !== 1 ? "S" : ""}`, color: streak.currentStreak >= 7 ? "var(--accent-profit)" : "var(--text-primary)" },
+          { label: "LONGEST STREAK", value: `${streak.longestStreak} DAY${streak.longestStreak !== 1 ? "S" : ""}`, color: "var(--text-muted)" },
+          { label: "TOTAL ENTRIES", value: `${streak.totalEntries}`, color: "var(--text-muted)" },
         ].map((s) => (
-          <div key={s.label} style={{ ...sectionStyle, marginBottom: 0, textAlign: "center" }}>
-            <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.12em", marginBottom: "8px" }}>{s.label}</div>
-            <div style={{ fontSize: "20px", fontWeight: 700, color: s.color }}>{s.value}</div>
+          <div key={s.label} className={`${sectionCls} mb-0 text-center`} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
+            <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-dim)" }}>{s.label}</div>
+            <div className="text-lg md:text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -165,113 +159,122 @@ export default function JournalPage() {
       {view === "editor" ? (
         <>
           {/* Date picker */}
-          <div style={{ ...sectionStyle, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className={`${sectionCls} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4`} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
             <div>
-              <label style={labelStyle}>JOURNAL DATE</label>
+              <label className={labelCls} style={{ color: "var(--text-muted)" }}>JOURNAL DATE</label>
               <input
                 type="date" value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                style={{ ...inputStyle, width: "200px" }}
+                className={`${inputCls} w-full sm:w-[200px]`}
+                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
               />
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div className="flex gap-2">
               <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(toDateStr(d)); }}
-                style={{ background: "transparent", border: "1px solid #2a2a2a", color: "#888", padding: "8px 12px", cursor: "pointer", fontFamily: "monospace", fontSize: "11px", borderRadius: "4px" }}>
+                className="bg-transparent px-3 py-2 cursor-pointer text-xs rounded"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)", borderRadius: "var(--radius-sm)" }}>
                 ← PREV
               </button>
               <button onClick={() => setSelectedDate(toDateStr(new Date()))}
-                style={{ background: "transparent", border: "1px solid #2a2a2a", color: "#888", padding: "8px 12px", cursor: "pointer", fontFamily: "monospace", fontSize: "11px", borderRadius: "4px" }}>
+                className="bg-transparent px-3 py-2 cursor-pointer text-xs rounded"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)", borderRadius: "var(--radius-sm)" }}>
                 TODAY
               </button>
               <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(toDateStr(d)); }}
-                style={{ background: "transparent", border: "1px solid #2a2a2a", color: "#888", padding: "8px 12px", cursor: "pointer", fontFamily: "monospace", fontSize: "11px", borderRadius: "4px" }}>
+                className="bg-transparent px-3 py-2 cursor-pointer text-xs rounded"
+                style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)", borderRadius: "var(--radius-sm)" }}>
                 NEXT →
               </button>
             </div>
           </div>
 
-          {/* Mood selector */}
-          <div style={sectionStyle}>
-            <label style={labelStyle}>EMOTIONAL STATE</label>
-            <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+          {/* Mood selector - wrap on mobile */}
+          <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
+            <label className={labelCls} style={{ color: "var(--text-muted)" }}>EMOTIONAL STATE</label>
+            <div className="flex flex-wrap gap-2 mt-2">
               {moods.map((m) => (
                 <button key={m.value} onClick={() => setMood(m.value)}
+                  className="flex-1 min-w-[60px] px-2 py-3 text-xs font-bold tracking-wide rounded border text-center transition-all"
                   style={{
-                    flex: 1, padding: "12px 8px", backgroundColor: mood === m.value ? `${m.color}22` : "#111",
-                    border: `1px solid ${mood === m.value ? m.color : "#2a2a2a"}`, borderRadius: "4px",
-                    color: mood === m.value ? m.color : "#555", cursor: "pointer", fontFamily: "monospace",
-                    fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textAlign: "center",
-                    transition: "all 0.15s",
+                    backgroundColor: mood === m.value ? `${m.color}22` : "var(--bg-primary)",
+                    border: `1px solid ${mood === m.value ? m.color : "var(--border)"}`,
+                    color: mood === m.value ? m.color : "var(--text-dim)",
+                    borderRadius: "var(--radius-sm)",
                   }}
                 >
-                  <div style={{ fontSize: "18px", marginBottom: "4px" }}>{m.emoji}</div>
+                  <div className="text-lg mb-1">{m.emoji}</div>
                   {m.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Pre + Post market notes side by side */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <div style={sectionStyle}>
-              <label style={labelStyle}>PRE-MARKET NOTES</label>
+          {/* Pre + Post market notes - stack on mobile, side by side on desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
+              <label className={labelCls} style={{ color: "var(--text-muted)" }}>PRE-MARKET NOTES</label>
               <textarea
-                style={{ ...inputStyle, minHeight: "150px", resize: "vertical" }}
+                className={`${inputCls} min-h-[120px] resize-y`}
                 value={preMarket} onChange={(e) => setPreMarket(e.target.value)}
                 placeholder="What's your game plan for today? Key levels, bias, setups to watch..."
+                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
               />
             </div>
-            <div style={sectionStyle}>
-              <label style={labelStyle}>POST-MARKET NOTES</label>
+            <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
+              <label className={labelCls} style={{ color: "var(--text-muted)" }}>POST-MARKET NOTES</label>
               <textarea
-                style={{ ...inputStyle, minHeight: "150px", resize: "vertical" }}
+                className={`${inputCls} min-h-[120px] resize-y`}
                 value={postMarket} onChange={(e) => setPostMarket(e.target.value)}
                 placeholder="How did the session go? What went well, what needs improvement..."
+                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
               />
             </div>
           </div>
 
           {/* Market conditions + Lessons */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-            <div style={sectionStyle}>
-              <label style={labelStyle}>MARKET CONDITIONS</label>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
+              <label className={labelCls} style={{ color: "var(--text-muted)" }}>MARKET CONDITIONS</label>
               <textarea
-                style={{ ...inputStyle, minHeight: "100px", resize: "vertical" }}
+                className={`${inputCls} min-h-[80px] resize-y`}
                 value={marketConditions} onChange={(e) => setMarketConditions(e.target.value)}
                 placeholder="Trending, ranging, choppy, high volatility..."
+                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
               />
             </div>
-            <div style={sectionStyle}>
-              <label style={labelStyle}>KEY LESSONS</label>
+            <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
+              <label className={labelCls} style={{ color: "var(--text-muted)" }}>KEY LESSONS</label>
               <textarea
-                style={{ ...inputStyle, minHeight: "100px", resize: "vertical" }}
+                className={`${inputCls} min-h-[80px] resize-y`}
                 value={lessons} onChange={(e) => setLessons(e.target.value)}
                 placeholder="What did you learn today? Rules to reinforce..."
+                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
               />
             </div>
           </div>
 
           {/* Save / Delete bar */}
-          <div style={{
-            ...sectionStyle, display: "flex", justifyContent: "space-between", alignItems: "center",
-          }}>
+          <div className={`${sectionCls} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4`} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
             <div>
               {currentEntry ? (
                 <button onClick={handleDelete}
-                  style={{ background: "transparent", border: "1px solid #ef444444", color: "#ef4444", padding: "10px 20px", cursor: "pointer", fontFamily: "monospace", fontSize: "11px", fontWeight: 700, letterSpacing: "0.1em", borderRadius: "4px" }}>
+                  className="bg-transparent border border-red-500/25 text-red-500 px-5 py-2.5 cursor-pointer text-xs font-bold tracking-widest rounded"
+                  style={{ fontFamily: "var(--font-mono)", borderRadius: "var(--radius-sm)" }}>
                   DELETE ENTRY
                 </button>
               ) : (
-                <span style={{ fontSize: "11px", color: "#555", letterSpacing: "0.08em" }}>
+                <span className="text-xs tracking-wide" style={{ color: "var(--text-dim)" }}>
                   {entryDates.has(selectedDate) ? "ENTRY EXISTS" : "NO ENTRY FOR THIS DATE"}
                 </span>
               )}
             </div>
             <button onClick={handleSave} disabled={saving}
+              className={`px-8 py-3 text-xs font-bold tracking-widest rounded ${saving ? "cursor-not-allowed" : "cursor-pointer"}`}
               style={{
-                backgroundColor: saving ? "#333" : "#fff", color: saving ? "#888" : "#111",
-                border: "none", borderRadius: "4px", padding: "12px 32px", fontFamily: "monospace",
-                fontSize: "12px", fontWeight: 700, letterSpacing: "0.15em", cursor: saving ? "not-allowed" : "pointer",
+                fontFamily: "var(--font-mono)",
+                borderRadius: "var(--radius-sm)",
+                backgroundColor: saving ? "var(--border)" : "var(--text-primary)",
+                color: saving ? "var(--text-muted)" : "var(--bg-primary)",
               }}>
               {saving ? "SAVING..." : currentEntry ? "UPDATE ENTRY" : "SAVE ENTRY"}
             </button>
@@ -279,43 +282,37 @@ export default function JournalPage() {
         </>
       ) : (
         /* History View */
-        <div style={sectionStyle}>
-          <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.15em", marginBottom: "20px" }}>
+        <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
+          <div className="text-xs tracking-widest mb-5" style={{ color: "var(--text-dim)" }}>
             JOURNAL HISTORY — {entries.length} ENTRIES
           </div>
           {entries.length === 0 ? (
-            <div style={{ color: "#555", fontSize: "12px", textAlign: "center", padding: "40px 0" }}>
+            <div className="text-sm text-center py-10" style={{ color: "var(--text-dim)" }}>
               NO JOURNAL ENTRIES YET. START WRITING TODAY.
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div className="flex flex-col gap-2">
               {entries.map((e) => {
                 const moodObj = moods.find((m) => m.value === e.mood);
                 return (
                   <button
                     key={e.id}
                     onClick={() => { setSelectedDate(e.date.slice(0, 10)); setView("editor"); }}
-                    style={{
-                      display: "flex", justifyContent: "space-between", alignItems: "center",
-                      backgroundColor: "#111", border: "1px solid #2a2a2a", borderRadius: "4px",
-                      padding: "14px 16px", cursor: "pointer", textAlign: "left", width: "100%",
-                      fontFamily: "monospace", transition: "border-color 0.15s",
-                    }}
-                    onMouseEnter={(el) => { (el.currentTarget as HTMLElement).style.borderColor = "#555"; }}
-                    onMouseLeave={(el) => { (el.currentTarget as HTMLElement).style.borderColor = "#2a2a2a"; }}
+                    className="flex justify-between items-center border rounded px-4 py-3.5 cursor-pointer text-left w-full transition-colors"
+                    style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", fontFamily: "var(--font-mono)" }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      <span style={{ fontSize: "18px" }}>{moodObj?.emoji || "⚪"}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{moodObj?.emoji || "⚪"}</span>
                       <div>
-                        <div style={{ fontSize: "13px", color: "#fff", fontWeight: 700 }}>
+                        <div className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
                           {new Date(e.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                         </div>
-                        <div style={{ fontSize: "10px", color: "#555", marginTop: "2px" }}>
+                        <div className="text-xs mt-0.5" style={{ color: "var(--text-dim)" }}>
                           {e.pre_market_notes ? e.pre_market_notes.slice(0, 80) + (e.pre_market_notes.length > 80 ? "..." : "") : "No pre-market notes"}
                         </div>
                       </div>
                     </div>
-                    <div style={{ fontSize: "10px", color: moodObj?.color || "#555", letterSpacing: "0.08em", fontWeight: 700 }}>
+                    <div className="text-xs tracking-wide font-bold" style={{ color: moodObj?.color || "var(--text-dim)" }}>
                       {moodObj?.label || "—"}
                     </div>
                   </button>

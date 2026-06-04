@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { NotificationBell } from "./NotificationBell";
 
 const navItems = [
   {
@@ -53,6 +54,30 @@ const navItems = [
     ),
   },
   {
+    label: "CALENDAR",
+    href: "/calendar",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="2" y="2" width="10" height="10" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="2" y1="6" x2="12" y2="6" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="4" y1="0" x2="4" y2="4" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="10" y1="0" x2="10" y2="4" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    ),
+  },
+  {
+    label: "CALCULATOR",
+    href: "/calculator",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="0" y="0" width="14" height="2" />
+        <rect x="0" y="4" width="10" height="2" />
+        <rect x="0" y="8" width="12" height="2" />
+        <rect x="0" y="12" width="8" height="2" />
+      </svg>
+    ),
+  },
+  {
     label: "NEW TRADE",
     href: "/add-trade",
     icon: (
@@ -62,9 +87,32 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: "GOALS",
+    href: "/goals",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="7" cy="7" r="3" fill="currentColor" />
+        <circle cx="7" cy="7" r="1" fill="var(--bg-primary)" />
+      </svg>
+    ),
+  },
+  {
+    label: "REPORTS",
+    href: "/reports",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="0" y="2" width="12" height="10" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="3" y1="6" x2="3" y2="10" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="7" y1="4" x2="7" y2="10" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="11" y1="7" x2="11" y2="10" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    ),
+  },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
@@ -72,32 +120,49 @@ export default function Sidebar() {
     ? user.username.slice(0, 2).toUpperCase()
     : "OP";
 
+  const handleNavClick = () => {
+    onClose?.();
+  };
+
   return (
     <aside
-      className="flex flex-col flex-shrink-0 h-screen"
+      className="flex flex-col h-screen md:h-auto"
       style={{
         width: 240,
-        background: "#111111",
-        borderRight: "1px solid #2a2a2a",
+        background: "var(--bg-surface)",
+        borderRight: "1px solid var(--border)",
       }}
     >
-      {/* Logo */}
-      <div className="px-6 py-6">
+      {/* Logo + close button */}
+      <div className="px-6 py-6 flex items-center justify-between">
         <span
-          className="text-white font-bold tracking-widest"
-          style={{ fontSize: 18, letterSpacing: "0.2em" }}
+          className="font-bold tracking-widest"
+          style={{ fontSize: 18, letterSpacing: "0.2em", color: "var(--text-primary)" }}
         >
           TRADEZEN
         </span>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <button
+            onClick={onClose}
+            className="md:hidden p-1"
+            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {/* User Block — links to Settings */}
+      {/* User Block */}
       <Link
         href="/settings"
+        onClick={handleNavClick}
         className="mx-4 mb-4 px-3 py-3 flex items-center gap-3"
         style={{
-          background: pathname === "/settings" ? "#2a2a2a" : "#1c1c1c",
-          border: "1px solid #2a2a2a",
+          background: pathname === "/settings" ? "var(--border-hover)" : "var(--bg-glass)",
+          border: "1px solid var(--border)",
           textDecoration: "none",
           cursor: "pointer",
           transition: "background 0.15s",
@@ -108,24 +173,24 @@ export default function Sidebar() {
           style={{
             width: 32,
             height: 32,
-            background: "#2a2a2a",
-            color: "#888",
+            background: "var(--border)",
+            color: "var(--text-muted)",
           }}
         >
           {initials}
         </div>
         <div>
-          <div className="text-white text-xs font-bold tracking-wider">
+          <div className="text-xs font-bold tracking-wider" style={{ color: "var(--text-primary)" }}>
             {user?.username?.toUpperCase() || "OPERATOR"}
           </div>
-          <div className="text-xs" style={{ color: "#888" }}>
+          <div className="text-xs" style={{ color: "var(--text-muted)" }}>
             V-2.4.0
           </div>
         </div>
       </Link>
 
       {/* Divider */}
-      <div style={{ height: 1, background: "#2a2a2a", margin: "0 16px 8px" }} />
+      <div style={{ height: 1, background: "var(--border)", margin: "0 16px 8px" }} />
 
       {/* Nav Items */}
       <nav className="flex flex-col px-3 gap-1 flex-1">
@@ -136,10 +201,11 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={handleNavClick}
               className="flex items-center gap-3 px-3 py-2.5 text-xs font-bold tracking-widest transition-colors"
               style={{
-                background: isActive ? "#ffffff" : "transparent",
-                color: isActive ? "#111111" : "#888888",
+                background: isActive ? "var(--text-primary)" : "transparent",
+                color: isActive ? "var(--bg-primary)" : "var(--text-muted)",
                 letterSpacing: "0.1em",
                 textDecoration: "none",
               }}
@@ -154,10 +220,11 @@ export default function Sidebar() {
         <div style={{ marginTop: 24 }}>
           <Link
             href="/add-trade"
+            onClick={handleNavClick}
             className="flex items-center justify-center px-3 py-3 text-xs font-bold tracking-widest transition-colors"
             style={{
-              background: "#ffffff",
-              color: "#111111",
+              background: "var(--text-primary)",
+              color: "var(--bg-primary)",
               letterSpacing: "0.15em",
               textDecoration: "none",
             }}
@@ -170,13 +237,13 @@ export default function Sidebar() {
       {/* Bottom Controls */}
       <div
         className="px-3 py-4 flex flex-col gap-1"
-        style={{ borderTop: "1px solid #2a2a2a" }}
+        style={{ borderTop: "1px solid var(--border)" }}
       >
         <button
-          onClick={() => logout()}
+          onClick={() => { logout(); onClose?.(); }}
           className="flex items-center gap-3 px-3 py-2 text-xs font-bold tracking-widest w-full text-left"
           style={{
-            color: "#888",
+            color: "var(--text-muted)",
             letterSpacing: "0.1em",
             background: "none",
             border: "none",

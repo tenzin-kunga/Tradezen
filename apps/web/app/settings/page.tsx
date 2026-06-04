@@ -1,37 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { updateSettings } from "@/lib/api";
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  backgroundColor: "var(--bg-primary)",
-  border: "1px solid var(--border)",
-  borderRadius: "4px",
-  padding: "10px 12px",
-  color: "var(--text-primary)",
-  fontFamily: "monospace",
-  fontSize: "13px",
-  outline: "none",
-  boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: "10px",
-  color: "var(--text-muted)",
-  letterSpacing: "0.12em",
-  marginBottom: "6px",
-  display: "block",
-};
-
-const sectionStyle: React.CSSProperties = {
-  backgroundColor: "var(--bg-card)",
-  border: "1px solid var(--border)",
-  borderRadius: "4px",
-  padding: "20px",
-  marginBottom: "16px",
-};
+import { NotificationPreferences } from "@/components/NotificationPreferences";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -43,6 +15,16 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current != null) {
+        clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -67,7 +49,11 @@ export default function SettingsPage() {
         theme,
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (savedTimerRef.current != null) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => {
+        savedTimerRef.current = null;
+        setSaved(false);
+      }, 2000);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to save settings.");
     } finally {
@@ -75,40 +61,45 @@ export default function SettingsPage() {
     }
   }
 
+  const inputCls = "w-full border rounded px-3 py-2.5 text-sm outline-none box-border focus:border-[#22d3ee]";
+  const inputStyle = { fontFamily: "var(--font-mono)" };
+  const labelCls = "block text-xs tracking-widest mb-1.5";
+  const sectionCls = "border rounded p-4 md:p-5 mb-4";
+
   return (
-    <div style={{ minHeight: "100vh", color: "var(--text-primary)", fontFamily: "monospace" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
+    <div className="min-h-screen p-4 md:p-6 lg:p-10" style={{ color: "var(--text-primary)", fontFamily: "monospace" }}>
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 700, letterSpacing: "0.1em", margin: 0 }}>
+          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
             SETTINGS
           </h1>
-          <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "4px 0 0", letterSpacing: "0.05em" }}>
+          <p className="text-xs mt-1 tracking-wide" style={{ color: "var(--text-muted)" }}>
             SYSTEM_CONFIG // USER PREFERENCES
           </p>
         </div>
       </div>
 
       {/* Profile Info */}
-      <div style={sectionStyle}>
-        <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.15em", marginBottom: "16px" }}>
+      <div className={sectionCls} style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-dim)" }}>
           01 // ACCOUNT PROFILE
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label style={labelStyle}>USERNAME</label>
-            <div style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)", cursor: "not-allowed" }}>
+            <label className={labelCls} style={{ color: "var(--text-muted)" }}>USERNAME</label>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               {user?.username?.toUpperCase() || "--"}
             </div>
           </div>
           <div>
-            <label style={labelStyle}>EMAIL</label>
-            <div style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)", cursor: "not-allowed" }}>
+            <label className={labelCls} style={{ color: "var(--text-muted)" }}>EMAIL</label>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               {user?.email || "--"}
             </div>
           </div>
           <div>
-            <label style={labelStyle}>MEMBER SINCE</label>
-            <div style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)", cursor: "not-allowed" }}>
+            <label className={labelCls} style={{ color: "var(--text-muted)" }}>MEMBER SINCE</label>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "--"}
             </div>
           </div>
@@ -116,48 +107,51 @@ export default function SettingsPage() {
       </div>
 
       {/* Capital & Trading Defaults */}
-      <div style={sectionStyle}>
-        <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.15em", marginBottom: "16px" }}>
+      <div className={sectionCls} style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-dim)" }}>
           02 // TRADING PARAMETERS
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
-            <label style={labelStyle}>INITIAL CAPITAL ($)</label>
+            <label className={labelCls} style={{ color: "var(--text-muted)" }}>INITIAL CAPITAL ($)</label>
             <input
-              style={inputStyle}
+              className={`${inputCls} bg-[var(--bg-primary)] text-[var(--text-primary)] border-[var(--border)]`}
               type="number"
               step="any"
               min="0"
               value={initialCapital}
               onChange={(e) => setInitialCapital(e.target.value)}
               placeholder="10000"
+              style={inputStyle}
             />
-            <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
               Starting account balance for P&L tracking
             </p>
           </div>
           <div>
-            <label style={labelStyle}>DEFAULT LOT SIZE</label>
+            <label className={labelCls} style={{ color: "var(--text-muted)" }}>DEFAULT LOT SIZE</label>
             <input
-              style={inputStyle}
+              className={`${inputCls} bg-[var(--bg-primary)] text-[var(--text-primary)] border-[var(--border)]`}
               type="number"
               step="any"
               min="0"
               value={defaultLotSize}
               onChange={(e) => setDefaultLotSize(e.target.value)}
               placeholder="0.01"
+              style={inputStyle}
             />
-            <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
               Pre-filled lot size on new trades
             </p>
           </div>
         </div>
         <div>
-          <label style={labelStyle}>TIMEZONE</label>
+          <label className={labelCls} style={{ color: "var(--text-muted)" }}>TIMEZONE</label>
           <select
-            style={{ ...inputStyle, cursor: "pointer" }}
+            className={`${inputCls} bg-[var(--bg-primary)] text-[var(--text-primary)] border-[var(--border)] cursor-pointer`}
             value={timezone}
             onChange={(e) => setTimezone(e.target.value)}
+            style={inputStyle}
           >
             <option value="UTC">UTC</option>
             <option value="America/New_York">America/New_York (EST)</option>
@@ -174,31 +168,25 @@ export default function SettingsPage() {
       </div>
 
       {/* Appearance */}
-      <div style={sectionStyle}>
-        <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.15em", marginBottom: "16px" }}>
+      <div className={sectionCls} style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-dim)" }}>
           03 // APPEARANCE
         </div>
         <div>
-          <label style={labelStyle}>INTERFACE THEME</label>
-          <div style={{ display: "flex", gap: "0" }}>
+          <label className={labelCls} style={{ color: "var(--text-muted)" }}>INTERFACE THEME</label>
+          <div className="flex">
             {(["dark", "light"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setTheme(t)}
+                className="flex-1 py-3 text-xs font-bold tracking-widest border cursor-pointer transition-all"
                 style={{
-                  flex: 1,
-                  padding: "12px",
-                  fontFamily: "monospace",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                  letterSpacing: "0.1em",
-                  border: "1px solid var(--border)",
-                  cursor: "pointer",
-                  backgroundColor: theme === t ? (t === "dark" ? "#ffffff" : "#111111") : "var(--bg-primary)",
-                  color: theme === t ? (t === "dark" ? "#000000" : "#ffffff") : "var(--text-muted)",
-                  borderRadius: t === "dark" ? "4px 0 0 4px" : "0 4px 4px 0",
-                  transition: "all 0.15s",
+                  borderColor: "var(--border)",
+                  backgroundColor: theme === t ? (t === "dark" ? "var(--text-primary)" : "var(--bg-primary)") : "var(--bg-primary)",
+                  color: theme === t ? (t === "dark" ? "var(--bg-primary)" : "var(--text-primary)") : "var(--text-muted)",
+                  borderRadius: t === "dark" ? "var(--radius-sm) 0 0 var(--radius-sm)" : "0 var(--radius-sm) var(--radius-sm) 0",
+                  fontFamily: "var(--font-mono)",
                 }}
               >
                 {t === "dark" ? "◼ DARK MODE" : "◻ LIGHT MODE"}
@@ -209,50 +197,52 @@ export default function SettingsPage() {
       </div>
 
       {/* Risk Management */}
-      <div style={sectionStyle}>
-        <div style={{ fontSize: "10px", color: "#555", letterSpacing: "0.15em", marginBottom: "16px" }}>
+      <div className={sectionCls} style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-dim)" }}>
           04 // RISK MANAGEMENT
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label style={labelStyle}>MAX RISK PER TRADE (%)</label>
-            <div style={{ ...inputStyle, color: "var(--text-muted)" }}>
+            <label className={labelCls} style={{ color: "var(--text-muted)" }}>MAX RISK PER TRADE (%)</label>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               2.00
             </div>
-            <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
               Coming soon
             </p>
           </div>
           <div>
-            <label style={labelStyle}>MAX DAILY DRAWDOWN (%)</label>
-            <div style={{ ...inputStyle, color: "var(--text-muted)" }}>
+            <label className={labelCls} style={{ color: "var(--text-muted)" }}>MAX DAILY DRAWDOWN (%)</label>
+            <div className={`${inputCls} cursor-not-allowed`} style={{ ...inputStyle, backgroundColor: "var(--bg-panel)", color: "var(--text-muted)" }}>
               5.00
             </div>
-            <p style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>
+            <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
               Coming soon
             </p>
           </div>
         </div>
       </div>
 
+      {/* Notification Preferences */}
+      <div className={sectionCls}>
+        <h2 className="text-sm font-bold tracking-widest mb-4">NOTIFICATION PREFERENCES</h2>
+        <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+          Choose which alerts and reminders you want to receive
+        </p>
+        <NotificationPreferences />
+      </div>
+
       {/* Save bar */}
       <div
-        style={{
-          backgroundColor: "var(--bg-card)",
-          border: "1px solid var(--border)",
-          borderRadius: "4px",
-          padding: "16px 20px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 md:px-5 md:py-4 border rounded"
+        style={{ backgroundColor: "var(--bg-card)", borderColor: "var(--border)" }}
       >
         {error ? (
-          <span style={{ fontSize: "12px", color: "#ef4444", letterSpacing: "0.05em" }}>{error}</span>
+          <span className="text-sm tracking-wide" style={{ color: "var(--accent-loss)" }}>{error}</span>
         ) : saved ? (
-          <span style={{ fontSize: "12px", color: "#22c55e", letterSpacing: "0.05em" }}>SETTINGS SAVED SUCCESSFULLY</span>
+          <span className="text-sm tracking-wide" style={{ color: "var(--accent-profit)" }}>SETTINGS SAVED SUCCESSFULLY</span>
         ) : (
-          <span style={{ fontSize: "11px", color: "#555", letterSpacing: "0.08em" }}>
+          <span className="text-xs tracking-wide" style={{ color: "var(--text-dim)" }}>
             MODIFY PARAMETERS // SAVE TO PERSIST
           </span>
         )}
@@ -260,18 +250,13 @@ export default function SettingsPage() {
           type="button"
           onClick={handleSave}
           disabled={saving}
+          className="px-8 py-3 text-xs font-bold tracking-widest rounded transition-colors disabled:cursor-not-allowed"
           style={{
-            backgroundColor: saving ? "#333" : "#ffffff",
-            color: saving ? "#888" : "#000000",
+            backgroundColor: saving ? "var(--border)" : "var(--text-primary)",
+            color: saving ? "var(--text-muted)" : "var(--bg-primary)",
             border: "none",
-            borderRadius: "4px",
-            padding: "12px 32px",
-            fontFamily: "monospace",
-            fontSize: "12px",
-            fontWeight: 700,
-            letterSpacing: "0.15em",
-            cursor: saving ? "not-allowed" : "pointer",
-            transition: "background-color 0.15s",
+            borderRadius: "var(--radius-sm)",
+            fontFamily: "var(--font-mono)",
           }}
         >
           {saving ? "SAVING..." : "SAVE SETTINGS"}

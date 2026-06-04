@@ -1,105 +1,178 @@
-import { Injectable, NotFoundException, ConflictException } from "@nestjs/common";
-import { pool } from "../db";
-import { CreateTagDto, UpdateTagDto } from "./dto";
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+import { eq, and, count, desc } from 'drizzle-orm';
+import { db } from '../db/drizzle';
+import { tags, tradeTags, trades } from '@tradezen/db';
+import { CreateTagDto, UpdateTagDto } from './dto';
+import { TagCategory } from './dto/create-tag.dto';
 
 @Injectable()
 export class TagsService {
   async create(userId: string, dto: CreateTagDto) {
     try {
-      const { rows } = await pool.query(
-        `INSERT INTO tags (user_id, name, color, category) VALUES ($1, $2, $3, $4) RETURNING *`,
-        [userId, dto.name.trim(), dto.color || "#888888", dto.category || "setup"],
-      );
-      return rows[0];
-    } catch (err: any) {
-      if (err.code === "23505") throw new ConflictException("Tag with this name already exists");
+      const result = await db
+        .insert(tags)
+        .values({
+          userId,
+          name: dto.name.trim(),
+          color: dto.color || '#888888',
+          category: dto.category || TagCategory.SETUP,
+        })
+        .returning();
+      return result[0];
+    } catch (err) {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        err.code === '23505'
+      )
+        throw new ConflictException('Tag with this name already exists');
       throw err;
     }
   }
 
   async findAll(userId: string) {
-    const { rows } = await pool.query(
-      `SELECT t.*, COUNT(tt.trade_id)::int AS trade_count
-       FROM tags t LEFT JOIN trade_tags tt ON t.id = tt.tag_id
-       WHERE t.user_id = $1 GROUP BY t.id ORDER BY t.name`,
-      [userId],
-    );
-    return rows;
+    const result = await db
+      .select({
+        id: tags.id,
+        userId: tags.userId,
+        name: tags.name,
+        color: tags.color,
+        category: tags.category,
+        createdAt: tags.createdAt,
+        tradeCount: count(tradeTags.tradeId),
+      })
+      .from(tags)
+      .leftJoin(tradeTags, eq(tags.id, tradeTags.tagId))
+      .where(eq(tags.userId, userId))
+      .groupBy(tags.id)
+      .orderBy(tags.name);
+    return result;
   }
 
   async findOne(userId: string, id: string) {
-    const { rows } = await pool.query(
-      `SELECT * FROM tags WHERE id = $1 AND user_id = $2`,
-      [userId, id],
-    );
-    if (!rows[0]) throw new NotFoundException("Tag not found");
-    return rows[0];
+    const result = await db
+      .select()
+      .from(tags)
+      .where(and(eq(tags.id, id), eq(tags.userId, userId)));
+    if (!result[0]) throw new NotFoundException('Tag not found');
+    return result[0];
   }
 
   async update(userId: string, id: string, dto: UpdateTagDto) {
-    await this.findOne(userId, id);
-    const fields: string[] = [];
-    const values: any[] = [];
-    let idx = 3;
-    for (const [key, val] of Object.entries(dto)) {
-      if (val !== undefined) {
-        fields.push(`${key} = $${idx}`);
-        values.push(key === "name" ? (val as string).trim() : val);
-        idx++;
-      }
+    const updateData: Partial<typeof tags.$inferInsert> = {};
+    if (dto.name !== undefined) updateData.name = dto.name.trim();
+    if (dto.color !== undefined) updateData.color = dto.color;
+    if (dto.category !== undefined) updateData.category = dto.category;
+
+    if (Object.keys(updateData).length === 0) {
+      const result = await db
+        .select()
+        .from(tags)
+        .where(and(eq(tags.id, id), eq(tags.userId, userId)));
+      if (!result[0]) throw new NotFoundException('Tag not found');
+      return result[0];
     }
-    if (!fields.length) return this.findOne(userId, id);
-    const { rows } = await pool.query(
-      `UPDATE tags SET ${fields.join(", ")} WHERE id = $1 AND user_id = $2 RETURNING *`,
-      [id, userId, ...values],
-    );
-    return rows[0];
+
+    const result = await db
+      .update(tags)
+      .set(updateData)
+      .where(and(eq(tags.id, id), eq(tags.userId, userId)))
+      .returning();
+    if (!result[0]) throw new NotFoundException('Tag not found');
+    return result[0];
   }
 
   async remove(userId: string, id: string) {
-    await this.findOne(userId, id);
-    await pool.query(`DELETE FROM tags WHERE id = $1 AND user_id = $2`, [id, userId]);
+    const result = await db
+      .delete(tags)
+      .where(and(eq(tags.id, id), eq(tags.userId, userId)))
+      .returning();
+    if (!result[0]) throw new NotFoundException('Tag not found');
     return { deleted: true };
   }
 
   async addTagToTrade(userId: string, tradeId: string, tagId: string) {
-    // verify ownership
-    const tradeCheck = await pool.query(`SELECT id FROM trades WHERE id = $1 AND user_id = $2`, [tradeId, userId]);
-    if (!tradeCheck.rows[0]) throw new NotFoundException("Trade not found");
-    await this.findOne(userId, tagId);
+    const tradeCheck = await db
+      .select({ id: trades.id })
+      .from(trades)
+      .where(and(eq(trades.id, tradeId), eq(trades.userId, userId)));
+    if (!tradeCheck[0]) throw new NotFoundException('Trade not found');
+
+    const tagCheck = await db
+      .select()
+      .from(tags)
+      .where(and(eq(tags.id, tagId), eq(tags.userId, userId)));
+    if (!tagCheck[0]) throw new NotFoundException('Tag not found');
+
     try {
-      await pool.query(`INSERT INTO trade_tags (trade_id, tag_id) VALUES ($1, $2)`, [tradeId, tagId]);
-    } catch (err: any) {
-      if (err.code === "23505") return; // already tagged
+      await db.insert(tradeTags).values({ tradeId, tagId });
+    } catch (err) {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        err.code === '23505'
+      )
+        return { tagged: true };
       throw err;
     }
     return { tagged: true };
   }
 
   async removeTagFromTrade(userId: string, tradeId: string, tagId: string) {
-    await pool.query(`DELETE FROM trade_tags WHERE trade_id = $1 AND tag_id = $2`, [tradeId, tagId]);
+    await db
+      .delete(tradeTags)
+      .where(and(eq(tradeTags.tradeId, tradeId), eq(tradeTags.tagId, tagId)));
     return { untagged: true };
   }
 
-  async getTradesForTag(userId: string, tagId: string) {
-    const { rows } = await pool.query(
-      `SELECT tr.* FROM trades tr
-       JOIN trade_tags tt ON tr.id = tt.trade_id
-       WHERE tt.tag_id = $1 AND tr.user_id = $2
-       ORDER BY tr.created_at DESC`,
-      [tagId, userId],
-    );
-    return rows;
+  async getTradesForTag(
+    userId: string,
+    tagId: string,
+    limit: number,
+    offset: number,
+  ) {
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const safeOffset = Math.max(0, offset);
+
+    const countResult = await db
+      .select({ count: count() })
+      .from(trades)
+      .innerJoin(tradeTags, eq(trades.id, tradeTags.tradeId))
+      .where(and(eq(tradeTags.tagId, tagId), eq(trades.userId, userId)));
+    const total = countResult[0]?.count ?? 0;
+
+    const result = await db
+      .select()
+      .from(trades)
+      .innerJoin(tradeTags, eq(trades.id, tradeTags.tradeId))
+      .where(and(eq(tradeTags.tagId, tagId), eq(trades.userId, userId)))
+      .orderBy(desc(trades.createdAt))
+      .limit(safeLimit)
+      .offset(safeOffset);
+
+    return {
+      data: result.map((r) => r.trades),
+      total,
+      limit: safeLimit,
+      offset: safeOffset,
+      page: Math.floor(safeOffset / safeLimit) + 1,
+      totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+    };
   }
 
   async getTagsForTrade(userId: string, tradeId: string) {
-    const { rows } = await pool.query(
-      `SELECT t.* FROM tags t
-       JOIN trade_tags tt ON t.id = tt.tag_id
-       WHERE tt.trade_id = $1 AND t.user_id = $2
-       ORDER BY t.name`,
-      [tradeId, userId],
-    );
-    return rows;
+    const result = await db
+      .select()
+      .from(tags)
+      .innerJoin(tradeTags, eq(tags.id, tradeTags.tagId))
+      .where(and(eq(tradeTags.tradeId, tradeId), eq(tags.userId, userId)))
+      .orderBy(tags.name);
+    return result.map((r) => r.tags);
   }
 }

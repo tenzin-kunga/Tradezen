@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { getMe, login as apiLogin, register as apiRegister, logout as apiLogout, refreshToken, setAccessToken } from "./api";
 
 type User = {
@@ -30,7 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
 });
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,13 +38,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
+        const storedToken = window.localStorage.getItem("tradezen_access_token");
+        if (storedToken) {
+          setAccessToken(storedToken);
+        }
+
         const refreshed = await refreshToken();
         if (refreshed) {
           const me = await getMe();
           setUser(me);
         }
       } catch {
-        // Not logged in
+        window.localStorage.removeItem("tradezen_access_token");
+        setAccessToken(null);
       } finally {
         setLoading(false);
       }

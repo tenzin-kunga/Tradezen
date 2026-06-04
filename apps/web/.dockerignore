@@ -1,0 +1,48 @@
+# .dockerignore — TradeZen Web (Next.js)
+
+node_modules
+npm-debug.log
+.next/
+out/
+build
+dist
+
+# Environment
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+
+# Tests
+coverage
+.jest-cache
+
+# Version control
+.git
+.gitignore
+
+# CI/CD
+.github
+
+# IDEs
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Static assets (if storing uploads locally — recommended to use S3)
+public/uploads
+
+# Logs
+logs
+*.log
+
+# Misc
+*.md
+!README.md
+LICENSE

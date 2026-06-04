@@ -1,6 +1,6 @@
-import { IsOptional, IsString, IsIn, IsInt, Min, Max } from "class-validator";
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { Type } from "class-transformer";
+import { IsOptional, IsString, IsIn, IsInt, Min, Max } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class QueryTradesDto {
   @ApiPropertyOptional({ default: 1 })
@@ -18,24 +18,24 @@ export class QueryTradesDto {
   @Max(100)
   limit?: number = 20;
 
-  @ApiPropertyOptional({ enum: ["created_at", "pnl", "symbol"] })
+  @ApiPropertyOptional({ enum: ['created_at', 'pnl', 'symbol'] })
   @IsOptional()
-  @IsIn(["created_at", "pnl", "symbol"])
-  sort?: string = "created_at";
+  @IsIn(['created_at', 'pnl', 'symbol'])
+  sort?: string = 'created_at';
 
-  @ApiPropertyOptional({ enum: ["asc", "desc"] })
+  @ApiPropertyOptional({ enum: ['asc', 'desc'] })
   @IsOptional()
-  @IsIn(["asc", "desc"])
-  order?: string = "desc";
+  @IsIn(['asc', 'desc'])
+  order?: string = 'desc';
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   symbol?: string;
 
-  @ApiPropertyOptional({ enum: ["buy", "sell"] })
+  @ApiPropertyOptional({ enum: ['buy', 'sell'] })
   @IsOptional()
-  @IsIn(["buy", "sell"])
+  @IsIn(['buy', 'sell'])
   direction?: string;
 
   @ApiPropertyOptional()
@@ -43,13 +43,25 @@ export class QueryTradesDto {
   @IsString()
   strategy?: string;
 
-  @ApiPropertyOptional({ description: "ISO date string" })
+  @ApiPropertyOptional({ description: 'ISO date string' })
   @IsOptional()
   @IsString()
   from?: string;
 
-  @ApiPropertyOptional({ description: "ISO date string" })
+  @ApiPropertyOptional({ description: 'ISO date string' })
   @IsOptional()
   @IsString()
   to?: string;
+
+  @ApiPropertyOptional({
+    description: 'Cursor for keyset pagination (base64-encoded)',
+  })
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by tag ID' })
+  @IsOptional()
+  @IsString()
+  tagId?: string;
 }

@@ -1,0 +1,3 @@
+ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(32);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_backup_codes JSONB;

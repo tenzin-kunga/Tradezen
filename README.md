@@ -1,6 +1,6 @@
 # TradeZen — Carbon Ledger
 
-A professional trading journal web app with a dark hacker/terminal aesthetic. Track trades, analyze performance, maintain a daily journal, and tag trades for organization.
+A professional trading journal web app with a Glass Depth design system. Track trades, analyze performance, maintain a daily journal, and tag trades for organization.
 
 **Live:** [tradezen-web.vercel.app](https://tradezen-web.vercel.app)
 
@@ -8,11 +8,11 @@ A professional trading journal web app with a dark hacker/terminal aesthetic. Tr
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | Next.js 16, React 19, Tailwind CSS v4, Recharts |
-| **Backend** | NestJS 11, PostgreSQL (raw `pg`), Passport JWT |
-| **Database** | PostgreSQL (Neon serverless) |
-| **Monorepo** | Turborepo with npm workspaces |
-| **Deployment** | Vercel (web) + Render (API) + Neon (DB) |
+| **Frontend** | Next.js 14.2.25, React 18.2.0, Tailwind CSS v3.4, Recharts |
+| **Backend** | NestJS 11, PostgreSQL (raw `pg`), Passport JWT, Redis |
+| **Database** | PostgreSQL 16-alpine (Docker) / Neon (production) |
+| **Monorepo** | Bun workspaces (Turborepo) |
+| **Deployment** | Vercel (web) + Render (API) + Neon (DB) / Docker Compose (local) |
 
 ## Features
 
@@ -23,70 +23,123 @@ A professional trading journal web app with a dark hacker/terminal aesthetic. Tr
 - **Daily Journal** — Pre/post market notes, mood tracking, market conditions, lessons learned, streak tracking
 - **Tags** — Color-coded tags with categories, attach to trades for filtering
 - **CSV Export** — Export trades to CSV
-- **Swagger Docs** — Interactive API docs at `/api/docs`
+- **AI Chat** — OpenRouter integration for trade analysis assistance
+- **Glass Depth UI** — Modern glass morphism design with cyan/emerald accents
+- **Swagger Docs** — Interactive API docs at `/api/docs` (dev only)
 
 ## Project Structure
 
 ```
-apps/
-  api/          — NestJS backend (auth, trades, journals, tags)
-  web/          — Next.js frontend (dashboard, trade log, analytics, journal)
-packages/
-  types/        — Shared TypeScript types
-  ui/           — Shared UI components
-  eslint-config/— ESLint configs
-  typescript-config/ — TSConfig presets
+tradezen/
+├── apps/
+│   ├── api/          # NestJS backend (auth, trades, journals, tags, chat)
+│   └── web/          # Next.js frontend (dashboard, trade log, analytics, journal, calendar)
+├── packages/
+│   ├── types/        # Shared TypeScript types
+│   ├── ui/           # Shared UI components
+│   ├── eslint-config/# ESLint configs
+│   └── typescript-config/ # TSConfig presets
+├── docs/             # Project documentation
+├── scripts/          # Utility scripts (secret rotation)
+├── .githooks/        # Git hooks (pre-commit secret scanning)
+├── docker-compose.yml # Full stack Docker setup
+├── start.bat         # One-click development startup
+└── .env.docker.example # Environment template
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 20+
-- Docker (for local PostgreSQL + Redis)
+- **Bun 1.3+** (recommended) or Node.js 20+
+- Docker Desktop (for local PostgreSQL + Redis)
 
-### Local Development
-
-```sh
-# Clone and install
-git clone https://github.com/tampered-sin/Tradezen.git
-cd Tradezen
-npm install
-
-# Start database
-docker-compose up -d
-
-# Start both apps (API on :3001, Web on :3000)
-npx turbo dev
-```
-
-Or use the batch script:
+### Quick Start (One-Click)
 
 ```sh
 start.bat
 ```
 
+This script handles:
+1. Docker Desktop startup (if not running)
+2. Cleaning stale containers
+3. Starting PostgreSQL + Redis with health checks
+4. Launching API (`localhost:3001`) and Web (`localhost:3000`) in separate windows
+
+### Manual Setup
+
+```sh
+# Clone and install
+git clone https://github.com/tampered-sin/Tradezen.git
+cd Tradezen
+bun install
+
+# Configure environment
+cp .env.docker.example .env.docker
+# Edit .env.docker with your values
+
+# Start infrastructure
+docker compose --env-file .env.docker up -d postgres redis
+
+# Start both apps
+bun run dev
+```
+
 ### Environment Variables
 
-**API** (`apps/api/`) — all have sensible defaults for local dev:
+**Docker** (`.env.docker`) — copy from `.env.docker.example`:
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | — | Full Postgres connection string (overrides individual DB vars) |
+| `DB_PASSWORD` | *(required)* | PostgreSQL password |
+| `JWT_SECRET` | *(required)* | JWT signing secret (min 64 chars) |
+| `JWT_REFRESH_SECRET` | *(required)* | Refresh token secret (min 64 chars) |
+| `OPENROUTER_API_KEY` | *(optional)* | OpenRouter API key for AI chat |
+| `WEB_URL` | `http://localhost:3000` | Frontend URL (CORS origin) |
+
+**API** (`apps/api/.env`) — development defaults:
+
+| Variable | Default | Description |
+|---|---|---|
 | `DB_HOST` | `localhost` | Database host |
 | `DB_PORT` | `5432` | Database port |
 | `DB_USER` | `postgres` | Database user |
-| `DB_PASSWORD` | `pass` | Database password |
 | `DB_NAME` | `tradezen` | Database name |
-| `JWT_SECRET` | `tradezen-dev-secret` | Secret for signing JWTs |
-| `WEB_URL` | `http://localhost:3000` | Frontend URL (CORS origin) |
-| `PORT` | `3001` | API server port |
+| `NODE_ENV` | `development` | Environment mode |
 
 **Web** (`apps/web/`):
 
 | Variable | Default | Description |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | Backend API URL |
+
+## Docker Infrastructure
+
+The `docker-compose.yml` provides a production-ready local stack:
+
+| Service | Image | Port | Health Check |
+|---|---|---|---|
+| `postgres` | postgres:16-alpine | 5432 | `pg_isready` |
+| `redis` | redis:7-alpine | 6379 | `redis-cli ping` |
+| `api` | Built from source | 3001 | HTTP endpoint |
+| `web` | Built from source | 3000 | HTTP endpoint |
+
+**Features:**
+- Custom bridge network (`tradezen-net`) with static IPs
+- Named volumes for data persistence (`pgdata`, `redisdata`)
+- Resource limits (CPU/memory) per service
+- Non-root container users
+- Multi-stage builds with security hardening
+
+## Security
+
+- **JWT Validation**: Secrets validated at startup, no fallback defaults
+- **Container Hardening**: Non-root users, minimal base images, `dumb-init` signal handling
+- **Secret Management**: `.env.docker.example` template, rotation scripts, pre-commit hooks
+- **Production Mode**: Swagger disabled, env validation enforced
+- **CI/CD Security**: Trivy scanning, `bun pm audit`, secret detection
+
+See [SECURITY.md](docs/SECURITY.md) for full hardening guide.
 
 ## API Endpoints
 
@@ -112,8 +165,29 @@ start.bat
 | `GET` | `/tags` | List tags |
 | `PUT` | `/tags/:id` | Update tag |
 | `DELETE` | `/tags/:id` | Delete tag |
+| `POST` | `/chat` | AI chat message |
 
-Full interactive docs at `/api/docs` (Swagger).
+Full interactive docs at `/api/docs` (development only).
+
+## CI/CD Pipeline
+
+GitHub Actions workflow (`.github/workflows/ci.yml`):
+
+1. **Security Audit** — `bun pm audit`, Trivy filesystem scan, secret detection
+2. **Lint & Type Check** — ESLint + TypeScript validation
+3. **Unit Tests** — Jest test suite
+4. **Build & Deploy** — Docker Buildx with caching, auto-deploy on `main`
+
+## Documentation
+
+| File | Purpose |
+|---|---|
+| [SECURITY.md](docs/SECURITY.md) | Security hardening guide |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production deployment steps |
+| [DEV_QUICKSTART.md](docs/DEV_QUICKSTART.md) | 5-minute developer onboarding |
+| [AUDIT-REPORT.md](docs/AUDIT-REPORT.md) | Infrastructure audit results |
+| [PROJECT_RUNDOWN.md](docs/PROJECT_RUNDOWN.md) | Project overview |
+| [Implementation-task.md](docs/Implementation-task.md) | Implementation tasks |
 
 ## Deployment
 

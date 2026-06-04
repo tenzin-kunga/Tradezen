@@ -3,25 +3,41 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "next start -p 3000",
+    "lint": "eslint . --max-warnings 80",
+    "check-types": "tsc --noEmit",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "16.2.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "recharts": "^2"
+    "@sentry/nextjs": "^10.53.1",
+    "@swc/helpers": "^0.5.0",
+    "@tailwindcss/typography": "^0.5.19",
+    "@tanstack/react-query": "^5.100.10",
+    "@trpc/client": "^11.17.0",
+    "@trpc/react-query": "^11.17.0",
+    "@trpc/server": "^11.17.0",
+    "autoprefixer": "^10.5.0",
+    "next": "14.2.25",
+    "postcss": "^8.4.31",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-markdown": "^10.1.0",
+    "recharts": "^2.12.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "socket.io-client": "^4.8.3",
+    "styled-jsx": "^5.1.6"
   },
   "devDependencies": {
+    "@repo/eslint-config": "*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@repo/eslint-config": "*",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "eslint": "^9",
-    "tailwindcss": "^4",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5"
   }
 }
