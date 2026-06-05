@@ -96,6 +96,6 @@ export class EmbeddingService {
       sourceId: string;
       content: string;
       similarity: number;
-    }>;
+    }>; // eslint-disable-line @typescript-eslint/no-unnecessary-type-assertion
   }
 }

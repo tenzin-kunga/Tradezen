@@ -2,7 +2,7 @@
 
 > **Date:** 2026-05-16
 > **Redis Version:** 7-alpine
-> **Configuration:** 128MB max memory, allkeys-lru eviction, AOF enabled
+> **Configuration:** 128MB max memory, noeviction policy, AOF enabled
 
 ## Test Environment
 - Docker container: tradezen-redis
@@ -32,7 +32,7 @@
 |--------|-------|
 | Used Memory | ~2MB (idle) |
 | Max Memory | 128MB |
-| Eviction Policy | allkeys-lru |
+| Eviction Policy | noeviction |
 
 ## Capacity Planning
 

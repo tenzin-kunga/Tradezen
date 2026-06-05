@@ -1,4 +1,10 @@
-import { IsString, IsNumber, IsOptional, IsIn, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsIn,
+  IsDateString,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export const GOAL_TYPES = [
