@@ -1,9 +1,5 @@
-import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-} from '@nestjs/common';
-import { eq, and, gte, lte, count, sql } from 'drizzle-orm';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { eq, and, gte, lte } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { goals, trades } from '@tradezen/db';
 import { CreateGoalDto, UpdateGoalDto } from './dto';
@@ -85,7 +81,7 @@ export class GoalsService {
   async computeProgress(userId: string, goal: typeof goals.$inferSelect) {
     const now = new Date();
     let periodStart: Date;
-    let periodEnd: Date | null = goal.endDate ? new Date(goal.endDate) : null;
+    const periodEnd: Date | null = goal.endDate ? new Date(goal.endDate) : null;
 
     switch (goal.period) {
       case 'weekly': {
@@ -109,15 +105,6 @@ export class GoalsService {
     const goalStart = new Date(goal.startDate);
     if (goalStart > periodStart) periodStart = goalStart;
 
-    const conditions = and(
-      eq(trades.userId, userId),
-      gte(trades.createdAt, periodStart),
-    );
-
-    if (periodEnd) {
-      conditions && and(conditions, lte(trades.createdAt, periodEnd));
-    }
-
     // Also include end-of-period cap
     const periodEndCap = new Date(periodStart);
     switch (goal.period) {
@@ -133,15 +120,17 @@ export class GoalsService {
         break;
     }
 
-    const finalConditions = and(
-      eq(trades.userId, userId),
-      gte(trades.createdAt, periodStart),
-      lte(trades.createdAt, periodEnd ?? periodEndCap),
+    const currentValue = await this.calcMetric(
+      goal.type as GoalType,
+      userId,
+      periodStart,
+      periodEnd ?? periodEndCap,
     );
-
-    const currentValue = await this.calcMetric(goal.type as GoalType, userId, periodStart, periodEnd ?? periodEndCap);
     const target = Number(goal.target);
-    const progress = target !== 0 ? Math.min(100, Math.round((currentValue / target) * 100)) : 0;
+    const progress =
+      target !== 0
+        ? Math.min(100, Math.round((currentValue / target) * 100))
+        : 0;
 
     return {
       ...goal,
@@ -167,7 +156,11 @@ export class GoalsService {
       })
       .from(trades)
       .where(
-        and(eq(trades.userId, userId), gte(trades.createdAt, from), lte(trades.createdAt, to)),
+        and(
+          eq(trades.userId, userId),
+          gte(trades.createdAt, from),
+          lte(trades.createdAt, to),
+        ),
       );
 
     if (periodTrades.length === 0) return 0;
@@ -201,16 +194,20 @@ export class GoalsService {
         const wins = periodTrades.filter((t) => Number(t.pnl) > 0);
         const losses = periodTrades.filter((t) => Number(t.pnl) < 0);
         if (wins.length === 0 || losses.length === 0) return 0;
-        const avgWin = wins.reduce((s, t) => s + Number(t.pnl), 0) / wins.length;
-        const avgLoss = losses.reduce((s, t) => s + Math.abs(Number(t.pnl)), 0) / losses.length;
+        const avgWin =
+          wins.reduce((s, t) => s + Number(t.pnl), 0) / wins.length;
+        const avgLoss =
+          losses.reduce((s, t) => s + Math.abs(Number(t.pnl)), 0) /
+          losses.length;
         if (avgLoss === 0) return 0;
         return Math.round((avgWin / avgLoss) * 10) / 10;
       }
 
       case 'consecutive_wins': {
         const sorted = [...periodTrades].sort(
-      (a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0),
-    );
+          (a, b) =>
+            (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0),
+        );
         let streak = 0;
         let maxStreak = 0;
         for (const t of sorted) {
@@ -226,7 +223,8 @@ export class GoalsService {
 
       case 'max_drawdown': {
         const sorted = [...periodTrades].sort(
-          (a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0),
+          (a, b) =>
+            (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0),
         );
         let peak = 0;
         let maxDd = 0;
