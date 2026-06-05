@@ -133,9 +133,12 @@
       "devDependencies": {
         "@repo/eslint-config": "*",
         "@tailwindcss/postcss": "^4",
+        "@tradezen/db": "workspace:*",
+        "@tradezen/types": "workspace:*",
         "@types/node": "^20",
         "@types/react": "^18.2.0",
         "@types/react-dom": "^18.2.0",
+        "api": "workspace:*",
         "eslint": "^9",
         "tailwindcss": "^3.4.19",
         "typescript": "^5",

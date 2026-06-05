@@ -33,6 +33,9 @@
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@tailwindcss/postcss": "^4",
+    "@tradezen/db": "workspace:*",
+    "@tradezen/types": "workspace:*",
+    "api": "workspace:*",
     "@types/node": "^20",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
