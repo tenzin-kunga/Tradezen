@@ -22,7 +22,7 @@ import { appRouter, createContext } from './trpc';
 // Enable in production by uncommenting the call below.
 
 function _validateEnv() {
-  const required = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DB_PASSWORD'];
+  const required = ['JWT_SECRET', 'JWT_REFRESH_SECRET'];
   const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
@@ -40,6 +40,10 @@ function _validateEnv() {
     process.env.JWT_REFRESH_SECRET.length < 64
   ) {
     throw new Error('JWT_REFRESH_SECRET must be at least 64 characters long');
+  }
+
+  if (!process.env.DATABASE_URL && !process.env.DB_PASSWORD) {
+    throw new Error('Either DATABASE_URL or DB_PASSWORD must be set');
   }
 }
 

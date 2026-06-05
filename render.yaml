@@ -21,10 +21,22 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: WEB_URL
+        value: https://tradezen-web.vercel.app
       - key: OPENROUTER_API_KEY
         sync: false
-      - key: CORS_ORIGINS
-        value: https://tradezen.app
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
 
   - type: web
     name: tradezen-web
@@ -43,4 +55,4 @@ services:
       - key: PORT
         value: 3000
       - key: NEXT_PUBLIC_API_URL
-        value: https://tradezen-api.onrender.com
+        value: https://tradezen-api-n6xa.onrender.com
