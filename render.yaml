@@ -24,7 +24,7 @@ services:
       - key: JWT_REFRESH_SECRET
         generateValue: true
       - key: WEB_URL
-        value: https://tradezen.app
+        value: https://tradezen-web.vercel.app
       - key: OPENROUTER_API_KEY
         sync: false
       - key: GOOGLE_CLIENT_ID
@@ -55,4 +55,4 @@ services:
       - key: PORT
         value: 3000
       - key: NEXT_PUBLIC_API_URL
-        value: https://tradezen-api.onrender.com
+        value: https://tradezen-api-n6xa.onrender.com
