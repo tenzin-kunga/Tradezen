@@ -100,11 +100,14 @@ jobs:
           output: 'trivy-fs.sarif'
           severity: 'CRITICAL,HIGH'
 
-      - name: Upload Trivy fs scan to GitHub Security
+      - name: Upload Trivy fs scan as artifact
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: 'trivy-fs.sarif'
+          name: trivy-fs-scan
+          path: trivy-fs.sarif
+          retention-days: 30
+          if-no-files-found: ignore
 
       - name: Scan for hardcoded secrets
         run: |
@@ -318,11 +321,14 @@ jobs:
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
 
-      - name: Upload Trivy API image scan
+      - name: Upload Trivy API image scan as artifact
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: 'trivy-image-api.sarif'
+          name: trivy-api-image-scan
+          path: trivy-image-api.sarif
+          retention-days: 30
+          if-no-files-found: ignore
 
   # ── 7. DOCKER BUILD — WEB ──────────────────────────────────────────────────
   build-web:
