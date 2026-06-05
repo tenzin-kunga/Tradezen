@@ -207,8 +207,10 @@ Defined in `.github/workflows/ci.yml`. Two environments, gated by branch:
 
 | Branch | Deploys to | Trigger |
 |---|---|---|
-| `develop` | **staging** (Render preview service + Vercel preview) | auto on push |
-| `main` | **production** (Render + Vercel) | auto on push, requires approval via GitHub Environment |
+| `develop` | `deploy-staging` env (Render preview service + Vercel preview) | auto on push |
+| `main` | `deploy-prod` env (Render + Vercel) | auto on push, requires approval via GitHub Environment |
+
+> The env names `deploy-staging` / `deploy-prod` are scoped away from Vercel's auto-created `Production`/`Preview` envs to avoid settings collisions.
 
 ### Pipeline jobs
 
@@ -219,28 +221,29 @@ Defined in `.github/workflows/ci.yml`. Two environments, gated by branch:
 5. **e2e** — full NestJS E2E suite against Postgres+Redis
 6. **build-api / build-web** — multi-arch (amd64+arm64) Docker images pushed to `ghcr.io/$repo/{api,web}`, Trivy image scan on API
 7. **deploy-staging** — Render API + Vercel preview; polls deploy status, then smoke-tests `/health` and web URL
-8. **deploy-production** — same, on Render prod + Vercel prod; **auto-rollback** via Render API if smoke tests fail
+8. **deploy-prod** — same, on Render prod + Vercel prod; **auto-rollback** via Render API if smoke tests fail
 
 ### Concurrency
 
 - `cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}` — cancels stale runs on PRs and develop, never on main
-- `concurrency: production` and `concurrency: staging` — only one deploy runs at a time per env
+- `concurrency: deploy-prod` and `concurrency: deploy-staging` — only one deploy runs at a time per env
 
 ### Required GitHub Secrets
 
 Set in repo **Settings → Secrets and variables → Actions**:
 
-| Secret | Purpose |
-|---|---|
-| `GITHUB_TOKEN` | auto-provisioned; used for `ghcr.io` push |
-| `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` | only if publishing to Docker Hub (not used currently) |
-| `CODECOV_TOKEN` | upload coverage on main |
-| `RENDER_API_KEY` | Render API authentication |
-| `RENDER_SERVICE_ID` | production Render service |
-| `RENDER_STAGING_SERVICE_ID` | staging Render service |
-| `PRODUCTION_API_URL` | e.g. `https://api.tradezen.app` — for prod smoke tests |
-| `STAGING_API_URL` | e.g. `https://api-staging.tradezen.app` — for staging smoke tests |
-| `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` / `VERCEL_ORG_ID` | Vercel deploy |
+| Secret | Scope | Purpose |
+|---|---|---|
+| `GITHUB_TOKEN` | auto | GHCR push, SARIF upload |
+| `CODECOV_TOKEN` | repo | upload coverage on main |
+| `RENDER_API_KEY` | both envs | Render API authentication |
+| `RENDER_STAGING_SERVICE_ID` | `deploy-staging` env | staging Render service |
+| `STAGING_API_URL` | `deploy-staging` env | e.g. `https://api-staging.tradezen.app` — for staging smoke tests |
+| `RENDER_SERVICE_ID` | `deploy-prod` env | production Render service |
+| `PRODUCTION_API_URL` | `deploy-prod` env | e.g. `https://api.tradezen.app` — for prod smoke tests |
+| `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` / `VERCEL_ORG_ID` | both envs | Vercel deploy |
+
+> **Required reviewer on `deploy-prod`**: must be set via the GitHub web UI (Settings → Environments → deploy-prod → Required reviewers). GitHub's API doesn't expose a way to enable the Required Reviewers rule programmatically.
 
 ### Local validation
 

@@ -377,9 +377,9 @@ jobs:
     needs: [build-api, build-web]
     if: github.ref == 'refs/heads/develop'
     environment:
-      name: staging
+      name: deploy-staging
       url: ${{ steps.deploy-web.outputs.url }}
-    concurrency: staging
+    concurrency: deploy-staging
     steps:
       - uses: actions/checkout@v4
 
@@ -461,9 +461,9 @@ jobs:
     needs: [build-api, build-web]
     if: github.ref == 'refs/heads/main'
     environment:
-      name: production
+      name: deploy-prod
       url: ${{ steps.deploy-web.outputs.url }}
-    concurrency: production
+    concurrency: deploy-prod
     steps:
       - uses: actions/checkout@v4
 
