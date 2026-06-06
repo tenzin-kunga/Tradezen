@@ -1,15 +1,13 @@
--- TradeZen OAuth Database Migration
--- Run this manually if drizzle-kit fails
--- Apply to PostgreSQL database
+-- OAuth: make password_hash nullable, add auth_method, create accounts table
 
 -- Make password_hash nullable (OAuth users don't have passwords)
 ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 
 -- Add auth_method column to track login method
-ALTER TABLE users ADD COLUMN auth_method TEXT NOT NULL DEFAULT 'password';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_method TEXT NOT NULL DEFAULT 'password';
 
 -- Create accounts table for OAuth provider linking
-CREATE TABLE accounts (
+CREATE TABLE IF NOT EXISTS accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   provider TEXT NOT NULL,
@@ -24,8 +22,8 @@ CREATE TABLE accounts (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_accounts_user ON accounts(user_id);
-CREATE INDEX idx_accounts_provider ON accounts(provider);
+CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(user_id);
+CREATE INDEX IF NOT EXISTS idx_accounts_provider ON accounts(provider);
 
 -- Set existing users to have auth_method = 'password' (explicit)
 UPDATE users SET auth_method = 'password' WHERE auth_method IS NULL;
