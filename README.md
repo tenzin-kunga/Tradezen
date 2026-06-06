@@ -2,7 +2,7 @@
 
 A professional trading journal web app with a Glass Depth design system. Track trades, analyze performance, maintain a daily journal, and tag trades for organization.
 
-**Live:** [tradezen-web.vercel.app](https://tradezen-web.vercel.app)
+**Live:** [tradezen-tampered-sins-projects.vercel.app](https://tradezen-tampered-sins-projects.vercel.app)
 
 [![CI/CD Pipeline](https://github.com/tampered-sin/Tradezen/actions/workflows/ci.yml/badge.svg)](https://github.com/tampered-sin/Tradezen/actions/workflows/ci.yml)
 
