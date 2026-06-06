@@ -9,8 +9,7 @@ import { EventPublisherService } from '../common/services/event-publisher.servic
   imports: [
     BullModule.forRoot({
       connection: {
-        host: process.env.REDIS_HOST ?? 'localhost',
-        port: parseInt(process.env.REDIS_PORT ?? '6379'),
+        url: process.env.REDIS_URL,
       },
     }),
     BullModule.registerQueue({ name: 'csv-import' }, { name: 'ai-processing' }),

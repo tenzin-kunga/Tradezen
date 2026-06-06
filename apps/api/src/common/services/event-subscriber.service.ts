@@ -15,10 +15,7 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly gateway: TradesGateway) {}
 
   async onModuleInit() {
-    this.subClient = new Redis({
-      host: process.env.REDIS_HOST ?? 'localhost',
-      port: parseInt(process.env.REDIS_PORT ?? '6379'),
-    });
+    this.subClient = new Redis(process.env.REDIS_URL!);
 
     this.subClient.on('message', (channel, message) => {
       try {
