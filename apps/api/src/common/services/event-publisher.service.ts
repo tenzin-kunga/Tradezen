@@ -5,6 +5,7 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import Redis from 'ioredis';
+import { getRedisConnection } from '../utils/redis-connection';
 
 @Injectable()
 export class EventPublisherService implements OnModuleInit, OnModuleDestroy {
@@ -12,10 +13,7 @@ export class EventPublisherService implements OnModuleInit, OnModuleDestroy {
   private pubClient: Redis;
 
   async onModuleInit() {
-    this.pubClient = new Redis({
-      host: process.env.REDIS_HOST ?? 'localhost',
-      port: parseInt(process.env.REDIS_PORT ?? '6379'),
-    });
+    this.pubClient = new Redis(getRedisConnection());
     this.pubClient.on('error', (err) => {
       this.logger.error(`Redis pub error: ${err.message}`);
     });
