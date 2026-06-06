@@ -2,7 +2,7 @@
 
 A professional trading journal web application with a dark hacker/terminal aesthetic. Track trades, analyze performance, maintain daily journals, and organize trades with tags.
 
-**Live:** [tradezen-web.vercel.app](https://tradezen-web.vercel.app)
+**Live:** [tradezen-tampered-sins-projects.vercel.app](https://tradezen-tampered-sins-projects.vercel.app)
 
 ---
 
@@ -525,7 +525,7 @@ All have sensible defaults for local development:
 **Render/Railway (API):**
 - `DATABASE_URL` → Neon PostgreSQL connection string
 - `JWT_SECRET` → Strong random secret (generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
-- `WEB_URL` → Production frontend URL (e.g., `https://tradezen-web.vercel.app`)
+- `WEB_URL` → Production frontend URL (e.g., `https://tradezen-tampered-sins-projects.vercel.app`)
 - `NODE_ENV` → `production`
 
 ---
