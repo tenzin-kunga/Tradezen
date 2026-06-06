@@ -24,8 +24,12 @@ import { GithubStrategy } from './strategies/github.strategy';
     SuspiciousLoginService,
     TwoFactorService,
     OAuthService,
-    GoogleStrategy,
-    GithubStrategy,
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [GoogleStrategy]
+      : []),
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+      ? [GithubStrategy]
+      : []),
   ],
   exports: [
     AuthService,
@@ -36,4 +40,17 @@ import { GithubStrategy } from './strategies/github.strategy';
     OAuthService,
   ],
 })
-export class AuthModule {}
+export class AuthModule {
+  constructor() {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      console.warn(
+        '[AuthModule] Google OAuth disabled (GOOGLE_CLIENT_ID/SECRET not set)',
+      );
+    }
+    if (!process.env.GITHUB_CLIENT_ID || !process.env.GITHUB_CLIENT_SECRET) {
+      console.warn(
+        '[AuthModule] GitHub OAuth disabled (GITHUB_CLIENT_ID/SECRET not set)',
+      );
+    }
+  }
+}
