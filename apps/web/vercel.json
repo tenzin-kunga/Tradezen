@@ -2,5 +2,5 @@
   "framework": "nextjs",
   "installCommand": "cd ../.. && bun install --frozen-lockfile",
   "buildCommand": "cd ../.. && bunx turbo run build --filter=web...",
-  "outputDirectory": "apps/web/.next"
+  "outputDirectory": ".next"
 }
