@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import Redis from 'ioredis';
 import { TradesGateway } from '../../gateway/trades.gateway';
+import { getRedisConnection } from '../utils/redis-connection';
 
 @Injectable()
 export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
@@ -15,7 +16,7 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly gateway: TradesGateway) {}
 
   async onModuleInit() {
-    this.subClient = new Redis(process.env.REDIS_URL!);
+    this.subClient = new Redis(getRedisConnection());
 
     this.subClient.on('message', (channel, message) => {
       try {

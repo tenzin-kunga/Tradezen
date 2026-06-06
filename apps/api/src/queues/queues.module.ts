@@ -4,13 +4,12 @@ import { CsvImportProcessor } from './csv-import.processor';
 import { AiProcessingProcessor } from './ai-processing.processor';
 import { JobStatusService } from './job-status.service';
 import { EventPublisherService } from '../common/services/event-publisher.service';
+import { getRedisConnection } from '../common/utils/redis-connection';
 
 @Module({
   imports: [
     BullModule.forRoot({
-      connection: {
-        url: process.env.REDIS_URL,
-      },
+      connection: getRedisConnection(),
     }),
     BullModule.registerQueue({ name: 'csv-import' }, { name: 'ai-processing' }),
   ],
