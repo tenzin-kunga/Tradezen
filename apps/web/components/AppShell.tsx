@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import ChatPanel from "./ChatPanel";
 
-const PUBLIC_ROUTES = ["/login", "/register"];
+const PUBLIC_ROUTES = ["/login", "/register", "/auth/callback"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
