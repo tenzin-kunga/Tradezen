@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { setAccessToken } from "@/lib/api";
 
 export default function AuthCallbackPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const processed = useRef(false);
 
@@ -19,8 +18,9 @@ export default function AuthCallbackPage() {
       window.localStorage.setItem("tradezen_access_token", token);
     }
 
-    router.push("/");
-  }, [searchParams, router]);
+    // Full page reload so AuthProvider re-runs session restore with the stored token
+    window.location.href = "/";
+  }, [searchParams]);
 
   return (
     <div
