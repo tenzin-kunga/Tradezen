@@ -28,12 +28,16 @@ export async function runMigrations() {
     )
   `);
 
-  // Read migration files
-  const migrationsDir = path.join(__dirname, '..', 'migrations');
+  // Read migration files — try dist/src/../../migrations (prod) then src/../migrations (dev)
+  const migrationsDir =
+    fs.existsSync(path.join(__dirname, '..', '..', 'migrations'))
+      ? path.join(__dirname, '..', '..', 'migrations')
+      : path.join(__dirname, '..', 'migrations');
   if (!fs.existsSync(migrationsDir)) {
     console.log('[migrations] No migrations directory found, skipping.');
     return;
   }
+  console.log(`[migrations] Using: ${migrationsDir}`);
 
   const files = fs
     .readdirSync(migrationsDir)
