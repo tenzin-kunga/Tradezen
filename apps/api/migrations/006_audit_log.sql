@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS audit_log (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id),
+  user_id UUID REFERENCES users(id),
   action VARCHAR(100) NOT NULL,
   resource VARCHAR(100),
   resource_id INTEGER,
