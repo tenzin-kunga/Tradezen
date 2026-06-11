@@ -381,3 +381,78 @@ export const accounts = pgTable(
     index('idx_accounts_provider').on(table.provider),
   ],
 );
+
+export const checklists = pgTable(
+  'checklists',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description'),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+  },
+  (table) => [
+    index('idx_checklists_user').on(table.userId),
+  ],
+);
+
+export const checklistItems = pgTable(
+  'checklist_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    checklistId: uuid('checklist_id')
+      .notNull()
+      .references(() => checklists.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    isCritical: boolean('is_critical').default(false),
+    sortOrder: integer('sort_order').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => [
+    index('idx_checklist_items_checklist').on(table.checklistId),
+  ],
+);
+
+export const checklistRuns = pgTable(
+  'checklist_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    checklistId: uuid('checklist_id')
+      .notNull()
+      .references(() => checklists.id, { onDelete: 'cascade' }),
+    tradeId: uuid('trade_id')
+      .references(() => trades.id, { onDelete: 'set null' }),
+    note: text('note'),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => [
+    index('idx_checklist_runs_user').on(table.userId),
+    index('idx_checklist_runs_checklist').on(table.checklistId),
+    index('idx_checklist_runs_trade').on(table.tradeId),
+  ],
+);
+
+export const checklistRunItems = pgTable(
+  'checklist_run_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    runId: uuid('run_id')
+      .notNull()
+      .references(() => checklistRuns.id, { onDelete: 'cascade' }),
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => checklistItems.id, { onDelete: 'cascade' }),
+    checked: boolean('checked').default(false),
+    checkedAt: timestamp('checked_at'),
+  },
+  (table) => ({
+    uniqueRunItem: uniqueIndex('uq_run_items_run_item').on(table.runId, table.itemId),
+    runIdx: index('idx_run_items_run').on(table.runId),
+  }),
+);
