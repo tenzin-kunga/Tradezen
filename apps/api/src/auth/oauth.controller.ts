@@ -1,8 +1,17 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { OAuthService } from './oauth.service';
+import { GoogleLoginDto } from './dto';
 import { Public } from './public.decorator';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './current-user.decorator';
@@ -31,6 +40,16 @@ export class OAuthController {
 
     const webUrl = process.env.WEB_URL ?? 'http://localhost:3000';
     res.redirect(`${webUrl}/auth/callback?token=${tokens.access_token}`);
+  }
+
+  @Public()
+  @Post('google')
+  @ApiOperation({ summary: 'Login with Google ID token (client-side flow)' })
+  async googleTokenLogin(
+    @Body() dto: GoogleLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.oauthService.googleLogin(dto.credential, res);
   }
 
   @Public()

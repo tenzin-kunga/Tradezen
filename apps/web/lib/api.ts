@@ -64,6 +64,18 @@ export async function register(data: { email: string; username: string; password
   return body;
 }
 
+export async function googleLogin(credential: string) {
+  const res = await fetch(`${API}/auth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ credential }),
+    credentials: "include",
+  });
+  const body = await handleResponse<{ access_token: string; user: any }>(res);
+  setAccessToken(body.access_token);
+  return body;
+}
+
 export async function login(data: { identifier: string; password: string; remember_me?: boolean }) {
   const res = await fetch(`${API}/auth/login`, {
     method: "POST",
