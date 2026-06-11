@@ -102,20 +102,13 @@ export default function LoginPage() {
             <GoogleOAuthProvider
               clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""}
             >
-              <div
-                className="w-full flex items-center justify-center rounded overflow-hidden"
-                style={{
-                  backgroundColor: "var(--text-primary)",
-                  border: "1px solid var(--border)",
-                  minHeight: "48px",
-                }}
-              >
+              <div className="w-full flex items-center justify-center min-h-[48px]">
                 <GoogleLogin
                   theme="filled_black"
                   size="large"
                   shape="rectangular"
                   text="continue_with"
-                  width="100%"
+                  width="380"
                   onSuccess={async (credentialResponse) => {
                     if (credentialResponse.credential) {
                       try {
