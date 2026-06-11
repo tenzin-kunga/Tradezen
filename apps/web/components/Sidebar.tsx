@@ -89,16 +89,6 @@ const navItems = [
     ),
   },
   {
-    label: "NEW TRADE",
-    href: "/add-trade",
-    icon: (
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-        <rect x="6" y="0" width="2" height="14" />
-        <rect x="0" y="6" width="14" height="2" />
-      </svg>
-    ),
-  },
-  {
     label: "REPORTS",
     href: "/reports",
     icon: (
