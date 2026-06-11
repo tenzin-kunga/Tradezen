@@ -41,7 +41,6 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
   @All('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token using HTTP-only cookie' })

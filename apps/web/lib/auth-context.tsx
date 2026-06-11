@@ -41,15 +41,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const storedToken = window.localStorage.getItem("tradezen_access_token");
+
         if (storedToken) {
           setAccessToken(storedToken);
+          try {
+            const me = await getMe();
+            setUser(me);
+            return;
+          } catch {
+            // Token expired — try refresh
+            const refreshed = await refreshToken();
+            if (refreshed) {
+              const me = await getMe();
+              setUser(me);
+              return;
+            }
+          }
+        } else {
+          const refreshed = await refreshToken();
+          if (refreshed) {
+            const me = await getMe();
+            setUser(me);
+            return;
+          }
         }
 
-        const refreshed = await refreshToken();
-        if (refreshed) {
-          const me = await getMe();
-          setUser(me);
-        }
+        window.localStorage.removeItem("tradezen_access_token");
+        setAccessToken(null);
       } catch {
         window.localStorage.removeItem("tradezen_access_token");
         setAccessToken(null);
