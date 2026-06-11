@@ -295,7 +295,6 @@ export class OAuthService {
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
-      partitioned: true,
     });
 
     return {
