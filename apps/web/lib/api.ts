@@ -1,6 +1,7 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 let accessToken: string | null = null;
+let refreshPromise: Promise<boolean> | null = null;
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
@@ -89,18 +90,26 @@ export async function login(data: { identifier: string; password: string; rememb
 }
 
 export async function refreshToken(): Promise<boolean> {
-  try {
-    const res = await fetch(`${API}/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-    });
-    if (!res.ok) return false;
-    const body = await res.json();
-    setAccessToken(body.access_token);
-    return true;
-  } catch {
-    return false;
-  }
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) return false;
+      const body = await res.json();
+      setAccessToken(body.access_token);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 export async function getMe() {
