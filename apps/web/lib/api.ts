@@ -501,40 +501,83 @@ export async function updateNotificationPreference(type: string, enabled: boolea
   return handleResponse<{ message: string }>(res);
 }
 
-// ─── Goals ──────────────────────────────────────────
+// ─── Checklists ─────────────────────────────────────
 
-export const getGoals = async () => {
-  const res = await authFetch(`${API}/goals`);
+export async function getChecklists() {
+  const res = await authFetch(`${API}/trpc/checklists.list`);
   return handleResponse<any[]>(res);
-};
+}
 
-export const createGoal = async (data: {
-  type: string;
-  target: number;
-  period?: string;
-  direction?: string;
-  startDate: string;
-  endDate?: string;
-}) => {
-  const res = await authFetch(`${API}/goals`, {
-    method: "POST",
+export async function getChecklist(id: string) {
+  const res = await authFetch(`${API}/trpc/checklists.get?input=${encodeURIComponent(JSON.stringify({ id }))}`);
+  return handleResponse<any>(res);
+}
+
+export async function createChecklist(data: { name: string; description?: string; items: { title: string; isCritical?: boolean }[] }) {
+  const res = await authFetch(`${API}/trpc/checklists.create`, {
+    method: 'POST',
     body: JSON.stringify(data),
   });
   return handleResponse<any>(res);
-};
+}
 
-export const updateGoal = async (id: string, data: Record<string, any>) => {
-  const res = await authFetch(`${API}/goals/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
+export async function updateChecklist(id: string, data: Record<string, any>) {
+  const res = await authFetch(`${API}/trpc/checklists.update`, {
+    method: 'POST',
+    body: JSON.stringify({ id, ...data }),
   });
   return handleResponse<any>(res);
-};
+}
 
-export const deleteGoal = async (id: string) => {
-  const res = await authFetch(`${API}/goals/${id}`, { method: "DELETE" });
+export async function deleteChecklist(id: string) {
+  const res = await authFetch(`${API}/trpc/checklists.remove`, {
+    method: 'POST',
+    body: JSON.stringify({ id }),
+  });
   return handleResponse<{ deleted: boolean }>(res);
-};
+}
+
+export async function cloneChecklist(id: string) {
+  const res = await authFetch(`${API}/trpc/checklists.clone`, {
+    method: 'POST',
+    body: JSON.stringify({ id }),
+  });
+  return handleResponse<any>(res);
+}
+
+export async function getChecklistRuns(checklistId: string) {
+  const res = await authFetch(`${API}/trpc/checklists.runs.list?input=${encodeURIComponent(JSON.stringify({ checklistId }))}`);
+  return handleResponse<any[]>(res);
+}
+
+export async function createChecklistRun(data: { checklistId: string; tradeId?: string | null; note?: string | null }) {
+  const res = await authFetch(`${API}/trpc/checklists.runs.create`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return handleResponse<any>(res);
+}
+
+export async function getChecklistRun(id: string) {
+  const res = await authFetch(`${API}/trpc/checklists.runs.get?input=${encodeURIComponent(JSON.stringify({ id }))}`);
+  return handleResponse<any>(res);
+}
+
+export async function updateChecklistRunItem(runId: string, itemId: string, checked: boolean) {
+  const res = await authFetch(`${API}/trpc/checklists.runs.updateItem`, {
+    method: 'POST',
+    body: JSON.stringify({ runId, itemId, checked }),
+  });
+  return handleResponse<any>(res);
+}
+
+export async function deleteChecklistRun(id: string) {
+  const res = await authFetch(`${API}/trpc/checklists.runs.remove`, {
+    method: 'POST',
+    body: JSON.stringify({ id }),
+  });
+  return handleResponse<{ deleted: boolean }>(res);
+}
 
 // ─── Reports ────────────────────────────────────────
 

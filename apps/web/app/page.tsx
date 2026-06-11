@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getTrades, getAnalytics, getGoals } from "@/lib/api";
+import { getTrades, getAnalytics } from "@/lib/api";
 import StatCard from "@/components/StatCard";
 import { StatCardSkeleton } from "@/components/Skeleton";
 import EquityChart from "@/components/EquityChart";
@@ -32,19 +32,16 @@ function buildEquityCurve(trades: Trade[]) {
 export default function Dashboard() {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
-  const [goals, setGoals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(() => {
     Promise.all([
       getTrades({ limit: 100, sort: "created_at", order: "desc" }),
       getAnalytics(),
-      getGoals(),
     ])
-      .then(([tradesRes, analyticsRes, goalsRes]) => {
+      .then(([tradesRes, analyticsRes]) => {
         setTrades(tradesRes.data);
         setAnalytics(analyticsRes);
-        setGoals(goalsRes);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -88,35 +85,6 @@ export default function Dashboard() {
       <div className="fade-up mb-4">
         <EquityChart data={equityData} />
       </div>
-
-      {goals.length > 0 && (
-        <div className="glass-card p-4 fade-up mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="label-caps">GOAL PROGRESS</span>
-            <Link href="/goals" className="btn-glass text-xs" style={{ textDecoration: "none", padding: "4px 10px" }}>MANAGE</Link>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {goals.slice(0, 3).map((g) => {
-              const pct = Math.min(100, Math.max(0, g.progress ?? 0));
-              const isMet = g.direction === "higher" ? g.currentValue >= g.target : g.currentValue <= g.target;
-              const barColor = isMet ? "var(--accent-profit)" : pct >= 50 ? "var(--accent-warn)" : "var(--text-muted)";
-              return (
-                <div key={g.id}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="label-caps" style={{ fontSize: 10 }}>{g.type.replace(/_/g, " ").toUpperCase()}</span>
-                    <span className="mono-data" style={{ fontSize: 11, color: isMet ? "var(--accent-profit)" : "var(--text-muted)" }}>
-                      {g.currentValue?.toFixed?.(2) ?? 0} / {g.target}
-                    </span>
-                  </div>
-                  <div style={{ width: "100%", height: 4, background: "var(--border)", borderRadius: 2, overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 2, transition: "width 0.5s ease" }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <div className="glass-card p-4 md:p-6 fade-up mb-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-5">

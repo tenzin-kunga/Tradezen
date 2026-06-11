@@ -74,6 +74,41 @@ export const chatMessageSchema = z.object({
   context: z.string().max(100).optional(),
 });
 
+// Checklist schemas
+export const checklistItemSchema = z.object({
+  title: z.string().min(1).max(200),
+  isCritical: z.boolean().optional(),
+});
+
+export const createChecklistSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().max(1000).optional(),
+  items: z.array(checklistItemSchema).min(1).max(50),
+});
+
+export const updateChecklistSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(1000).nullish(),
+  items: z.array(checklistItemSchema).min(1).max(50).optional(),
+});
+
+export const createChecklistRunSchema = z.object({
+  checklistId: z.string().uuid(),
+  tradeId: z.string().uuid().nullish(),
+  note: z.string().max(2000).nullish(),
+});
+
+export const updateChecklistRunItemSchema = z.object({
+  runId: z.string().uuid(),
+  itemId: z.string().uuid(),
+  checked: z.boolean(),
+});
+
+export type CreateChecklistInput = z.infer<typeof createChecklistSchema>;
+export type UpdateChecklistInput = z.infer<typeof updateChecklistSchema>;
+export type CreateChecklistRunInput = z.infer<typeof createChecklistRunSchema>;
+export type UpdateChecklistRunItemInput = z.infer<typeof updateChecklistRunItemSchema>;
+
 // Export inferred types
 export type CreateTradeInput = z.infer<typeof createTradeSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
