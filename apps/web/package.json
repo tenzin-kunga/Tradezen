@@ -11,6 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.5",
     "@sentry/nextjs": "^10.53.1",
     "@swc/helpers": "^0.5.0",
     "@tailwindcss/typography": "^0.5.19",

@@ -1,5 +1,10 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { OAuth2Client } from 'google-auth-library';
 import { eq, or, and } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { users, accounts } from '@tradezen/db';
@@ -228,6 +233,58 @@ export class OAuthService {
     return {
       authMethod: user?.authMethod ?? 'password',
       accounts: accountsList,
+    };
+  }
+
+  private getGoogleClient(): OAuth2Client {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      throw new UnauthorizedException('Google OAuth not configured');
+    }
+    return new OAuth2Client(clientId);
+  }
+
+  async googleLogin(credential: string, response: Response) {
+    const client = this.getGoogleClient();
+    let payload: {
+      sub: string;
+      email?: string;
+      name?: string;
+      picture?: string;
+    };
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload() as typeof payload;
+    } catch {
+      throw new UnauthorizedException('Invalid Google credential');
+    }
+
+    if (!payload.email) {
+      throw new UnauthorizedException('Google account has no email');
+    }
+
+    const user = await this.validateOAuthUser({
+      provider: 'google',
+      providerId: payload.sub,
+      email: payload.email,
+      displayName: payload.name ?? payload.email,
+      username: payload.email.split('@')[0],
+      avatar: payload.picture,
+      accessToken: credential,
+    });
+
+    this.setOAuthTokens(response, user);
+
+    return {
+      access_token: user.accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
     };
   }
 
