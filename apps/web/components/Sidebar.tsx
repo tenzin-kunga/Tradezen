@@ -78,6 +78,17 @@ const navItems = [
     ),
   },
   {
+    label: "CHECKLISTS",
+    href: "/checklists",
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+        <rect x="2" y="1" width="10" height="2" rx="1" />
+        <rect x="2" y="5" width="7" height="2" rx="1" />
+        <rect x="2" y="9" width="9" height="2" rx="1" />
+      </svg>
+    ),
+  },
+  {
     label: "NEW TRADE",
     href: "/add-trade",
     icon: (
