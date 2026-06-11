@@ -102,28 +102,25 @@ export default function LoginPage() {
             <GoogleOAuthProvider
               clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""}
             >
-              <div className="w-full flex items-center justify-center min-h-[48px]">
-                <GoogleLogin
-                  theme="filled_black"
-                  size="large"
-                  shape="rectangular"
-                  text="continue_with"
-                  width="380"
-                  onSuccess={async (credentialResponse) => {
-                    if (credentialResponse.credential) {
-                      try {
-                        await googleLogin(credentialResponse.credential);
-                        router.push("/");
-                      } catch {
-                        setError("Google login failed");
-                      }
+              <GoogleLogin
+                theme="outline"
+                size="large"
+                shape="rectangular"
+                text="continue_with"
+                onSuccess={async (credentialResponse) => {
+                  if (credentialResponse.credential) {
+                    try {
+                      await googleLogin(credentialResponse.credential);
+                      router.push("/");
+                    } catch {
+                      setError("Google login failed");
                     }
-                  }}
-                  onError={() => {
-                    setError("Google login failed");
-                  }}
-                />
-              </div>
+                  }
+                }}
+                onError={() => {
+                  setError("Google login failed");
+                }}
+              />
             </GoogleOAuthProvider>
 
             <button
