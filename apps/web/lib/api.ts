@@ -501,41 +501,6 @@ export async function updateNotificationPreference(type: string, enabled: boolea
   return handleResponse<{ message: string }>(res);
 }
 
-// ─── Goals ──────────────────────────────────────────
-
-export const getGoals = async () => {
-  const res = await authFetch(`${API}/goals`);
-  return handleResponse<any[]>(res);
-};
-
-export const createGoal = async (data: {
-  type: string;
-  target: number;
-  period?: string;
-  direction?: string;
-  startDate: string;
-  endDate?: string;
-}) => {
-  const res = await authFetch(`${API}/goals`, {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-  return handleResponse<any>(res);
-};
-
-export const updateGoal = async (id: string, data: Record<string, any>) => {
-  const res = await authFetch(`${API}/goals/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-  return handleResponse<any>(res);
-};
-
-export const deleteGoal = async (id: string) => {
-  const res = await authFetch(`${API}/goals/${id}`, { method: "DELETE" });
-  return handleResponse<{ deleted: boolean }>(res);
-};
-
 // ─── Reports ────────────────────────────────────────
 
 export async function getWeeklyReport() {
