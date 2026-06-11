@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -99,29 +99,17 @@ export default function LoginPage() {
           )}
 
           <div className="flex flex-col gap-3 mb-5">
-            <GoogleOAuthProvider
-              clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""}
-            >
-              <GoogleLogin
-                theme="outline"
-                size="large"
-                shape="rectangular"
-                text="continue_with"
-                onSuccess={async (credentialResponse) => {
-                  if (credentialResponse.credential) {
-                    try {
-                      await googleLogin(credentialResponse.credential);
-                      router.push("/");
-                    } catch {
-                      setError("Google login failed");
-                    }
-                  }
-                }}
-                onError={() => {
+            <GoogleLoginButton
+              onSuccess={async (credential) => {
+                try {
+                  await googleLogin(credential);
+                  router.push("/");
+                } catch {
                   setError("Google login failed");
-                }}
-              />
-            </GoogleOAuthProvider>
+                }
+              }}
+              onError={() => setError("Google login failed")}
+            />
 
             <button
               type="button"
