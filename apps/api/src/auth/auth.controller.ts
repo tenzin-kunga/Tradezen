@@ -8,6 +8,7 @@ import {
   Res,
   HttpCode,
   HttpStatus,
+  All,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -40,7 +41,8 @@ export class AuthController {
   }
 
   @Public()
-  @Post('refresh')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @All('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token using HTTP-only cookie' })
   refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
