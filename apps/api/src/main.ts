@@ -76,6 +76,7 @@ async function bootstrap() {
           connectSrc: [
             "'self'",
             process.env.WEB_URL ?? 'http://localhost:3000',
+            process.env.API_URL ?? 'http://localhost:3001',
             'ws://localhost:3001',
             'wss://localhost:3001',
           ],
