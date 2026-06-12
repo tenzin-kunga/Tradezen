@@ -159,7 +159,6 @@ export class AuthService {
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: remember_me ? 7 * 24 * 60 * 60 * 1000 : undefined,
       path: '/',
-      partitioned: true,
     });
 
     return {
@@ -223,7 +222,6 @@ export class AuthService {
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : undefined,
       path: '/',
-      partitioned: true,
     });
 
     return {
@@ -291,7 +289,7 @@ export class AuthService {
   }
 
   async logout(response: Response) {
-    response.clearCookie('refresh_token', { path: '/', partitioned: true });
+    response.clearCookie('refresh_token', { path: '/' });
     return { message: 'Logged out' };
   }
 }
