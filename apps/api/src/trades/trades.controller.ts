@@ -63,6 +63,12 @@ export class TradesController {
     return this.service.getAnalytics(userId);
   }
 
+  @Get('dashboard')
+  @ApiOperation({ summary: 'Get all dashboard data for Phase 2 widgets' })
+  getDashboard(@CurrentUser('id') userId: string) {
+    return this.service.getDashboardData(userId);
+  }
+
   @Get('analytics/advanced')
   @ApiOperation({
     summary: 'Get advanced analytics with Sharpe, Sortino, Calmar ratios',
