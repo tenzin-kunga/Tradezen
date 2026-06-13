@@ -1095,6 +1095,261 @@ export class TradesService {
     };
   }
 
+  async getDashboardData(
+    userId: string,
+  ): Promise<import('./dto/dashboard.dto').DashboardResponseDto> {
+    const allTrades = await db
+      .select()
+      .from(trades)
+      .where(eq(trades.userId, userId))
+      .orderBy(asc(trades.createdAt));
+
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    const isoWeekStart = new Date(today);
+    isoWeekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+    const weekStartStr = isoWeekStart.toISOString().slice(0, 10);
+
+    // Weekly stats
+    const weekTrades = allTrades.filter(
+      (t) => t.tradeDate && String(t.tradeDate).slice(0, 10) >= weekStartStr,
+    );
+    const weeklyTrades = weekTrades.length;
+    const weeklyPnl = weekTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
+    const weeklyWins = weekTrades.filter((t) => Number(t.pnl) > 0).length;
+    const weeklyWinRate =
+      weeklyTrades > 0 ? Math.round((weeklyWins / weeklyTrades) * 100) : 0;
+
+    // Equity curve
+    const sorted = allTrades
+      .filter((t) => t.tradeDate)
+      .sort((a, b) =>
+        String(a.tradeDate).localeCompare(String(b.tradeDate)),
+      );
+    let cum = 0;
+    const equityMap = new Map<string, number>();
+    for (const t of sorted) {
+      const d = String(t.tradeDate).slice(0, 10);
+      cum += Number(t.pnl);
+      equityMap.set(d, Math.round(cum * 100) / 100);
+    }
+    const equityCurve = Array.from(equityMap.entries()).map(
+      ([date, equity]) => ({
+        date,
+        equity,
+      }),
+    );
+
+    // Daily summary
+    const todayTrades = allTrades.filter(
+      (t) =>
+        t.tradeDate && String(t.tradeDate).slice(0, 10) === todayStr,
+    );
+    const dailyWins = todayTrades.filter((t) => Number(t.pnl) > 0).length;
+    const tradesToday = todayTrades.length;
+    const winRateToday =
+      tradesToday > 0 ? Math.round((dailyWins / tradesToday) * 100) : 0;
+    const pnlToday = todayTrades.reduce(
+      (sum, t) => sum + Number(t.pnl),
+      0,
+    );
+    const openRisk = allTrades
+      .filter((t) => !t.tradeDate)
+      .reduce((sum, t) => {
+        const sl = t.stopLoss ? Number(t.stopLoss) : 0;
+        const entry = Number(t.entryPrice);
+        const lot = Number(t.lotSize);
+        return entry > 0 && sl > 0
+          ? sum + Math.abs(entry - sl) * lot
+          : sum;
+      }, 0);
+
+    // Behavior analytics
+    const totalTrades = allTrades.length;
+    const fomoCount = allTrades.filter((t) => t.fomoCheck).length;
+    const vengeanceCount = allTrades.filter(
+      (t) => t.vengeanceTrade,
+    ).length;
+    const disciplineScore =
+      totalTrades > 0
+        ? Math.min(
+            100,
+            Math.round(
+              ((totalTrades - (fomoCount + vengeanceCount)) /
+                totalTrades) *
+                100,
+            ),
+          )
+        : 0;
+    const fomoRate = totalTrades > 0 ? fomoCount / totalTrades : 0;
+    const fomoScore: 'Low' | 'Medium' | 'High' =
+      fomoRate < 0.1 ? 'Low' : fomoRate < 0.25 ? 'Medium' : 'High';
+
+    const thisMonthStr = today.toISOString().slice(0, 7);
+    const revengeTradesThisMonth = allTrades.filter(
+      (t) =>
+        t.vengeanceTrade &&
+        t.createdAt &&
+        String(t.createdAt).startsWith(thisMonthStr),
+    ).length;
+
+    const trendAlignedCount = allTrades.filter(
+      (t) => t.trendAlignment,
+    ).length;
+    const trendAlignment =
+      totalTrades > 0
+        ? Math.round((trendAlignedCount / totalTrades) * 100)
+        : 0;
+
+    // Insights
+    const strategyMap = new Map<
+      string,
+      { trades: number; wins: number; pnl: number }
+    >();
+    const dayMap = new Map<
+      number,
+      { trades: number; wins: number; pnl: number }
+    >();
+    const dayNames = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+
+    for (const t of allTrades) {
+      const strat = t.strategy || 'No Strategy';
+      if (!strategyMap.has(strat))
+        strategyMap.set(strat, { trades: 0, wins: 0, pnl: 0 });
+      const sm = strategyMap.get(strat)!;
+      sm.trades++;
+      if (Number(t.pnl) > 0) sm.wins++;
+      sm.pnl += Number(t.pnl);
+
+      if (t.createdAt) {
+        const dow = new Date(String(t.createdAt)).getDay();
+        if (!dayMap.has(dow))
+          dayMap.set(dow, { trades: 0, wins: 0, pnl: 0 });
+        const dm = dayMap.get(dow)!;
+        dm.trades++;
+        if (Number(t.pnl) > 0) dm.wins++;
+        dm.pnl += Number(t.pnl);
+      }
+    }
+
+    let bestStrategy = '';
+    let bestStrategyWR = 0;
+    for (const [name, stats] of strategyMap) {
+      if (stats.trades >= 3) {
+        const wr = stats.wins / stats.trades;
+        if (wr > bestStrategyWR) {
+          bestStrategyWR = wr;
+          bestStrategy = name;
+        }
+      }
+    }
+
+    let bestDay = '';
+    let bestDayPnl = -Infinity;
+    for (const [dow, stats] of dayMap) {
+      if (stats.pnl > bestDayPnl) {
+        bestDayPnl = stats.pnl;
+        bestDay = dayNames[dow];
+      }
+    }
+
+    const grossProfit = allTrades
+      .filter((t) => Number(t.pnl) > 0)
+      .reduce((s, t) => s + Number(t.pnl), 0);
+    const grossLoss = Math.abs(
+      allTrades
+        .filter((t) => Number(t.pnl) < 0)
+        .reduce((s, t) => s + Number(t.pnl), 0),
+    );
+    const profitFactor =
+      grossLoss > 0
+        ? Math.round((grossProfit / grossLoss) * 100) / 100
+        : grossProfit > 0
+          ? 999
+          : 0;
+
+    const rrValues = allTrades
+      .filter((t) => t.stopLoss && t.takeProfit)
+      .map((t) => {
+        const entry = Number(t.entryPrice);
+        const sl = Number(t.stopLoss);
+        const tp = Number(t.takeProfit);
+        return entry > 0 && sl > 0 && tp > 0
+          ? Math.abs(tp - entry) / Math.abs(entry - sl)
+          : 0;
+      })
+      .filter((v) => v > 0);
+    const avgRR =
+      rrValues.length > 0
+        ? Math.round(
+            (rrValues.reduce((s, v) => s + v, 0) / rrValues.length) * 10,
+          ) / 10
+        : 0;
+
+    // Heatmap
+    const heatmapMap = new Map<
+      string,
+      { trades: number; pnl: number; disciplined: boolean }
+    >();
+    for (const t of allTrades) {
+      const d = String(t.tradeDate || t.createdAt).slice(0, 10);
+      if (!d) continue;
+      if (!heatmapMap.has(d))
+        heatmapMap.set(d, { trades: 0, pnl: 0, disciplined: true });
+      const hm = heatmapMap.get(d)!;
+      hm.trades++;
+      hm.pnl += Number(t.pnl);
+      if (t.vengeanceTrade || !t.tradeDate) hm.disciplined = false;
+    }
+
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const yearAgoStr = oneYearAgo.toISOString().slice(0, 10);
+    const heatmap = Array.from(heatmapMap.entries())
+      .filter(([date]) => date >= yearAgoStr)
+      .map(([date, data]) => ({
+        date,
+        trades: data.trades,
+        pnl: Math.round(data.pnl * 100) / 100,
+        disciplined: data.disciplined,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return {
+      weeklyTrades,
+      weeklyPnl: Math.round(weeklyPnl * 100) / 100,
+      weeklyWinRate,
+      equityCurve,
+      dailySummary: {
+        tradesToday,
+        winRateToday,
+        pnlToday: Math.round(pnlToday * 100) / 100,
+        openRisk: Math.round(openRisk * 100) / 100,
+      },
+      behaviorAnalytics: {
+        disciplineScore,
+        fomoScore,
+        revengeTradesThisMonth,
+        trendAlignment,
+      },
+      insights: {
+        bestStrategy,
+        bestDay,
+        avgRR,
+        profitFactor,
+      },
+      heatmap,
+    };
+  }
+
   async streamExportCsv(userId: string, res: Response): Promise<void> {
     const headers = [
       'id',

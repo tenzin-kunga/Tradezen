@@ -845,3 +845,1581 @@ If a first-time visitor lands on TradeZen for 10 seconds, they should perceive i
 rather than
 
 **"a CRUD application with charts."**
+
+# TradeZen Frontend Revamp — Phase 2
+### Dashboard Transformation & Analytics Experience
+
+**Version:** 1.0
+**Duration:** 3–5 Days
+**Priority:** Critical
+
+---
+
+# Executive Summary
+
+Phase 1 modernized the visual foundation.
+
+Phase 2 transforms TradeZen from a dashboard with metrics into a true **trading command center**.
+
+The current dashboard follows a traditional SaaS pattern:
+
+```text
+Stats
+Chart
+Table
+```
+
+The new dashboard should answer the following questions within 5 seconds:
+
+- Am I profitable?
+- Am I improving?
+- Am I disciplined?
+- What should I focus on today?
+- What mistakes am I repeating?
+
+The dashboard becomes the centerpiece of TradeZen.
+
+---
+
+# Research & Inspiration
+
+### Trading Platforms
+
+- TradingView
+- TopstepX
+- Tradovate
+- Edgewonk
+
+### Analytics Products
+
+- Stripe Dashboard
+- Plausible Analytics
+- Vercel Analytics
+- Linear Insights
+
+### Key Findings
+
+Successful analytics dashboards:
+
+✅ Prioritize insights over raw data
+
+✅ Surface trends immediately
+
+✅ Reduce navigation friction
+
+✅ Tell a story with data
+
+✅ Encourage action
+
+---
+
+# Current Dashboard Problems
+
+## 1. Dashboard Feels Empty
+
+Current structure:
+
+```text
+Metric Cards
+
+Large Empty Chart
+
+Recent Trades
+```
+
+Problem:
+
+The dashboard doesn't guide users.
+
+---
+
+## 2. Analytics Are Hidden
+
+TradeZen has:
+
+- Journaling
+- Behavioral Tracking
+- Risk Metrics
+- Trade Analytics
+
+Yet the dashboard only surfaces a small portion.
+
+---
+
+## 3. No Discipline Tracking
+
+Trading success depends on:
+
+- Consistency
+- Psychology
+- Risk
+
+Current dashboard focuses mainly on performance.
+
+---
+
+# Phase 2 Goals
+
+## Goal 1
+
+Create a true trading command center.
+
+---
+
+## Goal 2
+
+Surface behavioral insights.
+
+---
+
+## Goal 3
+
+Increase user engagement.
+
+---
+
+## Goal 4
+
+Make analytics discoverable.
+
+---
+
+## Goal 5
+
+Improve retention through daily value.
+
+---
+
+# New Dashboard Layout
+
+```text
+┌──────────────────────────────────────────────┐
+│ Welcome Back Hero                            │
+└──────────────────────────────────────────────┘
+
+┌─────┬─────┬─────┬─────┐
+│PnL  │Win% │PF   │AvgR │
+└─────┴─────┴─────┴─────┘
+
+┌───────────────────────┬─────────────────────┐
+│ Equity Curve          │ Daily Summary       │
+└───────────────────────┴─────────────────────┘
+
+┌───────────────────────┬─────────────────────┐
+│ Recent Trades         │ Journal Snapshot    │
+└───────────────────────┴─────────────────────┘
+
+┌──────────────────────────────────────────────┐
+│ Trading Consistency Heatmap                  │
+└──────────────────────────────────────────────┘
+
+┌───────────────────────┬─────────────────────┐
+│ Behavior Analytics    │ AI Insights         │
+└───────────────────────┴─────────────────────┘
+```
+
+---
+
+# Feature 1 — Dashboard Hero
+
+## Purpose
+
+Create a personalized experience.
+
+---
+
+## Layout
+
+```text
+Welcome Back, Tenzin 👋
+
+12 Trades This Week
++₹4,250 Weekly P&L
+64% Win Rate
+```
+
+---
+
+## Dynamic Data
+
+### Weekly Trades
+
+Number of completed trades.
+
+---
+
+### Weekly P&L
+
+Profit and loss this week.
+
+---
+
+### Weekly Win Rate
+
+Current week performance.
+
+---
+
+## Benefits
+
+Users instantly know:
+
+- Activity level
+- Recent performance
+- Momentum
+
+---
+
+# Feature 2 — Equity Curve Redesign
+
+## Research
+
+TradingView places performance charts at the center.
+
+TradeZen should do the same.
+
+---
+
+## Requirements
+
+### Modern Chart
+
+Professional styling.
+
+No basic Recharts appearance.
+
+---
+
+### Time Filters
+
+```text
+1D
+1W
+1M
+3M
+6M
+1Y
+ALL
+```
+
+---
+
+### Features
+
+- Smooth line
+- Interactive tooltips
+- Hover indicators
+- Responsive design
+
+---
+
+## Goal
+
+The equity curve becomes the visual centerpiece.
+
+---
+
+# Feature 3 — Daily Trading Summary
+
+## Purpose
+
+Provide today's status.
+
+---
+
+## Layout
+
+```text
+Today's Trading
+
+Trades Taken: 3
+Win Rate: 67%
+Current P&L: +₹750
+Open Risk: ₹500
+```
+
+---
+
+## Benefits
+
+Users immediately know:
+
+- Today's progress
+- Current exposure
+- Performance
+
+---
+
+# Feature 4 — Recent Trades Widget
+
+## Purpose
+
+Quick access to latest activity.
+
+---
+
+## Layout
+
+```text
+Symbol
+Direction
+PnL
+RR
+Date
+```
+
+Example:
+
+```text
+NIFTY
+LONG
++₹1200
+2.4R
+Today
+```
+
+---
+
+## Quick Actions
+
+### View
+
+Open trade details.
+
+### Edit
+
+Edit trade.
+
+### Delete
+
+Delete trade.
+
+---
+
+# Feature 5 — Journal Snapshot Widget
+
+## Research
+
+Most traders ignore journaling when it is buried.
+
+The dashboard should surface it.
+
+---
+
+## Layout
+
+```text
+Latest Journal Entry
+
+Mood:
+Focused
+
+Market:
+Trending
+
+Lesson:
+Wait for confirmation.
+```
+
+---
+
+## Benefits
+
+Creates habit formation.
+
+---
+
+# Feature 6 — Trading Consistency Heatmap
+
+## Research
+
+Inspired by GitHub contributions graph.
+
+---
+
+## Layout
+
+```text
+🟩🟩🟨🟩🟩
+🟩🟩🟩🟨🟩
+🟥🟩🟩🟩🟩
+```
+
+---
+
+## Color Meaning
+
+### Green
+
+Disciplined trading day.
+
+### Yellow
+
+Average activity.
+
+### Red
+
+Poor discipline day.
+
+---
+
+## Metrics
+
+Track:
+
+- Trading frequency
+- Trading consistency
+- Journal completion
+
+---
+
+## Benefits
+
+Makes discipline visible.
+
+---
+
+# Feature 7 — Behavior Analytics Widget
+
+## Purpose
+
+Surface psychological patterns.
+
+---
+
+## Display
+
+### Discipline Score
+
+```text
+84 / 100
+```
+
+---
+
+### FOMO Score
+
+```text
+Low
+```
+
+---
+
+### Revenge Trades
+
+```text
+2 This Month
+```
+
+---
+
+### Trend Alignment
+
+```text
+78%
+```
+
+---
+
+## Benefits
+
+Transforms TradeZen into a coaching platform.
+
+---
+
+# Feature 8 — Analytics Preview Widget
+
+## Purpose
+
+Encourage exploration.
+
+---
+
+## Display
+
+### Best Strategy
+
+```text
+Breakout
+```
+
+---
+
+### Best Trading Day
+
+```text
+Tuesday
+```
+
+---
+
+### Average RR
+
+```text
+2.3R
+```
+
+---
+
+### Profit Factor
+
+```text
+1.85
+```
+
+---
+
+# Feature 9 — Better Empty States
+
+Current:
+
+```text
+No Data
+```
+
+---
+
+New:
+
+```text
+Your Analytics Will Appear Here
+
+Log your first trade to unlock:
+
+✓ Equity Curve
+✓ Performance Analytics
+✓ Discipline Tracking
+
+[ Log Trade ]
+```
+
+---
+
+# Feature 10 — Dashboard Responsiveness
+
+## Desktop
+
+Two-column layout.
+
+---
+
+## Tablet
+
+Single-column adaptive layout.
+
+---
+
+## Mobile
+
+Stacked widgets.
+
+Priority order:
+
+```text
+Hero
+KPIs
+Daily Summary
+Recent Trades
+Journal
+Heatmap
+```
+
+---
+
+# New Components
+
+```text
+DashboardHero.tsx
+
+EquityCurve.tsx
+
+DailySummaryCard.tsx
+
+RecentTradesWidget.tsx
+
+JournalSnapshotWidget.tsx
+
+TradingHeatmap.tsx
+
+BehaviorAnalyticsWidget.tsx
+
+AnalyticsPreviewWidget.tsx
+```
+
+---
+
+# Expected Outcome
+
+Before:
+
+```text
+Admin Dashboard
+```
+
+After:
+
+```text
+Trading Command Center
+```
+
+Users should feel:
+
+> "This platform helps me improve as a trader."
+
+instead of:
+
+> "This platform stores my trades."
+
+---
+
+# Definition of Done
+
+- [ ] Dashboard hero added
+- [ ] Equity curve redesigned
+- [ ] Daily summary widget added
+- [ ] Recent trades widget upgraded
+- [ ] Journal snapshot added
+- [ ] Trading heatmap implemented
+- [ ] Behavior analytics widget implemented
+- [ ] Analytics preview added
+- [ ] Empty states redesigned
+- [ ] Responsive layouts completed
+
+---
+
+# Success Metric
+
+A user should be able to open the dashboard and answer these questions within 5 seconds:
+
+✓ Am I profitable?
+
+✓ Am I improving?
+
+✓ Am I disciplined?
+
+✓ What should I focus on next?
+
+If the dashboard can answer those four questions instantly, Phase 2 is successful.
+
+
+# TradeZen Frontend Revamp — Phase 3
+### Premium Experience, Personalization & AI-Powered Trading Intelligence
+
+**Version:** 1.0
+**Duration:** 1–2 Weeks
+**Priority:** High
+
+---
+
+# Executive Summary
+
+Phase 1 modernized the visual foundation.
+
+Phase 2 transformed the dashboard into a trading command center.
+
+Phase 3 transforms TradeZen from a trading journal into a complete **trader performance operating system**.
+
+The objective is no longer simply tracking trades.
+
+The objective is helping traders:
+
+- Improve discipline
+- Identify behavioral patterns
+- Build consistency
+- Make better decisions
+- Create a personalized workflow
+
+By the end of Phase 3, TradeZen should feel closer to:
+
+- TradingView
+- Edgewonk
+- Linear
+- Notion
+- Arc Browser
+
+than a traditional dashboard application.
+
+---
+
+# Phase 3 Objectives
+
+## Goal 1
+
+Create a premium SaaS experience.
+
+---
+
+## Goal 2
+
+Increase user retention.
+
+---
+
+## Goal 3
+
+Make analytics actionable.
+
+---
+
+## Goal 4
+
+Introduce workflow personalization.
+
+---
+
+## Goal 5
+
+Leverage AI to provide trading insights.
+
+---
+
+# Research & Inspiration
+
+## Product Inspiration
+
+### Linear
+
+- Command Palette
+- Fast navigation
+- Keyboard-first workflow
+
+### Notion
+
+- Widget flexibility
+- Personalization
+- Layout control
+
+### TradingView
+
+- Powerful analytics
+- Data-first approach
+
+### Arc Browser
+
+- Delightful UX
+- Micro-interactions
+
+---
+
+# Feature 1 — Command Palette
+
+## Research
+
+Power users prefer keyboard navigation.
+
+Linear, Vercel, GitHub and Notion all provide command menus.
+
+---
+
+## Shortcut
+
+```text
+Ctrl + K
+```
+
+---
+
+## Interface
+
+```text
+Search...
+
+Log Trade
+New Journal Entry
+Analytics
+Reports
+Settings
+```
+
+---
+
+## Searchable Items
+
+### Navigation
+
+- Dashboard
+- Analytics
+- Reports
+- Journal
+
+---
+
+### Actions
+
+- Log Trade
+- Add Journal
+- Create Checklist
+
+---
+
+### Data
+
+- Search trades
+- Search notes
+- Search strategies
+
+---
+
+## Benefits
+
+Reduces navigation friction.
+
+---
+
+# Feature 2 — Dashboard Personalization
+
+## Problem
+
+Every trader has a different workflow.
+
+Current dashboards are fixed.
+
+---
+
+## Solution
+
+Allow users to customize layouts.
+
+---
+
+## Features
+
+### Drag Widgets
+
+Rearrange dashboard components.
+
+---
+
+### Resize Widgets
+
+Small
+Medium
+Large
+
+---
+
+### Hide Widgets
+
+Remove unused components.
+
+---
+
+### Save Layouts
+
+Examples:
+
+```text
+Scalper Layout
+
+Swing Trader Layout
+
+Journal Focus Layout
+```
+
+---
+
+## Benefits
+
+Creates ownership.
+
+---
+
+# Feature 3 — AI Trading Insights
+
+## Purpose
+
+Convert data into actionable recommendations.
+
+---
+
+## Insight Panel
+
+Dedicated dashboard widget.
+
+---
+
+## Example Insights
+
+```text
+Tuesday is your most profitable day.
+```
+
+---
+
+```text
+Trend-aligned trades have a 78% win rate.
+```
+
+---
+
+```text
+You perform better after journaling.
+```
+
+---
+
+```text
+Revenge trades account for 31% of losses.
+```
+
+---
+
+## Categories
+
+### Performance
+
+Profitability patterns.
+
+---
+
+### Discipline
+
+Behavioral observations.
+
+---
+
+### Risk
+
+Risk management recommendations.
+
+---
+
+### Consistency
+
+Habit analysis.
+
+---
+
+# Feature 4 — Advanced Strategy Analytics
+
+## Purpose
+
+Identify which strategies perform best.
+
+---
+
+## Compare Strategies
+
+```text
+Scalping
+
+Swing Trading
+
+Breakouts
+
+News Trading
+```
+
+---
+
+## Metrics
+
+### Win Rate
+
+---
+
+### Profit Factor
+
+---
+
+### Expectancy
+
+---
+
+### Average RR
+
+---
+
+### Drawdown
+
+---
+
+## Visualizations
+
+### Bar Charts
+
+Performance comparison.
+
+---
+
+### Trend Charts
+
+Performance over time.
+
+---
+
+# Feature 5 — Risk Analytics Center
+
+## Purpose
+
+Improve risk management.
+
+---
+
+## Visualizations
+
+### Risk Distribution
+
+```text
+Risk Per Trade
+```
+
+---
+
+### Risk By Strategy
+
+```text
+Breakout: 40%
+
+Scalp: 35%
+
+Swing: 25%
+```
+
+---
+
+### Risk By Week
+
+Identify periods of overexposure.
+
+---
+
+## Metrics
+
+### Average Risk
+
+### Maximum Risk
+
+### Risk Utilization
+
+### Risk Efficiency
+
+---
+
+# Feature 6 — Performance Calendar
+
+## Purpose
+
+Provide historical performance overview.
+
+---
+
+## Layout
+
+Calendar-style visualization.
+
+---
+
+## Color Meaning
+
+### Dark Green
+
+Highly profitable day.
+
+---
+
+### Light Green
+
+Profitable day.
+
+---
+
+### Red
+
+Loss day.
+
+---
+
+### Gray
+
+No trades.
+
+---
+
+## Benefits
+
+Makes patterns obvious.
+
+---
+
+# Feature 7 — Notification Center
+
+## Purpose
+
+Keep traders engaged.
+
+---
+
+## Categories
+
+### Trade Reminders
+
+```text
+You haven't logged today's trades.
+```
+
+---
+
+### Journal Reminders
+
+```text
+Complete today's journal.
+```
+
+---
+
+### Weekly Reports
+
+```text
+Your weekly report is ready.
+```
+
+---
+
+### Milestones
+
+```text
+100 trades completed.
+```
+
+---
+
+## UI
+
+Bell icon in navbar.
+
+---
+
+# Feature 8 — Goal Tracking System
+
+## Purpose
+
+Help traders focus on improvement.
+
+---
+
+## Examples
+
+### Monthly Goal
+
+```text
+50 trades
+```
+
+---
+
+### Discipline Goal
+
+```text
+No revenge trades
+```
+
+---
+
+### Risk Goal
+
+```text
+Never exceed 1% risk
+```
+
+---
+
+### Journal Goal
+
+```text
+Daily entries
+```
+
+---
+
+## Progress Tracking
+
+Visual progress bars.
+
+---
+
+# Feature 9 — Trading Streaks
+
+## Purpose
+
+Encourage consistency.
+
+---
+
+## Examples
+
+```text
+12 Day Journal Streak
+```
+
+---
+
+```text
+18 Day Checklist Streak
+```
+
+---
+
+```text
+25 Consecutive Logged Trades
+```
+
+---
+
+## Benefits
+
+Gamification without feeling childish.
+
+---
+
+# Feature 10 — Keyboard Shortcuts
+
+## Inspired By
+
+- Linear
+- Notion
+- GitHub
+
+---
+
+## Examples
+
+### Navigation
+
+```text
+G + D
+Dashboard
+```
+
+---
+
+```text
+G + T
+Trades
+```
+
+---
+
+```text
+G + A
+Analytics
+```
+
+---
+
+### Actions
+
+```text
+N
+New Trade
+```
+
+---
+
+```text
+J
+New Journal
+```
+
+---
+
+```text
+/
+Search
+```
+
+---
+
+# Feature 11 — Micro Interactions
+
+## Purpose
+
+Make the product feel premium.
+
+---
+
+## Add
+
+### Hover Effects
+
+Cards lift slightly.
+
+---
+
+### Smooth Transitions
+
+Page transitions.
+
+---
+
+### Animated Metrics
+
+Count-up effects.
+
+---
+
+### Interactive Charts
+
+Smooth tooltips.
+
+---
+
+## Avoid
+
+- Excessive animations
+- Slow transitions
+- Fancy effects without purpose
+
+---
+
+# Feature 12 — Mobile Experience
+
+## Goal
+
+Enable trade logging anywhere.
+
+---
+
+## Mobile Navigation
+
+Bottom navigation bar.
+
+```text
+Dashboard
+
+Trades
+
+Analytics
+
+Journal
+
+Profile
+```
+
+---
+
+## Quick Actions
+
+Floating Action Button.
+
+```text
++ Log Trade
+```
+
+---
+
+## Mobile Optimizations
+
+### Swipe Actions
+
+Edit trade.
+
+Delete trade.
+
+---
+
+### Compact Widgets
+
+Mobile-first analytics.
+
+---
+
+# Feature 13 — Multi Theme System
+
+## Themes
+
+### Dark
+
+Default.
+
+---
+
+### Midnight
+
+Pure dark.
+
+---
+
+### TradingView
+
+Inspired by TradingView.
+
+---
+
+### Light
+
+Professional light mode.
+
+---
+
+## Theme Preview
+
+Allow theme switching before applying.
+
+---
+
+# Feature 14 — AI Weekly Reports
+
+## Generate Weekly Summary
+
+Example:
+
+```text
+This week:
+
+12 trades
+
+Win Rate: 67%
+
+Profit: ₹4,250
+
+Best Strategy:
+Breakout
+
+Biggest Mistake:
+Entering early.
+
+Recommendation:
+Wait for confirmation candles.
+```
+
+---
+
+## Export Options
+
+PDF
+
+Image
+
+Shareable link
+
+---
+
+# Feature 15 — Portfolio-Level Analytics
+
+## Multi-Account Support
+
+Future-ready architecture.
+
+---
+
+## Track
+
+Stocks
+
+Forex
+
+Crypto
+
+Futures
+
+Options
+
+---
+
+## Aggregated Analytics
+
+Combined performance dashboard.
+
+---
+
+# Premium Component Library
+
+## New Components
+
+```text
+CommandPalette.tsx
+
+WidgetGrid.tsx
+
+WidgetCustomizer.tsx
+
+AIInsightPanel.tsx
+
+PerformanceCalendar.tsx
+
+RiskAnalytics.tsx
+
+GoalTracker.tsx
+
+NotificationCenter.tsx
+
+KeyboardShortcutProvider.tsx
+
+ThemeSwitcher.tsx
+
+WeeklyReport.tsx
+
+TradingStreakCard.tsx
+```
+
+---
+
+# Expected Transformation
+
+## Before Phase 3
+
+```text
+Trading Journal
+```
+
+---
+
+## After Phase 3
+
+```text
+Trader Performance Operating System
+```
+
+---
+
+# Definition of Done
+
+- [ ] Command palette implemented
+- [ ] Widget customization complete
+- [ ] AI insights panel added
+- [ ] Advanced strategy analytics added
+- [ ] Risk analytics added
+- [ ] Performance calendar implemented
+- [ ] Notification center added
+- [ ] Goal tracking system complete
+- [ ] Trading streaks implemented
+- [ ] Keyboard shortcuts added
+- [ ] Micro-interactions completed
+- [ ] Mobile experience optimized
+- [ ] Theme system implemented
+- [ ] AI weekly reports added
+
+---
+
+# Success Metrics
+
+A trader using TradeZen should be able to answer:
+
+✓ What am I doing well?
+
+✓ What mistakes am I repeatably making?
+
+✓ Which strategy performs best?
+
+✓ Am I following my rules?
+
+✓ What should I improve next?
+
+without manually analyzing data.
+
+If TradeZen becomes a platform that actively helps traders improve rather than merely record trades, Phase 3 is successful.
+
+---
+
+# Final Vision
+
+TradeZen should become:
+
+> The operating system for trader growth.
+
+Not just a trade journal.
+
+Not just an analytics dashboard.
+
+A platform that helps traders build consistency, discipline, and long-term profitability.

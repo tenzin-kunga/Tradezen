@@ -217,6 +217,43 @@ export const getAnalytics = async () => {
   return handleResponse<any>(res);
 };
 
+export interface DashboardData {
+  weeklyTrades: number;
+  weeklyPnl: number;
+  weeklyWinRate: number;
+  equityCurve: { date: string; equity: number }[];
+  dailySummary: {
+    tradesToday: number;
+    winRateToday: number;
+    pnlToday: number;
+    openRisk: number;
+  };
+  behaviorAnalytics: {
+    disciplineScore: number;
+    fomoScore: "Low" | "Medium" | "High";
+    revengeTradesThisMonth: number;
+    trendAlignment: number;
+  };
+  insights: {
+    bestStrategy: string;
+    bestDay: string;
+    avgRR: number;
+    profitFactor: number;
+  };
+  heatmap: { date: string; trades: number; pnl: number; disciplined: boolean }[];
+}
+
+export const getDashboardData = async (): Promise<DashboardData> => {
+  const res = await authFetch(`${API}/trades/dashboard`);
+  return handleResponse<DashboardData>(res);
+};
+
+export const getJournalLatest = async () => {
+  const res = await authFetch(`${API}/journals?limit=1`);
+  const data = await handleResponse<{ data: any[]; total: number }>(res);
+  return data.data[0] || null;
+};
+
 export const getAdvancedAnalytics = async () => {
   const res = await authFetch(`${API}/trades/analytics/advanced`);
   return handleResponse<any>(res);
