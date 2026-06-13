@@ -23,6 +23,14 @@
         "FIRECRAWL_API_KEY": "fc-9582c452779248b7b40bb29089d099c9"
       }
     },
+    "playwright": {
+      "type": "local",
+      "command": ["C:\\Users\\tenku\\AppData\\Roaming\\npm\\npx.cmd", "-y", "@playwright/mcp"],
+      "enabled": true,
+      "env": {
+        "BROWSER": "chromium"
+      }
+    },
     "github": {
       "type": "remote",
       "url": "https://api.githubcopilot.com/mcp/",

@@ -3,18 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getChecklists } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 export default function ChecklistsPage() {
   const router = useRouter();
+  const { loading: authLoading } = useAuth();
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) return;
     getChecklists()
       .then(setTemplates)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+  }, [authLoading]);
 
   function fmtDate(d: string | null) {
     if (!d) return "Never";
