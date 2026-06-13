@@ -49,9 +49,9 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new Error(body.message || res.statusText);
   }
   const json = await res.json();
-  // Unwrap tRPC batch response: [{"result":{"data":...}}] → data
-  if (Array.isArray(json) && json[0]?.result?.data) {
-    return json[0].result.data.json ?? json[0].result.data;
+  // Unwrap tRPC response: {"result":{"data":...}} → data
+  if (json?.result?.data) {
+    return json.result.data.json ?? json.result.data;
   }
   return json;
 }
@@ -106,6 +106,7 @@ export async function refreshToken(): Promise<boolean> {
       if (!res.ok) return false;
       const body = await res.json();
       setAccessToken(body.access_token);
+      window.localStorage.setItem("tradezen_access_token", body.access_token);
       return true;
     } catch {
       return false;
@@ -508,10 +509,6 @@ export async function updateNotificationPreference(type: string, enabled: boolea
 
 // ─── Checklists ─────────────────────────────────────
 
-function trpcBody(input: unknown) {
-  return JSON.stringify({ "0": { json: input } });
-}
-
 export async function getChecklists() {
   const res = await authFetch(`${API}/trpc/checklists.list`);
   return handleResponse<any[]>(res);
@@ -525,7 +522,7 @@ export async function getChecklist(id: string) {
 export async function createChecklist(data: { name: string; description?: string; items: { title: string; isCritical?: boolean }[] }) {
   const res = await authFetch(`${API}/trpc/checklists.create`, {
     method: 'POST',
-    body: trpcBody(data),
+    body: JSON.stringify(data),
   });
   return handleResponse<any>(res);
 }
@@ -533,7 +530,7 @@ export async function createChecklist(data: { name: string; description?: string
 export async function updateChecklist(id: string, data: Record<string, any>) {
   const res = await authFetch(`${API}/trpc/checklists.update`, {
     method: 'POST',
-    body: trpcBody({ id, ...data }),
+    body: JSON.stringify({ id, ...data }),
   });
   return handleResponse<any>(res);
 }
@@ -541,7 +538,7 @@ export async function updateChecklist(id: string, data: Record<string, any>) {
 export async function deleteChecklist(id: string) {
   const res = await authFetch(`${API}/trpc/checklists.remove`, {
     method: 'POST',
-    body: trpcBody({ id }),
+    body: JSON.stringify({ id }),
   });
   return handleResponse<{ deleted: boolean }>(res);
 }
@@ -549,7 +546,7 @@ export async function deleteChecklist(id: string) {
 export async function cloneChecklist(id: string) {
   const res = await authFetch(`${API}/trpc/checklists.clone`, {
     method: 'POST',
-    body: trpcBody({ id }),
+    body: JSON.stringify({ id }),
   });
   return handleResponse<any>(res);
 }
@@ -562,7 +559,7 @@ export async function getChecklistRuns(checklistId: string) {
 export async function createChecklistRun(data: { checklistId: string; tradeId?: string | null; note?: string | null }) {
   const res = await authFetch(`${API}/trpc/checklists.runs.create`, {
     method: 'POST',
-    body: trpcBody(data),
+    body: JSON.stringify(data),
   });
   return handleResponse<any>(res);
 }
@@ -575,7 +572,7 @@ export async function getChecklistRun(id: string) {
 export async function updateChecklistRunItem(runId: string, itemId: string, checked: boolean) {
   const res = await authFetch(`${API}/trpc/checklists.runs.updateItem`, {
     method: 'POST',
-    body: trpcBody({ runId, itemId, checked }),
+    body: JSON.stringify({ runId, itemId, checked }),
   });
   return handleResponse<any>(res);
 }
@@ -583,7 +580,7 @@ export async function updateChecklistRunItem(runId: string, itemId: string, chec
 export async function deleteChecklistRun(id: string) {
   const res = await authFetch(`${API}/trpc/checklists.runs.remove`, {
     method: 'POST',
-    body: trpcBody({ id }),
+    body: JSON.stringify({ id }),
   });
   return handleResponse<{ deleted: boolean }>(res);
 }
