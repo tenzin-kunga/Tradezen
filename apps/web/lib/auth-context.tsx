@@ -79,21 +79,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (identifier: string, password: string, rememberMe: boolean = true) => {
     const res = await apiLogin({ identifier, password, remember_me: rememberMe });
+    window.localStorage.setItem("tradezen_access_token", res.access_token);
     setUser(res.user);
   }, []);
 
   const googleLogin = useCallback(async (credential: string) => {
     const res = await apiGoogleLogin(credential);
+    window.localStorage.setItem("tradezen_access_token", res.access_token);
     setUser(res.user);
   }, []);
 
   const register = useCallback(async (email: string, username: string, password: string) => {
     const res = await apiRegister({ email, username, password });
+    window.localStorage.setItem("tradezen_access_token", res.access_token);
     setUser(res.user);
   }, []);
 
   const logout = useCallback(async () => {
     await apiLogout();
+    window.localStorage.removeItem("tradezen_access_token");
     setAccessToken(null);
     setUser(null);
   }, []);
