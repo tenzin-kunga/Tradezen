@@ -381,11 +381,21 @@ export default function TradeLog() {
       )}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4">
-        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="TOTAL P&L" value={fmt(totalPnl)} valueColor={totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)"} />}</div>
-        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="WIN RATE" value={winRate} />}</div>
-        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="AVG R:R" value={avgRR} />}</div>
-        <div className="fade-up"><StatCard label="ACTIVE TRADES" value={`${total}`} /></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        {loading ? (
+          <>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <StatCardSkeleton key={i} />
+            ))}
+          </>
+        ) : (
+          <>
+            <StatCard title="Total P&L" value={fmt(totalPnl)} />
+            <StatCard title="Win Rate" value={winRate} />
+            <StatCard title="Avg R:R" value={avgRR} />
+            <StatCard title="Active Trades" value={`${total}`} />
+          </>
+        )}
       </div>
 
       {/* Trade cards */}

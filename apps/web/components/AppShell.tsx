@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
-import ChatPanel from "./ChatPanel";
+import TopBar from "./TopBar";
 
 const PUBLIC_ROUTES = ["/login", "/register", "/auth/callback"];
 
@@ -65,7 +65,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen" style={{ overflow: "hidden" }}>
+    <div className="flex flex-col md:flex-row" style={{ minHeight: "100vh" }}>
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div
@@ -75,42 +75,44 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Mobile header */}
-      <header className="md:hidden flex items-center justify-between px-4 py-3 border-b" style={{ background: "var(--bg-surface)", borderColor: "var(--border)" }}>
+      <header
+        className="md:hidden flex items-center justify-between px-4"
+        style={{ height: 48, background: "var(--bg-surface, #111214)", borderBottom: "1px solid var(--border, #23252d)", flexShrink: 0 }}
+      >
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2"
-          style={{ background: "none", border: "none", color: "var(--text-primary)", cursor: "pointer" }}
+          style={{ background: "none", border: "none", color: "var(--text-primary, #fafafa)", cursor: "pointer", padding: 8, display: "flex" }}
+          aria-label="Toggle menu"
         >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-            <rect x="2" y="4" width="16" height="2" />
-            <rect x="2" y="9" width="16" height="2" />
-            <rect x="2" y="14" width="16" height="2" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <span className="font-bold tracking-widest" style={{ fontSize: 14, letterSpacing: "0.2em", color: "var(--text-primary)" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.15em", color: "var(--text-primary, #fafafa)" }}>
           TRADEZEN
         </span>
-        <div style={{ width: 36 }} />
+        <div style={{ width: 34 }} />
       </header>
 
-      {/* Sidebar */}
+      {/* Sidebar - desktop always visible, mobile in overlay */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 md:w-auto md:flex-shrink-0 ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        className={`md:relative md:flex-shrink-0 ${
+          mobileMenuOpen ? "fixed inset-y-0 left-0 z-50" : "hidden md:block"
         }`}
+        style={{ transition: "transform 0.2s ease" }}
       >
         <Sidebar onClose={() => setMobileMenuOpen(false)} />
       </div>
 
-      {/* Main content */}
-      <main
-        className="flex-1 overflow-y-auto p-4 md:p-10"
-        style={{ background: "var(--bg-primary)" }}
-      >
-        {children}
-      </main>
-
-      <ChatPanel />
+      {/* Main area */}
+      <div className="flex flex-col flex-1" style={{ minWidth: 0 }}>
+        <TopBar />
+        <main style={{ flex: 1, overflowY: "auto", padding: 32, background: "var(--bg-primary, #09090b)" }}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

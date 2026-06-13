@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { getTrades, getAnalytics } from "@/lib/api";
 import StatCard from "@/components/StatCard";
+import WelcomeBanner from "@/components/WelcomeBanner";
+import EmptyState from "@/components/EmptyState";
 import { StatCardSkeleton } from "@/components/Skeleton";
 import EquityChart from "@/components/EquityChart";
 import Link from "next/link";
@@ -74,12 +76,27 @@ export default function Dashboard() {
 
   return (
     <div style={{ minHeight: "100%" }}>
-      {/* Stat cards: 1 col mobile, 2 col tablet, 4 col desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-4">
-        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="TOTAL P&L" value={pnlStr} valueColor={pnlColor} />}</div>
-        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="WIN RATE" value={winRateStr} />}</div>
-        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="PROFIT FACTOR" value={pfStr} />}</div>
-        <div className="fade-up">{loading ? <StatCardSkeleton /> : <StatCard label="AVG R:R" value={rrStr} />}</div>
+      {/* Welcome Banner */}
+      <div style={{ marginBottom: 24 }}>
+        <WelcomeBanner />
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {loading ? (
+          <>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="fade-up"><StatCardSkeleton /></div>
+            ))}
+          </>
+        ) : (
+          <>
+            <StatCard title="Total P&L" value={pnlStr} />
+            <StatCard title="Win Rate" value={winRateStr} />
+            <StatCard title="Profit Factor" value={pfStr} />
+            <StatCard title="Avg Risk:Reward" value={rrStr} />
+          </>
+        )}
       </div>
 
       <div className="fade-up mb-4">
@@ -96,7 +113,12 @@ export default function Dashboard() {
           </Link>
         </div>
         {recent.length === 0 ? (
-          <p style={{ color: "var(--text-muted)", fontSize: 12, margin: 0 }}>No trades logged yet.</p>
+          <EmptyState
+            title="Start Your Trading Journey"
+            description="Log your first trade to see your performance data and analytics."
+            actionLabel="Log First Trade"
+            actionHref="/add-trade"
+          />
         ) : (
           <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 500 }}>
