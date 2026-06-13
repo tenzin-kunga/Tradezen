@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getChecklistRun, updateChecklistRunItem, deleteChecklistRun } from "@/lib/api";
 import { useToast } from "@/components/Toast";
+import { useAuth } from "@/lib/auth-context";
 
 export default function RunViewPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
   const { addToast } = useToast();
+  const { loading: authLoading } = useAuth();
   const [run, setRun] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +22,7 @@ export default function RunViewPage() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { if (!authLoading) load(); }, [id, authLoading]);
 
   async function handleToggle(itemId: string, checked: boolean) {
     try {

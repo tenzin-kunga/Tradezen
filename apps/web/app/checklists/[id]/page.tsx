@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getChecklist, deleteChecklist, cloneChecklist, getChecklistRuns, createChecklistRun, deleteChecklistRun } from "@/lib/api";
 import { useToast } from "@/components/Toast";
+import { useAuth } from "@/lib/auth-context";
 
 export default function ChecklistDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
   const { addToast } = useToast();
+  const { loading: authLoading } = useAuth();
   const [template, setTemplate] = useState<any>(null);
   const [runs, setRuns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ export default function ChecklistDetailPage() {
     }).catch(console.error).finally(() => setLoading(false));
   }
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { if (!authLoading) load(); }, [id, authLoading]);
 
   async function handleClone() {
     try {

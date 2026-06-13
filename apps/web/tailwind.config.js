@@ -8,56 +8,83 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        display: ['DM Sans', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
+        heading: ['var(--font-display)', 'system-ui', 'sans-serif'],
       },
       colors: {
         bg: {
           primary: 'var(--bg-primary)',
           surface: 'var(--bg-surface)',
-          glass: 'var(--bg-glass)',
-          card: 'var(--bg-card)',
-          panel: 'var(--bg-panel)',
+          'surface-hover': 'var(--bg-surface-hover)',
         },
         border: {
           DEFAULT: 'var(--border)',
-          hover: 'var(--border-hover)',
         },
         text: {
           primary: 'var(--text-primary)',
           muted: 'var(--text-muted)',
-          dim: 'var(--text-dim)',
         },
         profit: {
           DEFAULT: 'var(--accent-profit)',
-          glow: 'var(--accent-profit-glow)',
         },
         loss: {
           DEFAULT: 'var(--accent-loss)',
-          glow: 'var(--accent-loss-glow)',
-        },
-        cyan: {
-          DEFAULT: 'var(--accent-cyan)',
-          glow: 'var(--accent-cyan-glow)',
         },
         warn: {
           DEFAULT: 'var(--accent-warn)',
-          glow: 'var(--accent-warn-glow)',
+        },
+        accent: {
+          DEFAULT: 'var(--accent)',
+        },
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
+        card: {
+          DEFAULT: 'var(--card)',
+          foreground: 'var(--card-foreground)',
+        },
+        popover: {
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)',
+        },
+        primary: {
+          DEFAULT: 'var(--primary)',
+          foreground: 'var(--primary-foreground)',
+        },
+        secondary: {
+          DEFAULT: 'var(--secondary)',
+          foreground: 'var(--secondary-foreground)',
+        },
+        muted: {
+          DEFAULT: 'var(--muted)',
+          foreground: 'var(--muted-foreground)',
+        },
+        destructive: {
+          DEFAULT: 'var(--destructive)',
+          foreground: 'var(--destructive-foreground)',
+        },
+        input: 'var(--input)',
+        ring: 'var(--ring)',
+        sidebar: {
+          DEFAULT: 'var(--sidebar)',
+          foreground: 'var(--sidebar-foreground)',
+          primary: {
+            DEFAULT: 'var(--sidebar-primary)',
+            foreground: 'var(--sidebar-primary-foreground)',
+          },
+          accent: {
+            DEFAULT: 'var(--sidebar-accent)',
+            foreground: 'var(--sidebar-accent-foreground)',
+          },
+          border: 'var(--sidebar-border)',
+          ring: 'var(--sidebar-ring)',
         },
       },
       borderRadius: {
         sm: 'var(--radius-sm)',
         md: 'var(--radius-md)',
         lg: 'var(--radius-lg)',
-      },
-      boxShadow: {
-        glass: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
-        'glass-hover': '0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-        glow: {
-          profit: '0 0 20px var(--accent-profit-glow)',
-          loss: '0 0 16px var(--accent-loss-glow)',
-          cyan: '0 0 16px var(--accent-cyan-glow)',
-        },
       },
       animation: {
         'fade-up': 'fadeUp 0.5s ease-out forwards',

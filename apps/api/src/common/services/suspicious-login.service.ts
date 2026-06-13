@@ -7,11 +7,11 @@ import { loginAttempts, users } from '@tradezen/db';
 export class SuspiciousLoginService {
   private readonly logger = new Logger('SuspiciousLogin');
 
-  async detectAnomalies(userId: number, ip: string): Promise<string[]> {
+  async detectAnomalies(userId: string, ip: string): Promise<string[]> {
     const flags: string[] = [];
 
     const user = await db.query.users.findFirst({
-      where: eq(users.id, String(userId)),
+      where: eq(users.id, userId),
       columns: { email: true },
     });
 
