@@ -125,3 +125,5 @@ apps/api/uploads/
 
 # OpenCode configuration and plans (local agent artifacts)
 .opencode/
+
+nul
