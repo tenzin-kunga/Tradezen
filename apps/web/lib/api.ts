@@ -1,3 +1,5 @@
+import type { DashboardLayout } from "@/lib/layout-types";
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 let accessToken: string | null = null;
@@ -333,6 +335,55 @@ export const deleteJournal = async (id: string) => {
 export const getJournalStreak = async () => {
   const res = await authFetch(`${API}/journals/streak`);
   return handleResponse<{ currentStreak: number; longestStreak: number; totalEntries: number }>(res);
+};
+
+// ─── Search ─────────────────────────────────────────
+
+export interface GlobalSearchResult {
+  trades: Array<{
+    id: string;
+    symbol: string;
+    direction: string;
+    pnl: string;
+    strategy: string | null;
+    notes: string | null;
+    created_at: string;
+  }>;
+  journals: Array<{
+    id: string;
+    date: string;
+    mood: string | null;
+    lessons: string | null;
+  }>;
+  tags: Array<{
+    id: string;
+    name: string;
+    color: string;
+    category: string | null;
+  }>;
+}
+
+export const globalSearch = async (q: string): Promise<GlobalSearchResult> => {
+  const res = await authFetch(`${API}/search/global?q=${encodeURIComponent(q)}`);
+  return handleResponse<GlobalSearchResult>(res);
+};
+
+// ─── Layout ─────────────────────────────────────────
+
+export const getLayout = async (): Promise<DashboardLayout | null> => {
+  try {
+    const res = await authFetch(`${API}/auth/layout`);
+    return handleResponse<DashboardLayout>(res);
+  } catch {
+    return null;
+  }
+};
+
+export const saveLayout = async (layout: DashboardLayout): Promise<void> => {
+  await authFetch(`${API}/auth/layout`, {
+    method: "PATCH",
+    body: JSON.stringify(layout),
+  });
 };
 
 // ─── Tags ──────────────────────────────────────────
