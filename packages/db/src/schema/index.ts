@@ -32,6 +32,19 @@ export const users = pgTable(
     defaultLotSize: numeric('default_lot_size').default('0.01'),
     timezone: text('timezone').default('UTC'),
     theme: text('theme').default('dark'),
+    dashboardLayout: jsonb('dashboard_layout').$type<{
+      widgets: Array<{ id: string; visible: boolean; size: string }>;
+    }>().default({
+      widgets: [
+        { id: 'equity-curve', visible: true, size: 'M' },
+        { id: 'daily-summary', visible: true, size: 'M' },
+        { id: 'recent-trades', visible: true, size: 'M' },
+        { id: 'journal-snapshot', visible: true, size: 'M' },
+        { id: 'behavior-analytics', visible: true, size: 'M' },
+        { id: 'heatmap', visible: true, size: 'M' },
+        { id: 'analytics-preview', visible: true, size: 'M' },
+      ],
+    }),
   },
   (table) => [
     index('idx_users_email').on(table.email),
