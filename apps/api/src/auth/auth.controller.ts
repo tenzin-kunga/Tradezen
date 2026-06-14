@@ -14,7 +14,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, UpdateSettingsDto } from './dto';
+import { RegisterDto, LoginDto, UpdateSettingsDto, SaveLayoutDto } from './dto';
 import { Public } from './public.decorator';
 import { CurrentUser } from './current-user.decorator';
 
@@ -72,5 +72,22 @@ export class AuthController {
     @Body() dto: UpdateSettingsDto,
   ) {
     return this.authService.updateSettings(userId, dto);
+  }
+
+  @Get('layout')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get dashboard layout configuration' })
+  getLayout(@CurrentUser('id') userId: string) {
+    return this.authService.getLayout(userId);
+  }
+
+  @Patch('layout')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Save dashboard layout configuration' })
+  saveLayout(
+    @CurrentUser('id') userId: string,
+    @Body() dto: SaveLayoutDto,
+  ) {
+    return this.authService.saveLayout(userId, dto);
   }
 }
