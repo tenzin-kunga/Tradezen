@@ -40,5 +40,4 @@ Current limits in docker-compose.yml:
 
 Increase these based on load testing results.
 
-## Monitoring
-Use Sentry (TZ-080) to track error rates across instances.
+

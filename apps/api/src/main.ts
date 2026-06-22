@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import { initSentry } from '../sentry.config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
@@ -53,7 +52,6 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 async function bootstrap() {
-  initSentry();
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });

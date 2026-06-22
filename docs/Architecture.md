@@ -654,9 +654,8 @@ Future Monitoring Stack
 ```text
 Application
  │
- ├── Sentry
- ├── Grafana
- └── Prometheus
+  ├── Grafana
+  └── Prometheus
 ```
 
 Metrics:
@@ -688,7 +687,6 @@ Add:
 
 ```text
 Redis
-Sentry
 Caching
 ```
 

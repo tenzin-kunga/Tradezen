@@ -584,7 +584,6 @@ Research migration feasibility from custom JWT auth to Better Auth.
 
 ### Tasks
 - Integrate:
-  - Sentry
   - Grafana
   - Prometheus
   - OpenTelemetry

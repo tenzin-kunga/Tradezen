@@ -33,9 +33,6 @@ OPENROUTER_AVAILABLE_MODELS=qwen/qwen3-next-80b-a3b-instruct:free,google/gemma-3
 
 # ── URLs ─────────────────────────────────────────────────────────────────────
 WEB_URL=http://localhost:3000
-
-# ── Sentry (optional) ────────────────────────────────────────────────────────
-SENTRY_DSN=
 NEXT_PUBLIC_SENTRY_DSN=
 SENTRY_AUTH_TOKEN=
 ```
@@ -185,8 +182,7 @@ Go to https://github.com/tampered-sin/Tradezen/settings/secrets/actions
 | `VERCEL_PROJECT_ID` | Vercel project ID |
 | `VERCEL_ORG_ID` | Vercel org ID |
 | `CODECOV_TOKEN` | Codecov upload token (optional) |
-| `SENTRY_DSN` | Sentry DSN (optional) |
-| `SENTRY_AUTH_TOKEN` | Sentry auth token (optional) |
+
 
 ---
 
@@ -259,7 +255,6 @@ After deployment, verify:
 - [ ] OAuth login: Google/GitHub buttons redirect correctly
 - [ ] Realtime: create a trade → dashboard updates without refresh
 - [ ] AI chat: send a message → receives response
-- [ ] Sentry: trigger an error → appears in Sentry dashboard
 - [ ] Backups: check `/backups/` directory for daily dumps
 - [ ] CI/CD: push to `develop` → GitHub Actions runs successfully
 
@@ -286,7 +281,6 @@ After deployment, verify:
 | Mobile responsive | ✅ Done | None |
 | Notifications | ✅ Done | None |
 | Report generation | ✅ Done | None |
-| Sentry monitoring | ✅ Done | Set DSN |
 | Backup automation | ✅ Done | Docker only |
 | CI/CD pipeline | ✅ Done | Set secrets |
 | Horizontal scaling | ✅ Done | Configure nginx |
