@@ -212,26 +212,6 @@ docker ps | grep tradezen-api
 docker logs tradezen-api
 ```
 
-### Railway Deployment (Alternative)
-
-```bash
-# 1. Install Railway CLI
-bun install -g @railway/cli
-
-# 2. Login
-railway login
-
-# 3. Link project
-railway link
-
-# 4. Set environment variables in Railway dashboard:
-#    - DB_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET, OPENROUTER_API_KEY, DATABASE_URL
-#    - POSTGRES_URL (if using Railway Postgres plugin)
-
-# 5. Deploy
-railway up
-```
-
 ---
 
 ## Deploy Frontend (Web)
@@ -351,7 +331,6 @@ docker-compose logs -f api
 - **Prometheus + Grafana** — scrape metrics from app (add `/metrics` endpoint)
 - **Datadog** — agent-based monitoring
 - **New Relic** — APM for Node.js
-- **Sentry** — error tracking (already have in frontend via error boundary?)
 
 ### Health Checks
 

@@ -1,7 +1,5 @@
 'use client';
 
-import * as Sentry from '@sentry/nextjs';
-
 export default function GlobalError({
   error,
   reset,
@@ -49,5 +47,3 @@ export default function GlobalError({
     </html>
   );
 }
-
-Sentry.captureException(GlobalError);
