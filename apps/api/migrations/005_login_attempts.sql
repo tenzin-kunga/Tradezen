@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS login_attempts (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_login_attempts_identifier ON login_attempts(identifier);
-CREATE INDEX idx_login_attempts_created_at ON login_attempts(created_at);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_identifier ON login_attempts(identifier);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_created_at ON login_attempts(created_at);

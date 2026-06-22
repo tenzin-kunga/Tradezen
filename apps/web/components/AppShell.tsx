@@ -5,6 +5,10 @@ import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
+import CommandPalette from "./CommandPalette";
+import KeyboardShortcutProvider from "./KeyboardShortcutProvider";
+import MobileBottomNav from "./MobileBottomNav";
+import FabButton from "./FabButton";
 
 const PUBLIC_ROUTES = ["/login", "/register", "/auth/callback"];
 
@@ -13,6 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
@@ -36,6 +41,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       document.body.style.overflow = "";
     };
   }, [mobileMenuOpen]);
+
+  // Command palette keyboard shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   if (loading) {
     return (
@@ -108,10 +125,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main area */}
       <div className="flex flex-col flex-1" style={{ minWidth: 0 }}>
-        <TopBar />
-        <main style={{ flex: 1, overflowY: "auto", padding: 32, background: "var(--bg-primary, #09090b)" }}>
-          {children}
+        <TopBar onSearchClick={() => setPaletteOpen(true)} />
+        <main className="pb-14 md:pb-0" style={{ flex: 1, overflowY: "auto", padding: 32, background: "var(--bg-primary, #09090b)" }}>
+          <KeyboardShortcutProvider onPaletteToggle={() => setPaletteOpen((v) => !v)}>
+            {children}
+          </KeyboardShortcutProvider>
         </main>
+        {!isPublicRoute && <MobileBottomNav />}
+        {!isPublicRoute && <FabButton />}
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       </div>
     </div>
   );

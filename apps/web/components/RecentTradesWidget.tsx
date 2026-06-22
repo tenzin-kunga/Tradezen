@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { deleteTrade } from "@/lib/api";
+import { WidgetShell } from "@/components/design-system";
 
 type Trade = {
   id: string;
@@ -34,19 +35,6 @@ function timeAgo(dateStr: string): string {
 export default function RecentTradesWidget({ trades, onDelete, loading }: Props) {
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  if (loading) {
-    return (
-      <div className="glass-card p-6">
-        <div style={{ height: 20, width: 120, background: "var(--bg-surface-hover)", borderRadius: 8, marginBottom: 16 }} />
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} style={{ height: 32, background: "var(--bg-surface-hover)", borderRadius: 6, marginBottom: 8 }} />
-        ))}
-      </div>
-    );
-  }
-
-  if (trades.length === 0) return null;
-
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this trade?")) return;
     setDeleting(id);
@@ -61,21 +49,19 @@ export default function RecentTradesWidget({ trades, onDelete, loading }: Props)
   };
 
   return (
-    <div className="glass-card p-6">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <span className="label-caps">RECENT TRADES</span>
-        <Link href="/trades" style={{ fontSize: 12, color: "var(--accent)", textDecoration: "none" }}>
-          View All →
-        </Link>
-      </div>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 400 }}>
+    <WidgetShell
+      title="RECENT TRADES"
+      headerAction={<Link href="/trades" className="text-xs text-accent no-underline">View All →</Link>}
+      loading={loading}
+      isEmpty={trades.length === 0}
+      emptyMessage="No trades yet. Log your first trade to get started."
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse" style={{ minWidth: 400 }}>
           <thead>
-            <tr style={{ borderBottom: "1px solid var(--border)" }}>
+            <tr className="border-b border-border">
               {["SYMBOL", "DIRECTION", "P&L", "R:R", "DATE", ""].map((h) => (
-                <th key={h} className="label-caps" style={{ textAlign: "left", paddingBottom: 8, paddingRight: 12, whiteSpace: "nowrap" }}>
-                  {h}
-                </th>
+                <th key={h} className="label-caps text-left pb-2 pr-3 whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
@@ -88,41 +74,42 @@ export default function RecentTradesWidget({ trades, onDelete, loading }: Props)
                   ? Math.abs(t.take_profit - t.entry_price) / Math.abs(t.entry_price - t.stop_loss)
                   : 0;
               return (
-                <tr key={t.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                  <td style={{ padding: "10px 12px 10px 0", fontWeight: 600, fontSize: 14 }}>{t.symbol}</td>
-                  <td style={{ padding: "10px 12px 10px 0", fontSize: 13, fontWeight: 600, color: isLong ? "var(--accent-profit)" : "var(--accent-loss)" }}>
+                <tr key={t.id} className="border-b border-border">
+                  <td className="py-2.5 pr-3 font-semibold text-base">{t.symbol}</td>
+                  <td className={`py-2.5 pr-3 text-sm font-semibold ${isLong ? "text-profit" : "text-loss"}`}>
                     {isLong ? "LONG" : "SHORT"}
                   </td>
-                  <td style={{ padding: "10px 12px 10px 0", fontSize: 14, fontWeight: 600, color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>
+                  <td className={`py-2.5 pr-3 text-base font-semibold ${isWin ? "text-profit" : "text-loss"}`}>
                     {fmtPnl(t.pnl)}
                   </td>
-                  <td style={{ padding: "10px 12px 10px 0", fontSize: 13, color: "var(--text-muted)" }}>
+                  <td className="py-2.5 pr-3 text-sm text-text-muted">
                     {rr > 0 ? `${rr.toFixed(1)}R` : "--"}
                   </td>
-                  <td style={{ padding: "10px 12px 10px 0", fontSize: 12, color: "var(--text-muted)" }}>
+                  <td className="py-2.5 pr-3 text-xs text-text-muted">
                     {timeAgo(t.created_at)}
                   </td>
-                  <td style={{ padding: "10px 0" }}>
-                    <div style={{ position: "relative", display: "inline-block" }}>
+                  <td className="py-2.5">
+                    <div className="relative inline-block">
                       <button
                         onClick={(e) => {
                           const menu = e.currentTarget.nextElementSibling as HTMLElement;
                           if (menu) menu.style.display = menu.style.display === "block" ? "none" : "block";
                         }}
-                        style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16, padding: "2px 6px" }}
+                        className="bg-transparent border-none text-text-muted cursor-pointer text-base px-1.5 py-0.5"
                       >
                         ⋮
                       </button>
                       <div
-                        style={{ display: "none", position: "absolute", right: 0, top: "100%", background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: 8, zIndex: 10, minWidth: 120 }}
+                        className="hidden absolute right-0 top-full bg-bg-surface border border-border rounded-lg z-10"
+                        style={{ minWidth: 120 }}
                       >
-                        <Link href={`/trades/${t.id}`} style={{ display: "block", padding: "8px 12px", fontSize: 12, color: "var(--text-primary)", textDecoration: "none" }}>
+                        <Link href={`/trades/${t.id}`} className="block px-3 py-2 text-xs text-text-primary no-underline">
                           View Details
                         </Link>
                         <button
                           onClick={() => handleDelete(t.id)}
                           disabled={deleting === t.id}
-                          style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", fontSize: 12, color: "var(--accent-loss)", background: "none", border: "none", cursor: "pointer" }}
+                          className="block w-full text-left px-3 py-2 text-xs text-loss bg-transparent border-none cursor-pointer"
                         >
                           {deleting === t.id ? "Deleting..." : "Delete"}
                         </button>
@@ -135,6 +122,6 @@ export default function RecentTradesWidget({ trades, onDelete, loading }: Props)
           </tbody>
         </table>
       </div>
-    </div>
+    </WidgetShell>
   );
 }

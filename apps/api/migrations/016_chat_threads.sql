@@ -6,5 +6,5 @@ CREATE TABLE IF NOT EXISTS chat_threads (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_chat_threads_user ON chat_threads(user_id);
-CREATE INDEX idx_chat_threads_updated ON chat_threads(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_threads_user ON chat_threads(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_threads_updated ON chat_threads(user_id, updated_at DESC);

@@ -1,6 +1,6 @@
 ﻿"use client";
 import { useEffect, useState, useCallback } from "react";
-import { getAnalytics, getAdvancedAnalytics, getDailyPnl } from "@/lib/api";
+import { getAnalytics, getAdvancedAnalytics, getDailyPnl, getStrategyAnalytics, getStrategyPerformance, getRiskAnalytics } from "@/lib/api";
 import {
   BarChart,
   Bar,
@@ -13,8 +13,15 @@ import {
   AreaChart,
 } from "recharts";
 import { useRealtime } from "@/hooks/use-realtime";
+import StrategyBarCharts from "@/components/StrategyBarCharts";
+import StrategyTrendChart from "@/components/StrategyTrendChart";
+import StrategyComparisonTable from "@/components/StrategyComparisonTable";
+import StrategyDrawer from "@/components/StrategyDrawer";
+import RiskDistributionChart from "@/components/RiskDistributionChart";
+import RiskByWeekChart from "@/components/RiskByWeekChart";
+import PerformanceCalendar from "@/components/PerformanceCalendar";
 
-type Tab = "overview" | "strategy" | "time" | "behavioral" | "risk";
+type Tab = "overview" | "strategy" | "time" | "behavioral" | "risk" | "calendar";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "OVERVIEW" },
@@ -22,6 +29,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "time", label: "TIME" },
   { key: "behavioral", label: "BEHAVIORAL" },
   { key: "risk", label: "RISK" },
+  { key: "calendar", label: "CALENDAR" },
 ];
 
 function getSeverity(count: number): { label: string; color: string } {
@@ -42,16 +50,43 @@ export default function AnalyticsPage() {
   const [stats, setStats] = useState<any>(null);
   const [advanced, setAdvanced] = useState<any>(null);
   const [dailyPnl, setDailyPnl] = useState<any[]>([]);
+  const [strategyAnalytics, setStrategyAnalytics] = useState<any>(null);
+  const [strategyTrendSeries, setStrategyTrendSeries] = useState<any[]>([]);
+  const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
+  const [riskAnalytics, setRiskAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadAnalytics = useCallback(() => {
-    Promise.all([getAnalytics(), getAdvancedAnalytics(), getDailyPnl()])
-      .then(([analyticsRes, advancedRes, dailyRes]) => {
-        setStats(analyticsRes);
-        setAdvanced(advancedRes);
-        setDailyPnl(dailyRes);
-      })
+    setError(null);
+    Promise.all([
+      Promise.all([getAnalytics(), getAdvancedAnalytics(), getDailyPnl(), getRiskAnalytics()]).then(
+        ([analyticsRes, advancedRes, dailyRes, riskRes]) => {
+          setStats(analyticsRes);
+          setAdvanced(advancedRes);
+          setDailyPnl(dailyRes);
+          setRiskAnalytics(riskRes);
+        },
+      ),
+      getStrategyAnalytics()
+        .then((stratRes) => {
+          setStrategyAnalytics(stratRes);
+          const strategies = stratRes?.byStrategy ?? [];
+          if (strategies.length > 0) {
+            return Promise.all(
+              strategies.map((s: any) => getStrategyPerformance(s.strategy)),
+            ).then((results) => {
+              setStrategyTrendSeries(
+                results.map((r, i) => ({
+                  strategy: strategies[i].strategy,
+                  monthly: r.monthly ?? [],
+                })),
+              );
+            });
+          }
+        })
+        .catch(() => {}),
+    ])
       .catch((err) => {
         console.error(err);
         setError(err instanceof Error ? err.message : "Unable to load analytics data.");
@@ -89,10 +124,6 @@ export default function AnalyticsPage() {
     },
   };
 
-  const maxStratPnl = safeStats.byStrategy.length > 0
-    ? Math.max(...safeStats.byStrategy.map((s: any) => Math.abs(Number(s.pnl) || 0)), 1)
-    : 1;
-
   const equityCurve = advanced?.equityCurve ?? [];
   const hasEquityData = equityCurve.length > 1;
 
@@ -103,6 +134,7 @@ export default function AnalyticsPage() {
       case "time": return <TimeTab />;
       case "behavioral": return <BehavioralTab />;
       case "risk": return <RiskTab />;
+      case "calendar": return <CalendarTab />;
     }
   }
 
@@ -196,93 +228,139 @@ export default function AnalyticsPage() {
   }
 
   function StrategyTab() {
+    const stratRaw = strategyAnalytics?.byStrategy ?? safeStats.byStrategy;
+    const stratData = stratRaw.map((s: any) => ({
+      strategy: s.strategy ?? s.name ?? "Unknown",
+      totalTrades: s.totalTrades ?? s.trades ?? 0,
+      winRate: s.winRate ?? 0,
+      profitFactor: s.profitFactor ?? 0,
+      expectancy: s.expectancy ?? 0,
+      avgRr: s.avgRr ?? 0,
+      maxDrawdown: s.maxDrawdown ?? 0,
+      totalPnl: s.totalPnl ?? s.pnl ?? 0,
+    }));
+    const best = strategyAnalytics?.bestStrategy ?? "";
+    const worst = strategyAnalytics?.worstStrategy ?? "";
+
     return (
       <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {/* Strategy Efficiency */}
-        <div className="rounded p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-          <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
-            STRATEGY EFFICIENCY
-          </div>
-          {safeStats.byStrategy.length === 0 ? (
-            <div className="text-sm" style={{ color: "var(--text-dim)" }}>NO STRATEGY DATA</div>
-          ) : (
-            safeStats.byStrategy.map((s: any) => (
-              <div key={s.name} className="mb-3.5">
-                <div className="flex justify-between mb-1">
-                  <span className="text-xs tracking-wide" style={{ color: "var(--text-primary)" }}>#{s.name}</span>
-                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    {(s.winRate * 100).toFixed(0)}% WIN · {s.trades} TRADES
-                  </span>
+      {/* Best / Worst cards */}
+      {stratData.length > 1 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {[best, worst].filter(Boolean).map((name) => {
+            const s = stratData.find((x: any) => x.strategy === name);
+            if (!s) return null;
+            const isBest = name === best && name !== worst;
+            return (
+              <div
+                key={name}
+                className="rounded p-4"
+                style={{
+                  backgroundColor: "var(--bg-surface)",
+                  border: `1px solid ${isBest ? "var(--accent-profit)44" : "var(--accent-loss)44"}`,
+                }}
+              >
+                <div className="text-xs tracking-widest mb-1" style={{ color: isBest ? "var(--accent-profit)" : "var(--accent-loss)" }}>
+                  {isBest ? "BEST STRATEGY" : "WORST STRATEGY"}
                 </div>
-                <div className="h-1 rounded" style={{ backgroundColor: "var(--border)" }}>
-                  <div className="h-1 rounded transition-all" style={{
-                    width: `${(Math.abs(s.pnl) / maxStratPnl) * 100}%`,
-                    backgroundColor: s.pnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)",
-                  }} />
+                <div className="text-sm font-bold tracking-wide">#{s.strategy}</div>
+                <div className="text-lg md:text-xl font-bold mt-1" style={{ color: s.totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}>
+                  {s.totalPnl >= 0 ? "+" : ""}${(s.totalPnl ?? 0).toFixed(2)}
+                </div>
+                <div className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>
+                  {s.totalTrades} TRADES · {s.winRate}% WIN RATE
                 </div>
               </div>
-            ))
+            );
+          })}
+        </div>
+      )}
+
+      {/* Bar charts */}
+      <StrategyBarCharts
+        strategies={stratData.map((s: any) => ({
+          strategy: s.strategy,
+          winRate: s.winRate,
+          profitFactor: s.profitFactor,
+          expectancy: s.expectancy,
+          avgRr: s.avgRr,
+          maxDrawdown: s.maxDrawdown,
+          totalPnl: s.totalPnl,
+        }))}
+      />
+
+      {/* Multi-line trend chart */}
+      <StrategyTrendChart series={strategyTrendSeries} />
+
+      {/* Top / Bottom Symbols */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div className="rounded p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+          <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
+            TOP SYMBOLS
+          </div>
+          {(advanced?.topSymbols ?? []).length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              {(advanced?.topSymbols ?? []).slice(0, 5).map((s: any) => (
+                <div key={s.symbol} className="flex justify-between items-center py-0.5">
+                  <span className="text-xs tracking-wide" style={{ color: "var(--accent-profit)" }}>▲ {s.symbol}</span>
+                  <span className="text-xs font-mono" style={{ color: "var(--accent-profit)" }}>+${s.pnl} ({s.trades})</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-center py-6" style={{ color: "var(--text-dim)" }}>NO SYMBOL DATA</div>
           )}
         </div>
 
-        {/* Top / Bottom Symbols */}
         <div className="rounded p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
           <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
-            TOP / BOTTOM SYMBOLS
+            BOTTOM SYMBOLS
           </div>
-          <div className="flex flex-col gap-1.5 mb-4">
-            {(advanced?.topSymbols ?? []).slice(0, 5).map((s: any) => (
-              <div key={s.symbol} className="flex justify-between items-center py-0.5">
-                <span className="text-xs tracking-wide" style={{ color: "var(--accent-profit)" }}>▲ {s.symbol}</span>
-                <span className="text-xs font-mono" style={{ color: "var(--accent-profit)" }}>+${s.pnl} ({s.trades})</span>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {(advanced?.bottomSymbols ?? []).slice(0, 5).map((s: any) => (
-              <div key={s.symbol} className="flex justify-between items-center py-0.5">
-                <span className="text-xs tracking-wide" style={{ color: "var(--accent-loss)" }}>▼ {s.symbol}</span>
-                <span className="text-xs font-mono" style={{ color: "var(--accent-loss)" }}>{s.pnl} ({s.trades})</span>
-              </div>
-            ))}
-          </div>
-          {(!advanced?.topSymbols?.length && !advanced?.bottomSymbols?.length) && (
+          {(advanced?.bottomSymbols ?? []).length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              {(advanced?.bottomSymbols ?? []).slice(0, 5).map((s: any) => (
+                <div key={s.symbol} className="flex justify-between items-center py-0.5">
+                  <span className="text-xs tracking-wide" style={{ color: "var(--accent-loss)" }}>▼ {s.symbol}</span>
+                  <span className="text-xs font-mono" style={{ color: "var(--accent-loss)" }}>{s.pnl} ({s.trades})</span>
+                </div>
+              ))}
+            </div>
+          ) : (
             <div className="text-xs text-center py-6" style={{ color: "var(--text-dim)" }}>NO SYMBOL DATA</div>
           )}
         </div>
       </div>
 
       {/* Strategy comparison table */}
-      {safeStats.byStrategy.length > 1 && (
-        <div className="rounded p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-          <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
-            STRATEGY COMPARISON
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                  {["STRATEGY", "TRADES", "WIN RATE", "P&L", "AVG P&L / TRADE"].map((h) => (
-                    <th key={h} className="tracking-widest py-2 pr-4 text-left" style={{ color: "var(--text-dim)", fontWeight: 400 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {safeStats.byStrategy.map((s: any) => (
-                  <tr key={s.name} style={{ borderBottom: "1px solid var(--border)" }}>
-                    <td className="py-2.5 pr-4 font-bold tracking-wide" style={{ color: "var(--text-primary)" }}>#{s.name}</td>
-                    <td className="py-2.5 pr-4" style={{ color: "var(--text-muted)" }}>{s.trades}</td>
-                    <td className="py-2.5 pr-4 font-mono" style={{ color: (s.winRate * 100) >= 50 ? "var(--accent-profit)" : "var(--accent-loss)" }}>{(s.winRate * 100).toFixed(0)}%</td>
-                    <td className="py-2.5 pr-4 font-mono" style={{ color: s.pnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}>{s.pnl >= 0 ? "+" : ""}${Number(s.pnl).toFixed(2)}</td>
-                    <td className="py-2.5 pr-4 font-mono" style={{ color: (s.pnl / s.trades) >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}>{(s.pnl / s.trades) >= 0 ? "+" : ""}${(s.pnl / s.trades).toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {stratData.length > 1 && (
+        <StrategyComparisonTable
+          strategies={stratData}
+          onSelect={setSelectedStrategy}
+          bestStrategy={best}
+          worstStrategy={worst}
+        />
       )}
+
+      {/* Strategy detail drawer */}
+      {selectedStrategy && (() => {
+        const s = stratData.find((x: any) => x.strategy === selectedStrategy);
+        if (!s) return null;
+        return (
+          <StrategyDrawer
+            strategy={selectedStrategy}
+            metrics={{
+              totalTrades: s.totalTrades,
+              winRate: s.winRate,
+              profitFactor: s.profitFactor,
+              expectancy: s.expectancy,
+              avgRr: s.avgRr,
+              maxDrawdown: s.maxDrawdown,
+              totalPnl: s.totalPnl,
+            }}
+            onClose={() => setSelectedStrategy(null)}
+          />
+        );
+      })()}
     </>
     );
   }
@@ -405,66 +483,167 @@ export default function AnalyticsPage() {
   }
 
   function RiskTab() {
+    const hasRiskData = riskAnalytics?.distribution?.length > 0;
+    const ra = riskAnalytics || {};
+
+    const riskCards = [
+      {
+        label: "AVG RISK / TRADE",
+        value: ra.avgRiskPerTrade != null ? `$${ra.avgRiskPerTrade.toFixed(2)}` : "--",
+        sub: "PER TRADE WITH SL",
+        valueColor: ra.avgRiskPerTrade > 500 ? "var(--accent-warn)" : "var(--text-primary)",
+      },
+      {
+        label: "MAX RISK / TRADE",
+        value: ra.maxRiskPerTrade != null ? `$${ra.maxRiskPerTrade.toFixed(2)}` : "--",
+        sub: "SINGLE TRADE",
+        valueColor: ra.maxRiskPerTrade > 1000 ? "var(--accent-loss)" : "var(--accent-warn)",
+      },
+      {
+        label: "AVG R-MULTIPLE",
+        value: ra.avgRMultiple != null ? `${ra.avgRMultiple.toFixed(2)}R` : "--",
+        sub: "PNL / RISK",
+        valueColor: (ra.avgRMultiple ?? 0) >= 1 ? "var(--accent-profit)" : (ra.avgRMultiple ?? 0) >= 0 ? "var(--accent-warn)" : "var(--accent-loss)",
+      },
+      {
+        label: "VaR (95%)",
+        value: ra.var95 != null ? `${ra.var95 < 0 ? "-" : "+"}$${Math.abs(ra.var95).toFixed(2)}` : "--",
+        sub: "HISTORICAL 5TH PERCENTILE",
+        valueColor: ra.var95 < 0 ? "var(--accent-loss)" : "var(--accent-profit)",
+      },
+      {
+        label: "RISK EFFICIENCY",
+        value: ra.riskEfficiency != null ? `${ra.riskEfficiency.toFixed(2)}x` : "--",
+        sub: "PNL / TOTAL RISK",
+        valueColor: (ra.riskEfficiency ?? 0) >= 1 ? "var(--accent-profit)" : (ra.riskEfficiency ?? 0) >= 0 ? "var(--accent-warn)" : "var(--accent-loss)",
+      },
+      {
+        label: "MAX DRAWDOWN",
+        value: `$${safeStats.maxDrawdown.toFixed(2)}`,
+        sub: "PEAK TO TROUGH",
+        valueColor: safeStats.maxDrawdown > 500 ? "var(--accent-loss)" : safeStats.maxDrawdown > 200 ? "var(--accent-warn)" : "var(--accent-profit)",
+      },
+    ];
+
     return (
       <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          {[
-            {
-              label: "MAX DRAWDOWN",
-              value: `$${safeStats.maxDrawdown.toFixed(2)}`,
-              sub: "PEAK TO TROUGH",
-              valueColor: safeStats.maxDrawdown > 500 ? "var(--accent-loss)" : safeStats.maxDrawdown > 200 ? "var(--accent-warn)" : "var(--accent-profit)",
-            },
-            {
-              label: "CALMAR RATIO",
-              value: advanced?.calmarRatio?.toFixed(2) ?? "--",
-              sub: "RETURN / DRAWDOWN",
-              valueColor: (advanced?.calmarRatio ?? 0) >= 1 ? "var(--accent-profit)" : (advanced?.calmarRatio ?? 0) >= 0 ? "var(--accent-warn)" : "var(--accent-loss)",
-            },
-            {
-              label: "CURRENT STREAK",
-              value: (advanced?.currentStreak?.type ?? "none") === "none" ? "--" : `${advanced.currentStreak.type === "win" ? "🔥" : "❄️"} ${advanced.currentStreak.count}`,
-              sub: (advanced?.currentStreak?.type ?? "none") === "none" ? "NO STREAK" : `${advanced.currentStreak.type.toUpperCase()} STREAK`,
-              valueColor: advanced?.currentStreak?.type === "win" ? "var(--accent-profit)" : advanced?.currentStreak?.type === "loss" ? "var(--accent-loss)" : "var(--text-muted)",
-            },
-            {
-              label: "MAX STREAK",
-              value: `W${safeStats.maxConsecutiveWins} / L${safeStats.maxConsecutiveLosses}`,
-              sub: "CONSECUTIVE",
-              valueColor: "var(--text-primary)",
-            },
-          ].map((card) => (
-            <div key={card.label} className="rounded p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-              <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>{card.label}</div>
-              <div className="text-xl md:text-2xl font-bold" style={{ color: card.valueColor ?? "var(--text-primary)" }}>{card.value}</div>
-              <div className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>{card.sub}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
+          {riskCards.map((card) => (
+            <div key={card.label} className="rounded p-3 md:p-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+              <div className="text-xs tracking-widest mb-1" style={{ color: "var(--text-muted)" }}>{card.label}</div>
+              <div className="text-lg md:text-xl font-bold" style={{ color: card.valueColor ?? "var(--text-primary)" }}>{card.value}</div>
+              <div className="text-[10px] mt-0.5" style={{ color: "var(--text-dim)" }}>{card.sub}</div>
             </div>
           ))}
         </div>
 
-        <div className="rounded p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-          <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
-            RISK METRICS
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { label: "SHARPE RATIO", value: advanced?.sharpeRatio?.toFixed(2) ?? "--", threshold: 1, desc: "≥1.0 GOOD" },
-              { label: "SORTINO RATIO", value: advanced?.sortinoRatio >= 99999 ? "∞" : advanced?.sortinoRatio?.toFixed(2) ?? "--", threshold: 1.5, desc: "≥1.5 EXCELLENT" },
-              { label: "CALMAR RATIO", value: advanced?.calmarRatio?.toFixed(2) ?? "--", threshold: 1, desc: "≥1.0 GOOD" },
-            ].map((m) => (
-              <div key={m.label} className="rounded p-4" style={{ backgroundColor: "var(--bg-primary)" }}>
-                <div className="text-xs tracking-widest" style={{ color: "var(--text-dim)" }}>{m.label}</div>
-                <div className="text-2xl font-bold mt-1" style={{
-                  color: Number(m.value) >= m.threshold ? "var(--accent-profit)" : Number(m.value) >= 0 ? "var(--accent-warn)" : "var(--accent-loss)",
-                }}>
-                  {m.value}
-                </div>
-                <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{m.desc}</div>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <RiskDistributionChart data={ra.distribution ?? []} />
+          <RiskByWeekChart data={ra.byWeek ?? []} />
         </div>
+
+        {ra.byStrategy?.length > 0 && (
+          <div className="rounded p-4 md:p-5 mb-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+            <div className="text-xs tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
+              RISK BY STRATEGY
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ color: "var(--text-dim)", borderBottom: "1px solid var(--border)" }}>
+                    <th className="text-left py-2 pr-3">STRATEGY</th>
+                    <th className="text-right py-2 px-3">AVG RISK</th>
+                    <th className="text-right py-2 px-3">MAX RISK</th>
+                    <th className="text-right py-2 px-3">TRADES</th>
+                    <th className="text-right py-2 px-3">WIN RATE</th>
+                    <th className="text-right py-2 pl-3">AVG R</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ra.byStrategy.map((s: any) => (
+                    <tr key={s.strategy} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                      <td className="py-2 pr-3 font-medium" style={{ color: "var(--text-primary)" }}>{s.strategy}</td>
+                      <td className="text-right py-2 px-3" style={{ color: "var(--text-primary)" }}>${s.avgRisk.toFixed(2)}</td>
+                      <td className="text-right py-2 px-3" style={{ color: "var(--accent-warn)" }}>${s.maxRisk.toFixed(2)}</td>
+                      <td className="text-right py-2 px-3" style={{ color: "var(--text-muted)" }}>{s.count}</td>
+                      <td className="text-right py-2 px-3" style={{ color: s.winRate >= 50 ? "var(--accent-profit)" : "var(--accent-loss)" }}>{s.winRate}%</td>
+                      <td className="text-right py-2 pl-3" style={{ color: "var(--text-primary)" }}>{s.avgR.toFixed(2)}R</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {ra.riskByDirection && (
+          <div className="rounded p-4 md:p-5 mb-4" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+            <div className="text-xs tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>
+              RISK BY DIRECTION
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { dir: "LONG", data: ra.riskByDirection.long },
+                { dir: "SHORT", data: ra.riskByDirection.short },
+              ].map((d) => (
+                <div key={d.dir} className="rounded p-4 text-center" style={{ backgroundColor: "var(--bg-primary)" }}>
+                  <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-muted)" }}>{d.dir}</div>
+                  <div className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+                    ${d.data?.avgRisk?.toFixed(2) ?? "--"}
+                  </div>
+                  <div className="text-[10px]" style={{ color: "var(--text-dim)" }}>AVG RISK</div>
+                  <div className="mt-2" style={{ color: (d.data?.winRate ?? 0) >= 50 ? "var(--accent-profit)" : "var(--accent-loss)" }}>
+                    {d.data?.winRate ?? 0}% WIN RATE
+                  </div>
+                  <div className="text-[10px]" style={{ color: "var(--text-dim)" }}>{d.data?.count ?? 0} TRADES</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(advanced?.sharpeRatio != null || advanced?.sortinoRatio != null || advanced?.calmarRatio != null) && (
+          <div className="rounded p-4 md:p-5" style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+            <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
+              RISK-ADJUSTED METRICS
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { label: "SHARPE RATIO", value: advanced?.sharpeRatio?.toFixed(2) ?? "--", threshold: 1, desc: "≥1.0 GOOD" },
+                { label: "SORTINO RATIO", value: advanced?.sortinoRatio >= 99999 ? "∞" : advanced?.sortinoRatio?.toFixed(2) ?? "--", threshold: 1.5, desc: "≥1.5 EXCELLENT" },
+                { label: "CALMAR RATIO", value: advanced?.calmarRatio?.toFixed(2) ?? "--", threshold: 1, desc: "≥1.0 GOOD" },
+              ].map((m) => {
+                const val = m.value === "--" ? null : Number(m.value);
+                return (
+                <div key={m.label} className="rounded p-4" style={{ backgroundColor: "var(--bg-primary)" }}>
+                  <div className="text-xs tracking-widest" style={{ color: "var(--text-dim)" }}>{m.label}</div>
+                  <div className="text-2xl font-bold mt-1" style={{
+                    color: val == null ? "var(--text-primary)" : val >= m.threshold ? "var(--accent-profit)" : val >= 0 ? "var(--accent-warn)" : "var(--accent-loss)",
+                  }}>
+                    {m.value}
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{m.desc}</div>
+                </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </>
+    );
+  }
+
+  function CalendarTab() {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <PerformanceCalendar
+          data={dailyPnl.map((d) => ({
+            date: typeof d.date === 'string' ? d.date : d.date.toISOString().split('T')[0],
+            pnl: Number(d.totalPnl),
+            trades: Number(d.tradeCount ?? 0),
+          }))}
+        />
+      </div>
     );
   }
 

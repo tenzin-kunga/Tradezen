@@ -1,3 +1,5 @@
+import type { DashboardLayout } from "@/lib/layout-types";
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 let accessToken: string | null = null;
@@ -254,8 +256,23 @@ export const getJournalLatest = async () => {
   return data.data[0] || null;
 };
 
+export const getStrategyAnalytics = async () => {
+  const res = await authFetch(`${API}/trades/analytics/strategy`);
+  return handleResponse<any>(res);
+};
+
+export const getStrategyPerformance = async (name: string) => {
+  const res = await authFetch(`${API}/trades/analytics/strategy/${encodeURIComponent(name)}/performance`);
+  return handleResponse<any>(res);
+};
+
 export const getAdvancedAnalytics = async () => {
   const res = await authFetch(`${API}/trades/analytics/advanced`);
+  return handleResponse<any>(res);
+};
+
+export const getRiskAnalytics = async () => {
+  const res = await authFetch(`${API}/trades/analytics/risk`);
   return handleResponse<any>(res);
 };
 
@@ -333,6 +350,55 @@ export const deleteJournal = async (id: string) => {
 export const getJournalStreak = async () => {
   const res = await authFetch(`${API}/journals/streak`);
   return handleResponse<{ currentStreak: number; longestStreak: number; totalEntries: number }>(res);
+};
+
+// ─── Search ─────────────────────────────────────────
+
+export interface GlobalSearchResult {
+  trades: Array<{
+    id: string;
+    symbol: string;
+    direction: string;
+    pnl: string;
+    strategy: string | null;
+    notes: string | null;
+    created_at: string;
+  }>;
+  journals: Array<{
+    id: string;
+    date: string;
+    mood: string | null;
+    lessons: string | null;
+  }>;
+  tags: Array<{
+    id: string;
+    name: string;
+    color: string;
+    category: string | null;
+  }>;
+}
+
+export const globalSearch = async (q: string): Promise<GlobalSearchResult> => {
+  const res = await authFetch(`${API}/search/global?q=${encodeURIComponent(q)}`);
+  return handleResponse<GlobalSearchResult>(res);
+};
+
+// ─── Layout ─────────────────────────────────────────
+
+export const getLayout = async (): Promise<DashboardLayout | null> => {
+  try {
+    const res = await authFetch(`${API}/auth/layout`);
+    return handleResponse<DashboardLayout>(res);
+  } catch {
+    return null;
+  }
+};
+
+export const saveLayout = async (layout: DashboardLayout): Promise<void> => {
+  await authFetch(`${API}/auth/layout`, {
+    method: "PATCH",
+    body: JSON.stringify(layout),
+  });
 };
 
 // ─── Tags ──────────────────────────────────────────
@@ -543,6 +609,27 @@ export async function updateNotificationPreference(type: string, enabled: boolea
   });
   return handleResponse<{ message: string }>(res);
 }
+
+// ─── AI Insights ─────────────────────────────────────
+
+export interface AiInsight {
+  id: string;
+  category: 'performance' | 'discipline' | 'risk' | 'consistency';
+  title: string;
+  message: string;
+  metrics: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface AiInsightsResponse {
+  insights: AiInsight[];
+  generatedAt: string;
+}
+
+export const getAiInsights = async (): Promise<AiInsightsResponse> => {
+  const res = await authFetch(`${API}/ai/insights`);
+  return handleResponse<AiInsightsResponse>(res);
+};
 
 // ─── Checklists ─────────────────────────────────────
 

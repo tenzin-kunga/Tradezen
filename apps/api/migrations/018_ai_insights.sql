@@ -7,6 +7,6 @@ CREATE TABLE IF NOT EXISTS ai_insights (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_insights_user ON ai_insights(user_id);
-CREATE INDEX idx_insights_type ON ai_insights(user_id, insight_type);
-CREATE INDEX idx_insights_created ON ai_insights(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_insights_user ON ai_insights(user_id);
+CREATE INDEX IF NOT EXISTS idx_insights_type ON ai_insights(user_id, insight_type);
+CREATE INDEX IF NOT EXISTS idx_insights_created ON ai_insights(user_id, created_at DESC);

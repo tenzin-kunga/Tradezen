@@ -7,18 +7,9 @@ import StatCard from "@/components/StatCard";
 import { useRealtime } from "@/hooks/use-realtime";
 import { useToast } from "@/components/Toast";
 import { StatCardSkeleton, TradeLogSkeleton } from "@/components/Skeleton";
-
-type Trade = {
-  id: string; symbol: string; direction: string;
-  entry_price: number; exit_price: number; lot_size: number; pnl: number;
-  stop_loss: number | null; take_profit: number | null;
-  strategy: string | null; notes: string | null;
-  chart_image?: string | null;
-  commission?: number | null;
-  trade_date?: string | null;
-  fomo_check: boolean; trend_alignment: boolean; vengeance_trade: boolean;
-  created_at: string;
-};
+import TradeCard from "@/components/TradeCard";
+import TradeDetailDrawer from "@/components/TradeDetailDrawer";
+import type { Trade } from "@tradezen/types";
 
 function fmt(n: number) {
   const abs = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -61,6 +52,9 @@ export default function TradeLog() {
   const [importJobId, setImportJobId] = useState<string | null>(null);
   const importJobIdRef = useRef<string | null>(null);
   const [importProgress, setImportProgress] = useState<{ processed: number; total: number; imported: number; errors: string[] } | null>(null);
+
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     importJobIdRef.current = importJobId;
@@ -167,6 +161,21 @@ export default function TradeLog() {
     } catch (err) {
       addToast("error", "Failed to delete trade");
     }
+  }
+
+  function handleTradeView(t: Trade) {
+    setSelectedTrade(t);
+    setDrawerOpen(true);
+  }
+
+  function handleTradeEdit(id: string) {
+    setDrawerOpen(false);
+    router.push(`/trades/${id}/edit`);
+  }
+
+  async function handleTradeDelete(id: string) {
+    setDrawerOpen(false);
+    await handleDelete(id);
   }
 
   async function handleExportCsv() {
@@ -439,89 +448,9 @@ export default function TradeLog() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {filteredTrades.slice((page - 1) * 10, page * 10).map((t) => {
-              const isWin = t.pnl >= 0;
-              const isLong = t.direction === "buy";
-              return (
-                <div key={t.id} className="glass-card overflow-hidden">
-                  {/* Image section - full width mobile, left side desktop */}
-                  <div className="w-full md:w-[280px] min-h-[160px] md:min-h-[200px] relative" style={{ background: "var(--bg-primary)" }}>
-                    {t.chart_image ? (
-                      <img src={t.chart_image} alt="Trade chart" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-xs p-4 text-center" style={{ color: "var(--text-dim)" }}>
-                        No chart image
-                      </div>
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 p-3" style={{ background: "linear-gradient(180deg, transparent, rgba(0,0,0,0.8))" }}>
-                      <div className="flex justify-between gap-2">
-                        <span className="font-bold text-sm">{t.symbol}</span>
-                        <span className="font-bold text-sm" style={{ color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>{isWin ? "WIN" : "LOSS"}</span>
-                      </div>
-                      <div className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>{t.strategy || "No strategy"}</div>
-                    </div>
-                  </div>
-                  {/* Details */}
-                  <div className="p-4 flex flex-col gap-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="label-caps mb-1">DIRECTION</div>
-                        <div className="font-semibold text-sm" style={{ color: isLong ? "var(--accent-profit)" : "var(--accent-loss)" }}>{isLong ? "LONG" : "SHORT"}</div>
-                      </div>
-                      <div>
-                        <div className="label-caps mb-1">RESULT</div>
-                        <div className="mono-data font-semibold text-sm" style={{ color: isWin ? "var(--accent-profit)" : "var(--accent-loss)" }}>{fmt(Number(t.pnl))}</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <div className="glass-card p-3">
-                        <div className="label-caps mb-1">ENTRY</div>
-                        <div className="mono-data font-semibold text-sm">{t.entry_price}</div>
-                      </div>
-                      <div className="glass-card p-3">
-                        <div className="label-caps mb-1">EXIT</div>
-                        <div className="mono-data font-semibold text-sm">{t.exit_price}</div>
-                      </div>
-                      <div className="glass-card p-3 col-span-2 sm:col-span-1">
-                        <div className="label-caps mb-1">DATE</div>
-                        <div className="mono-data font-semibold text-xs">{fmtDate(t.trade_date ?? t.created_at)}</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="glass-card p-3">
-                        <div className="label-caps mb-1">LOT</div>
-                        <div className="mono-data font-semibold text-sm">{t.lot_size}</div>
-                      </div>
-                      <div className="glass-card p-3">
-                        <div className="label-caps mb-1">SL</div>
-                        <div className="mono-data font-semibold text-sm">{t.stop_loss != null ? Number(t.stop_loss).toFixed(5) : "--"}</div>
-                      </div>
-                      <div className="glass-card p-3">
-                        <div className="label-caps mb-1">TP</div>
-                        <div className="mono-data font-semibold text-sm">{t.take_profit != null ? Number(t.take_profit).toFixed(5) : "--"}</div>
-                      </div>
-                      <div className="glass-card p-3">
-                        <div className="label-caps mb-1">COMMISSION</div>
-                        <div className="mono-data font-semibold text-sm">${Number(t.commission ?? 0).toFixed(2)}</div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-                      <div className="flex-1 w-full">
-                        <div className="label-caps mb-2">NOTES</div>
-                        <div style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.6, minHeight: 40 }}>{t.notes || "No notes."}</div>
-                      </div>
-                      <div className="flex gap-2 w-full sm:w-auto">
-                        <button onClick={() => router.push(`/trades/${t.id}/edit`)} className="btn-primary text-xs flex-1 sm:flex-initial">EDIT</button>
-                        <button onClick={() => handleDelete(t.id)} className="btn-glass text-xs flex-1 sm:flex-initial" style={{ color: "var(--accent-loss)", borderColor: "var(--accent-loss)" }}>DELETE</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {filteredTrades.slice((page - 1) * 10, page * 10).map((t) => (
+              <TradeCard key={t.id} trade={t} onView={handleTradeView} />
+            ))}
           </div>
         )}
 
@@ -535,6 +464,14 @@ export default function TradeLog() {
           </div>
         )}
       </div>
+
+      <TradeDetailDrawer
+        trade={selectedTrade}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onEdit={handleTradeEdit}
+        onDelete={handleTradeDelete}
+      />
 
       {/* Session + Strategy */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">

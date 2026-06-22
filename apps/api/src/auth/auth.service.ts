@@ -8,7 +8,7 @@ import * as bcrypt from 'bcrypt';
 import { eq, or } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { users } from '@tradezen/db';
-import { RegisterDto, LoginDto } from './dto';
+import { RegisterDto, LoginDto, SaveLayoutDto } from './dto';
 import type { Response } from 'express';
 import { BruteForceService } from '../common/services/brute-force.service';
 import { AuditService } from '../common/services/audit.service';
@@ -286,6 +286,23 @@ export class AuthService {
         theme: users.theme,
       });
     return user;
+  }
+
+  async getLayout(userId: string) {
+    const [user] = await db
+      .select({ layout: users.dashboardLayout })
+      .from(users)
+      .where(eq(users.id, userId));
+    return user?.layout ?? null;
+  }
+
+  async saveLayout(userId: string, dto: SaveLayoutDto) {
+    const [user] = await db
+      .update(users)
+      .set({ dashboardLayout: dto as any })
+      .where(eq(users.id, userId))
+      .returning({ layout: users.dashboardLayout });
+    return user?.layout;
   }
 
   async logout(response: Response) {

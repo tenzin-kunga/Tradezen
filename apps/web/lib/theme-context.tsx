@@ -2,13 +2,15 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 
-type Theme = "dark" | "light";
+type Theme = "dark" | "light" | "midnight" | "tradingview";
 
 type ThemeContextType = {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (t: Theme) => void;
 };
+
+const THEMES: Theme[] = ["dark", "light", "midnight", "tradingview"];
 
 const ThemeContext = createContext<ThemeContextType>({
   theme: "dark",
@@ -21,7 +23,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("tradezen-theme") as Theme | null;
-    if (stored === "light" || stored === "dark") {
+    if (stored && THEMES.includes(stored)) {
       setThemeState(stored);
     }
   }, []);
@@ -32,7 +34,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
+    setThemeState((prev) => {
+      const idx = THEMES.indexOf(prev);
+      return THEMES[(idx + 1) % THEMES.length];
+    });
   }, []);
 
   const setTheme = useCallback((t: Theme) => {

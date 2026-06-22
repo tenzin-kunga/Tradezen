@@ -113,7 +113,7 @@ export default function EditTradePage() {
         setFomoCheck(!!t.fomo_check);
         setTrendAlignment(!!t.trend_alignment);
         setVengeanceTrade(!!t.vengeance_trade);
-        if (t.chart_image) setChartImage(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/uploads/${t.chart_image}`);
+        if (t.chart_image) setChartImage(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${t.chart_image}`);
       })
       .catch((err: any) => setError(err.message || "Failed to load trade"))
       .finally(() => setLoadingTrade(false));

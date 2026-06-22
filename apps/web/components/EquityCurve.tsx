@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { createChart, ColorType, LineStyle, AreaSeries, type Time } from "lightweight-charts";
+import { WidgetShell } from "@/components/design-system";
 
 type DataPoint = { date: string; equity: number };
 
@@ -45,9 +46,7 @@ export default function EquityCurve({ data, loading }: Props) {
         vertLine: { color: "#3b82f6", width: 1, style: LineStyle.Dashed, labelBackgroundColor: "#3b82f6" },
         horzLine: { color: "#3b82f6", width: 1, style: LineStyle.Dashed, labelBackgroundColor: "#3b82f6" },
       },
-      rightPriceScale: {
-        borderColor: "#23252d",
-      },
+      rightPriceScale: { borderColor: "#23252d" },
       timeScale: {
         borderColor: "#23252d",
         timeVisible: false,
@@ -87,44 +86,28 @@ export default function EquityCurve({ data, loading }: Props) {
     };
   }, [filtered]);
 
-  if (loading) {
-    return (
-      <div className="glass-card p-6">
-        <div style={{ height: 24, width: 120, background: "var(--bg-surface-hover)", borderRadius: 8, marginBottom: 16 }} />
-        <div style={{ height: 300, background: "var(--bg-surface-hover)", borderRadius: 8 }} />
-      </div>
-    );
-  }
-
-  if (filtered.length === 0) {
-    return (
-      <div className="glass-card p-6">
-        <div className="label-caps" style={{ marginBottom: 16 }}>EQUITY GROWTH</div>
-        <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-dim)", fontSize: 11, letterSpacing: "0.1em" }}>
-          {data.length === 0 ? "NO DATA" : "NO DATA IN THIS RANGE"}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="glass-card p-6">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <span className="label-caps">EQUITY GROWTH</span>
-        <div style={{ display: "flex", gap: 4 }}>
+    <WidgetShell
+      title="EQUITY GROWTH"
+      headerAction={
+        <div className="flex gap-1">
           {timeRanges.map((r) => (
             <button
               key={r}
               onClick={() => setActiveRange(r)}
-              className={`btn-glass ${activeRange === r ? "active" : ""}`}
-              style={{ padding: "4px 10px", fontSize: 11 }}
+              className={`btn-glass text-[11px] ${activeRange === r ? "active" : ""}`}
+              style={{ padding: "4px 10px" }}
             >
               {r}
             </button>
           ))}
         </div>
-      </div>
-      <div ref={chartContainerRef} />
-    </div>
+      }
+      loading={loading}
+      isEmpty={filtered.length === 0}
+      emptyMessage={data.length === 0 ? "Equity data will appear once you start trading." : "No data in this range. Try a wider time range."}
+    >
+      <div ref={chartContainerRef} style={filtered.length === 0 ? { height: 300 } : undefined} />
+    </WidgetShell>
   );
 }

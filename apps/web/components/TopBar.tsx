@@ -2,8 +2,9 @@
 
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
+import { NotificationBell } from "./NotificationBell";
 
-export default function TopBar() {
+export default function TopBar({ onSearchClick }: { onSearchClick?: () => void }) {
   const { user, logout } = useAuth();
 
   const initials = user?.username
@@ -25,7 +26,8 @@ export default function TopBar() {
       }}
     >
       {/* Search */}
-      <div
+      <button
+        onClick={onSearchClick}
         style={{
           display: "flex",
           alignItems: "center",
@@ -37,6 +39,8 @@ export default function TopBar() {
           color: "var(--text-muted, #9ca3af)",
           fontSize: 12,
           width: 180,
+          cursor: "pointer",
+          fontFamily: "inherit",
         }}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -44,27 +48,25 @@ export default function TopBar() {
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <span style={{ color: "var(--text-muted, #9ca3af)" }}>Search</span>
-      </div>
+        <kbd
+          style={{
+            marginLeft: "auto",
+            fontSize: 9,
+            padding: "1px 4px",
+            borderRadius: 3,
+            background: "var(--bg-surface-hover, #17181c)",
+            color: "var(--text-dim, #6b7280)",
+            border: "1px solid var(--border, #23252d)",
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.05em",
+          }}
+        >
+          Ctrl+K
+        </kbd>
+      </button>
 
       {/* Notifications */}
-      <button
-        style={{
-          background: "none",
-          border: "1px solid var(--border, #23252d)",
-          cursor: "pointer",
-          color: "var(--text-muted, #9ca3af)",
-          padding: 6,
-          borderRadius: 6,
-          display: "flex",
-          position: "relative",
-        }}
-        aria-label="Notifications"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-        </svg>
-      </button>
+      <NotificationBell />
 
       {/* User Avatar */}
       <div className="group" style={{ position: "relative" }}>
@@ -88,9 +90,8 @@ export default function TopBar() {
           {initials}
         </button>
         <div
-          className="group-hover:block"
+          className="hidden group-hover:block"
           style={{
-            display: "none",
             position: "absolute",
             top: "100%",
             right: 0,

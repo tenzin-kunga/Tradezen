@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import { WidgetShell } from "@/components/design-system";
 
 type DayData = { date: string; trades: number; pnl: number; disciplined: boolean };
 
@@ -40,47 +41,23 @@ export default function TradingHeatmap({ data, loading }: Props) {
     return "#f59e0b";
   };
 
-  if (loading) {
-    return (
-      <div className="glass-card p-6">
-        <div style={{ height: 20, width: 180, background: "var(--bg-surface-hover)", borderRadius: 8, marginBottom: 16 }} />
-        <div style={{ height: 100, background: "var(--bg-surface-hover)", borderRadius: 8 }} />
-      </div>
-    );
-  }
-
-  if (data.length === 0) {
-    return (
-      <div className="glass-card p-6">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <span className="label-caps">TRADING CONSISTENCY</span>
-          <Link href="/analytics" style={{ fontSize: 12, color: "var(--accent)", textDecoration: "none" }}>Details →</Link>
-        </div>
-        <p style={{ color: "var(--text-dim)", fontSize: 13 }}>Consistency data will appear once you start trading.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="glass-card p-6">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <span className="label-caps">TRADING CONSISTENCY</span>
-        <Link href="/analytics" style={{ fontSize: 12, color: "var(--accent)", textDecoration: "none" }}>Details →</Link>
-      </div>
-      <div style={{ overflowX: "auto" }}>
-        <div style={{ display: "flex", gap: 3, minWidth: 400 }}>
+    <WidgetShell
+      title="TRADING CONSISTENCY"
+      headerAction={<Link href="/analytics" className="text-xs text-accent no-underline">Details →</Link>}
+      loading={loading}
+      isEmpty={data.length === 0}
+      emptyMessage="Consistency data will appear once you start trading."
+    >
+      <div className="overflow-x-auto">
+        <div className="flex gap-0.5" style={{ minWidth: 400 }}>
           {weeks.map((week, wi) => (
-            <div key={wi} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <div key={wi} className="flex flex-col gap-0.5">
               {week.map((day, di) => (
                 <div
                   key={di}
-                  style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: 3,
-                    backgroundColor: intensity(day),
-                    transition: "opacity 0.2s",
-                  }}
+                  className="w-3 h-3 rounded-xs transition-opacity"
+                  style={{ backgroundColor: intensity(day) }}
                   title={day ? `${day.date}: ${day.trades} trades, $${day.pnl}` : "No trades"}
                 />
               ))}
@@ -88,15 +65,15 @@ export default function TradingHeatmap({ data, loading }: Props) {
           ))}
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, justifyContent: "flex-end" }}>
-        <span style={{ fontSize: 10, color: "var(--text-dim)" }}>Less</span>
-        <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: "#1a1b1e" }} />
-        <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: "#3b82f6" }} />
-        <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: "#22c55e" }} />
-        <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: "#f59e0b" }} />
-        <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: "#ef4444" }} />
-        <span style={{ fontSize: 10, color: "var(--text-dim)" }}>More</span>
+      <div className="flex items-center gap-2 mt-3 justify-end">
+        <span className="text-[10px] text-text-dim">Less</span>
+        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#1a1b1e" }} />
+        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#3b82f6" }} />
+        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#22c55e" }} />
+        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#f59e0b" }} />
+        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#ef4444" }} />
+        <span className="text-[10px] text-text-dim">More</span>
       </div>
-    </div>
+    </WidgetShell>
   );
 }

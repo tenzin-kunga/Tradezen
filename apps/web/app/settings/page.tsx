@@ -5,6 +5,9 @@ import { useTheme } from "@/lib/theme-context";
 import { updateSettings } from "@/lib/api";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
 
+const THEMES = ["dark", "light", "midnight", "tradingview"] as const;
+type Theme = (typeof THEMES)[number];
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -31,8 +34,8 @@ export default function SettingsPage() {
       setInitialCapital(user.initial_capital?.toString() ?? "0");
       setDefaultLotSize(user.default_lot_size?.toString() ?? "0.01");
       setTimezone(user.timezone ?? "UTC");
-      if (user.theme === "light" || user.theme === "dark") {
-        setTheme(user.theme);
+      if (user.theme && THEMES.includes(user.theme as Theme)) {
+        setTheme(user.theme as Theme);
       }
     }
   }, [user, setTheme]);
@@ -174,22 +177,21 @@ export default function SettingsPage() {
         </div>
         <div>
           <label className={labelCls} style={{ color: "var(--text-muted)" }}>INTERFACE THEME</label>
-          <div className="flex">
-            {(["dark", "light"] as const).map((t) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {(["dark", "light", "midnight", "tradingview"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setTheme(t)}
-                className="flex-1 py-3 text-xs font-bold tracking-widest border cursor-pointer transition-all"
+                className="py-3 text-xs font-bold tracking-widest border cursor-pointer transition-all rounded"
                 style={{
-                  borderColor: "var(--border)",
-                  backgroundColor: theme === t ? (t === "dark" ? "var(--text-primary)" : "var(--bg-primary)") : "var(--bg-primary)",
-                  color: theme === t ? (t === "dark" ? "var(--bg-primary)" : "var(--text-primary)") : "var(--text-muted)",
-                  borderRadius: t === "dark" ? "var(--radius-sm) 0 0 var(--radius-sm)" : "0 var(--radius-sm) var(--radius-sm) 0",
+                  borderColor: theme === t ? "var(--accent-cyan)" : "var(--border)",
+                  backgroundColor: theme === t ? "var(--bg-surface-hover)" : "var(--bg-primary)",
+                  color: theme === t ? "var(--text-primary)" : "var(--text-muted)",
                   fontFamily: "var(--font-mono)",
                 }}
               >
-                {t === "dark" ? "◼ DARK MODE" : "◻ LIGHT MODE"}
+                {t === "dark" ? "◼ DARK" : t === "light" ? "◻ LIGHT" : t === "midnight" ? "◈ MIDNIGHT" : "▣ TRADINGVIEW"}
               </button>
             ))}
           </div>

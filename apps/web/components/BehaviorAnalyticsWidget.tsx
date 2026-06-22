@@ -1,5 +1,7 @@
 "use client";
 
+import { WidgetShell } from "@/components/design-system";
+
 type Props = {
   disciplineScore: number;
   fomoScore: "Low" | "Medium" | "High";
@@ -8,6 +10,20 @@ type Props = {
   loading?: boolean;
 };
 
+function BarRow({ label, value, pct, color }: { label: string; value: string; pct: number; color: string }) {
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-sm text-text-muted">{label}</span>
+        <span className="text-base font-semibold text-text-primary">{value}</span>
+      </div>
+      <div className="h-1.5 bg-bg-surface-hover rounded-sm overflow-hidden">
+        <div className="h-full rounded-sm transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }} />
+      </div>
+    </div>
+  );
+}
+
 export default function BehaviorAnalyticsWidget({
   disciplineScore,
   fomoScore,
@@ -15,50 +31,24 @@ export default function BehaviorAnalyticsWidget({
   trendAlignment,
   loading,
 }: Props) {
-  if (loading) {
-    return (
-      <div className="glass-card p-6">
-        <div style={{ height: 20, width: 140, background: "var(--bg-surface-hover)", borderRadius: 8, marginBottom: 16 }} />
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} style={{ height: 14, width: "70%", background: "var(--bg-surface-hover)", borderRadius: 6, marginBottom: 10 }} />
-        ))}
-      </div>
-    );
-  }
-
   const fomoColor = fomoScore === "Low" ? "var(--accent-profit)" : fomoScore === "Medium" ? "var(--accent-warn)" : "var(--accent-loss)";
 
   return (
-    <div className="glass-card p-6">
-      <div className="label-caps" style={{ marginBottom: 16 }}>BEHAVIOR ANALYTICS</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <WidgetShell title="BEHAVIOR ANALYTICS" loading={loading}>
+      <div className="flex flex-col gap-3">
         <BarRow label="Discipline" value={`${disciplineScore}/100`} pct={disciplineScore} color={disciplineScore >= 70 ? "var(--accent-profit)" : disciplineScore >= 40 ? "var(--accent-warn)" : "var(--accent-loss)"} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>FOMO Score</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: fomoColor }}>{fomoScore}</span>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-text-muted">FOMO Score</span>
+          <span className="text-base font-semibold" style={{ color: fomoColor }}>{fomoScore}</span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Revenge Trades</span>
-          <span style={{ fontSize: 14, fontWeight: 600, color: revengeTradesThisMonth > 0 ? "var(--accent-loss)" : "var(--accent-profit)" }}>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-text-muted">Revenge Trades</span>
+          <span className={`text-base font-semibold ${revengeTradesThisMonth > 0 ? "text-loss" : "text-profit"}`}>
             {revengeTradesThisMonth} this month
           </span>
         </div>
         <BarRow label="Trend Alignment" value={`${trendAlignment}%`} pct={trendAlignment} color={trendAlignment >= 60 ? "var(--accent-profit)" : "var(--accent-warn)"} />
       </div>
-    </div>
-  );
-}
-
-function BarRow({ label, value, pct, color }: { label: string; value: string; pct: number; color: string }) {
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-        <span style={{ fontSize: 13, color: "var(--text-muted)" }}>{label}</span>
-        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{value}</span>
-      </div>
-      <div style={{ height: 6, background: "var(--bg-surface-hover)", borderRadius: 3, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, backgroundColor: color, borderRadius: 3, transition: "width 0.5s" }} />
-      </div>
-    </div>
+    </WidgetShell>
   );
 }
