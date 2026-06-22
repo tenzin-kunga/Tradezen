@@ -11,6 +11,7 @@ import { JournalsModule } from './journals/journals.module';
 import { TagsModule } from './tags/tags.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
+import { SearchModule } from './search/search.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { QueuesModule } from './queues/queues.module';
 import { ReportModule } from './reports/report.module';
@@ -25,6 +26,8 @@ import { MemoryService } from './ai/memory.service';
 import { JournalAnalysisWorkflow } from './ai/workflows/journal-analysis.workflow';
 import { CoachingWorkflow } from './ai/workflows/coaching.workflow';
 import { CoachingEngineService } from './ai/coaching-engine.service';
+import { AiInsightsService } from './ai/ai-insights.service';
+import { AiController } from './ai/ai.controller';
 import { NotificationService } from './common/services/notification.service';
 import { NotificationTriggersService } from './common/services/notification-triggers.service';
 import { TradesService } from './trades/trades.service';
@@ -36,7 +39,7 @@ import { JournalsService } from './journals/journals.service';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 10,
+        limit: 30,
       },
     ]),
     LoggerModule.forRoot({
@@ -74,8 +77,9 @@ import { JournalsService } from './journals/journals.service';
     GatewayModule,
     QueuesModule,
     ReportModule,
+    SearchModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AiController],
   providers: [
     AppService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
@@ -89,6 +93,7 @@ import { JournalsService } from './journals/journals.service';
     JournalAnalysisWorkflow,
     CoachingWorkflow,
     CoachingEngineService,
+    AiInsightsService,
     NotificationService,
     NotificationTriggersService,
     TradesService,
@@ -104,6 +109,7 @@ import { JournalsService } from './journals/journals.service';
     JournalAnalysisWorkflow,
     CoachingWorkflow,
     CoachingEngineService,
+    AiInsightsService,
     NotificationService,
     NotificationTriggersService,
     TradesService,

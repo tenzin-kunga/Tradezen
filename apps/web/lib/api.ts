@@ -256,8 +256,23 @@ export const getJournalLatest = async () => {
   return data.data[0] || null;
 };
 
+export const getStrategyAnalytics = async () => {
+  const res = await authFetch(`${API}/trades/analytics/strategy`);
+  return handleResponse<any>(res);
+};
+
+export const getStrategyPerformance = async (name: string) => {
+  const res = await authFetch(`${API}/trades/analytics/strategy/${encodeURIComponent(name)}/performance`);
+  return handleResponse<any>(res);
+};
+
 export const getAdvancedAnalytics = async () => {
   const res = await authFetch(`${API}/trades/analytics/advanced`);
+  return handleResponse<any>(res);
+};
+
+export const getRiskAnalytics = async () => {
+  const res = await authFetch(`${API}/trades/analytics/risk`);
   return handleResponse<any>(res);
 };
 
@@ -594,6 +609,27 @@ export async function updateNotificationPreference(type: string, enabled: boolea
   });
   return handleResponse<{ message: string }>(res);
 }
+
+// ─── AI Insights ─────────────────────────────────────
+
+export interface AiInsight {
+  id: string;
+  category: 'performance' | 'discipline' | 'risk' | 'consistency';
+  title: string;
+  message: string;
+  metrics: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface AiInsightsResponse {
+  insights: AiInsight[];
+  generatedAt: string;
+}
+
+export const getAiInsights = async (): Promise<AiInsightsResponse> => {
+  const res = await authFetch(`${API}/ai/insights`);
+  return handleResponse<AiInsightsResponse>(res);
+};
 
 // ─── Checklists ─────────────────────────────────────
 

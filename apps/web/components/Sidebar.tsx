@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 type NavItem = {
   label: string;
@@ -189,6 +189,15 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [pinned, setPinned] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("tradezen-sidebar-pinned");
+    if (stored === "true") setPinned(true);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("tradezen-sidebar-pinned", String(pinned));
+  }, [pinned]);
   const [hovered, setHovered] = useState(false);
 
   const expanded = pinned || hovered;

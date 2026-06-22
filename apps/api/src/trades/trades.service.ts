@@ -33,6 +33,8 @@ export interface StrategyPerformance {
   profitFactor: number;
   expectancy: number;
   totalPnl: number;
+  avgRr: number;
+  maxDrawdown: number;
   avgTradeDuration?: number;
 }
 
@@ -53,6 +55,38 @@ export interface StrategyComparison {
     profitFactorDiff: number;
     expectancyDiff: number;
     pnlDiff: number;
+  };
+}
+
+export interface RiskByStrategy {
+  strategy: string;
+  avgRisk: number;
+  maxRisk: number;
+  count: number;
+  winRate: number;
+  avgR: number;
+}
+
+export interface RiskByWeek {
+  week: string;
+  totalRisk: number;
+  totalPnl: number;
+  tradeCount: number;
+  maxRisk: number;
+}
+
+export interface RiskAnalyticsResponse {
+  avgRiskPerTrade: number;
+  maxRiskPerTrade: number;
+  avgRMultiple: number;
+  riskEfficiency: number;
+  var95: number;
+  distribution: { bucket: string; count: number; totalPnl: number }[];
+  byStrategy: RiskByStrategy[];
+  byWeek: RiskByWeek[];
+  riskByDirection: {
+    long: { avgRisk: number; count: number; winRate: number };
+    short: { avgRisk: number; count: number; winRate: number };
   };
 }
 
@@ -895,6 +929,38 @@ export class TradesService {
         losses.reduce((sum, t) => sum + Number(t.pnl), 0),
       );
 
+      // Compute avg R:R per strategy
+      const rrValues = stratTrades
+        .filter((t) => t.stopLoss && t.takeProfit)
+        .map((t) => {
+          const entry = Number(t.entryPrice);
+          const sl = Number(t.stopLoss);
+          const tp = Number(t.takeProfit);
+          return Math.abs(tp - entry) / Math.abs(entry - sl);
+        });
+      const avgRr =
+        rrValues.length > 0
+          ? Math.round(
+              (rrValues.reduce((s, v) => s + v, 0) / rrValues.length) * 100,
+            ) / 100
+          : 0;
+
+      // Compute max drawdown per strategy
+      const sorted = [...stratTrades].sort(
+        (a, b) =>
+          new Date(a.createdAt ?? 0).getTime() -
+          new Date(b.createdAt ?? 0).getTime(),
+      );
+      let cum = 0;
+      let peak = 0;
+      let maxDd = 0;
+      for (const t of sorted) {
+        cum += Number(t.pnl);
+        if (cum > peak) peak = cum;
+        const dd = peak - cum;
+        if (dd > maxDd) maxDd = dd;
+      }
+
       byStrategy.push({
         strategy,
         totalTrades: stratTrades.length,
@@ -913,6 +979,8 @@ export class TradesService {
             ? Math.round((totalPnl / stratTrades.length) * 100) / 100
             : 0,
         totalPnl: Math.round(totalPnl * 100) / 100,
+        avgRr,
+        maxDrawdown: Math.round(maxDd * 100) / 100,
       });
     }
 
@@ -922,6 +990,39 @@ export class TradesService {
       byStrategy.length > 0 ? byStrategy[byStrategy.length - 1].strategy : '';
 
     return { byStrategy, bestStrategy, worstStrategy };
+  }
+
+  async getStrategyPerformance(
+    userId: string,
+    strategyName: string,
+  ): Promise<{
+    strategy: string;
+    monthly: { month: string; trades: number; pnl: number; winRate: number }[];
+  }> {
+    const monthlyRes = await db.execute(sql`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', COALESCE(trade_date, created_at)), 'YYYY-MM') AS month,
+        COUNT(*)::int AS trades,
+        COALESCE(SUM(pnl), 0)::float8 AS pnl,
+        ROUND(
+          COUNT(*) FILTER (WHERE pnl > 0)::float8 / GREATEST(COUNT(*), 1) * 100,
+          2
+        ) AS win_rate
+      FROM trades
+      WHERE user_id = ${userId}
+        AND (strategy = ${strategyName} OR strategy IS NULL AND ${strategyName} = 'No Strategy')
+      GROUP BY DATE_TRUNC('month', COALESCE(trade_date, created_at))
+      ORDER BY month ASC
+    `);
+
+    const monthly = (monthlyRes as any[]).map((r: any) => ({
+      month: r.month,
+      trades: Number(r.trades),
+      pnl: Math.round(Number(r.pnl) * 100) / 100,
+      winRate: Number(r.win_rate),
+    }));
+
+    return { strategy: strategyName, monthly };
   }
 
   async getTagAnalytics(userId: string): Promise<{
@@ -1500,5 +1601,187 @@ export class TradesService {
 
       return { imported, errors };
     });
+  }
+
+  async getRiskAnalytics(userId: string): Promise<RiskAnalyticsResponse> {
+    const tradeRows = await db
+      .select()
+      .from(trades)
+      .where(eq(trades.userId, userId))
+      .orderBy(asc(trades.createdAt));
+
+    const emptyResponse: RiskAnalyticsResponse = {
+      avgRiskPerTrade: 0,
+      maxRiskPerTrade: 0,
+      avgRMultiple: 0,
+      riskEfficiency: 0,
+      var95: 0,
+      distribution: [],
+      byStrategy: [],
+      byWeek: [],
+      riskByDirection: { long: { avgRisk: 0, count: 0, winRate: 0 }, short: { avgRisk: 0, count: 0, winRate: 0 } },
+    };
+
+    if (tradeRows.length === 0) return emptyResponse;
+
+    const DEFAULT_CONTRACT_SIZE = 100000;
+
+    interface TradeRisk {
+      pnl: number;
+      risk: number | null;
+      rMultiple: number | null;
+      strategy: string;
+      direction: string;
+      tradeDate: string;
+    }
+
+    const tradeRisks: TradeRisk[] = tradeRows.map((t) => {
+      const pnl = Number(t.pnl);
+      const entry = t.entryPrice !== null ? Number(t.entryPrice) : null;
+      const sl = t.stopLoss !== null ? Number(t.stopLoss) : null;
+      const lot = Number(t.lotSize);
+      const cs = t.contractSize !== null ? Number(t.contractSize) : DEFAULT_CONTRACT_SIZE;
+
+      let risk: number | null = null;
+      let rMultiple: number | null = null;
+
+      if (entry !== null && sl !== null && lot > 0) {
+        risk = Math.abs(entry - sl) * lot * cs;
+        rMultiple = risk > 0 ? pnl / risk : null;
+      }
+
+      return {
+        pnl,
+        risk,
+        rMultiple,
+        strategy: t.strategy || 'Unknown',
+        direction: t.direction || 'unknown',
+        tradeDate: String(t.tradeDate ?? t.createdAt?.toISOString?.() ?? ''),
+      };
+    });
+
+    const tradesWithRisk = tradeRisks.filter((t) => t.risk !== null && t.rMultiple !== null) as (TradeRisk & { risk: number; rMultiple: number })[];
+
+    const totalRisk = tradesWithRisk.reduce((sum, t) => sum + t.risk, 0);
+    const totalPnl = tradeRisks.reduce((sum, t) => sum + t.pnl, 0);
+    const avgRiskPerTrade = tradesWithRisk.length > 0 ? totalRisk / tradesWithRisk.length : 0;
+    const maxRiskPerTrade = tradesWithRisk.length > 0 ? Math.max(...tradesWithRisk.map((t) => t.risk)) : 0;
+    const avgRMultiple = tradesWithRisk.length > 0
+      ? tradesWithRisk.reduce((sum, t) => sum + t.rMultiple, 0) / tradesWithRisk.length
+      : 0;
+    const riskEfficiency = totalRisk > 0 ? totalPnl / totalRisk : 0;
+
+    const pnls = tradeRisks.map((t) => t.pnl).sort((a, b) => a - b);
+    const varIndex = Math.max(0, Math.floor(pnls.length * 0.05));
+    const var95 = pnls[varIndex] ?? 0;
+
+    const BUCKETS = [
+      { label: '< -3R', min: -Infinity, max: -3 },
+      { label: '-3R to -2R', min: -3, max: -2 },
+      { label: '-2R to -1R', min: -2, max: -1 },
+      { label: '-1R to 0R', min: -1, max: 0 },
+      { label: '0R to 1R', min: 0, max: 1 },
+      { label: '1R to 2R', min: 1, max: 2 },
+      { label: '2R to 3R', min: 2, max: 3 },
+      { label: '> 3R', min: 3, max: Infinity },
+    ];
+
+    const distribution = BUCKETS.map((bucket) => {
+      const inBucket = tradesWithRisk.filter(
+        (t) => t.rMultiple >= bucket.min && t.rMultiple < bucket.max,
+      );
+      return {
+        bucket: bucket.label,
+        count: inBucket.length,
+        totalPnl: inBucket.reduce((sum, t) => sum + t.pnl, 0),
+      };
+    });
+
+    const strategyMap = new Map<string, TradeRisk[]>();
+    for (const t of tradeRisks) {
+      if (!strategyMap.has(t.strategy)) strategyMap.set(t.strategy, []);
+      strategyMap.get(t.strategy)!.push(t);
+    }
+
+    const byStrategy: RiskByStrategy[] = [];
+    for (const [strategy, trades] of strategyMap) {
+      const tradesWithR = trades.filter((t) => t.risk !== null) as (TradeRisk & { risk: number })[];
+      const wins = trades.filter((t) => t.pnl > 0);
+      const avgRisk = tradesWithR.length > 0
+        ? tradesWithR.reduce((sum, t) => sum + t.risk, 0) / tradesWithR.length
+        : 0;
+      const maxRisk = tradesWithR.length > 0
+        ? Math.max(...tradesWithR.map((t) => t.risk))
+        : 0;
+      const avgR = tradesWithR.filter((t) => t.rMultiple !== null).length > 0
+        ? tradesWithR.filter((t) => t.rMultiple !== null).reduce((sum, t) => sum + t.rMultiple!, 0) / tradesWithR.filter((t) => t.rMultiple !== null).length
+        : 0;
+
+      byStrategy.push({
+        strategy,
+        avgRisk: Math.round(avgRisk * 100) / 100,
+        maxRisk: Math.round(maxRisk * 100) / 100,
+        count: trades.length,
+        winRate: trades.length > 0 ? Math.round((wins.length / trades.length) * 10000) / 100 : 0,
+        avgR: Math.round(avgR * 100) / 100,
+      });
+    }
+
+    const weekMap = new Map<string, { risk: number; pnl: number; count: number; maxRisk: number }>();
+    for (const t of tradeRisks) {
+      if (!t.tradeDate) continue;
+      const d = new Date(t.tradeDate);
+      if (isNaN(d.getTime())) continue;
+      const yearStart = new Date(d.getFullYear(), 0, 1);
+      const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7);
+      const weekKey = `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+      const existing = weekMap.get(weekKey) || { risk: 0, pnl: 0, count: 0, maxRisk: 0 };
+      existing.risk += t.risk || 0;
+      existing.pnl += t.pnl;
+      existing.count += 1;
+      existing.maxRisk = Math.max(existing.maxRisk, t.risk || 0);
+      weekMap.set(weekKey, existing);
+    }
+
+    const byWeek: RiskByWeek[] = Array.from(weekMap.entries())
+      .map(([week, data]) => ({
+        week,
+        totalRisk: Math.round(data.risk * 100) / 100,
+        totalPnl: Math.round(data.pnl * 100) / 100,
+        tradeCount: data.count,
+        maxRisk: Math.round(data.maxRisk * 100) / 100,
+      }))
+      .sort((a, b) => a.week.localeCompare(b.week));
+
+    const longTrades = tradeRisks.filter((t) => t.direction === 'buy');
+    const shortTrades = tradeRisks.filter((t) => t.direction === 'sell');
+
+    const computeDirectionRisk = (trades: TradeRisk[]) => {
+      const withRisk = trades.filter((t) => t.risk !== null) as (TradeRisk & { risk: number })[];
+      const wins = trades.filter((t) => t.pnl > 0);
+      const avgRisk = withRisk.length > 0
+        ? withRisk.reduce((sum, t) => sum + t.risk, 0) / withRisk.length
+        : 0;
+      return {
+        avgRisk: Math.round(avgRisk * 100) / 100,
+        count: trades.length,
+        winRate: trades.length > 0 ? Math.round((wins.length / trades.length) * 10000) / 100 : 0,
+      };
+    };
+
+    return {
+      avgRiskPerTrade: Math.round(avgRiskPerTrade * 100) / 100,
+      maxRiskPerTrade: Math.round(maxRiskPerTrade * 100) / 100,
+      avgRMultiple: Math.round(avgRMultiple * 100) / 100,
+      riskEfficiency: Math.round(riskEfficiency * 100) / 100,
+      var95: Math.round(var95 * 100) / 100,
+      distribution,
+      byStrategy,
+      byWeek,
+      riskByDirection: {
+        long: computeDirectionRisk(longTrades),
+        short: computeDirectionRisk(shortTrades),
+      },
+    };
   }
 }

@@ -7,5 +7,5 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_chat_messages_thread ON chat_messages(thread_id);
-CREATE INDEX idx_chat_messages_created ON chat_messages(thread_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_thread ON chat_messages(thread_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created ON chat_messages(thread_id, created_at);

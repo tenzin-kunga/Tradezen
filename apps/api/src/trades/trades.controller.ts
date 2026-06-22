@@ -91,10 +91,25 @@ export class TradesController {
     );
   }
 
+  @Get('analytics/risk')
+  @ApiOperation({ summary: 'Get risk analytics: VaR, R-multiple distribution, risk by strategy' })
+  getRiskAnalytics(@CurrentUser('id') userId: string) {
+    return this.service.getRiskAnalytics(userId);
+  }
+
   @Get('analytics/strategy')
   @ApiOperation({ summary: 'Get strategy performance analytics' })
   getStrategyAnalytics(@CurrentUser('id') userId: string) {
     return this.service.getStrategyAnalytics(userId);
+  }
+
+  @Get('analytics/strategy/:name/performance')
+  @ApiOperation({ summary: 'Get monthly performance for a specific strategy' })
+  getStrategyPerformance(
+    @CurrentUser('id') userId: string,
+    @Param('name') name: string,
+  ) {
+    return this.service.getStrategyPerformance(userId, name);
   }
 
   @Get('analytics/tags')

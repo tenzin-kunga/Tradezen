@@ -5,7 +5,8 @@ export type WidgetId =
   | "journal-snapshot"
   | "behavior-analytics"
   | "heatmap"
-  | "analytics-preview";
+  | "analytics-insights"
+  | "ai-coach";
 
 export type WidgetSize = "S" | "M" | "L";
 
@@ -27,6 +28,7 @@ export const DEFAULT_LAYOUT: DashboardLayout = {
     { id: "journal-snapshot", visible: true, size: "M" },
     { id: "behavior-analytics", visible: true, size: "M" },
     { id: "heatmap", visible: true, size: "M" },
-    { id: "analytics-preview", visible: true, size: "M" },
+    { id: "analytics-insights", visible: true, size: "M" },
+    { id: "ai-coach", visible: true, size: "M" },
   ],
 };

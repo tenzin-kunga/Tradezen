@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS analytics_snapshots (
   UNIQUE(user_id, snapshot_date)
 );
 
-CREATE INDEX idx_snapshots_user_date ON analytics_snapshots(user_id, snapshot_date);
+CREATE INDEX IF NOT EXISTS idx_snapshots_user_date ON analytics_snapshots(user_id, snapshot_date);

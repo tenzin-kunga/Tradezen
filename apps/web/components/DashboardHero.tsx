@@ -16,10 +16,10 @@ export default function DashboardHero({ tradesThisWeek, weeklyPnl, weeklyWinRate
   if (loading) {
     return (
       <div className="rounded-xl p-6" style={{ background: "linear-gradient(135deg, var(--accent) 0%, #1e293b 100%)" }}>
-        <div style={{ height: 24, width: 200, background: "var(--bg-surface)", borderRadius: 8, marginBottom: 16 }} />
-        <div style={{ display: "flex", gap: 24 }}>
+        <div className="skeleton h-6 w-48 mb-4" />
+        <div className="flex gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} style={{ height: 40, width: 100, background: "var(--bg-surface)", borderRadius: 8 }} />
+            <div key={i} className="skeleton h-10 w-24" />
           ))}
         </div>
       </div>
@@ -30,32 +30,30 @@ export default function DashboardHero({ tradesThisWeek, weeklyPnl, weeklyWinRate
 
   return (
     <div className="rounded-xl p-6" style={{ background: "linear-gradient(135deg, var(--accent) 0%, #1e293b 100%)" }}>
-      <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)", marginBottom: 16 }}>
+      <h1 className="text-xl font-bold text-text-primary mb-4">
         Welcome back, {user?.username || "Trader"} 👋
       </h1>
       {hasData ? (
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+        <div className="flex gap-6 flex-wrap">
           <div>
-            <div style={{ fontSize: 11, letterSpacing: "0.1em", color: "var(--text-muted)", marginBottom: 4 }}>TRADES THIS WEEK</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)" }}>{tradesThisWeek}</div>
+            <div className="label-caps mb-1">TRADES THIS WEEK</div>
+            <div className="text-2xl font-bold text-text-primary">{tradesThisWeek}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11, letterSpacing: "0.1em", color: "var(--text-muted)", marginBottom: 4 }}>WEEKLY P&L</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: weeklyPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}>
+            <div className="label-caps mb-1">WEEKLY P&L</div>
+            <div className={`text-2xl font-bold ${weeklyPnl >= 0 ? "text-profit" : "text-loss"}`}>
               {weeklyPnl >= 0 ? "+" : ""}${Math.abs(weeklyPnl).toLocaleString()}
             </div>
           </div>
           <div>
-            <div style={{ fontSize: 11, letterSpacing: "0.1em", color: "var(--text-muted)", marginBottom: 4 }}>WIN RATE</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: "var(--text-primary)" }}>{weeklyWinRate}%</div>
+            <div className="label-caps mb-1">WIN RATE</div>
+            <div className="text-2xl font-bold text-text-primary">{weeklyWinRate}%</div>
           </div>
         </div>
       ) : (
-        <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+        <p className="text-sm text-text-muted">
           Start this week strong —{" "}
-          <Link href="/add-trade" style={{ color: "var(--text-primary)", textDecoration: "underline" }}>
-            log your first trade
-          </Link>.
+          <Link href="/add-trade" className="text-text-primary underline">log your first trade</Link>.
         </p>
       )}
     </div>

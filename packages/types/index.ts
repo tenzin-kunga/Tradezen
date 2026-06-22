@@ -15,6 +15,9 @@ export type Trade = {
   fomo_check: boolean;
   trend_alignment: boolean;
   vengeance_trade: boolean;
+  commission: number | null;
+  trade_date: string | null;
+  contract_size: number | null;
   created_at: string;
   updated_at: string;
 };

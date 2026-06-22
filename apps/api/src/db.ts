@@ -65,10 +65,18 @@ export async function runMigrations() {
       );
       await client.query('COMMIT');
       console.log(`[migrations] ✓ ${file}`);
-    } catch (err) {
+    } catch (err: any) {
       await client.query('ROLLBACK');
-      console.error(`[migrations] ✗ ${file}:`, err);
-      throw err;
+      if (err?.code === '42P07') {
+        console.log(`[migrations] ⚠ ${file} skipped (object already exists)`);
+        await pool.query(
+          'INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING',
+          [file],
+        );
+      } else {
+        console.error(`[migrations] ✗ ${file}:`, err);
+        throw err;
+      }
     } finally {
       client.release();
     }

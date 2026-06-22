@@ -263,23 +263,25 @@ export default function DashboardLayoutManager({
             Hidden Widgets ({hiddenWidgets.length})
           </summary>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
-            {hiddenWidgets.map((widget) => (
-              <div key={widget.id} className="fade-up">
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    border: "1px dashed var(--border, #23252d)",
-                    background: "var(--bg-surface, #111214)",
-                    opacity: 0.5,
-                  }}
-                >
-                  <span style={{ fontSize: 12, color: "var(--text-dim, #6b7280)", flex: 1 }}>
-                    {widget.id.replace(/-/g, " ")}
-                  </span>
+            {hiddenWidgets.map((widget) => {
+              if (!widget?.id) return null;
+              return (
+                <div key={widget.id} className="fade-up">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: "1px dashed var(--border, #23252d)",
+                      background: "var(--bg-surface, #111214)",
+                      opacity: 0.5,
+                    }}
+                  >
+                    <span style={{ fontSize: 12, color: "var(--text-dim, #6b7280)", flex: 1 }}>
+                      {widget.id.replace(/-/g, " ")}
+                    </span>
                   <button
                     onClick={() => onToggleVisibility(widget.id)}
                     style={{
@@ -294,10 +296,11 @@ export default function DashboardLayoutManager({
                     }}
                   >
                     Show
-                  </button>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </details>
       )}

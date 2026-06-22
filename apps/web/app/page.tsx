@@ -11,11 +11,12 @@ import RecentTradesWidget from "@/components/RecentTradesWidget";
 import JournalSnapshotWidget from "@/components/JournalSnapshotWidget";
 import TradingHeatmap from "@/components/TradingHeatmap";
 import BehaviorAnalyticsWidget from "@/components/BehaviorAnalyticsWidget";
-import AnalyticsPreviewWidget from "@/components/AnalyticsPreviewWidget";
+import AnalyticsInsightsWidget from "@/components/AnalyticsInsightsWidget";
+import AiCoachWidget from "@/components/AiCoachWidget";
 import EmptyState from "@/components/EmptyState";
 import DashboardLayoutManager from "@/components/DashboardLayout";
 import { useDashboardLayout } from "@/hooks/useDashboardLayout";
-import WidgetShell from "@/components/WidgetShell";
+import { WidgetShell } from "@/components/design-system";
 
 export default function Dashboard() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -61,8 +62,10 @@ export default function Dashboard() {
           return <WidgetShell title="Behavior Analytics" padding={padding}><BehaviorAnalyticsWidget disciplineScore={dashboard?.behaviorAnalytics.disciplineScore ?? 0} fomoScore={dashboard?.behaviorAnalytics.fomoScore ?? "Low"} revengeTradesThisMonth={dashboard?.behaviorAnalytics.revengeTradesThisMonth ?? 0} trendAlignment={dashboard?.behaviorAnalytics.trendAlignment ?? 0} loading={loading} /></WidgetShell>;
         case "heatmap":
           return <WidgetShell title="Trading Heatmap" padding={padding}><TradingHeatmap data={dashboard?.heatmap ?? []} loading={loading} /></WidgetShell>;
-        case "analytics-preview":
-          return <WidgetShell title="Analytics Preview" padding={padding}><AnalyticsPreviewWidget bestStrategy={dashboard?.insights.bestStrategy ?? ""} bestDay={dashboard?.insights.bestDay ?? ""} avgRR={dashboard?.insights.avgRR ?? 0} profitFactor={dashboard?.insights.profitFactor ?? 0} loading={loading} /></WidgetShell>;
+        case "analytics-insights":
+          return <AnalyticsInsightsWidget />;
+        case "ai-coach":
+          return <AiCoachWidget />;
         default:
           return null;
       }
