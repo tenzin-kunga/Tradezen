@@ -57,6 +57,19 @@ export class HttpExceptionFilter implements ExceptionFilter {
       this.logger.error(`Unknown exception type: ${typeof exception}`);
     }
 
+    // For OAuth callback errors, redirect browser to web app with error message
+    if (
+      request.url?.startsWith('/auth/google/callback') ||
+      request.url?.startsWith('/auth/github/callback')
+    ) {
+      const webUrl = process.env.WEB_URL ?? 'http://localhost:3000';
+      const errorMsg = Array.isArray(message) ? message[0] : message;
+      response.redirect(
+        `${webUrl}/auth/callback?error=${encodeURIComponent(errorMsg)}`,
+      );
+      return;
+    }
+
     const apiResponse: ApiErrorResponse = {
       statusCode: status,
       error,
@@ -73,6 +86,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
-    response.status(status).json(apiResponse);
+    if (!response.headersSent) {
+      response.status(status).json(apiResponse);
+    }
   }
 }
