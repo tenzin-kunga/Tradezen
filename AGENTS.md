@@ -1,97 +1,87 @@
 # TradeZen — OpenCode Agent
 
 ## Project Context
-- **Stack:** Turso + SQLite (local), Clerk (auth), Drizzle ORM, React 19 + Vite, TanStack Query
-- **Apps:** `apps/api` (Express + tRPC), `apps/web` (Vite + React)
-- **Commands:** `bun run dev`, `bun run lint`, `bun run check-types`
-- **Key files:** `PLAN.md` (phases 0-5), `AGENTS.md` (this file)
+- **Stack:** Next.js 14 (web) + NestJS 11 (api), PostgreSQL 16 + pgvector, Redis 7, Turborepo (Bun)
+- **Apps:** `apps/api` (NestJS), `apps/web` (Next.js App Router)
+- **Packages:** `packages/db` (Drizzle ORM + pgvector), `packages/types`, `packages/ui`, `packages/eslint-config`, `packages/typescript-config`
+- **Auth:** JWT access + HTTP-only refresh cookies, OAuth (Google/GitHub)
+- **AI:** OpenRouter integration (LangChain/LangGraph)
+- **Deploy:** Vercel (web) + Render (api) + Neon (prod DB) / Docker Compose (local)
 
----
+## Developer Commands
+```bash
+# Root (Turborepo)
+bun install                 # install all deps
+bun run dev                 # build @tradezen/db then start api+web (turborepo)
+bun run build               # build all packages
+bun run lint                # lint all packages
+bun run check-types         # typecheck all packages
+bun run format              # prettier write
 
-# context-mode — MANDATORY routing rules
+# API (apps/api)
+bun run migrate             # drizzle migrations (ts-node src/migrate.ts)
+bun run test                # unit tests (jest)
+bun run test:e2e            # e2e tests (jest --config test/jest-e2e.json)
 
-context-mode MCP tools available. Rules protect context window from flooding. One unrouted command dumps 56 KB into context.
+# Web (apps/web)
+bun run dev                 # next dev -p 3000
+bun run build               # next build
+bun run start               # next start -p 3000
 
-## Think in Code — MANDATORY
+# Docker (root)
+start.bat                   # one-click: Docker Desktop + postgres/redis + api+web in separate windows
+docker compose --env-file .env.docker up -d postgres redis  # infra only
+docker compose --env-file .env.docker up -d                 # full stack
+```
 
-Analyze/count/filter/compare/search/parse/transform data: **write code** via `context-mode_ctx_execute(language, code)`, `console.log()` only the answer. Do NOT read raw data into context. PROGRAM the analysis, not COMPUTE it. Pure JavaScript — Node.js built-ins only (`fs`, `path`, `child_process`). `try/catch`, handle `null`/`undefined`. One script replaces ten tool calls.
+## Required Order
+`lint → check-types → test` (CI pipeline order)
 
-## BLOCKED — do NOT attempt
-
-### curl / wget — BLOCKED
-Shell `curl`/`wget` intercepted and blocked. Do NOT retry.
-Use: `context-mode_ctx_fetch_and_index(url, source)` or `context-mode_ctx_execute(language: "javascript", code: "const r = await fetch(...)")`
-
-### Inline HTTP — BLOCKED
-`fetch('http`, `requests.get(`, `requests.post(`, `http.get(`, `http.request(` — intercepted. Do NOT retry.
-Use: `context-mode_ctx_execute(language, code)` — only stdout enters context
-
-### Direct web fetching — BLOCKED
-Use: `context-mode_ctx_fetch_and_index(url, source)` then `context-mode_ctx_search(queries)`
-
-## REDIRECTED — use sandbox
-
-### Shell (>20 lines output)
-Shell ONLY for: `git`, `mkdir`, `rm`, `mv`, `cd`, `ls`, `bun install`, `pip install`.
-Otherwise: `context-mode_ctx_batch_execute(commands, queries)` or `context-mode_ctx_execute(language: "shell", code: "...")`
-
-### File reading (for analysis)
-Reading to **edit** → reading correct. Reading to **analyze/explore/summarize** → `context-mode_ctx_execute_file(path, language, code)`.
-
-### grep / search (large results)
-Use `context-mode_ctx_execute(language: "shell", code: "grep ...")` in sandbox.
-
-## Tool selection
-
-0. **MEMORY**: `context-mode_ctx_search(sort: "timeline")` — after resume, check prior context before asking user.
-1. **GATHER**: `context-mode_ctx_batch_execute(commands, queries)` — runs all commands, auto-indexes, returns search. ONE call replaces 30+. Each command: `{label: "header", command: "..."}`.
-2. **FOLLOW-UP**: `context-mode_ctx_search(queries: ["q1", "q2", ...])` — all questions as array, ONE call (default relevance mode).
-3. **PROCESSING**: `context-mode_ctx_execute(language, code)` | `context-mode_ctx_execute_file(path, language, code)` — sandbox, only stdout enters context.
-4. **WEB**: `context-mode_ctx_fetch_and_index(url, source)` then `context-mode_ctx_search(queries)` — raw HTML never enters context.
-5. **INDEX**: `context-mode_ctx_index(content, source)` — store in FTS5 for later search.
-
-## Parallel I/O batches
-
-For multi-URL fetches or multi-API calls, **always** include `concurrency: N` (1-8):
-
-- `context-mode_ctx_batch_execute(commands: [3+ network commands], concurrency: 5)` — gh, curl, dig, docker inspect, multi-region cloud queries
-- `context-mode_ctx_fetch_and_index(requests: [{url, source}, ...], concurrency: 5)` — multi-URL batch fetch
-
-**Use concurrency 4-8** for I/O-bound work (network calls, API queries). **Keep concurrency 1** for CPU-bound (bun run test, build, lint) or commands sharing state (ports, lock files, same-repo writes).
-
-GitHub API rate-limit: cap at 4 for `gh` calls.
-
-## Output
-
-Terse like caveman. Technical substance exact. Only fluff die.
-Drop: articles, filler (just/really/basically), pleasantries, hedging. Fragments OK. Short synonyms. Code unchanged.
-Pattern: [thing] [action] [reason]. [next step]. Auto-expand for: security warnings, irreversible actions, user confusion.
-Write artifacts to FILES — never inline. Return: file path + 1-line description.
-Descriptive source labels for `search(source: "label")`.
-
-## Session Continuity
-
-Skills, roles, and decisions persist for the entire session. Do not abandon them as the conversation grows.
-
-## Memory
-
-Session history is persistent and searchable. On resume, search BEFORE asking the user:
-
-| Need | Command |
+## Environment Files
+| File | Purpose |
 |------|---------|
-| What did we decide? | `context-mode_ctx_search(queries: ["decision"], source: "decision", sort: "timeline")` |
-| What constraints exist? | `context-mode_ctx_search(queries: ["constraint"], source: "constraint")` |
+| `.env.docker` | Docker Compose secrets (copy from `.env.docker.example`) |
+| `apps/api/.env` | API dev defaults (DB_HOST=localhost, etc.) |
+| `apps/web/.env` | Web dev defaults (NEXT_PUBLIC_API_URL) |
 
-DO NOT ask "what were we working on?" — SEARCH FIRST.
-If search returns 0 results, proceed as a fresh session.
+**Required Docker secrets:** `DB_PASSWORD`, `JWT_SECRET` (64+ chars), `JWT_REFRESH_SECRET` (64+ chars), `OPENROUTER_API_KEY` (optional), `WEB_URL`
 
-## ctx commands
+## Database
+- **ORM:** Drizzle + pgvector (schema in `packages/db/src/schema/`)
+- **Migrations:** `apps/api/drizzle/` (run via `bun run migrate` in api)
+- **Local:** `pgvector/pgvector:pg16` on port 5432 (Docker)
+- **Prod:** Neon PostgreSQL
 
-| Command | Action |
-|---------|--------|
-| `ctx stats` | Call `stats` MCP tool, display full output verbatim |
-| `ctx doctor` | Call `doctor` MCP tool, run returned shell command, display as checklist |
-| `ctx upgrade` | Call `upgrade` MCP tool, run returned shell command, display as checklist |
-| `ctx purge` | Call `purge` MCP tool with confirm: true. Warns before wiping knowledge base. |
+## Key Architecture Notes
+- **Monorepo:** Bun workspaces + Turborepo (`turbo.json` defines build/lint/typecheck/dev tasks)
+- **API → DB:** Internal Docker network `tradezen-net` (static IPs), not localhost
+- **Web → API:** `NEXT_PUBLIC_API_URL=http://api:3001` (Docker) or `http://localhost:3001` (local)
+- **tRPC:** API exports `@tradezen/api/trpc` for end-to-end types
+- **Shared types:** `@tradezen/types` package
+- **Swagger:** `/api/docs` (dev only, disabled in production)
 
-After /clear or /compact: knowledge base and session stats preserved. Use `ctx purge` to start fresh.
+## Testing
+- **Unit:** Jest + ts-jest (API: `test/`, Web: none configured)
+- **E2E:** NestJS supertest against real Postgres+Redis (CI uses sidecar containers)
+- **CI order:** security → lint → typecheck → test → e2e → build → deploy
+
+## CI/CD (`.github/workflows/ci.yml`)
+- **Branches:** `develop` → staging, `main` → prod (requires approval)
+- **Concurrency:** cancels stale runs on PRs/develop, never on main
+- **Required secrets:** `RENDER_API_KEY`, `RENDER_SERVICE_ID`, `VERCEL_TOKEN`, `CODECOV_TOKEN`, etc.
+
+## Context-Mode Rules (MANDATORY)
+- **Shell (>20 lines):** Use `ctx_batch_execute` or `ctx_execute(language: "shell")`
+- **File analysis:** Use `ctx_execute_file` (not Read)
+- **grep/search:** Use `ctx_execute(language: "shell", code: "grep ...")`
+- **Web fetch:** `ctx_fetch_and_index` → `ctx_search` (no direct fetch)
+- **Think in Code:** Write JS in sandbox, `console.log()` only answer
+- **Parallel I/O:** `concurrency: 4-8` for network calls
+
+## References
+- `README.md` — full project overview, endpoints, deployment
+- `docs/ARCHITECTURE.md` — system architecture
+- `docs/SECURITY.md` — hardening
+- `docs/DEPLOYMENT.md` — production steps
+- `docs/DEV_QUICKSTART.md` — 5-min onboarding
+- `opencode.json` — MCP config (context-mode, context7, firecrawl, playwright)

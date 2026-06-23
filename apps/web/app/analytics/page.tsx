@@ -19,9 +19,7 @@ import StrategyComparisonTable from "@/components/StrategyComparisonTable";
 import StrategyDrawer from "@/components/StrategyDrawer";
 import RiskDistributionChart from "@/components/RiskDistributionChart";
 import RiskByWeekChart from "@/components/RiskByWeekChart";
-import PerformanceCalendar from "@/components/PerformanceCalendar";
-
-type Tab = "overview" | "strategy" | "time" | "behavioral" | "risk" | "calendar";
+type Tab = "overview" | "strategy" | "time" | "behavioral" | "risk";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "OVERVIEW" },
@@ -29,7 +27,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "time", label: "TIME" },
   { key: "behavioral", label: "BEHAVIORAL" },
   { key: "risk", label: "RISK" },
-  { key: "calendar", label: "CALENDAR" },
 ];
 
 function getSeverity(count: number): { label: string; color: string } {
@@ -134,7 +131,6 @@ export default function AnalyticsPage() {
       case "time": return <TimeTab />;
       case "behavioral": return <BehavioralTab />;
       case "risk": return <RiskTab />;
-      case "calendar": return <CalendarTab />;
     }
   }
 
@@ -630,20 +626,6 @@ export default function AnalyticsPage() {
           </div>
         )}
       </>
-    );
-  }
-
-  function CalendarTab() {
-    return (
-      <div className="max-w-2xl mx-auto">
-        <PerformanceCalendar
-          data={dailyPnl.map((d) => ({
-            date: typeof d.date === 'string' ? d.date : d.date.toISOString().split('T')[0],
-            pnl: Number(d.totalPnl),
-            trades: Number(d.tradeCount ?? 0),
-          }))}
-        />
-      </div>
     );
   }
 
