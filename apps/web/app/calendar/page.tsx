@@ -64,7 +64,10 @@ export default function CalendarPage() {
       .then(([dailyRes, tradesRes]) => {
         const dayMap: Record<string, { pnl: number; trades: any[] }> = {};
         tradesRes.data.forEach((t: any) => {
-          const date = t.trade_date?.split("T")[0] || t.created_at?.split("T")[0];
+          const rawDate = t.trade_date || t.created_at;
+          const date = rawDate instanceof Date
+            ? rawDate.toISOString().split("T")[0]
+            : rawDate?.split("T")[0];
           if (date && date.startsWith(`${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`)) {
             if (!dayMap[date]) dayMap[date] = { pnl: 0, trades: [] };
             dayMap[date].pnl += Number(t.pnl);
@@ -72,11 +75,14 @@ export default function CalendarPage() {
           }
         });
         setDailyData(
-          dailyRes.map((d: any) => ({
-            date: d.date,
-            pnl: dayMap[d.date]?.pnl ?? d.pnl ?? 0,
-            trades: dayMap[d.date]?.trades?.length ?? 0,
-          }))
+          dailyRes.map((d: any) => {
+            const dateStr = typeof d.date === 'string' ? d.date : d.date.toISOString().split('T')[0];
+            return {
+              date: dateStr,
+              pnl: dayMap[dateStr]?.pnl ?? Number(d.totalPnl ?? 0),
+              trades: dayMap[dateStr]?.trades?.length ?? Number(d.tradeCount ?? 0),
+            };
+          })
         );
       })
       .catch(console.error)
