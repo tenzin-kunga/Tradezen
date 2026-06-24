@@ -125,10 +125,10 @@ export default function Dashboard() {
           ))
         ) : (
           <>
-            <StatCard title="Total P&L" value={formatPnl(dashboard!.totalPnl)} />
-            <StatCard title="Win Rate" value={hasTrades ? `${dashboard!.overallWinRate}%` : "--"} />
-            <StatCard title="Profit Factor" value={dashboard!.insights.profitFactor > 0 && dashboard!.insights.profitFactor < 999 ? String(dashboard!.insights.profitFactor) : dashboard!.insights.profitFactor >= 999 ? "∞" : "--"} />
-            <StatCard title="Avg Risk:Reward" value={dashboard!.insights.avgRR > 0 ? `1:${dashboard!.insights.avgRR.toFixed(1)}` : "--"} />
+            <StatCard title="Total P&L" value={formatPnl(dashboard!.totalPnl)} variant={dashboard!.totalPnl >= 0 ? "profit" : "loss"} />
+            <StatCard title="Win Rate" value={hasTrades ? `${dashboard!.overallWinRate}%` : "--"} variant="blue" />
+            <StatCard title="Profit Factor" value={dashboard!.insights.profitFactor > 0 && dashboard!.insights.profitFactor < 999 ? String(dashboard!.insights.profitFactor) : dashboard!.insights.profitFactor >= 999 ? "∞" : "--"} variant="amber" />
+            <StatCard title="Avg Risk:Reward" value={dashboard!.insights.avgRR > 0 ? `1:${dashboard!.insights.avgRR.toFixed(1)}` : "--"} variant="cyan" />
           </>
         )}
       </div>
