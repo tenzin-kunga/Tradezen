@@ -12,6 +12,7 @@ import { TagsModule } from './tags/tags.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatModule } from './chat/chat.module';
 import { SearchModule } from './search/search.module';
+import { SeedModule } from './seed/seed.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { QueuesModule } from './queues/queues.module';
 import { ReportModule } from './reports/report.module';
@@ -78,6 +79,7 @@ import { JournalsService } from './journals/journals.service';
     QueuesModule,
     ReportModule,
     SearchModule,
+    SeedModule,
   ],
   controllers: [AppController, AiController],
   providers: [

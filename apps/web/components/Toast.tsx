@@ -82,7 +82,7 @@ function ToastItem({ toast, onDone }: { toast: Toast; onDone: () => void }) {
         <button
           onClick={() => { setExiting(true); setTimeout(onDone, 300); }}
           className="bg-transparent border-none cursor-pointer p-0 text-xs"
-          style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}
+          style={{ color: "var(--text-muted)", fontFamily: "var(--font-display)" }}
         >
           ×
         </button>

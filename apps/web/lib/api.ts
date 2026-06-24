@@ -223,6 +223,8 @@ export interface DashboardData {
   weeklyTrades: number;
   weeklyPnl: number;
   weeklyWinRate: number;
+  totalPnl: number;
+  overallWinRate: number;
   equityCurve: { date: string; equity: number }[];
   dailySummary: {
     tradesToday: number;
@@ -630,6 +632,18 @@ export const getAiInsights = async (): Promise<AiInsightsResponse> => {
   const res = await authFetch(`${API}/ai/insights`);
   return handleResponse<AiInsightsResponse>(res);
 };
+
+// ─── Seed / Data Management ──────────────────────────
+
+export async function seedMockData() {
+  const res = await authFetch(`${API}/seed`, { method: "POST" });
+  return handleResponse<{ message: string }>(res);
+}
+
+export async function deleteAllSeedData() {
+  const res = await authFetch(`${API}/seed`, { method: "DELETE" });
+  return handleResponse<{ message: string }>(res);
+}
 
 // ─── Checklists ─────────────────────────────────────
 

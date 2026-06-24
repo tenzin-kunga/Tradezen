@@ -54,7 +54,7 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-8"
-      style={{ backgroundColor: "var(--bg-primary)", fontFamily: "var(--font-mono)" }}
+      style={{ backgroundColor: "var(--bg-primary)", fontFamily: "var(--font-display)" }}
     >
       <div className="w-full max-w-md">
         <div className="text-center mb-8 md:mb-10">
@@ -107,7 +107,7 @@ export default function LoginPage() {
                 backgroundColor: "var(--text-primary)",
                 color: "var(--bg-primary)",
                 border: "1px solid var(--border)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-display)",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -127,7 +127,7 @@ export default function LoginPage() {
                 backgroundColor: "var(--border)",
                 color: "var(--text-primary)",
                 border: "1px solid var(--border-hover)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-display)",
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -152,7 +152,7 @@ export default function LoginPage() {
                   background: "var(--bg-primary)",
                   border: "1px solid var(--border)",
                   color: "var(--text-primary)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-display)",
                 }}
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
@@ -169,7 +169,7 @@ export default function LoginPage() {
                   background: "var(--bg-primary)",
                   border: "1px solid var(--border)",
                   color: "var(--text-primary)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-display)",
                 }}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -199,7 +199,7 @@ export default function LoginPage() {
                 backgroundColor: loading ? "var(--border)" : "var(--text-primary)",
                 color: loading ? "var(--text-dim)" : "var(--bg-primary)",
                 border: "none",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-display)",
               }}
             >
               {loading ? "AUTHENTICATING..." : "LOGIN"}

@@ -25,26 +25,21 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     accessToken: string,
     refreshToken: string,
     profile: any,
-    done: (error: any, user?: any, info?: any) => void,
-  ): Promise<void> {
-    try {
-      const email =
-        profile.emails?.[0]?.value ??
-        `${profile.username}@users.noreply.github.com`;
+  ): Promise<any> {
+    const email =
+      profile.emails?.[0]?.value ??
+      `${profile.username}@users.noreply.github.com`;
 
-      const user = await this.oauthService.validateOAuthUser({
-        provider: 'github',
-        providerId: profile.id.toString(),
-        email,
-        displayName: profile.displayName ?? profile.username,
-        username: profile.username,
-        avatar: profile.photos?.[0]?.value,
-        accessToken,
-        refreshToken,
-      });
-      done(null, user);
-    } catch (error) {
-      done(error, false);
-    }
+    const user = await this.oauthService.validateOAuthUser({
+      provider: 'github',
+      providerId: profile.id.toString(),
+      email,
+      displayName: profile.displayName ?? profile.username,
+      username: profile.username,
+      avatar: profile.photos?.[0]?.value,
+      accessToken,
+      refreshToken,
+    });
+    return user;
   }
 }

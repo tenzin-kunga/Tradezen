@@ -285,37 +285,264 @@ export default function TradeLog() {
 
   return (
     <div>
-      {/* Filters - stack on mobile, row on desktop */}
+      {/* Filters */}
       <div className="glass-card p-3 md:p-4 mb-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-end flex-wrap">
-            <div>
-              <div className="label-caps mb-2">SEARCH</div>
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Symbol, notes, strategy..." className="input-glass text-xs" style={{ minWidth: 160 }} />
-            </div>
-            <div>
-              <div className="label-caps mb-2">DATE RANGE</div>
-              <div className="flex gap-2">
-                <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-glass text-xs" />
-                <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-glass text-xs" />
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search */}
+            <div className="flex-1 min-w-0">
+              <div className="relative">
+                <svg
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2"
+                  width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                  style={{ color: "var(--text-dim, #6b7280)", pointerEvents: "none" }}
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search symbol, notes, strategy..."
+                  className="input-glass text-xs"
+                  style={{ width: "100%", paddingLeft: 28, minWidth: 140 }}
+                />
               </div>
             </div>
-            <div>
-              <div className="label-caps mb-2">ASSET CLASS</div>
+
+            {/* Date range */}
+            <style>{`
+              .tz-date-input {
+                color-scheme: dark;
+                background: none;
+                border: none;
+                outline: none;
+                font-family: inherit;
+                font-size: 12px;
+                color: var(--text-primary, #e5e7eb);
+                width: 120px;
+                padding: 5px 0;
+                cursor: pointer;
+              }
+              .tz-date-input::-webkit-calendar-picker-indicator {
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                opacity: 0;
+                cursor: pointer;
+              }
+              .tz-date-input::-webkit-datetime-edit {
+                color: var(--text-primary, #e5e7eb);
+                font-size: 12px;
+              }
+              .tz-date-input::-webkit-datetime-edit-fields-wrapper {
+                color: var(--text-primary, #e5e7eb);
+              }
+              .tz-date-range-popup {
+                background: var(--bg-surface, #111214);
+                border: 1px solid var(--border, #23252d);
+                border-radius: 10px;
+                box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+                overflow: hidden;
+              }
+              .tz-date-preset {
+                transition: all 0.12s ease;
+              }
+              .tz-date-preset:hover {
+                background: rgba(255,255,255,0.04);
+              }
+              .tz-date-preset.active {
+                background: rgba(59,130,246,0.12);
+                color: rgb(96,165,250);
+                border-color: rgba(59,130,246,0.35);
+              }
+            `}</style>
+            <div className="relative group">
+              <button
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs"
+                style={{
+                  border: "1px solid var(--border, #23252d)",
+                  color: "var(--text-primary, #e5e7eb)",
+                  background: "var(--bg-surface, #111214)",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  minWidth: 180,
+                }}
+                aria-haspopup="dialog"
+                aria-expanded="false"
+                onClick={(e) => {
+                  const popup = e.currentTarget.parentElement?.querySelector('.tz-date-range-popup');
+                  if (popup) {
+                    const hidden = popup.hasAttribute('hidden');
+                    popup.toggleAttribute('hidden');
+                    if (hidden) (popup as HTMLElement).focus();
+                  }
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--text-dim, #6b7280)", flexShrink: 0 }}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" />
+                </svg>
+                <span className="flex-1 text-left">
+                  {fromDate && toDate
+                    ? (() => {
+                        const f = new Date(fromDate + "T00:00:00");
+                        const t = new Date(toDate + "T00:00:00");
+                        const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+                        const sameYear = f.getFullYear() === t.getFullYear();
+                        return `${f.toLocaleDateString("en-US", opts)} – ${t.toLocaleDateString("en-US", sameYear ? opts : { ...opts, year: "numeric" })}`;
+                      })()
+                    : "Select date range"}
+                </span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--text-dim, #6b7280)" }}>
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              <div
+                className="tz-date-range-popup absolute top-full left-0 mt-1.5 z-20 p-3"
+                hidden
+                tabIndex={-1}
+                style={{ minWidth: 280 }}
+                onBlur={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    e.currentTarget.setAttribute('hidden', '');
+                  }
+                }}
+              >
+                {/* Presets */}
+                <div className="grid grid-cols-3 gap-1 mb-3">
+                  {[
+                    { label: "Today", days: 0 },
+                    { label: "7 Days", days: 7 },
+                    { label: "30 Days", days: 30 },
+                    { label: "90 Days", days: 90 },
+                    { label: "YTD", days: -1 },
+                    { label: "All Time", days: -2 },
+                  ].map((p) => {
+                    const now = new Date();
+                    const endStr = now.toISOString().slice(0, 10);
+                    let startStr: string;
+                    if (p.days === -2) {
+                      startStr = "";
+                    } else if (p.days === -1) {
+                      startStr = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
+                    } else if (p.days === 0) {
+                      startStr = endStr;
+                    } else {
+                      startStr = new Date(now.getTime() - p.days * 86400000).toISOString().slice(0, 10);
+                    }
+                    const isActive = fromDate === startStr && toDate === endStr;
+                    return (
+                      <button
+                        key={p.label}
+                        onClick={(e) => {
+                          setFromDate(startStr);
+                          setToDate(endStr);
+                          (e.currentTarget.closest('.tz-date-range-popup') as HTMLElement)?.setAttribute('hidden', '');
+                        }}
+                        className={`tz-date-preset text-xs font-medium px-2 py-1.5 rounded-lg ${isActive ? 'active' : ''}`}
+                        style={{
+                          border: isActive ? "1px solid rgba(59,130,246,0.35)" : "1px solid var(--border, #23252d)",
+                          color: isActive ? "rgb(96,165,250)" : "var(--text-dim, #6b7280)",
+                          background: isActive ? "rgba(59,130,246,0.12)" : "transparent",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom range divider */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div style={{ flex: 1, height: 1, background: "var(--border, #23252d)" }} />
+                  <span className="text-[9px] font-medium tracking-wider" style={{ color: "var(--text-dim, #6b7280)" }}>CUSTOM</span>
+                  <div style={{ flex: 1, height: 1, background: "var(--border, #23252d)" }} />
+                </div>
+
+                {/* Custom date inputs */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 relative">
+                    <svg
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      width="13" height="13" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+                      style={{ color: "var(--text-dim, #6b7280)" }}
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" />
+                    </svg>
+                    <input
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      className="tz-date-input"
+                      aria-label="From date"
+                      style={{ paddingLeft: 28, width: "100%", position: "relative" }}
+                    />
+                  </div>
+                  <span className="text-[10px]" style={{ color: "var(--text-dim, #6b7280)" }}>–</span>
+                  <div className="flex-1 relative">
+                    <svg
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                      width="13" height="13" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+                      style={{ color: "var(--text-dim, #6b7280)" }}
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" />
+                    </svg>
+                    <input
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      className="tz-date-input"
+                      aria-label="To date"
+                      style={{ paddingLeft: 28, width: "100%", position: "relative" }}
+                    />
+                  </div>
+                </div>
+                {fromDate && toDate && (
+                  <div className="flex justify-end mt-2">
+                    <button
+                      onClick={() => { setFromDate(""); setToDate(""); }}
+                      className="text-[10px] font-medium px-2 py-1 rounded"
+                      style={{
+                        border: "none",
+                        background: "rgba(239,68,68,0.1)",
+                        color: "var(--accent-loss)",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+            {/* Dropdown filters */}
+            <div className="flex gap-2 flex-wrap">
               <select value={assetFilter} onChange={(e) => setAssetFilter(e.target.value)} className="select-glass text-xs">
                 <option>ALL ASSETS</option>
                 {allSymbols.map((s) => <option key={s}>{s}</option>)}
               </select>
-            </div>
-            <div>
-              <div className="label-caps mb-2">STRATEGY</div>
               <select value={strategyFilter} onChange={(e) => setStrategyFilter(e.target.value)} className="select-glass text-xs">
                 <option>ANY STRATEGY</option>
                 {allStrategies.map((s) => <option key={s}>{s}</option>)}
               </select>
-            </div>
-            <div>
-              <div className="label-caps mb-2">TAG</div>
               <select value={tagFilter} onChange={(e) => { setTagFilter(e.target.value); setPage(1); }} className="select-glass text-xs">
                 <option value="">ALL TAGS</option>
                 {availableTags.map((t: any) => (
@@ -323,28 +550,66 @@ export default function TradeLog() {
                 ))}
               </select>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            {(["ALL", "WIN", "LOSS"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => { setResultFilter(mode); setPage(1); }}
-                className={`btn-glass text-xs ${resultFilter === mode ? 'active' : ''}`}
+
+            <div className="flex items-center gap-2 ml-auto flex-wrap">
+              {/* Result filter pills */}
+              <div
+                className="flex rounded overflow-hidden"
+                style={{ border: "1px solid var(--border, #23252d)" }}
               >
-                {mode}
+                {(["ALL", "WIN", "LOSS"] as const).map((mode, i) => (
+                  <button
+                    key={mode}
+                    onClick={() => { setResultFilter(mode); setPage(1); }}
+                    className="text-[11px] font-semibold tracking-wider px-3 py-1.5"
+                    style={{
+                      background: resultFilter === mode ? "var(--accent-primary, #3b82f6)" : "transparent",
+                      color: resultFilter === mode ? "#fff" : "var(--text-dim, #6b7280)",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      borderRight: i < 2 ? "1px solid var(--border, #23252d)" : "none",
+                      transition: "background 0.15s",
+                    }}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={() => { setPage(1); fetchTrades(); }} className="btn-primary text-xs px-3 py-1.5">
+                APPLY
               </button>
-            ))}
-            <button onClick={() => { setPage(1); fetchTrades(); }} className="btn-primary text-xs">
-              APPLY
-            </button>
-            <div className="flex gap-2 ml-auto">
-              <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCsv} style={{ display: "none" }} />
-              <button onClick={() => fileInputRef.current?.click()} className="btn-glass text-xs">
-                IMPORT
-              </button>
-              <button onClick={handleExportCsv} className="btn-glass text-xs">
-                EXPORT
-              </button>
+
+              <div className="flex gap-1.5 ml-2">
+                <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCsv} style={{ display: "none" }} />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-[11px] font-medium px-2.5 py-1.5 rounded"
+                  style={{
+                    border: "1px solid var(--border, #23252d)",
+                    color: "var(--text-dim, #6b7280)",
+                    background: "none",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  IMPORT
+                </button>
+                <button
+                  onClick={handleExportCsv}
+                  className="text-[11px] font-medium px-2.5 py-1.5 rounded"
+                  style={{
+                    border: "1px solid var(--border, #23252d)",
+                    color: "var(--text-dim, #6b7280)",
+                    background: "none",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  EXPORT
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -447,7 +712,7 @@ export default function TradeLog() {
             )}
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTrades.slice((page - 1) * 10, page * 10).map((t) => (
               <TradeCard key={t.id} trade={t} onView={handleTradeView} />
             ))}

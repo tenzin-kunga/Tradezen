@@ -21,6 +21,14 @@ function toDateStr(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
+function fmtDate(d: string) {
+  return new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function JournalPage() {
   const [entries, setEntries] = useState<any[]>([]);
   const [streak, setStreak] = useState({ currentStreak: 0, longestStreak: 0, totalEntries: 0 });
@@ -33,7 +41,6 @@ export default function JournalPage() {
   const [lessons, setLessons] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"editor" | "history">("editor");
 
   const loadEntries = useCallback(async () => {
     try {
@@ -101,227 +108,319 @@ export default function JournalPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen font-mono flex items-center justify-center" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
         <div className="text-xs tracking-widest">LOADING JOURNAL...</div>
       </div>
     );
   }
 
   const entryDates = new Set(entries.map((e) => e.date?.slice(0, 10)));
-  const inputCls = "w-full border px-3 py-2.5 text-sm outline-none box-border focus:border-[#22d3ee]";
-  const labelCls = "block text-xs tracking-widest mb-1.5";
-  const sectionCls = "border p-4 md:p-5 mb-4";
 
   return (
-    <div className="min-h-screen p-4 md:p-6 lg:p-10" style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
-        <div>
-          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">TRADE JOURNAL</h1>
-          <p className="text-xs mt-1 tracking-wide" style={{ color: "var(--text-dim)" }}>
-            DAILY REFLECTION // SELF-AWARENESS ENGINE
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {(["editor", "history"] as const).map((v) => (
-            <button key={v} onClick={() => setView(v)}
-              className={`px-4 py-2 text-xs font-bold tracking-widest rounded border cursor-pointer transition-colors ${
-                view === v ? "" : "bg-transparent"
-              }`}
-              style={{
-                borderColor: "var(--border)",
-                borderRadius: "var(--radius-sm)",
-                fontFamily: "var(--font-mono)",
-                backgroundColor: view === v ? "var(--text-primary)" : undefined,
-                color: view === v ? "var(--bg-primary)" : "var(--text-muted)",
-              }}
-            >
-              {v.toUpperCase()}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ color: "var(--text-primary)" }}>
+      {/* Two-panel grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 20, maxWidth: 1100, margin: "0 auto", padding: "20px", alignItems: "start" }}>
 
-      {/* Streak Stats - 1 col mobile, 3 col desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        {[
-          { label: "CURRENT STREAK", value: `${streak.currentStreak} DAY${streak.currentStreak !== 1 ? "S" : ""}`, color: streak.currentStreak >= 7 ? "var(--accent-profit)" : "var(--text-primary)" },
-          { label: "LONGEST STREAK", value: `${streak.longestStreak} DAY${streak.longestStreak !== 1 ? "S" : ""}`, color: "var(--text-muted)" },
-          { label: "TOTAL ENTRIES", value: `${streak.totalEntries}`, color: "var(--text-muted)" },
-        ].map((s) => (
-          <div key={s.label} className={`${sectionCls} mb-0 text-center`} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
-            <div className="text-xs tracking-widest mb-2" style={{ color: "var(--text-dim)" }}>{s.label}</div>
-            <div className="text-lg md:text-xl font-bold" style={{ color: s.color }}>{s.value}</div>
-          </div>
-        ))}
-      </div>
+        {/* ─── Side Panel ─── */}
+        <div style={{ position: "sticky", top: 24, display: "flex", flexDirection: "column", gap: 12 }}>
 
-      {view === "editor" ? (
-        <>
-          {/* Date picker */}
-          <div className={`${sectionCls} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4`} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
-            <div>
-              <label className={labelCls} style={{ color: "var(--text-muted)" }}>JOURNAL DATE</label>
-              <input
-                type="date" value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className={`${inputCls} w-full sm:w-[200px]`}
-                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
-              />
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(toDateStr(d)); }}
-                className="bg-transparent px-3 py-2 cursor-pointer text-xs rounded"
-                style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)", borderRadius: "var(--radius-sm)" }}>
-                ← PREV
-              </button>
-              <button onClick={() => setSelectedDate(toDateStr(new Date()))}
-                className="bg-transparent px-3 py-2 cursor-pointer text-xs rounded"
-                style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)", borderRadius: "var(--radius-sm)" }}>
-                TODAY
-              </button>
-              <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(toDateStr(d)); }}
-                className="bg-transparent px-3 py-2 cursor-pointer text-xs rounded"
-                style={{ borderColor: "var(--border)", color: "var(--text-muted)", fontFamily: "var(--font-mono)", borderRadius: "var(--radius-sm)" }}>
-                NEXT →
-              </button>
+          {/* Streak */}
+          <div className="rounded-xl px-3 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              {[
+                { label: "Current", value: `${streak.currentStreak}d`, color: streak.currentStreak >= 7 ? "var(--accent-profit)" : "var(--text-primary)" },
+                { label: "Best", value: `${streak.longestStreak}d`, color: "var(--text-muted)" },
+                { label: "Total", value: `${streak.totalEntries}`, color: "var(--text-muted)" },
+              ].map((s) => (
+                <div key={s.label} className="text-center">
+                  <div className="text-[9px] font-semibold tracking-wider mb-1" style={{ color: "var(--text-dim)" }}>{s.label}</div>
+                  <div className="text-base font-bold" style={{ color: s.color }}>{s.value}</div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Mood selector - wrap on mobile */}
-          <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
-            <label className={labelCls} style={{ color: "var(--text-muted)" }}>EMOTIONAL STATE</label>
-            <div className="flex flex-wrap gap-2 mt-2">
+          {/* Timeline Strip */}
+          <div className="rounded-xl px-3 py-2.5" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
+            <div style={{ display: "flex", gap: 1, overflowX: "auto", scrollbarWidth: "thin" }}>
+              {entries.slice(0, 21).map((e) => {
+                const dateStr = e.date?.slice(0, 10);
+                if (!dateStr) return null;
+                const moodObj = moods.find((m) => m.value === e.mood);
+                const isActive = dateStr === selectedDate;
+                return (
+                  <button
+                    key={e.id}
+                    onClick={() => setSelectedDate(dateStr)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 2,
+                      padding: "5px 8px",
+                      borderRadius: 6,
+                      border: isActive ? "1px solid var(--accent-primary, #3b82f6)" : "1px solid transparent",
+                      background: isActive ? "rgba(59,130,246,0.08)" : "transparent",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      flexShrink: 0,
+                      minWidth: 42,
+                      transition: "all 0.12s ease",
+                    }}
+                  >
+                    <span style={{ fontSize: 14, lineHeight: 1 }}>{moodObj?.emoji || "⚪"}</span>
+                    <span style={{ fontSize: 8, fontWeight: 600, fontFamily: "var(--font-display)", color: isActive ? "var(--accent-primary)" : "var(--text-dim)" }}>
+                      {new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {entries.length === 0 && (
+              <div className="text-xs text-center py-3" style={{ color: "var(--text-dim)" }}>
+                No entries yet — start writing today
+              </div>
+            )}
+          </div>
+
+          {/* Mood selector */}
+          <div className="rounded-xl px-3 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
+            <div className="text-[9px] font-semibold tracking-widest mb-2" style={{ color: "var(--text-dim)" }}>MOOD</div>
+            <div style={{ display: "flex", gap: 4 }}>
               {moods.map((m) => (
-                <button key={m.value} onClick={() => setMood(m.value)}
-                  className="flex-1 min-w-[60px] px-2 py-3 text-xs font-bold tracking-wide rounded border text-center transition-all"
+                <button
+                  key={m.value}
+                  onClick={() => setMood(m.value)}
                   style={{
-                    backgroundColor: mood === m.value ? `${m.color}22` : "var(--bg-primary)",
-                    border: `1px solid ${mood === m.value ? m.color : "var(--border)"}`,
-                    color: mood === m.value ? m.color : "var(--text-dim)",
-                    borderRadius: "var(--radius-sm)",
+                    flex: 1,
+                    padding: "6px 2px",
+                    borderRadius: 6,
+                    border: mood === m.value ? `2px solid ${m.color}` : "1px solid var(--border, #23252d)",
+                    background: mood === m.value ? `${m.color}18` : "transparent",
+                    cursor: "pointer",
+                    textAlign: "center",
+                    transition: "all 0.12s ease",
+                    fontFamily: "inherit",
                   }}
                 >
-                  <div className="text-lg mb-1">{m.emoji}</div>
-                  {m.label}
+                  <div style={{ fontSize: 16, marginBottom: 1 }}>{m.emoji}</div>
+                  <div style={{ fontSize: 6, fontWeight: 700, letterSpacing: "0.3px", color: mood === m.value ? m.color : "var(--text-dim)" }}>
+                    {m.label}
+                  </div>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Pre + Post market notes - stack on mobile, side by side on desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
-              <label className={labelCls} style={{ color: "var(--text-muted)" }}>PRE-MARKET NOTES</label>
-              <textarea
-                className={`${inputCls} min-h-[120px] resize-y`}
-                value={preMarket} onChange={(e) => setPreMarket(e.target.value)}
-                placeholder="What's your game plan for today? Key levels, bias, setups to watch..."
-                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
-              />
+          {/* Entry history */}
+          <div className="rounded-xl" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)", maxHeight: 260, overflowY: "auto" }}>
+            <div className="px-3 pt-2.5 pb-1.5 text-[9px] font-semibold tracking-widest" style={{ color: "var(--text-dim)" }}>
+              HISTORY
             </div>
-            <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
-              <label className={labelCls} style={{ color: "var(--text-muted)" }}>POST-MARKET NOTES</label>
-              <textarea
-                className={`${inputCls} min-h-[120px] resize-y`}
-                value={postMarket} onChange={(e) => setPostMarket(e.target.value)}
-                placeholder="How did the session go? What went well, what needs improvement..."
-                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
-              />
-            </div>
+            {entries.length === 0 ? (
+              <div className="px-3 pb-3 text-xs" style={{ color: "var(--text-dim)" }}>No entries yet</div>
+            ) : (
+              entries.map((e) => {
+                const dateStr = e.date?.slice(0, 10);
+                if (!dateStr) return null;
+                const moodObj = moods.find((m) => m.value === e.mood);
+                const isActive = dateStr === selectedDate;
+                return (
+                  <button
+                    key={e.id}
+                    onClick={() => setSelectedDate(dateStr)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      width: "100%",
+                      padding: "6px 12px",
+                      border: "none",
+                      borderLeft: isActive ? "2px solid var(--accent-primary)" : "2px solid transparent",
+                      background: isActive ? "rgba(59,130,246,0.06)" : "transparent",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      textAlign: "left",
+                      transition: "all 0.12s ease",
+                    }}
+                  >
+                    <span style={{ fontSize: 14, flexShrink: 0 }}>{moodObj?.emoji || "⚪"}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, fontFamily: "var(--font-display)" }}>
+                        {new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* ─── Main Panel ─── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Header */}
+          <div>
+            <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "0.5px", margin: 0 }}>
+              Trade Journal
+            </h1>
+            <p style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4 }}>
+              {fmtDate(selectedDate)}
+              {entryDates.has(selectedDate) && (
+                <span style={{ marginLeft: 8, padding: "2px 8px", borderRadius: 999, fontSize: 9, fontWeight: 600, background: "rgba(34,197,94,0.1)", color: "var(--accent-profit)" }}>
+                  ● Saved
+                </span>
+              )}
+              {streak.currentStreak >= 3 && (
+                <span style={{ marginLeft: 8, fontSize: 11, color: "var(--accent-profit)" }}>
+                  ⚡ {streak.currentStreak}-day streak
+                </span>
+              )}
+            </p>
           </div>
 
-          {/* Market conditions + Lessons */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
-              <label className={labelCls} style={{ color: "var(--text-muted)" }}>MARKET CONDITIONS</label>
-              <textarea
-                className={`${inputCls} min-h-[80px] resize-y`}
-                value={marketConditions} onChange={(e) => setMarketConditions(e.target.value)}
-                placeholder="Trending, ranging, choppy, high volatility..."
-                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
+          {/* Pre-market */}
+          <div className="rounded-xl px-4 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
+            <div className="text-[10px] font-semibold tracking-wider mb-1.5" style={{ color: "var(--text-dim)" }}>PRE-MARKET NOTES</div>
+            <textarea
+              className="w-full min-h-[90px] resize-y text-sm outline-none box-border"
+              value={preMarket}
+              onChange={(e) => setPreMarket(e.target.value)}
+              placeholder="Game plan for today — key levels, bias, setups to watch..."
+              style={{
+                background: "var(--bg-primary, #0a0b0e)",
+                border: "1px solid var(--border, #23252d)",
+                borderRadius: 8,
+                padding: "8px 10px",
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-display)",
+                fontSize: 12,
+                resize: "vertical",
+              }}
               />
             </div>
-            <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
-              <label className={labelCls} style={{ color: "var(--text-muted)" }}>KEY LESSONS</label>
+
+          {/* Post-market */}
+          <div className="rounded-xl px-4 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
+            <div className="text-[10px] font-semibold tracking-wider mb-1.5" style={{ color: "var(--text-dim)" }}>POST-MARKET NOTES</div>
+            <textarea
+              className="w-full min-h-[90px] resize-y text-sm outline-none box-border"
+              value={postMarket}
+              onChange={(e) => setPostMarket(e.target.value)}
+              placeholder="How did the session go? What went well, what needs improvement..."
+              style={{
+                background: "var(--bg-primary, #0a0b0e)",
+                border: "1px solid var(--border, #23252d)",
+                borderRadius: 8,
+                padding: "8px 10px",
+                color: "var(--text-primary)",
+                fontFamily: "var(--font-display)",
+                fontSize: 12,
+                resize: "vertical",
+              }}
+            />
+          </div>
+
+          {/* Market conditions + Lessons side by side */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="rounded-xl px-4 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
+              <div className="text-[10px] font-semibold tracking-wider mb-1.5" style={{ color: "var(--text-dim)" }}>MARKET CONDITIONS</div>
               <textarea
-                className={`${inputCls} min-h-[80px] resize-y`}
-                value={lessons} onChange={(e) => setLessons(e.target.value)}
+                className="w-full min-h-[60px] resize-y text-sm outline-none box-border"
+                value={marketConditions}
+                onChange={(e) => setMarketConditions(e.target.value)}
+                placeholder="Trending, ranging, choppy, high volatility..."
+                style={{
+                  background: "var(--bg-primary, #0a0b0e)",
+                  border: "1px solid var(--border, #23252d)",
+                  borderRadius: 8,
+                  padding: "8px 10px",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-display)",
+                  fontSize: 12,
+                  resize: "vertical",
+                }}
+              />
+            </div>
+            <div className="rounded-xl px-4 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
+              <div className="text-[10px] font-semibold tracking-wider mb-1.5" style={{ color: "var(--text-dim)" }}>KEY LESSONS</div>
+              <textarea
+                className="w-full min-h-[60px] resize-y text-sm outline-none box-border"
+                value={lessons}
+                onChange={(e) => setLessons(e.target.value)}
                 placeholder="What did you learn today? Rules to reinforce..."
-                style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}
+                style={{
+                  background: "var(--bg-primary, #0a0b0e)",
+                  border: "1px solid var(--border, #23252d)",
+                  borderRadius: 8,
+                  padding: "8px 10px",
+                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-display)",
+                  fontSize: 12,
+                  resize: "vertical",
+                }}
               />
             </div>
           </div>
 
           {/* Save / Delete bar */}
-          <div className={`${sectionCls} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4`} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
+          <div
+            className="rounded-xl p-4"
+            style={{
+              background: "var(--bg-surface, #111214)",
+              border: "1px solid var(--border, #23252d)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <div>
               {currentEntry ? (
-                <button onClick={handleDelete}
-                  className="bg-transparent border border-red-500/25 text-red-500 px-5 py-2.5 cursor-pointer text-xs font-bold tracking-widest rounded"
-                  style={{ fontFamily: "var(--font-mono)", borderRadius: "var(--radius-sm)" }}>
+                <button
+                  onClick={handleDelete}
+                  style={{
+                    padding: "8px 20px",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: "1px",
+                    fontFamily: "inherit",
+                    background: "rgba(239,68,68,0.1)",
+                    color: "var(--accent-loss)",
+                    border: "1px solid rgba(239,68,68,0.2)",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                  }}
+                >
                   DELETE ENTRY
                 </button>
               ) : (
-                <span className="text-xs tracking-wide" style={{ color: "var(--text-dim)" }}>
+                <span className="text-xs" style={{ color: "var(--text-dim)" }}>
                   {entryDates.has(selectedDate) ? "ENTRY EXISTS" : "NO ENTRY FOR THIS DATE"}
                 </span>
               )}
             </div>
-            <button onClick={handleSave} disabled={saving}
-              className={`px-8 py-3 text-xs font-bold tracking-widest rounded ${saving ? "cursor-not-allowed" : "cursor-pointer"}`}
+            <button
+              onClick={handleSave}
+              disabled={saving}
               style={{
-                fontFamily: "var(--font-mono)",
-                borderRadius: "var(--radius-sm)",
-                backgroundColor: saving ? "var(--border)" : "var(--text-primary)",
-                color: saving ? "var(--text-muted)" : "var(--bg-primary)",
-              }}>
+                padding: "10px 32px",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "1px",
+                fontFamily: "inherit",
+                background: saving ? "var(--border, #23252d)" : "var(--text-primary)",
+                color: saving ? "var(--text-muted)" : "var(--bg-primary, #0a0b0e)",
+                border: "none",
+                borderRadius: 8,
+                cursor: saving ? "not-allowed" : "pointer",
+                transition: "all 0.12s ease",
+              }}
+            >
               {saving ? "SAVING..." : currentEntry ? "UPDATE ENTRY" : "SAVE ENTRY"}
             </button>
           </div>
-        </>
-      ) : (
-        /* History View */
-        <div className={sectionCls} style={{ backgroundColor: "var(--bg-surface)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)" }}>
-          <div className="text-xs tracking-widest mb-5" style={{ color: "var(--text-dim)" }}>
-            JOURNAL HISTORY — {entries.length} ENTRIES
-          </div>
-          {entries.length === 0 ? (
-            <div className="text-sm text-center py-10" style={{ color: "var(--text-dim)" }}>
-              NO JOURNAL ENTRIES YET. START WRITING TODAY.
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {entries.map((e) => {
-                const moodObj = moods.find((m) => m.value === e.mood);
-                return (
-                  <button
-                    key={e.id}
-                    onClick={() => { setSelectedDate(e.date.slice(0, 10)); setView("editor"); }}
-                    className="flex justify-between items-center border rounded px-4 py-3.5 cursor-pointer text-left w-full transition-colors"
-                    style={{ backgroundColor: "var(--bg-primary)", borderColor: "var(--border)", borderRadius: "var(--radius-sm)", fontFamily: "var(--font-mono)" }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg">{moodObj?.emoji || "⚪"}</span>
-                      <div>
-                        <div className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                          {new Date(e.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                        </div>
-                        <div className="text-xs mt-0.5" style={{ color: "var(--text-dim)" }}>
-                          {e.pre_market_notes ? e.pre_market_notes.slice(0, 80) + (e.pre_market_notes.length > 80 ? "..." : "") : "No pre-market notes"}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-xs tracking-wide font-bold" style={{ color: moodObj?.color || "var(--text-dim)" }}>
-                      {moodObj?.label || "—"}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

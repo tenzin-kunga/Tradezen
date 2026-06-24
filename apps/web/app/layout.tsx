@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { GeistSans } from "geist/font/sans";
+import { Inter } from "next/font/google";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
@@ -8,6 +8,11 @@ import { ThemeProvider } from "@/lib/theme-context";
 import { ToastProvider } from "@/components/Toast";
 import AppShell from "@/components/AppShell";
 import { TooltipProvider } from "@/components/ui/tooltip";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
@@ -25,7 +30,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body style={{ margin: 0 }}>
         <ThemeProvider>
           <AuthProvider>

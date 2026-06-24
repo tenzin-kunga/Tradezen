@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { DashboardLayout, LayoutWidget } from "@/lib/layout-types";
+import type { DashboardLayout, LayoutWidget, WidgetId } from "@/lib/layout-types";
 import { DEFAULT_LAYOUT } from "@/lib/layout-types";
 import { getLayout, saveLayout } from "@/lib/api";
 
@@ -9,17 +9,38 @@ const LAYOUT_KEY = "tradezen_dashboard_layout";
 const DEBOUNCE_MS = 2000;
 
 function migrateLayout(layout: DashboardLayout): DashboardLayout {
+  let changed = false;
+
   const widgets = layout.widgets.flatMap((w) => {
     // @ts-expect-error — legacy migration from analytics-preview
     if (w.id === "analytics-preview") {
+      changed = true;
       return [
-        { id: "analytics-insights" as const, visible: w.visible, size: w.size },
-        { id: "ai-coach" as const, visible: w.visible, size: w.size },
+        { id: "analytics-insights" as const, visible: w.visible, size: w.size, column: 0 as const, order: 0 },
+        { id: "ai-coach" as const, visible: w.visible, size: w.size, column: 1 as const, order: 0 },
       ];
     }
     return [w];
   });
-  return widgets === layout.widgets ? layout : { ...layout, widgets };
+
+  const migrated = widgets.map((w, i) => {
+    if (w.column === undefined || w.order === undefined) {
+      changed = true;
+      return { ...w, column: (i % 2) as 0 | 1, order: Math.floor(i / 2) };
+    }
+    return w;
+  });
+
+  const existingIds = new Set(migrated.map((w) => w.id));
+  const defaults = DEFAULT_LAYOUT.widgets;
+  for (const def of defaults) {
+    if (!existingIds.has(def.id)) {
+      changed = true;
+      migrated.push({ ...def });
+    }
+  }
+
+  return changed ? { ...layout, widgets: migrated } : layout;
 }
 
 export function useDashboardLayout() {

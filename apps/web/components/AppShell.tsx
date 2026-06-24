@@ -62,7 +62,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-display)",
           color: "var(--text-muted)",
           fontSize: 12,
           letterSpacing: "0.2em",

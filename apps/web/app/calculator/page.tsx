@@ -18,7 +18,7 @@ export default function CalculatorPage() {
   const units = slDist > 0 ? (risk / slDist) * pipAmt : 0;
 
   return (
-    <div style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+    <div style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
       <h1 className="text-lg md:text-xl font-bold tracking-widest m-0 mb-6">POSITION SIZE CALCULATOR</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Inputs */}

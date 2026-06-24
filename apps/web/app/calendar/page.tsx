@@ -26,15 +26,16 @@ function getMonthDays(year: number, month: number): (DayData | null)[] {
   return days;
 }
 
-function getPnLColor(pnl: number): string {
-  if (pnl > 0) return "var(--accent-profit)";
-  if (pnl < 0) return "var(--accent-loss)";
-  return "var(--border)";
-}
-
-function getHeatIntensity(pnl: number, maxPnl: number): number {
-  if (maxPnl === 0) return 0;
-  return Math.min(Math.abs(pnl) / Math.abs(maxPnl), 1);
+function getHeatStyle(pnl: number, maxPnl: number, hasTrades: boolean): React.CSSProperties {
+  if (!hasTrades) {
+    return { background: "var(--bg-primary)", opacity: 1 };
+  }
+  const intensity = maxPnl === 0 ? 0 : Math.min(Math.abs(pnl) / maxPnl, 1);
+  const alpha = 0.25 + intensity * 0.6;
+  if (pnl > 0) {
+    return { background: `rgba(34, 197, 94, ${alpha})` };
+  }
+  return { background: `rgba(239, 68, 68, ${alpha})` };
 }
 
 const monthNames = [
@@ -76,7 +77,8 @@ export default function CalendarPage() {
         });
         setDailyData(
           dailyRes.map((d: any) => {
-            const dateStr = typeof d.date === 'string' ? d.date : d.date.toISOString().split('T')[0];
+            const rawDate = typeof d.date === 'string' ? d.date : d.date.toISOString();
+            const dateStr = rawDate.split('T')[0];
             return {
               date: dateStr,
               pnl: dayMap[dateStr]?.pnl ?? Number(d.totalPnl ?? 0),
@@ -116,7 +118,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6 font-mono text-text-primary">
+    <div className="min-h-screen p-4 md:p-6 text-text-primary">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
         <div>
@@ -124,13 +126,13 @@ export default function CalendarPage() {
           <p className="text-xs mt-1 tracking-wide text-text-dim">PERFORMANCE VISUALIZATION // DAILY P&L TRACKING</p>
         </div>
         <div className="flex gap-2 items-center">
-          <button onClick={goToPrevMonth} className="bg-transparent border border-border text-text-muted px-3 py-2 cursor-pointer text-xs rounded font-mono">
+          <button onClick={goToPrevMonth} className="bg-transparent border border-border text-text-muted px-3 py-2 cursor-pointer text-xs rounded">
             ← PREV
           </button>
           <span className="text-sm font-bold tracking-widest text-text-primary min-w-[120px] md:min-w-[160px] text-center">
             {monthNames[currentMonth]} {currentYear}
           </span>
-          <button onClick={goToNextMonth} className="bg-transparent border border-border text-text-muted px-3 py-2 cursor-pointer text-xs rounded font-mono">
+          <button onClick={goToNextMonth} className="bg-transparent border border-border text-text-muted px-3 py-2 cursor-pointer text-xs rounded">
             NEXT →
           </button>
         </div>
@@ -164,7 +166,6 @@ export default function CalendarPage() {
             if (!day) return <div key={`empty-${idx}`} className="min-h-[40px] md:min-h-[60px]" />;
 
             const dayData = dailyData.find((d) => d.date === day.date) || day;
-            const intensity = getHeatIntensity(dayData.pnl, maxPnl);
             const isToday = day.date === now.toISOString().split("T")[0];
             const hasTrades = dayData.trades > 0;
 
@@ -172,24 +173,22 @@ export default function CalendarPage() {
               <div
                 key={day.date}
                 onClick={() => hasTrades && handleDayClick(dayData)}
-                className="min-h-[40px] md:min-h-[60px] rounded p-1.5 md:p-2 transition-opacity"
+                className="min-h-[40px] md:min-h-[60px] rounded p-1.5 md:p-2"
                 style={{
-                  background: hasTrades ? getPnLColor(dayData.pnl) : "var(--bg-primary)",
-                  opacity: hasTrades ? 0.3 + intensity * 0.7 : 0.3,
+                  ...getHeatStyle(dayData.pnl, maxPnl, hasTrades),
                   cursor: hasTrades ? "pointer" : "default",
-                  border: isToday ? "2px solid var(--text-primary)" : "1px solid transparent",
+                  border: isToday ? "2px solid var(--accent-profit)" : hasTrades ? "1px solid rgba(255,255,255,0.08)" : "1px solid transparent",
                 }}
               >
-                <div className={`text-xs md:text-sm font-bold ${hasTrades ? "text-text-primary" : "text-text-dim"}`}>
+                <div className={`text-xs md:text-sm font-bold ${hasTrades ? "text-white" : "text-text-dim"}`}
+                  style={{ textShadow: hasTrades ? "0 1px 3px rgba(0,0,0,0.5)" : "none" }}
+                >
                   {parseInt(day.date.split("-")[2], 10)}
                 </div>
                 {hasTrades && (
                   <>
-                    <div className="hidden md:block text-xs mt-1" style={{ color: "var(--text-primary)", opacity: 0.8 }}>
+                    <div className="hidden md:block text-xs mt-0.5 text-white/90" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
                       {dayData.pnl > 0 ? "+" : ""}{dayData.pnl.toFixed(0)}
-                    </div>
-                    <div className="hidden md:block text-xs" style={{ color: "var(--text-primary)", opacity: 0.6 }}>
-                      {dayData.trades} trade{dayData.trades !== 1 ? "s" : ""}
                     </div>
                   </>
                 )}
@@ -242,7 +241,7 @@ function DayDetailHeader({ selectedDay, onClose, dayTrades, desktop }: { selecte
           </h2>
           <p className="text-xs mt-1 text-text-dim">{selectedDay.trades} TRADE{selectedDay.trades !== 1 ? "S" : ""}</p>
         </div>
-        <button onClick={onClose} className="bg-transparent border border-border text-text-muted px-3 py-1.5 cursor-pointer text-xs rounded font-mono">CLOSE</button>
+        <button onClick={onClose} className="bg-transparent border border-border text-text-muted px-3 py-1.5 cursor-pointer text-xs rounded">CLOSE</button>
       </div>
       <div className="mb-5">
         <div className="text-xs tracking-widest mb-2 text-text-muted">DAILY P&L</div>

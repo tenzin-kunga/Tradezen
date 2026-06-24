@@ -89,20 +89,16 @@ if %errorlevel% neq 0 goto WAIT_REDIS
 echo      Redis is ready.
 
 :: ──────────────────────────────────────────────────────
-:: Kill existing process on port 3000
+:: Kill existing processes on ports 3000 and 3001
 :: ──────────────────────────────────────────────────────
 
 echo.
-echo      Checking for existing processes on port 3000...
+echo      Checking for existing processes on ports 3000, 3001...
 
-netstat -ano | findstr :3000 >nul
-
-if %errorlevel% equ 0 (
-    for /f "tokens=5" %%i in ('netstat -ano ^| findstr LISTENING ^| findstr :3000') do (
-        taskkill /PID %%i /F >nul 2>&1
+for %%p in (3000 3001) do (
+    for /f "tokens=5" %%i in ('netstat -ano ^| findstr ":%%p " ^| findstr LISTENING') do (
+        taskkill /PID %%i /F >nul 2>&1 && echo      Killed process on port %%p
     )
-
-    echo      Existing port 3000 process terminated.
 )
 
 :: ──────────────────────────────────────────────────────
@@ -117,6 +113,16 @@ start "TRADEZEN API" cmd /k ^
 set NODE_ENV=development && ^
 bun run dev"
 
+:: Wait for API to be ready
+echo      Waiting for API to be ready...
+
+:WAIT_API
+timeout /t 2 /nobreak >nul
+curl -sf http://localhost:3001/api/docs >nul 2>&1
+if %errorlevel% neq 0 goto WAIT_API
+
+echo      API is ready.
+
 :: ──────────────────────────────────────────────────────
 :: Start Next.js Web
 :: ──────────────────────────────────────────────────────
@@ -128,6 +134,16 @@ start "TRADEZEN WEB" cmd /k ^
 "cd /d %~dp0apps\web && ^
 set NODE_ENV=development && ^
 bun run dev"
+
+:: Wait for Web to be ready
+echo      Waiting for Web to be ready...
+
+:WAIT_WEB
+timeout /t 2 /nobreak >nul
+curl -sf http://localhost:3000 >nul 2>&1
+if %errorlevel% neq 0 goto WAIT_WEB
+
+echo      Web is ready.
 
 echo.
 echo  ===================================================

@@ -10,6 +10,12 @@ export class DashboardResponseDto {
   @ApiProperty({ example: 66.7 })
   weeklyWinRate!: number;
 
+  @ApiProperty({ example: 45.2 })
+  totalPnl!: number;
+
+  @ApiProperty({ example: 62.5 })
+  overallWinRate!: number;
+
   @ApiProperty({
     example: [
       { date: '2025-06-09', equity: 10230.5 },

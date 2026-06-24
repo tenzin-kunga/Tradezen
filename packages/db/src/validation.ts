@@ -43,7 +43,7 @@ export const journalMoodEnum = z.enum([
 ]);
 
 export const createJournalSchema = z.object({
-  date: z.string().datetime(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD'),
   pre_market_notes: z.string().max(5000).optional(),
   post_market_notes: z.string().max(5000).optional(),
   mood: journalMoodEnum.optional(),

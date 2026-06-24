@@ -99,7 +99,7 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
                 backgroundColor: "var(--bg-surface)",
                 border: "1px solid var(--border)",
                 color: "var(--text-primary)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-display)",
               }}
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreate(); } }}
@@ -128,7 +128,7 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
                   backgroundColor: "var(--bg-surface)",
                   border: "1px solid var(--border)",
                   color: "var(--text-muted)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-display)",
                 }}
               >
                 <option value="setup">SETUP</option>

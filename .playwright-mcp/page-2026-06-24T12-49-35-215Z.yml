@@ -1,0 +1,171 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e5]:
+      - button "Toggle menu" [active] [ref=e6] [cursor=pointer]:
+        - img [ref=e7]
+      - generic [ref=e8]: TRADEZEN
+    - complementary [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: TRADEZEN
+        - button "Pin sidebar" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+      - navigation [ref=e17]:
+        - generic [ref=e18]:
+          - link "Dashboard" [ref=e19] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e20]:
+              - img [ref=e22]
+              - generic [ref=e27]: Dashboard
+          - link "Trades" [ref=e28] [cursor=pointer]:
+            - /url: /trades
+            - generic [ref=e29]:
+              - img [ref=e31]
+              - generic [ref=e35]: Trades
+          - link "Analytics" [ref=e36] [cursor=pointer]:
+            - /url: /analytics
+            - generic [ref=e37]:
+              - img [ref=e39]
+              - generic [ref=e42]: Analytics
+          - link "Journal" [ref=e43] [cursor=pointer]:
+            - /url: /journal
+            - generic [ref=e44]:
+              - img [ref=e46]
+              - generic [ref=e49]: Journal
+          - link "Reports" [ref=e50] [cursor=pointer]:
+            - /url: /reports
+            - generic [ref=e51]:
+              - img [ref=e53]
+              - generic [ref=e56]: Reports
+        - generic [ref=e58]:
+          - link "Calendar" [ref=e59] [cursor=pointer]:
+            - /url: /calendar
+            - generic [ref=e61]:
+              - img [ref=e63]
+              - generic [ref=e65]: Calendar
+          - link "Checklists" [ref=e66] [cursor=pointer]:
+            - /url: /checklists
+            - generic [ref=e67]:
+              - img [ref=e69]
+              - generic [ref=e72]: Checklists
+          - link "Calculator" [ref=e73] [cursor=pointer]:
+            - /url: /calculator
+            - generic [ref=e74]:
+              - img [ref=e76]
+              - generic [ref=e78]: Calculator
+        - link "Log Trade" [ref=e81] [cursor=pointer]:
+          - /url: /add-trade
+          - img [ref=e82]
+          - text: Log Trade
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e85]: DE
+          - generic [ref=e86]:
+            - generic [ref=e87]: devtest
+            - generic [ref=e88]: devtest@tradezen.io
+          - button "Logout" [ref=e89] [cursor=pointer]:
+            - img [ref=e90]
+        - link "Settings" [ref=e93] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e94]
+          - text: Settings
+    - generic [ref=e97]:
+      - banner [ref=e98]:
+        - button "Search Ctrl+K" [ref=e99] [cursor=pointer]:
+          - img [ref=e100]
+          - generic [ref=e103]: Search
+          - generic [ref=e104]: Ctrl+K
+        - button "Notifications" [ref=e106] [cursor=pointer]:
+          - img [ref=e107]
+        - button "User menu" [ref=e110] [cursor=pointer]: DE
+      - main [ref=e111]:
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - heading "CALENDAR HEATMAP" [level=1] [ref=e115]
+              - paragraph [ref=e116]: PERFORMANCE VISUALIZATION // DAILY P&L TRACKING
+            - generic [ref=e117]:
+              - button "← PREV" [ref=e118] [cursor=pointer]
+              - generic [ref=e119]: JUNE 2026
+              - button "NEXT →" [ref=e120] [cursor=pointer]
+          - generic [ref=e121]:
+            - generic [ref=e122]:
+              - generic [ref=e123]: MONTH P&L
+              - generic [ref=e124]: "-$1,906,431.00"
+            - generic [ref=e125]:
+              - generic [ref=e126]: TOTAL TRADES
+              - generic [ref=e127]: "3"
+            - generic [ref=e128]:
+              - generic [ref=e129]: ACTIVE DAYS
+              - generic [ref=e130]: "3"
+            - generic [ref=e131]:
+              - generic [ref=e132]: WIN RATE (DAYS)
+              - generic [ref=e133]: 0%
+          - generic [ref=e134]:
+            - generic [ref=e135]:
+              - generic [ref=e136]: SUN
+              - generic [ref=e137]: MON
+              - generic [ref=e138]: TUE
+              - generic [ref=e139]: WED
+              - generic [ref=e140]: THU
+              - generic [ref=e141]: FRI
+              - generic [ref=e142]: SAT
+            - generic [ref=e143]:
+              - generic [ref=e146]: "1"
+              - generic [ref=e148]: "2"
+              - generic [ref=e150]: "3"
+              - generic [ref=e152]: "4"
+              - generic [ref=e154]: "5"
+              - generic [ref=e156]: "6"
+              - generic [ref=e158]: "7"
+              - generic [ref=e160]: "8"
+              - generic [ref=e162]: "9"
+              - generic [ref=e164]: "10"
+              - generic [ref=e166]: "11"
+              - generic [ref=e168]: "12"
+              - generic [ref=e170]: "13"
+              - generic [ref=e172]: "14"
+              - generic [ref=e174]: "15"
+              - generic [ref=e176]: "16"
+              - generic [ref=e178]: "17"
+              - generic [ref=e180]: "18"
+              - generic [ref=e182]: "19"
+              - generic [ref=e184]: "20"
+              - generic [ref=e186]: "21"
+              - generic [ref=e188]: "22"
+              - generic [ref=e190]: "23"
+              - generic [ref=e192]: "24"
+              - generic [ref=e194]: "25"
+              - generic [ref=e196]: "26"
+              - generic [ref=e198]: "27"
+              - generic [ref=e200]: "28"
+              - generic [ref=e202]: "29"
+              - generic [ref=e204]: "30"
+          - generic [ref=e205]:
+            - generic [ref=e208]: LOSS
+            - generic [ref=e211]: NO TRADES
+            - generic [ref=e214]: PROFIT
+            - generic [ref=e215]: OPACITY INDICATES P&L MAGNITUDE
+      - navigation [ref=e216]:
+        - link "Dashboard" [ref=e217] [cursor=pointer]:
+          - /url: /
+          - img [ref=e218]
+          - generic [ref=e220]: Dashboard
+        - link "Trades" [ref=e221] [cursor=pointer]:
+          - /url: /trades
+          - img [ref=e222]
+          - generic [ref=e224]: Trades
+        - link "Analytics" [ref=e225] [cursor=pointer]:
+          - /url: /analytics
+          - img [ref=e226]
+          - generic [ref=e228]: Analytics
+        - link "Journal" [ref=e229] [cursor=pointer]:
+          - /url: /journal
+          - img [ref=e230]
+          - generic [ref=e232]: Journal
+        - link "Settings" [ref=e233] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e234]
+          - generic [ref=e236]: Settings
+      - button "New Trade" [ref=e237] [cursor=pointer]:
+        - img [ref=e238]
+  - alert [ref=e3]
