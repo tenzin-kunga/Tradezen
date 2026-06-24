@@ -12,7 +12,7 @@ echo.
 :: 1. Start Docker Desktop if not running
 :: ──────────────────────────────────────────────────────
 
-echo [1/5] Checking Docker daemon...
+echo [1/7] Checking Docker daemon...
 
 docker info >nul 2>&1
 
@@ -40,7 +40,7 @@ if %errorlevel% neq 0 (
 :: ──────────────────────────────────────────────────────
 
 echo.
-echo [2/5] Cleaning old containers...
+echo [2/7] Cleaning old containers...
 
 docker compose down >nul 2>&1
 
@@ -49,7 +49,7 @@ docker compose down >nul 2>&1
 :: ──────────────────────────────────────────────────────
 
 echo.
-echo [3/5] Starting PostgreSQL + Redis...
+echo [3/7] Starting PostgreSQL + Redis...
 
 docker compose --env-file .env.docker up -d postgres redis
 
@@ -61,7 +61,7 @@ echo      Redis running on localhost:6379
 :: ──────────────────────────────────────────────────────
 
 echo.
-echo [4/5] Waiting for PostgreSQL...
+echo [4/7] Waiting for PostgreSQL...
 
 :WAIT_PG
 timeout /t 2 /nobreak >nul
@@ -77,7 +77,7 @@ echo      PostgreSQL is ready.
 :: ──────────────────────────────────────────────────────
 
 echo.
-echo [5/5] Waiting for Redis...
+echo [5/7] Waiting for Redis...
 
 :WAIT_REDIS
 timeout /t 2 /nobreak >nul
@@ -89,7 +89,26 @@ if %errorlevel% neq 0 goto WAIT_REDIS
 echo      Redis is ready.
 
 :: ──────────────────────────────────────────────────────
-:: Kill existing processes on ports 3000 and 3001
+:: 6. Run database migrations
+:: ──────────────────────────────────────────────────────
+
+echo.
+echo [6/7] Running database migrations...
+
+cd /d %~dp0apps\api && bun run migrate
+
+if %errorlevel% neq 0 (
+    cd /d %~dp0
+    echo      Migration failed — please check the output above.
+    pause
+    exit /b 1
+)
+
+cd /d %~dp0
+echo      Migrations applied.
+
+:: ──────────────────────────────────────────────────────
+:: 7. Kill existing processes on ports 3000 and 3001
 :: ──────────────────────────────────────────────────────
 
 echo.
@@ -122,6 +141,20 @@ curl -sf http://localhost:3001/api/docs >nul 2>&1
 if %errorlevel% neq 0 goto WAIT_API
 
 echo      API is ready.
+
+:: ──────────────────────────────────────────────────────
+:: Clear stale Next.js cache
+:: ──────────────────────────────────────────────────────
+
+echo.
+echo      Clearing stale Next.js cache...
+
+if exist "apps\web\.next" (
+    rmdir /s /q "apps\web\.next"
+    echo      Next.js cache cleared.
+) else (
+    echo      No stale cache found.
+)
 
 :: ──────────────────────────────────────────────────────
 :: Start Next.js Web
