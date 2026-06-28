@@ -1,6 +1,6 @@
 #!/bin/bash
 # TradeZen Database Backup Script
-# Usage: ./scripts/backup.sh [backup_dir]
+# Usage: ./scripts/db/backup.sh [backup_dir]
 
 set -e
 

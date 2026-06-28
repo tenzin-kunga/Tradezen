@@ -1,11 +1,11 @@
 #!/bin/bash
 # TradeZen Database Restore Script
-# Usage: ./scripts/restore.sh <backup_file>
+# Usage: ./scripts/db/restore.sh <backup_file>
 
 set -e
 
 if [ -z "$1" ]; then
-  echo "Usage: ./scripts/restore.sh <backup_file>"
+  echo "Usage: ./scripts/db/restore.sh <backup_file>"
   echo "Available backups:"
   ls -la ./backups/tradezen_*.sql.gz 2>/dev/null || echo "No backups found"
   exit 1

@@ -267,7 +267,7 @@ tradezen/
 │   └── tsconfig/
 │
 ├── docs/
-├── docker-compose.yml
+├── infra/
 ├── turbo.json
 └── package.json
 ```
