@@ -84,4 +84,3 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker up -d     
 - `docs/SECURITY.md` — hardening
 - `docs/DEPLOYMENT.md` — production steps
 - `docs/DEV_QUICKSTART.md` — 5-min onboarding
-- `opencode.json` — MCP config (context-mode, context7, firecrawl, playwright)

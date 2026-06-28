@@ -187,8 +187,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production deployment steps |
 | [DEV_QUICKSTART.md](docs/DEV_QUICKSTART.md) | 5-minute developer onboarding |
 | [AUDIT-REPORT.md](docs/AUDIT-REPORT.md) | Infrastructure audit results |
-| [PROJECT_RUNDOWN.md](docs/PROJECT_RUNDOWN.md) | Project overview |
-| [Implementation-task.md](docs/Implementation-task.md) | Implementation tasks |
+| [decisions/](docs/decisions/) | Architecture Decision Records |
 
 ## Deployment
 
