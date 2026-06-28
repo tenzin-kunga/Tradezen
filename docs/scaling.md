@@ -5,10 +5,10 @@
 ### API Scaling
 ```bash
 # Scale API to 3 instances
-docker-compose -f docker-compose.yml -f docker-compose.scaling.yml up -d --scale api=3
+docker compose --file infra/docker-compose.yml --file infra/docker-compose.scaling.yml up -d --scale api=3
 
 # Scale API to 5 instances
-docker-compose -f docker-compose.yml -f docker-compose.scaling.yml up -d --scale api=5
+docker compose --file infra/docker-compose.yml --file infra/docker-compose.scaling.yml up -d --scale api=5
 ```
 
 ### Load Balancer

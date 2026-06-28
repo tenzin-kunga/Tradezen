@@ -42,7 +42,7 @@ if %errorlevel% neq 0 (
 echo.
 echo [2/7] Cleaning old containers...
 
-docker compose down >nul 2>&1
+docker compose --file infra/docker-compose.yml down >nul 2>&1
 
 :: ──────────────────────────────────────────────────────
 :: 3. Start PostgreSQL + Redis
@@ -51,7 +51,7 @@ docker compose down >nul 2>&1
 echo.
 echo [3/7] Starting PostgreSQL + Redis...
 
-docker compose --env-file .env.docker up -d postgres redis
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis
 
 echo      PostgreSQL running on localhost:5432
 echo      Redis running on localhost:6379
@@ -95,7 +95,7 @@ echo      Redis is ready.
 echo.
 echo [6/7] Running database migrations...
 
-cd /d %~dp0apps\api && bun run migrate
+cd /d "%~dp0..\..\apps\api" && bun run migrate
 
 if %errorlevel% neq 0 (
     cd /d %~dp0
@@ -104,7 +104,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-cd /d %~dp0
+cd /d "%~dp0..\.."
 echo      Migrations applied.
 
 :: ──────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ echo.
 echo      Launching API  → http://localhost:3001
 
 start "TRADEZEN API" cmd /k ^
-"cd /d %~dp0apps\api && ^
+"cd /d "%~dp0..\..\apps\api" && ^
 set NODE_ENV=development && ^
 bun run dev"
 
@@ -149,8 +149,8 @@ echo      API is ready.
 echo.
 echo      Clearing stale Next.js cache...
 
-if exist "apps\web\.next" (
-    rmdir /s /q "apps\web\.next"
+if exist "%~dp0..\..\apps\web\.next" (
+    rmdir /s /q "%~dp0..\..\apps\web\.next"
     echo      Next.js cache cleared.
 ) else (
     echo      No stale cache found.
@@ -164,7 +164,7 @@ echo.
 echo      Launching Web  → http://localhost:3000
 
 start "TRADEZEN WEB" cmd /k ^
-"cd /d %~dp0apps\web && ^
+"cd /d "%~dp0..\..\apps\web" && ^
 set NODE_ENV=development && ^
 bun run dev"
 

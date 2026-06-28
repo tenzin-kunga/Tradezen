@@ -33,7 +33,7 @@ services:
       # Named volume for data persistence
       - pgdata:/var/lib/postgresql/data
       # Optional: custom PostgreSQL config (create this file for tuning)
-      # - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      # - ./docker/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
@@ -146,8 +146,8 @@ services:
     container_name: tradezen-backup
     restart: "no"
     volumes:
-      - ./scripts:/scripts:ro
-      - ./backups:/backups
+      - ../scripts:/scripts:ro
+      - ../backups:/backups
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - RETENTION_DAYS=30
