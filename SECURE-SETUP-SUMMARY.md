@@ -23,7 +23,7 @@ For detailed information, see:
 | **Docker multi-stage builds** | `apps/api/Dockerfile`, `apps/web/Dockerfile` (new) | Smaller images, faster deploys |
 | **Non-root container users** | Both Dockerfiles | Improved security posture |
 | **Health checks** | Both Dockerfiles | Self-healing deployments |
-| **Docker Compose hardening** | `docker-compose.yml` | Network isolation, resource limits |
+| **Docker Compose hardening** | `infra/docker-compose.yml` | Network isolation, resource limits |
 | **CI/CD expansion** | `.github/workflows/ci.yml` | Automated quality gates |
 | **Secrets validation** | `apps/api/src/main.ts` | Fail fast if misconfigured |
 | **Swagger prod-conditional** | `apps/api/src/main.ts` | Reduces attack surface |
@@ -134,7 +134,7 @@ cp .env.docker.example .env.docker
 # Edit .env.docker with your values (or use defaults for local)
 
 # 3. Start infrastructure
-docker-compose --env-file .env.docker up -d
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 
 # 4. Start dev servers
 # From repo root (builds @tradezen/db + starts both apps)
@@ -194,7 +194,7 @@ apps/api/src/main.ts
 apps/api/src/auth/auth.service.ts
 apps/api/src/auth/jwt.strategy.ts
 apps/api/.dockerignore
-docker-compose.yml
+infra/docker-compose.yml
 .github/workflows/ci.yml
 .gitignore
 apps/web/package.json
@@ -208,7 +208,7 @@ apps/web/Dockerfile
 apps/web/.dockerignore
 apps/web/nginx.conf
 .env.docker.example
-postgresql.conf
+infra/docker/postgresql.conf
 docs/SECURITY.md
 docs/DEPLOYMENT.md
 DEV_QUICKSTART.md
@@ -247,7 +247,7 @@ A: Yes. They generate new secrets, update `.env.docker`, restart services, and r
 
 1. **Review** `docs/SECURITY.md` for detailed security configuration
 2. **Prepare** `.env.docker` for your environment
-3. **Test** updated Docker images locally (`docker-compose up -d`)
+3. **Test** updated Docker images locally (`docker compose --file infra/docker-compose.yml up -d`)
 4. **Set up** CI/CD secrets if using Docker Hub auto-deploy
 5. **Plan** production deployment using `docs/DEPLOYMENT.md`
 
