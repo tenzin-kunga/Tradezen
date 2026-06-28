@@ -21,6 +21,7 @@ import { CursorPagination } from '../common/utils/cursor-pagination';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import { EventPublisherService } from '../common/services/event-publisher.service';
 import { SeedService } from '../seed/seed.service';
+import { TradeImageService } from './trades-image.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Response } from 'express';
@@ -177,6 +178,7 @@ export class TradesService {
   constructor(
     private readonly eventPublisher: EventPublisherService,
     private readonly seedService: SeedService,
+    private readonly imageService: TradeImageService,
   ) {}
 
   async findAllCursor(userId: string, cursor?: string, limit = 20) {
@@ -378,8 +380,20 @@ export class TradesService {
 
     const paginated = data.slice(offset, offset + limit);
 
+    const tradesWithImages = await Promise.all(
+      paginated.map(async (trade) => {
+        const thumbnail = await this.imageService.getThumbnail(trade.id);
+        const imageCount = await this.imageService.getImageCount(trade.id);
+        return {
+          ...trade,
+          thumbnail: thumbnail ? { url: thumbnail.url, width: thumbnail.width, height: thumbnail.height } : null,
+          imageCount,
+        };
+      }),
+    );
+
     return {
-      data: paginated,
+      data: tradesWithImages,
       meta: {
         total,
         page,
@@ -395,7 +409,9 @@ export class TradesService {
       .from(trades)
       .where(and(eq(trades.id, id), eq(trades.userId, userId)));
     if (!result[0]) throw new NotFoundException(`Trade ${id} not found`);
-    return result[0];
+    
+    const images = await this.imageService.getImages(id);
+    return { ...result[0], images };
   }
 
   async update(userId: string, id: string, dto: UpdateTradeDto) {
@@ -488,6 +504,16 @@ export class TradesService {
       .where(and(eq(trades.id, id), eq(trades.userId, userId)));
     if (!tradeRes[0]) throw new NotFoundException(`Trade ${id} not found`);
     const trade = tradeRes[0];
+
+    // Delete all images from Cloudinary before deleting the trade
+    const images = await this.imageService.getImages(id);
+    for (const image of images) {
+      try {
+        await this.imageService.deleteImage(userId, id, image.id);
+      } catch {
+        // Non-fatal: continue with trade deletion even if image deletion fails
+      }
+    }
 
     await db
       .delete(trades)
