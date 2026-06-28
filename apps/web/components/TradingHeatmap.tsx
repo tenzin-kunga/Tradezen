@@ -49,12 +49,13 @@ export default function TradingHeatmap({ data, loading }: Props) {
       loading={loading}
       isEmpty={data.length === 0}
       emptyMessage="Consistency data will appear once you start trading."
+      padding="sm"
     >
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-0.25">
         {weeks.flat().map((day, i) => (
           <div
             key={i}
-            className="aspect-square rounded-xs transition-opacity min-h-[14px]"
+            className="aspect-square rounded-xs transition-opacity min-h-[10px]"
             style={{ backgroundColor: intensity(day) }}
             title={day ? `${day.date}: ${day.trades} trades, $${day.pnl}` : "No trades"}
           />
