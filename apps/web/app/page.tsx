@@ -14,9 +14,14 @@ import BehaviorAnalyticsWidget from "@/components/BehaviorAnalyticsWidget";
 import AnalyticsInsightsWidget from "@/components/AnalyticsInsightsWidget";
 import AiCoachWidget from "@/components/AiCoachWidget";
 import EmptyState from "@/components/EmptyState";
-import DashboardLayoutManager from "@/components/DashboardLayout";
+import DashboardGridLayout from "@/components/DashboardLayout";
 import { useDashboardLayout } from "@/hooks/useDashboardLayout";
-import { WidgetShell } from "@/components/design-system";
+
+function formatPnl(value: number): string {
+  if (value === 0) return "$0.00";
+  const sign = value > 0 ? "+" : "";
+  return `${sign}$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 export default function Dashboard() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -48,20 +53,19 @@ export default function Dashboard() {
 
   const renderWidget = useCallback(
     (widget: { id: string }) => {
-      const padding = widget.id === "equity-curve" ? "sm" as const : "md" as const;
       switch (widget.id) {
         case "equity-curve":
-          return <WidgetShell title="Equity Curve" padding={padding}><EquityCurve data={dashboard?.equityCurve ?? []} loading={loading} /></WidgetShell>;
+          return <EquityCurve data={dashboard?.equityCurve ?? []} loading={loading} />;
         case "daily-summary":
-          return <WidgetShell title="Daily Summary" padding={padding}><DailySummaryCard tradesToday={dashboard?.dailySummary.tradesToday ?? 0} winRateToday={dashboard?.dailySummary.winRateToday ?? 0} pnlToday={dashboard?.dailySummary.pnlToday ?? 0} openRisk={dashboard?.dailySummary.openRisk ?? 0} loading={loading} /></WidgetShell>;
+          return <DailySummaryCard tradesToday={dashboard?.dailySummary.tradesToday ?? 0} winRateToday={dashboard?.dailySummary.winRateToday ?? 0} pnlToday={dashboard?.dailySummary.pnlToday ?? 0} openRisk={dashboard?.dailySummary.openRisk ?? 0} loading={loading} />;
         case "recent-trades":
-          return <WidgetShell title="Recent Trades" padding={padding}><RecentTradesWidget trades={recentTrades} onDelete={loadData} loading={loading} /></WidgetShell>;
+          return <RecentTradesWidget trades={recentTrades} onDelete={loadData} loading={loading} />;
         case "journal-snapshot":
-          return <WidgetShell title="Journal" padding={padding}><JournalSnapshotWidget entry={journalEntry} loading={loading} /></WidgetShell>;
+          return <JournalSnapshotWidget entry={journalEntry} loading={loading} />;
         case "behavior-analytics":
-          return <WidgetShell title="Behavior Analytics" padding={padding}><BehaviorAnalyticsWidget disciplineScore={dashboard?.behaviorAnalytics.disciplineScore ?? 0} fomoScore={dashboard?.behaviorAnalytics.fomoScore ?? "Low"} revengeTradesThisMonth={dashboard?.behaviorAnalytics.revengeTradesThisMonth ?? 0} trendAlignment={dashboard?.behaviorAnalytics.trendAlignment ?? 0} loading={loading} /></WidgetShell>;
+          return <BehaviorAnalyticsWidget disciplineScore={dashboard?.behaviorAnalytics.disciplineScore ?? 0} fomoScore={dashboard?.behaviorAnalytics.fomoScore ?? "Low"} revengeTradesThisMonth={dashboard?.behaviorAnalytics.revengeTradesThisMonth ?? 0} trendAlignment={dashboard?.behaviorAnalytics.trendAlignment ?? 0} loading={loading} />;
         case "heatmap":
-          return <WidgetShell title="Trading Heatmap" padding={padding}><TradingHeatmap data={dashboard?.heatmap ?? []} loading={loading} /></WidgetShell>;
+          return <TradingHeatmap data={dashboard?.heatmap ?? []} loading={loading} />;
         case "analytics-insights":
           return <AnalyticsInsightsWidget />;
         case "ai-coach":
@@ -76,7 +80,18 @@ export default function Dashboard() {
   const handleToggleVisibility = useCallback(
     (id: string) => {
       const w = layout.widgets.find((x) => x.id === id);
-      if (w) updateWidget(id, { visible: !w.visible });
+      if (!w) return;
+      if (!w.visible) {
+        const colWidgets = layout.widgets.filter(
+          (x) => x.visible && x.column === w.column,
+        );
+        const maxOrder = colWidgets.length > 0
+          ? Math.max(...colWidgets.map((x) => x.order))
+          : -1;
+        updateWidget(id, { visible: true, order: maxOrder + 1 });
+      } else {
+        updateWidget(id, { visible: false });
+      }
     },
     [layout.widgets, updateWidget],
   );
@@ -110,10 +125,10 @@ export default function Dashboard() {
           ))
         ) : (
           <>
-            <StatCard title="Total P&L" value={`${dashboard!.weeklyPnl >= 0 ? "+" : ""}$${Math.abs(dashboard!.weeklyPnl).toLocaleString()}`} />
-            <StatCard title="Win Rate" value={`${dashboard!.weeklyWinRate}%`} />
-            <StatCard title="Profit Factor" value={dashboard!.insights.profitFactor > 0 && dashboard!.insights.profitFactor < 999 ? String(dashboard!.insights.profitFactor) : dashboard!.insights.profitFactor >= 999 ? "∞" : "--"} />
-            <StatCard title="Avg Risk:Reward" value={dashboard!.insights.avgRR > 0 ? `1:${dashboard!.insights.avgRR.toFixed(1)}` : "--"} />
+            <StatCard title="Total P&L" value={formatPnl(dashboard!.totalPnl)} variant={dashboard!.totalPnl >= 0 ? "profit" : "loss"} />
+            <StatCard title="Win Rate" value={hasTrades ? `${dashboard!.overallWinRate}%` : "--"} variant="blue" />
+            <StatCard title="Profit Factor" value={dashboard!.insights.profitFactor > 0 && dashboard!.insights.profitFactor < 999 ? String(dashboard!.insights.profitFactor) : dashboard!.insights.profitFactor >= 999 ? "∞" : "--"} variant="amber" />
+            <StatCard title="Avg Risk:Reward" value={dashboard!.insights.avgRR > 0 ? `1:${dashboard!.insights.avgRR.toFixed(1)}` : "--"} variant="cyan" />
           </>
         )}
       </div>
@@ -126,10 +141,9 @@ export default function Dashboard() {
           actionHref="/add-trade"
         />
       ) : (
-        <DashboardLayoutManager
+        <DashboardGridLayout
           layout={layout}
           onReorder={reorderWidgets}
-          onUpdateWidget={updateWidget}
           onReset={resetLayout}
           onToggleVisibility={handleToggleVisibility}
           onCycleSize={handleCycleSize}

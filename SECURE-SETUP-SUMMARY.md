@@ -23,7 +23,7 @@ For detailed information, see:
 | **Docker multi-stage builds** | `apps/api/Dockerfile`, `apps/web/Dockerfile` (new) | Smaller images, faster deploys |
 | **Non-root container users** | Both Dockerfiles | Improved security posture |
 | **Health checks** | Both Dockerfiles | Self-healing deployments |
-| **Docker Compose hardening** | `docker-compose.yml` | Network isolation, resource limits |
+| **Docker Compose hardening** | `infra/docker-compose.yml` | Network isolation, resource limits |
 | **CI/CD expansion** | `.github/workflows/ci.yml` | Automated quality gates |
 | **Secrets validation** | `apps/api/src/main.ts` | Fail fast if misconfigured |
 | **Swagger prod-conditional** | `apps/api/src/main.ts` | Reduces attack surface |
@@ -107,13 +107,13 @@ RENDER_SERVICE_ID         # Render service ID
 |------|---------|------------|
 | `.env.docker.example` | Template with all variables | Yes |
 | `.env.docker` | Your actual secrets (local/CI) | No (gitignored) |
-| `scripts/rotate-secrets.sh` | Linux/Mac rotation script | Yes |
-| `scripts/rotate-secrets.bat` | Windows rotation script | Yes |
+| `scripts/security/rotate-secrets.sh` | Linux/Mac rotation script | Yes |
+| `scripts/security/rotate-secrets.bat` | Windows rotation script | Yes |
 
 ### Rotation Process
 
 ```bash
-./scripts/rotate-secrets.sh  # or .bat on Windows
+./scripts/security/rotate-secrets.sh  # or .bat on Windows
 # Updates .env.docker with new secrets
 # Also prompts to update GitHub Secrets
 # Restarts Docker services with new credentials
@@ -134,7 +134,7 @@ cp .env.docker.example .env.docker
 # Edit .env.docker with your values (or use defaults for local)
 
 # 3. Start infrastructure
-docker-compose --env-file .env.docker up -d
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 
 # 4. Start dev servers
 # From repo root (builds @tradezen/db + starts both apps)
@@ -194,7 +194,7 @@ apps/api/src/main.ts
 apps/api/src/auth/auth.service.ts
 apps/api/src/auth/jwt.strategy.ts
 apps/api/.dockerignore
-docker-compose.yml
+infra/docker-compose.yml
 .github/workflows/ci.yml
 .gitignore
 apps/web/package.json
@@ -208,14 +208,14 @@ apps/web/Dockerfile
 apps/web/.dockerignore
 apps/web/nginx.conf
 .env.docker.example
-postgresql.conf
+infra/docker/postgresql.conf
 docs/SECURITY.md
 docs/DEPLOYMENT.md
 DEV_QUICKSTART.md
 docs/AUDIT-REPORT.md
 SECURE-SETUP-SUMMARY.md
-scripts/rotate-secrets.sh
-scripts/rotate-secrets.bat
+scripts/security/rotate-secrets.sh
+scripts/security/rotate-secrets.bat
 .githooks/pre-commit
 ```
 
@@ -227,7 +227,7 @@ scripts/rotate-secrets.bat
 A: For local development, no. Existing workflow still works. For production, yes — these changes address security and reliability gaps.
 
 **Q: Will the Docker changes break my existing setup?**  
-A: No. The new `docker-compose.yml` maintains compatibility; `.env.docker` is optional (fallback to defaults).
+A: No. The new `infra/docker-compose.yml` maintains compatibility; `.env.docker` is optional (fallback to defaults).
 
 **Q: What about the OpenRouter API key exposure mentioned in earlier docs?**  
 A: That was a false alarm — the `.env` is properly gitignored and never committed. The documentation has been corrected.
@@ -247,7 +247,7 @@ A: Yes. They generate new secrets, update `.env.docker`, restart services, and r
 
 1. **Review** `docs/SECURITY.md` for detailed security configuration
 2. **Prepare** `.env.docker` for your environment
-3. **Test** updated Docker images locally (`docker-compose up -d`)
+3. **Test** updated Docker images locally (`docker compose --file infra/docker-compose.yml up -d`)
 4. **Set up** CI/CD secrets if using Docker Hub auto-deploy
 5. **Plan** production deployment using `docs/DEPLOYMENT.md`
 

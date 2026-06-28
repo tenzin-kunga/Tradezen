@@ -57,7 +57,7 @@ export default function TopBar({ onSearchClick }: { onSearchClick?: () => void }
             background: "var(--bg-surface-hover, #17181c)",
             color: "var(--text-dim, #6b7280)",
             border: "1px solid var(--border, #23252d)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-display)",
             letterSpacing: "0.05em",
           }}
         >

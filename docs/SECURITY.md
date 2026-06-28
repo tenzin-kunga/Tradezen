@@ -34,7 +34,7 @@ All changes are **backward-compatible** and can be adopted incrementally.
 - Standalone output for minimal server footprint
 - Health check integration
 
-#### Docker Compose (`docker-compose.yml`)
+#### Docker Compose (`infra/docker-compose.yml`)
 
 **Improvements:**
 - Custom bridge network (`tradezen-net`) isolates services
@@ -48,7 +48,7 @@ All changes are **backward-compatible** and can be adopted incrementally.
 
 **New Tools:**
 - `.env.docker.example` — documented template for all environment variables
-- `scripts/rotate-secrets.sh` / `.bat` — automated secret rotation utility
+- `scripts/security/rotate-secrets.sh` / `.bat` — automated secret rotation utility
 - `.githooks/pre-commit` — optional pre-commit hook to catch accidental secret commits
 
 **Best Practices Enforced:**
@@ -108,14 +108,14 @@ All changes are **backward-compatible** and can be adopted incrementally.
 
 ### Local Development
 
-No breaking changes. Existing `docker-compose.yml` still works with default values.
+No breaking changes. Existing `infra/docker-compose.yml` still works with default values.
 
 **New Optional Setup:**
 ```bash
 # Create .env.docker for stronger local security (recommended)
 cp .env.docker.example .env.docker
 # Edit with your preferred values (or use defaults for local)
-docker-compose --env-file .env.docker up -d
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 ```
 
 ### Production Deployment
@@ -177,7 +177,7 @@ Default limits (configurable in `docker-compose.yml`):
 
 - Use strong, randomly generated secrets (no dictionary words)
 - Keep `.env.docker` out of version control (already gitignored)
-- Rotate secrets periodically (use `scripts/rotate-secrets.sh`)
+- Rotate secrets periodically (use `scripts/security/rotate-secrets.sh`)
 - Monitor GitHub Security tab for vulnerability alerts
 - Enable Docker content trust (DCT) in production
 - Use SSL/TLS certificates (Let's Encrypt) for all public endpoints
@@ -201,17 +201,17 @@ docker build -t tradezen-web ./apps/web
 ### 2. Run with Docker Compose
 
 ```bash
-docker-compose --env-file .env.docker up -d
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 
 # Check status
-docker-compose ps
+docker compose --file infra/docker-compose.yml ps
 
 # View logs
-docker-compose logs -f
+docker compose --file infra/docker-compose.yml logs -f
 
 # Verify health
-docker-compose exec api curl http://localhost:3001/
-docker-compose exec web curl http://localhost:3000/
+docker compose --file infra/docker-compose.yml exec api curl http://localhost:3001/
+docker compose --file infra/docker-compose.yml exec web curl http://localhost:3000/
 ```
 
 ### 3. Run CI Locally (Optional)
@@ -235,7 +235,7 @@ act push -j security
 - `apps/api/src/auth/auth.service.ts`
 - `apps/api/src/auth/jwt.strategy.ts`
 - `apps/api/.dockerignore`
-- `docker-compose.yml`
+- `infra/docker-compose.yml`
 - `.github/workflows/ci.yml`
 - `.gitignore`
 - `apps/web/package.json`
@@ -246,14 +246,14 @@ act push -j security
 - `apps/web/.dockerignore`
 - `apps/web/nginx.conf`
 - `.env.docker.example`
-- `postgresql.conf` (optional tuning)
+- `infra/docker/postgresql.conf` (optional tuning)
 - `docs/SECURITY.md`
 - `docs/DEPLOYMENT.md`
 - `DEV_QUICKSTART.md`
 - `docs/AUDIT-REPORT.md`
 - `SECURE-SETUP-SUMMARY.md`
-- `scripts/rotate-secrets.sh`
-- `scripts/rotate-secrets.bat`
+- `scripts/security/rotate-secrets.sh`
+- `scripts/security/rotate-secrets.bat`
 - `.githooks/pre-commit`
 
 ---
@@ -267,7 +267,7 @@ A: No. Existing setup continues to work. `.env.docker` is optional for local but
 A: Only if you're currently running with hardcoded secrets. Production deployments should already use environment variables. The JWT validation only runs when `NODE_ENV=production`.
 
 **Q: How do I disable Swagger in production?**  
-A: Set `NODE_ENV=production` (already done in docker-compose). Swagger auto-disables.
+A: Set `NODE_ENV=production` (already done in infra/docker-compose.yml). Swagger auto-disables.
 
 **Q: Are these changes mandatory?**  
 A: For production: Yes, they address security and reliability gaps. For local dev: Recommended but not breaking.

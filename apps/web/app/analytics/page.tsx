@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
+  Cell,
 } from "recharts";
 import { useRealtime } from "@/hooks/use-realtime";
 import StrategyBarCharts from "@/components/StrategyBarCharts";
@@ -190,7 +191,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="date" tick={{ fill: "var(--text-muted)", fontSize: 9 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: "11px" }} />
+                <Tooltip contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-display)", fontSize: "11px" }} />
                 <Area type="monotone" dataKey="value" stroke="var(--accent-profit)" strokeWidth={2} fill="url(#equityFill)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -210,9 +211,14 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="date" tick={{ fill: "var(--text-muted)", fontSize: 9 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: "11px" }}
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-                <Bar dataKey="pnl" radius={[2, 2, 0, 0]} />
+                <Tooltip contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-display)", fontSize: "11px" }}
+                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                  formatter={(value: number) => [value.toLocaleString("en-US", { style: "currency", currency: "USD" }), "P&L"]} />
+                <Bar dataKey="pnl" radius={[2, 2, 0, 0]}>
+                  {dailyPnl.map((entry: any, idx: number) => (
+                    <Cell key={idx} fill={entry.pnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)"} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -375,7 +381,7 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="day" tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: "11px" }}
+              <Tooltip contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-display)", fontSize: "11px" }}
                 cursor={{ fill: "rgba(255,255,255,0.03)" }} />
               <Bar dataKey="pnl" fill="var(--text-primary)" radius={[2, 2, 0, 0]} />
             </BarChart>
@@ -393,7 +399,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="month" tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-mono)", fontSize: "11px" }}
+                <Tooltip contentStyle={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text-primary)", fontFamily: "var(--font-display)", fontSize: "11px" }}
                   cursor={{ fill: "rgba(255,255,255,0.03)" }} />
                 <Bar dataKey="pnl" fill="var(--text-primary)" radius={[2, 2, 0, 0]} />
               </BarChart>
@@ -630,7 +636,7 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>
+    <div className="min-h-screen" style={{ color: "var(--text-primary)", fontFamily: "var(--font-display)" }}>
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
         <div>
           <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">PROTOCOL ANALYTICS</h1>

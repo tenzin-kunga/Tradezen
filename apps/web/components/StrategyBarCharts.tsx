@@ -70,7 +70,7 @@ export default function StrategyBarCharts({
                     border: "1px solid var(--border)",
                     borderRadius: "var(--radius-sm)",
                     color: "var(--text-primary)",
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-display)",
                     fontSize: "11px",
                   }}
                   cursor={{ fill: "rgba(255,255,255,0.03)" }}

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
-import { updateSettings } from "@/lib/api";
+import { updateSettings, seedMockData, deleteAllSeedData } from "@/lib/api";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
 
 const THEMES = ["dark", "light", "midnight", "tradingview"] as const;
@@ -18,6 +18,9 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [seeding, setSeeding] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [seedMsg, setSeedMsg] = useState("");
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -65,7 +68,7 @@ export default function SettingsPage() {
   }
 
   const inputCls = "w-full border rounded px-3 py-2.5 text-sm outline-none box-border focus:border-[#22d3ee]";
-  const inputStyle = { fontFamily: "var(--font-mono)" };
+  const inputStyle = { fontFamily: "var(--font-display)" };
   const labelCls = "block text-xs tracking-widest mb-1.5";
   const sectionCls = "border rounded p-4 md:p-5 mb-4";
 
@@ -188,7 +191,7 @@ export default function SettingsPage() {
                   borderColor: theme === t ? "var(--accent-cyan)" : "var(--border)",
                   backgroundColor: theme === t ? "var(--bg-surface-hover)" : "var(--bg-primary)",
                   color: theme === t ? "var(--text-primary)" : "var(--text-muted)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-display)",
                 }}
               >
                 {t === "dark" ? "◼ DARK" : t === "light" ? "◻ LIGHT" : t === "midnight" ? "◈ MIDNIGHT" : "▣ TRADINGVIEW"}
@@ -234,6 +237,74 @@ export default function SettingsPage() {
         <NotificationPreferences />
       </div>
 
+      {/* Data Management */}
+      <div className={sectionCls} style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+        <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-dim)" }}>
+          05 // DATA MANAGEMENT
+        </div>
+        <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+          Load sample trading data to explore the app, or wipe all your data
+        </p>
+        {seedMsg && (
+          <div className="text-sm mb-3" style={{ color: seedMsg.includes("ERROR") ? "var(--accent-loss)" : "var(--accent-profit)" }}>
+            {seedMsg}
+          </div>
+        )}
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={async () => {
+              setSeeding(true);
+              setSeedMsg("");
+              try {
+                const res = await seedMockData();
+                setSeedMsg(res.message);
+              } catch (err) {
+                setSeedMsg(`ERROR: ${err instanceof Error ? err.message : "Failed to load sample data"}`);
+              } finally {
+                setSeeding(false);
+              }
+            }}
+            disabled={seeding}
+            className="px-6 py-3 text-xs font-bold tracking-widest rounded transition-colors disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: seeding ? "var(--border)" : "var(--accent-profit)",
+              color: seeding ? "var(--text-muted)" : "#000",
+              border: "none",
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            {seeding ? "LOADING..." : "LOAD SAMPLE DATA"}
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!confirm("Are you sure? This will permanently delete ALL your trades, journals, and tags. This cannot be undone.")) return;
+              setDeletingAll(true);
+              setSeedMsg("");
+              try {
+                const res = await deleteAllSeedData();
+                setSeedMsg(res.message);
+              } catch (err) {
+                setSeedMsg(`ERROR: ${err instanceof Error ? err.message : "Failed to delete data"}`);
+              } finally {
+                setDeletingAll(false);
+              }
+            }}
+            disabled={deletingAll}
+            className="px-6 py-3 text-xs font-bold tracking-widest rounded transition-colors disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: deletingAll ? "var(--border)" : "var(--accent-loss)",
+              color: deletingAll ? "var(--text-muted)" : "#fff",
+              border: "none",
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            {deletingAll ? "DELETING..." : "DELETE ALL DATA"}
+          </button>
+        </div>
+      </div>
+
       {/* Save bar */}
       <div
         className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 md:px-5 md:py-4 border rounded"
@@ -258,7 +329,7 @@ export default function SettingsPage() {
             color: saving ? "var(--text-muted)" : "var(--bg-primary)",
             border: "none",
             borderRadius: "var(--radius-sm)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-display)",
           }}
         >
           {saving ? "SAVING..." : "SAVE SETTINGS"}

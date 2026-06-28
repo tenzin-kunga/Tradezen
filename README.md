@@ -42,10 +42,9 @@ tradezen/
 │   ├── eslint-config/# ESLint configs
 │   └── typescript-config/ # TSConfig presets
 ├── docs/             # Project documentation
-├── scripts/          # Utility scripts (secret rotation)
+├── infra/            # Infrastructure configs (Docker, Render)
+├── scripts/          # Utility scripts (dev, db, security, monitoring)
 ├── .githooks/        # Git hooks (pre-commit secret scanning)
-├── docker-compose.yml # Full stack Docker setup
-├── start.bat         # One-click development startup
 └── .env.docker.example # Environment template
 ```
 
@@ -59,7 +58,7 @@ tradezen/
 ### Quick Start (One-Click)
 
 ```sh
-start.bat
+scripts/dev/start.bat
 ```
 
 This script handles:
@@ -81,7 +80,7 @@ cp .env.docker.example .env.docker
 # Edit .env.docker with your values
 
 # Start infrastructure
-docker compose --env-file .env.docker up -d postgres redis
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis
 
 # Start both apps
 bun run dev
@@ -117,7 +116,7 @@ bun run dev
 
 ## Docker Infrastructure
 
-The `docker-compose.yml` provides a production-ready local stack:
+The `infra/docker-compose.yml` provides a production-ready local stack:
 
 | Service | Image | Port | Health Check |
 |---|---|---|---|
@@ -188,8 +187,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production deployment steps |
 | [DEV_QUICKSTART.md](docs/DEV_QUICKSTART.md) | 5-minute developer onboarding |
 | [AUDIT-REPORT.md](docs/AUDIT-REPORT.md) | Infrastructure audit results |
-| [PROJECT_RUNDOWN.md](docs/PROJECT_RUNDOWN.md) | Project overview |
-| [Implementation-task.md](docs/Implementation-task.md) | Implementation tasks |
+| [decisions/](docs/decisions/) | Architecture Decision Records |
 
 ## Deployment
 

@@ -29,9 +29,9 @@ bun run build               # next build
 bun run start               # next start -p 3000
 
 # Docker (root)
-start.bat                   # one-click: Docker Desktop + postgres/redis + api+web in separate windows
-docker compose --env-file .env.docker up -d postgres redis  # infra only
-docker compose --env-file .env.docker up -d                 # full stack
+scripts/dev/start.bat       # one-click: Docker Desktop + postgres/redis + api+web in separate windows
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis  # infra only
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d                 # full stack
 ```
 
 ## Required Order
@@ -84,4 +84,3 @@ docker compose --env-file .env.docker up -d                 # full stack
 - `docs/SECURITY.md` — hardening
 - `docs/DEPLOYMENT.md` — production steps
 - `docs/DEV_QUICKSTART.md` — 5-min onboarding
-- `opencode.json` — MCP config (context-mode, context7, firecrawl, playwright)

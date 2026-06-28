@@ -42,7 +42,8 @@ export const users = pgTable(
         { id: 'journal-snapshot', visible: true, size: 'M' },
         { id: 'behavior-analytics', visible: true, size: 'M' },
         { id: 'heatmap', visible: true, size: 'M' },
-        { id: 'analytics-preview', visible: true, size: 'M' },
+        { id: 'analytics-insights', visible: true, size: 'M' },
+        { id: 'ai-coach', visible: true, size: 'M' },
       ],
     }),
   },
@@ -56,7 +57,9 @@ export const trades = pgTable(
   'trades',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
     symbol: text('symbol').notNull(),
     direction: text('direction').notNull(),
     entryPrice: numeric('entry_price').notNull(),
@@ -74,6 +77,7 @@ export const trades = pgTable(
     tradeDate: timestamp('trade_date'),
     commission: numeric('commission').default('0'),
     contractSize: numeric('contract_size').default('100000'),
+    isSample: boolean('is_sample').default(false),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
   },
@@ -97,6 +101,7 @@ export const journals = pgTable(
     mood: text('mood'),
     marketConditions: text('market_conditions'),
     lessons: text('lessons'),
+    isSample: boolean('is_sample').default(false),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
   },
@@ -116,6 +121,7 @@ export const tags = pgTable(
     name: text('name').notNull(),
     color: text('color').notNull().default('#888888'),
     category: text('category').default('setup'),
+    isSample: boolean('is_sample').default(false),
     createdAt: timestamp('created_at').defaultNow(),
   },
   (table) => [

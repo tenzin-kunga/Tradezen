@@ -33,12 +33,13 @@ export default function TradingHeatmap({ data, loading }: Props) {
     return result;
   }, [data]);
 
+  // 4-color palette following 60:30:10 visual weight
+  // 60% neutral (empty), 30% secondary (active), 10% accent (profit/loss)
   const intensity = (day: DayData | null): string => {
-    if (!day || day.trades === 0) return "#1a1b1e";
-    if (!day.disciplined) return "#ef4444";
-    if (day.pnl > 0) return "#22c55e";
-    if (day.trades > 0) return "#3b82f6";
-    return "#f59e0b";
+    if (!day || day.trades === 0) return "var(--bg-hover, #1e2028)";
+    if (!day.disciplined) return "var(--accent-loss, #ef4444)";
+    if (day.pnl > 0) return "var(--accent-profit, #22c55e)";
+    return "var(--accent, #3b82f6)";
   };
 
   return (
@@ -48,30 +49,24 @@ export default function TradingHeatmap({ data, loading }: Props) {
       loading={loading}
       isEmpty={data.length === 0}
       emptyMessage="Consistency data will appear once you start trading."
+      padding="sm"
     >
-      <div className="overflow-x-auto">
-        <div className="flex gap-0.5" style={{ minWidth: 400 }}>
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-0.5">
-              {week.map((day, di) => (
-                <div
-                  key={di}
-                  className="w-3 h-3 rounded-xs transition-opacity"
-                  style={{ backgroundColor: intensity(day) }}
-                  title={day ? `${day.date}: ${day.trades} trades, $${day.pnl}` : "No trades"}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
+      <div className="grid grid-cols-7 gap-0.25">
+        {weeks.flat().map((day, i) => (
+          <div
+            key={i}
+            className="aspect-square rounded-xs transition-opacity min-h-[10px]"
+            style={{ backgroundColor: intensity(day) }}
+            title={day ? `${day.date}: ${day.trades} trades, $${day.pnl}` : "No trades"}
+          />
+        ))}
       </div>
-      <div className="flex items-center gap-2 mt-3 justify-end">
+      <div className="flex items-center gap-1.5 mt-2 justify-end">
         <span className="text-[10px] text-text-dim">Less</span>
-        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#1a1b1e" }} />
-        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#3b82f6" }} />
-        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#22c55e" }} />
-        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#f59e0b" }} />
-        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "#ef4444" }} />
+        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "var(--bg-hover, #1e2028)" }} />
+        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "var(--accent, #3b82f6)" }} />
+        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "var(--accent-profit, #22c55e)" }} />
+        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "var(--accent-loss, #ef4444)" }} />
         <span className="text-[10px] text-text-dim">More</span>
       </div>
     </WidgetShell>

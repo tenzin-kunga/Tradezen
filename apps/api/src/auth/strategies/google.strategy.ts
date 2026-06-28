@@ -25,22 +25,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     accessToken: string,
     refreshToken: string,
     profile: any,
-    done: (error: any, user?: any, info?: any) => void,
-  ): Promise<void> {
-    try {
-      const user = await this.oauthService.validateOAuthUser({
-        provider: 'google',
-        providerId: profile.id,
-        email: profile.emails?.[0]?.value,
-        displayName: profile.displayName,
-        username: profile.emails?.[0]?.value?.split('@')[0],
-        avatar: profile.photos?.[0]?.value,
-        accessToken,
-        refreshToken,
-      });
-      done(null, user);
-    } catch (error) {
-      done(error, false);
-    }
+  ): Promise<any> {
+    const user = await this.oauthService.validateOAuthUser({
+      provider: 'google',
+      providerId: profile.id,
+      email: profile.emails?.[0]?.value,
+      displayName: profile.displayName,
+      username: profile.emails?.[0]?.value?.split('@')[0],
+      avatar: profile.photos?.[0]?.value,
+      accessToken,
+      refreshToken,
+    });
+    return user;
   }
 }

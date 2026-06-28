@@ -124,6 +124,9 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(drizzle-orm|.+/drizzle-orm)/)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

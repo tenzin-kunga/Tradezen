@@ -84,7 +84,7 @@ All modifications are optional for local development but recommended for product
 **New Capabilities:**
 
 1. **`.env.docker.example`** — Template documenting all variables
-2. **`scripts/rotate-secrets.sh/.bat`** — One-click secret rotation
+2. **`scripts/security/rotate-secrets.sh/.bat`** — One-click secret rotation
 3. **Runtime validation** — JWT secrets must be set in production
 4. **Pre-commit hook** (optional) — Catches accidental secret commits
 
@@ -186,11 +186,11 @@ sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Docker images built and tested | Ready | Run `docker-compose up -d` |
+| Docker images built and tested | Ready | Run `docker compose --file infra/docker-compose.yml up -d` |
 | JWT secrets set (64+ chars) | Required | Generate with `openssl rand -base64 64` |
 | Database password set (32+ chars) | Required | |
 | `.env.docker` configured | Required | For local or use cloud secrets |
-| Health checks passing | Verify | `docker-compose ps` shows "healthy" |
+| Health checks passing | Verify | `docker compose --file infra/docker-compose.yml ps` shows "healthy" |
 | CI/CD secrets configured | Required | GitHub → Settings → Secrets |
 | SSL/TLS certificates | Optional (prod) | Let's Encrypt via Caddy/nginx |
 | Monitoring set up | Recommended | Grafana Cloud free tier |
@@ -209,7 +209,7 @@ No action required. Current setup continues to work.
 # Use stronger secrets locally (recommended)
 cp .env.docker.example .env.docker
 # Edit with your values
-docker-compose --env-file .env.docker up -d
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 ```
 
 ### For Existing Production Deployments
@@ -298,7 +298,7 @@ services:
 
 ```bash
 # Check container logs
-docker-compose logs api
+docker compose --file infra/docker-compose.yml logs api
 
 # Common causes:
 # - Missing JWT_SECRET in .env.docker
@@ -322,11 +322,11 @@ taskkill /PID <pid> /F  # Windows
 
 ```bash
 # Verify Postgres is healthy
-docker-compose ps postgres
-docker-compose logs postgres
+docker compose --file infra/docker-compose.yml ps postgres
+docker compose --file infra/docker-compose.yml logs postgres
 
 # Test from API container
-docker-compose exec api node -e "const {pool} = require('./dist/db'); pool.query('SELECT 1').then(() => console.log('OK')).catch(console.error)"
+docker compose --file infra/docker-compose.yml exec api node -e "const {pool} = require('./dist/db'); pool.query('SELECT 1').then(() => console.log('OK')).catch(console.error)"
 ```
 
 ---
@@ -336,7 +336,7 @@ docker-compose exec api node -e "const {pool} = require('./dist/db'); pool.query
 - **Deployment Guide:** `docs/DEPLOYMENT.md`
 - **Security Configuration:** `docs/SECURITY.md`
 - **Developer Quick Start:** `DEV_QUICKSTART.md`
-- **Architecture Overview:** `PROJECT_RUNDOWN.md`
+- **Architecture Overview:** `docs/Architecture.md`
 - **Original Plan:** `PLAN.md`
 
 ---

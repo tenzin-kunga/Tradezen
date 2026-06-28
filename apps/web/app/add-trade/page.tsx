@@ -179,7 +179,7 @@ export default function AddTradePage() {
   const sectionCls = "bg-[var(--bg-surface)] border border-[var(--border)] rounded p-4 md:p-5 mb-4";
 
   return (
-    <div className="min-h-screen font-mono" style={{ color: "var(--text-primary)" }}>
+    <div className="min-h-screen" style={{ color: "var(--text-primary)" }}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
         <div>

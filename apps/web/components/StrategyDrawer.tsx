@@ -68,7 +68,7 @@ export default function StrategyDrawer({
           borderLeft: "1px solid var(--border)",
           zIndex: 999,
           overflowY: "auto",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-display)",
           padding: "24px",
         }}
       >
@@ -162,7 +162,7 @@ export default function StrategyDrawer({
                   border: "1px solid var(--border)",
                   borderRadius: "var(--radius-sm)",
                   color: "var(--text-primary)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-display)",
                   fontSize: "11px",
                 }}
               />

@@ -20,6 +20,7 @@ import { CsvUtils } from '../common/utils/csv';
 import { CursorPagination } from '../common/utils/cursor-pagination';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import { EventPublisherService } from '../common/services/event-publisher.service';
+import { SeedService } from '../seed/seed.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Response } from 'express';
@@ -173,7 +174,10 @@ export class TradesService {
   >();
   private readonly csvUtils = new CsvUtils();
 
-  constructor(private readonly eventPublisher: EventPublisherService) {}
+  constructor(
+    private readonly eventPublisher: EventPublisherService,
+    private readonly seedService: SeedService,
+  ) {}
 
   async findAllCursor(userId: string, cursor?: string, limit = 20) {
     const conditions = [eq(trades.userId, userId)];
@@ -247,6 +251,9 @@ export class TradesService {
       .returning();
 
     const trade = result[0];
+
+    this.cleanupSampleData(userId).catch(() => {});
+
     await this.eventPublisher.publish(`trades:${userId}`, [
       'trade:created',
       trade,
@@ -1005,7 +1012,7 @@ export class TradesService {
         COUNT(*)::int AS trades,
         COALESCE(SUM(pnl), 0)::float8 AS pnl,
         ROUND(
-          COUNT(*) FILTER (WHERE pnl > 0)::float8 / GREATEST(COUNT(*), 1) * 100,
+          (COUNT(*) FILTER (WHERE pnl > 0)::float8 / GREATEST(COUNT(*), 1) * 100)::numeric,
           2
         ) AS win_rate
       FROM trades
@@ -1199,11 +1206,19 @@ export class TradesService {
   async getDashboardData(
     userId: string,
   ): Promise<import('./dto/dashboard.dto').DashboardResponseDto> {
+    await this.autoSeedIfEmpty(userId);
+
     const allTrades = await db
       .select()
       .from(trades)
       .where(eq(trades.userId, userId))
       .orderBy(asc(trades.createdAt));
+
+    const toDateStr = (d: Date | string | null): string => {
+      if (!d) return '';
+      if (typeof d === 'string') return d.slice(0, 10);
+      return d.toISOString().slice(0, 10);
+    };
 
     const today = new Date();
     const todayStr = today.toISOString().slice(0, 10);
@@ -1213,7 +1228,7 @@ export class TradesService {
 
     // Weekly stats
     const weekTrades = allTrades.filter(
-      (t) => t.tradeDate && String(t.tradeDate).slice(0, 10) >= weekStartStr,
+      (t) => t.tradeDate && toDateStr(t.tradeDate) >= weekStartStr,
     );
     const weeklyTrades = weekTrades.length;
     const weeklyPnl = weekTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
@@ -1225,12 +1240,12 @@ export class TradesService {
     const sorted = allTrades
       .filter((t) => t.tradeDate)
       .sort((a, b) =>
-        String(a.tradeDate).localeCompare(String(b.tradeDate)),
+        toDateStr(a.tradeDate).localeCompare(toDateStr(b.tradeDate)),
       );
     let cum = 0;
     const equityMap = new Map<string, number>();
     for (const t of sorted) {
-      const d = String(t.tradeDate).slice(0, 10);
+      const d = toDateStr(t.tradeDate);
       cum += Number(t.pnl);
       equityMap.set(d, Math.round(cum * 100) / 100);
     }
@@ -1244,7 +1259,7 @@ export class TradesService {
     // Daily summary
     const todayTrades = allTrades.filter(
       (t) =>
-        t.tradeDate && String(t.tradeDate).slice(0, 10) === todayStr,
+        t.tradeDate && toDateStr(t.tradeDate) === todayStr,
     );
     const dailyWins = todayTrades.filter((t) => Number(t.pnl) > 0).length;
     const tradesToday = todayTrades.length;
@@ -1401,7 +1416,7 @@ export class TradesService {
       { trades: number; pnl: number; disciplined: boolean }
     >();
     for (const t of allTrades) {
-      const d = String(t.tradeDate || t.createdAt).slice(0, 10);
+      const d = toDateStr(t.tradeDate || t.createdAt);
       if (!d) continue;
       if (!heatmapMap.has(d))
         heatmapMap.set(d, { trades: 0, pnl: 0, disciplined: true });
@@ -1424,10 +1439,16 @@ export class TradesService {
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    const totalPnl = allTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
+    const overallWins = allTrades.filter((t) => Number(t.pnl) > 0).length;
+    const overallWinRate = totalTrades > 0 ? Math.round((overallWins / totalTrades) * 100) : 0;
+
     return {
       weeklyTrades,
       weeklyPnl: Math.round(weeklyPnl * 100) / 100,
       weeklyWinRate,
+      totalPnl,
+      overallWinRate,
       equityCurve,
       dailySummary: {
         tradesToday,
@@ -1783,5 +1804,25 @@ export class TradesService {
         short: computeDirectionRisk(shortTrades),
       },
     };
+  }
+
+  private async autoSeedIfEmpty(userId: string) {
+    const existingCount = await db
+      .select({ c: count() })
+      .from(trades)
+      .where(eq(trades.userId, userId));
+    if (Number(existingCount[0]?.c ?? 0) === 0) {
+      await this.seedService.seedData(userId);
+    }
+  }
+
+  private async cleanupSampleData(userId: string) {
+    const sampleCount = await db
+      .select({ c: count() })
+      .from(trades)
+      .where(and(eq(trades.userId, userId), eq(trades.isSample, true)));
+    if (Number(sampleCount[0]?.c ?? 0) > 0) {
+      await this.seedService.deleteSampleData(userId);
+    }
   }
 }

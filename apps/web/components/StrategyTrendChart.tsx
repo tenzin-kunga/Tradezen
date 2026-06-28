@@ -87,13 +87,13 @@ export default function StrategyTrendChart({
                 border: "1px solid var(--border)",
                 borderRadius: "var(--radius-sm)",
                 color: "var(--text-primary)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-display)",
                 fontSize: "11px",
               }}
             />
             <Legend
               onClick={(e) => toggleLine(e.value)}
-              wrapperStyle={{ fontSize: "10px", cursor: "pointer", fontFamily: "var(--font-mono)" }}
+              wrapperStyle={{ fontSize: "10px", cursor: "pointer", fontFamily: "var(--font-display)" }}
             />
             {series.map((s, i) => (
               <Line

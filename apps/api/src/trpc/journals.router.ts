@@ -9,6 +9,8 @@ const queryJournalsSchema = z.object({
   offset: z.number().min(0).optional(),
 });
 
+const journalDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
+
 const createJournalInput = createJournalSchema.extend({
   mood: journalMoodEnum.optional(),
 });
@@ -29,7 +31,7 @@ export const journalsRouter = router({
     }),
 
   findByDate: protectedProcedure
-    .input(z.object({ date: z.string() }))
+    .input(z.object({ date: journalDateSchema }))
     .query(async ({ ctx, input }) => {
       const service = new JournalsService();
       return service.findByDate(ctx.userId, input.date);
@@ -46,7 +48,7 @@ export const journalsRouter = router({
     .input(
       z.object({
         id: z.string().uuid(),
-        date: z.string().optional(),
+        date: journalDateSchema.optional(),
         pre_market_notes: z.string().max(5000).optional(),
         post_market_notes: z.string().max(5000).optional(),
         mood: journalMoodEnum.optional(),

@@ -5,10 +5,10 @@
 ### API Scaling
 ```bash
 # Scale API to 3 instances
-docker-compose -f docker-compose.yml -f docker-compose.scaling.yml up -d --scale api=3
+docker compose --file infra/docker-compose.yml --file infra/docker-compose.scaling.yml up -d --scale api=3
 
 # Scale API to 5 instances
-docker-compose -f docker-compose.yml -f docker-compose.scaling.yml up -d --scale api=5
+docker compose --file infra/docker-compose.yml --file infra/docker-compose.scaling.yml up -d --scale api=5
 ```
 
 ### Load Balancer
@@ -32,7 +32,7 @@ WebSocket sessions are stored in memory. For multi-instance:
 ## Vertical Scaling
 
 ### Resource Limits
-Current limits in docker-compose.yml:
+Current limits in infra/docker-compose.yml:
 - PostgreSQL: 1G RAM, 0.5 CPU
 - Redis: 256M RAM, 0.25 CPU
 - API: 512M RAM, 0.5 CPU

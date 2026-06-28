@@ -177,7 +177,7 @@ bun run dev
 ### Quick start
 
 ```bash
-start.bat
+scripts/dev/start.bat
 # or (root package.json dev script builds db + starts both)
 bun run dev
 ```
@@ -267,7 +267,7 @@ tradezen/
 │   └── tsconfig/
 │
 ├── docs/
-├── docker-compose.yml
+├── infra/
 ├── turbo.json
 └── package.json
 ```
