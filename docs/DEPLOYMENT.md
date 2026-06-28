@@ -65,7 +65,7 @@ docker swarm init
 docker swarm join --token <token> <manager-ip>:2377
 
 # Deploy stack
-docker stack deploy -c docker-compose.yml tradezen
+docker stack deploy -c infra/docker-compose.yml tradezen
 ```
 
 ### Option C: Kubernetes
@@ -132,22 +132,22 @@ echo ".env.docker" >> .gitignore  # Ensure it's never committed
 
 ### Local PostgreSQL (Docker)
 
-Already configured in `docker-compose.yml`.
+Already configured in `infra/docker-compose.yml`.
 
 **Initialize:**
 ```bash
-docker-compose --env-file .env.docker up -d postgres
-docker-compose --env-file .env.docker exec postgres psql -U postgres -c "SELECT version();"
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres
+docker compose --file infra/docker-compose.yml --env-file .env.docker exec postgres psql -U postgres -c "SELECT version();"
 ```
 
 **Backup:**
 ```bash
-docker-compose --env-file .env.docker exec postgres pg_dump -U postgres tradezen > backup_$(date +%Y%m%d).sql
+docker compose --file infra/docker-compose.yml --env-file .env.docker exec postgres pg_dump -U postgres tradezen > backup_$(date +%Y%m%d).sql
 ```
 
 **Restore:**
 ```bash
-docker-compose --env-file .env.docker exec -T postgres psql -U postgres tradezen < backup_20250101.sql
+docker compose --file infra/docker-compose.yml --env-file .env.docker exec -T postgres psql -U postgres tradezen < backup_20250101.sql
 ```
 
 ### Cloud PostgreSQL (Production Recommendation)
@@ -162,7 +162,7 @@ docker-compose --env-file .env.docker exec -T postgres psql -U postgres tradezen
 
 ```bash
 # 1. Dump local DB
-docker-compose exec postgres pg_dump -U postgres tradezen > local_dump.sql
+docker compose --file infra/docker-compose.yml exec postgres pg_dump -U postgres tradezen > local_dump.sql
 
 # 2. Get cloud DB connection string from provider dashboard
 export DATABASE_URL=postgresql://user:pass@host:5432/dbname?sslmode=require
@@ -183,10 +183,10 @@ psql $DATABASE_URL -f local_dump.sql
 
 ```bash
 # In project root (Tradezen/)
-docker-compose --env-file .env.docker up -d api
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d api
 
 # View logs
-docker-compose logs -f api
+docker compose --file infra/docker-compose.yml logs -f api
 
 # Check health
 curl http://localhost:3001/healthz  # or just /
@@ -219,7 +219,7 @@ docker logs tradezen-api
 ### Docker Compose
 
 ```bash
-docker-compose --env-file .env.docker up -d web
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d web
 
 # Verify
 curl http://localhost:3000
@@ -310,10 +310,10 @@ certbot renew --dry-run
 
 ```bash
 # View all logs
-docker-compose logs -f
+docker compose --file infra/docker-compose.yml logs -f
 
 # View specific service
-docker-compose logs -f api
+docker compose --file infra/docker-compose.yml logs -f api
 
 # Log rotation (configure in /etc/docker/daemon.json)
 {
@@ -352,7 +352,7 @@ Already configured in Dockerfiles. Orchestrator will restart unhealthy container
 # /usr/local/bin/backup-tradezen.sh
 BACKUP_DIR=/backups/tradezen
 DATE=$(date +%Y%m%d_%H%M%S)
-docker-compose -f /home/tradezen/Tradezen/docker-compose.yml exec -T postgres pg_dump -U postgres tradezen > $BACKUP_DIR/tradezen_$DATE.sql
+docker compose --file /home/tradezen/Tradezen/infra/docker-compose.yml exec -T postgres pg_dump -U postgres tradezen > $BACKUP_DIR/tradezen_$DATE.sql
 gzip $BACKUP_DIR/tradezen_$DATE.sql
 find $BACKUP_DIR -type f -mtime +7 -delete  # Keep 7 days
 ```
@@ -367,26 +367,26 @@ find $BACKUP_DIR -type f -mtime +7 -delete  # Keep 7 days
 
 ```bash
 # 1. Stop services
-docker-compose down
+docker compose --file infra/docker-compose.yml down
 
 # 2. Restore database
-gunzip -c backup_20250101.sql.gz | docker-compose exec -T postgres psql -U postgres tradezen
+gunzip -c backup_20250101.sql.gz | docker compose --file infra/docker-compose.yml exec -T postgres psql -U postgres tradezen
 
 # 3. Restart services
-docker-compose up -d
+docker compose --file infra/docker-compose.yml up -d
 
 # 4. Verify
-docker-compose ps
-docker-compose logs --tail 50
+docker compose --file infra/docker-compose.yml ps
+docker compose --file infra/docker-compose.yml logs --tail 50
 ```
 
 ### Rebuild from Scratch
 
 ```bash
 # Nuclear option — destroy everything, rebuild fresh
-docker-compose down -v  # removes volumes (DATA LOSS)
+docker compose --file infra/docker-compose.yml down -v  # removes volumes (DATA LOSS)
 rm -rf pgdata redisdata
-docker-compose --env-file .env.docker up -d
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 
 # Then restore from latest backup
 ```
@@ -399,7 +399,7 @@ docker-compose --env-file .env.docker up -d
 
 ```bash
 # Scale API to 3 replicas
-docker-compose up -d --scale api=3
+docker compose --file infra/docker-compose.yml up -d --scale api=3
 ```
 
 **Requires:**
@@ -444,18 +444,18 @@ docker logs tradezen-api
 
 ```bash
 # Verify postgres is healthy
-docker-compose ps postgres
-docker-compose logs postgres
+docker compose --file infra/docker-compose.yml ps postgres
+docker compose --file infra/docker-compose.yml logs postgres
 
 # Test connection from API container
-docker-compose exec api node -e "const {pool} = require('./dist/db'); pool.query('SELECT 1')"
+docker compose --file infra/docker-compose.yml exec api node -e "const {pool} = require('./dist/db'); pool.query('SELECT 1')"
 ```
 
 ### Healthcheck Failing
 
 ```bash
 # Manually test endpoint
-docker-compose exec api curl http://localhost:3001/
+docker compose --file infra/docker-compose.yml exec api curl http://localhost:3001/
 
 # If Swagger in prod: disable it or update healthcheck to hit `/` instead of `/api/docs`
 ```
@@ -510,5 +510,5 @@ docker stats
 
 For questions, refer to:
 - `SECURITY.md` — Security hardening details
-- `PROJECT_RUNDOWN.md` — Full architecture & dev guide
+- `docs/Architecture.md` — Full architecture & dev guide
 - `README.md` — Quick start
