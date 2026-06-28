@@ -32,7 +32,7 @@ WebSocket sessions are stored in memory. For multi-instance:
 ## Vertical Scaling
 
 ### Resource Limits
-Current limits in docker-compose.yml:
+Current limits in infra/docker-compose.yml:
 - PostgreSQL: 1G RAM, 0.5 CPU
 - Redis: 256M RAM, 0.25 CPU
 - API: 512M RAM, 0.5 CPU

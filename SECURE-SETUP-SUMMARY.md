@@ -227,7 +227,7 @@ scripts/security/rotate-secrets.bat
 A: For local development, no. Existing workflow still works. For production, yes — these changes address security and reliability gaps.
 
 **Q: Will the Docker changes break my existing setup?**  
-A: No. The new `docker-compose.yml` maintains compatibility; `.env.docker` is optional (fallback to defaults).
+A: No. The new `infra/docker-compose.yml` maintains compatibility; `.env.docker` is optional (fallback to defaults).
 
 **Q: What about the OpenRouter API key exposure mentioned in earlier docs?**  
 A: That was a false alarm — the `.env` is properly gitignored and never committed. The documentation has been corrected.

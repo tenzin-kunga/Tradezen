@@ -209,7 +209,7 @@ services:
 #    WEB_URL=http://localhost:3000
 #
 # 2. Load it when starting:
-#    `docker-compose --env-file .env.docker up -d`
+#    `docker compose --file infra/docker-compose.yml --env-file .env.docker up -d`
 #
 # 3. In production, use a secrets manager (Docker secrets, Kubernetes secrets,
 #    or cloud provider secret store) instead of .env files.
