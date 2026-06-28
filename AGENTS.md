@@ -30,8 +30,8 @@ bun run start               # next start -p 3000
 
 # Docker (root)
 scripts/dev/start.bat       # one-click: Docker Desktop + postgres/redis + api+web in separate windows
-docker compose --env-file .env.docker up -d postgres redis  # infra only
-docker compose --env-file .env.docker up -d                 # full stack
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis  # infra only
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d                 # full stack
 ```
 
 ## Required Order

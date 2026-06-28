@@ -44,19 +44,19 @@ OPENROUTER_API_KEY=sk-or-v1-...  # optional, only if using chat
 
 ```bash
 # Start PostgreSQL + Redis
-docker-compose --env-file .env.docker up -d postgres redis
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis
 
 # Wait for Postgres to be ready (10-15s)
-docker-compose exec postgres pg_isready -U postgres
+docker compose --file infra/docker-compose.yml exec postgres pg_isready -U postgres
 
 # Optional: Initialize DB with migrations (uses npm inside container)
-docker-compose exec api npm run migrate
+docker compose --file infra/docker-compose.yml exec api npm run migrate
 ```
 
 ## 4. Start Development Servers
 
 **Option A: Using start.bat (Windows)**
-Double-click `start.bat` — it will start Docker, launch API and Web in separate CMD windows.
+Double-click `scripts/dev/start.bat` — it will start Docker, launch API and Web in separate CMD windows.
 
 **Option B: Manual (cross-platform)**
 
@@ -225,8 +225,10 @@ tradezen/
 ├── packages/
 │   ├── types/        # Shared TypeScript types
 │   └── ui/           # Shared components (planned)
-├── docker-compose.yml
-├── start.bat         # Windows startup script
+├── infra/
+│   └── docker-compose.yml
+├── scripts/
+│   └── dev/start.bat
 └── README.md
 ```
 

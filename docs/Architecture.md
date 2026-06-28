@@ -177,7 +177,7 @@ bun run dev
 ### Quick start
 
 ```bash
-start.bat
+scripts/dev/start.bat
 # or (root package.json dev script builds db + starts both)
 bun run dev
 ```
