@@ -65,6 +65,17 @@ const sectionStyle: React.CSSProperties = {
   backgroundColor: "#1c1c1c", border: "1px solid #2a2a2a", borderRadius: "4px", padding: "20px", marginBottom: "16px",
 };
 
+interface TradeImage {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+  width: number | null;
+  height: number | null;
+  format: string | null;
+  bytes: number | null;
+  displayOrder: number;
+}
+
 export default function EditTradePage() {
   const router = useRouter();
   const { addToast } = useToast();
@@ -91,6 +102,10 @@ export default function EditTradePage() {
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const initialTagIdsRef = useRef<Set<string>>(new Set());
   const imageInputRef = useRef<HTMLInputElement>(null);
+  
+  // New image gallery state
+  const [images, setImages] = useState<TradeImage[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     getTagsForTrade(tradeId)
@@ -113,7 +128,14 @@ export default function EditTradePage() {
         setFomoCheck(!!t.fomo_check);
         setTrendAlignment(!!t.trend_alignment);
         setVengeanceTrade(!!t.vengeance_trade);
-        if (t.chart_image) setChartImage(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${t.chart_image}`);
+        
+        // Support both new images array and legacy chart_image
+        if (t.images && t.images.length > 0) {
+          setImages(t.images);
+          setChartImage(t.images[0].thumbnailUrl);
+        } else if (t.chart_image) {
+          setChartImage(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${t.chart_image}`);
+        }
       })
       .catch((err: any) => setError(err.message || "Failed to load trade"))
       .finally(() => setLoadingTrade(false));
@@ -126,6 +148,30 @@ export default function EditTradePage() {
     const reader = new FileReader();
     reader.onload = (ev) => setChartImage(ev.target?.result as string);
     reader.readAsDataURL(file);
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingImage(true);
+    try {
+      await uploadTradeImage(tradeId, file);
+      // Reload trade to get updated images
+      const updatedTrade = await getTrade(tradeId);
+      if (updatedTrade.images) {
+        setImages(updatedTrade.images);
+        if (updatedTrade.images.length > 0) {
+          setChartImage(updatedTrade.images[0].thumbnailUrl);
+        }
+      }
+      addToast("success", "Image uploaded");
+    } catch (err: unknown) {
+      addToast("error", err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploadingImage(false);
+      if (imageInputRef.current) imageInputRef.current.value = "";
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -276,36 +322,82 @@ export default function EditTradePage() {
                 />
               </div>
 
-              {/* Chart Image */}
+              {/* Chart Image Gallery */}
               <div style={{ marginTop: "12px" }}>
-                <label style={labelStyle}>CHART SCREENSHOT</label>
-                <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageChange} />
-                <button
-                  type="button" onClick={() => imageInputRef.current?.click()}
-                  style={{
-                    background: "transparent", border: "1px dashed #2a2a2a", borderRadius: "4px", color: "#888",
-                    cursor: "pointer", fontFamily: "monospace", fontSize: "11px", fontWeight: 700,
-                    letterSpacing: "0.1em", padding: "10px 20px",
-                  }}
-                >
-                  {chartImage ? "REPLACE IMAGE" : "+ ADD IMAGE"}
-                </button>
-                {chartImage && (
-                  <div style={{ marginTop: "12px", position: "relative", display: "inline-block" }}>
-                    <img src={chartImage} alt="Chart screenshot" style={{ maxWidth: "100%", maxHeight: "300px", border: "1px solid #2a2a2a", borderRadius: "4px", display: "block" }} />
-                    <button
-                      type="button"
-                      onClick={() => { setChartImage(null); setChartFile(null); if (imageInputRef.current) imageInputRef.current.value = ""; }}
-                      style={{
-                        position: "absolute", top: "6px", right: "6px", background: "rgba(0,0,0,0.7)",
-                        border: "1px solid #444", borderRadius: "4px", color: "#fff", cursor: "pointer",
-                        fontFamily: "monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", padding: "4px 8px",
-                      }}
-                    >
-                      REMOVE
-                    </button>
+                <label style={labelStyle}>SCREENSHOTS ({images.length})</label>
+                
+                {/* Image Grid */}
+                {images.length > 0 && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "8px", marginBottom: "12px" }}>
+                    {images.map((image, index) => (
+                      <div
+                        key={image.id}
+                        style={{
+                          position: "relative",
+                          borderRadius: "4px",
+                          overflow: "hidden",
+                          border: index === 0 ? "2px solid #22c55e" : "1px solid #2a2a2a",
+                        }}
+                      >
+                        <img
+                          src={image.thumbnailUrl}
+                          alt={`Screenshot ${index + 1}`}
+                          style={{ width: "100%", height: "80px", objectFit: "cover", display: "block" }}
+                        />
+                        {index === 0 && (
+                          <div
+                            style={{
+                              position: "absolute", top: "4px", left: "4px",
+                              background: "#22c55e", color: "#000", fontSize: "8px",
+                              padding: "2px 4px", borderRadius: "2px", fontWeight: 700,
+                            }}
+                          >
+                            THUMBNAIL
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (confirm("Delete this screenshot?")) {
+                              try {
+                                const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+                                await fetch(`${API}/trades/${tradeId}/images/${image.id}`, {
+                                  method: "DELETE",
+                                  headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                                });
+                                setImages(images.filter((img) => img.id !== image.id));
+                                addToast("success", "Image deleted");
+                              } catch {
+                                addToast("error", "Failed to delete image");
+                              }
+                            }
+                          }}
+                          style={{
+                            position: "absolute", top: "4px", right: "4px",
+                            background: "rgba(0,0,0,0.7)", border: "none", borderRadius: "2px",
+                            color: "#fff", cursor: "pointer", fontSize: "10px", padding: "2px 4px",
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
+
+                {/* Upload Button */}
+                <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageUpload} />
+                <button
+                  type="button" onClick={() => imageInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  style={{
+                    background: "transparent", border: "1px dashed #2a2a2a", borderRadius: "4px", color: "#888",
+                    cursor: uploadingImage ? "not-allowed" : "pointer", fontFamily: "monospace", fontSize: "11px", fontWeight: 700,
+                    letterSpacing: "0.1em", padding: "10px 20px", width: "100%",
+                  }}
+                >
+                  {uploadingImage ? "UPLOADING..." : "+ ADD SCREENSHOT"}
+                </button>
               </div>
             </div>
 
