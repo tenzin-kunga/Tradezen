@@ -536,23 +536,6 @@ export class TradesService {
     return { deleted: true };
   }
 
-  async uploadImage(userId: string, id: string, filename: string) {
-    const checkRes = await db
-      .select()
-      .from(trades)
-      .where(and(eq(trades.id, id), eq(trades.userId, userId)));
-    if (!checkRes[0]) throw new NotFoundException(`Trade ${id} not found`);
-
-    const imageUrl = `/uploads/${filename}`;
-    await db
-      .update(trades)
-      .set({ chartImage: imageUrl })
-      .where(and(eq(trades.id, id), eq(trades.userId, userId)))
-      .returning();
-
-    return { chart_image: imageUrl };
-  }
-
   async getDailyPnl(userId: string, from?: string, to?: string) {
     const conditions = [eq(trades.userId, userId)];
 

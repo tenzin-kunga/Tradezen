@@ -16,8 +16,6 @@ import {
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -256,37 +254,5 @@ export class TradesController {
   @ApiOperation({ summary: 'Delete a trade' })
   remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.service.remove(userId, id);
-  }
-
-  @Post(':id/image')
-  @ApiOperation({ summary: 'Upload a chart image for a trade' })
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: join(process.cwd(), 'uploads'),
-        filename: (_req, file, cb) => {
-          const unique = Date.now() + '-' + Math.round(Math.random() * 1e6);
-          cb(null, unique + extname(file.originalname));
-        },
-      }),
-      fileFilter: (_req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          return cb(
-            new BadRequestException('Only image files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
-    }),
-  )
-  uploadImage(
-    @CurrentUser('id') userId: string,
-    @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    if (!file) throw new BadRequestException('No image file provided');
-    return this.service.uploadImage(userId, id, file.filename);
   }
 }
