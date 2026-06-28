@@ -29,7 +29,7 @@ bun run build               # next build
 bun run start               # next start -p 3000
 
 # Docker (root)
-start.bat                   # one-click: Docker Desktop + postgres/redis + api+web in separate windows
+scripts/dev/start.bat       # one-click: Docker Desktop + postgres/redis + api+web in separate windows
 docker compose --env-file .env.docker up -d postgres redis  # infra only
 docker compose --env-file .env.docker up -d                 # full stack
 ```
