@@ -20,6 +20,7 @@ All changes are **backward-compatible** and can be adopted incrementally.
 #### API Dockerfile (`apps/api/Dockerfile`)
 
 **Improvements:**
+
 - Multi-stage build (deps → builder → runner) reduces final image size by ~70%
 - Non-root user (`nestjs`) prevents privilege escalation if container is compromised
 - `dumb-init` ensures proper signal handling for graceful shutdowns
@@ -29,6 +30,7 @@ All changes are **backward-compatible** and can be adopted incrementally.
 #### Web Dockerfile (`apps/web/Dockerfile`) — **NEW**
 
 **Added:** Production containerization for Next.js frontend
+
 - Multi-stage build with dependency caching
 - Non-root user (`nextjs`)
 - Standalone output for minimal server footprint
@@ -37,6 +39,7 @@ All changes are **backward-compatible** and can be adopted incrementally.
 #### Docker Compose (`infra/docker-compose.yml`)
 
 **Improvements:**
+
 - Custom bridge network (`tradezen-net`) isolates services
 - Resource limits prevent noisy neighbor issues
 - Health checks on all services for self-healing
@@ -47,11 +50,13 @@ All changes are **backward-compatible** and can be adopted incrementally.
 ### 2. Secrets Management
 
 **New Tools:**
+
 - `.env.docker.example` — documented template for all environment variables
 - `scripts/security/rotate-secrets.sh` / `.bat` — automated secret rotation utility
 - `.githooks/pre-commit` — optional pre-commit hook to catch accidental secret commits
 
 **Best Practices Enforced:**
+
 - Environment variables passed at runtime (not baked into images)
 - `.env.docker` is gitignored and should never be committed
 - CI/CD uses GitHub Secrets (no plaintext in workflow files)
@@ -61,16 +66,17 @@ All changes are **backward-compatible** and can be adopted incrementally.
 
 **Expanded from 1 job to 6 specialized jobs:**
 
-| Job | Purpose | Triggers |
-|-----|---------|----------|
-| **security** | `bun pm audit`, Trivy vulnerability scan, secret pattern detection | Every push/PR |
-| **lint** | ESLint + TypeScript type checking | Every push/PR |
-| **test** | Unit tests with coverage (Node 18/20/22 matrix) | Every push/PR |
-| **e2e** | Integration tests with Postgres + Redis | After unit tests |
-| **build** | Multi-platform Docker build + push (main branch only) | Push to `main` |
-| **deploy** | Trigger Render (API) + Vercel (Web) deployments | Push to `main` |
+| Job          | Purpose                                                            | Triggers         |
+| ------------ | ------------------------------------------------------------------ | ---------------- |
+| **security** | `bun pm audit`, Trivy vulnerability scan, secret pattern detection | Every push/PR    |
+| **lint**     | ESLint + TypeScript type checking                                  | Every push/PR    |
+| **test**     | Unit tests with coverage (Node 18/20/22 matrix)                    | Every push/PR    |
+| **e2e**      | Integration tests with Postgres + Redis                            | After unit tests |
+| **build**    | Multi-platform Docker build + push (main branch only)              | Push to `main`   |
+| **deploy**   | Trigger Render (API) + Vercel (Web) deployments                    | Push to `main`   |
 
 **New Features:**
+
 - Docker Buildx caching for faster rebuilds
 - SARIF uploads to GitHub Security tab
 - Code coverage reporting (Codecov)
@@ -80,21 +86,25 @@ All changes are **backward-compatible** and can be adopted incrementally.
 ### 4. Application Code Hardening
 
 #### `apps/api/src/main.ts`
+
 - Environment validation in production (JWT secrets required, minimum length)
 - Swagger documentation disabled in production (`NODE_ENV=production`)
 - Improved startup logging
 
 #### `apps/api/src/auth/auth.service.ts`
+
 - Removed development fallback secrets
 - Centralized secret retrieval with validation
 - `sameSite` cookie attribute adjusted per environment
 
 #### `apps/api/src/auth/jwt.strategy.ts`
+
 - Uses validated JWT secret
 
 ### 5. Documentation
 
 **New Files:**
+
 - `docs/SECURITY.md` — Detailed security configuration guide
 - `docs/DEPLOYMENT.md` — Production deployment playbook
 - `DEV_QUICKSTART.md` — 5-minute developer setup
@@ -111,6 +121,7 @@ All changes are **backward-compatible** and can be adopted incrementally.
 No breaking changes. Existing `infra/docker-compose.yml` still works with default values.
 
 **New Optional Setup:**
+
 ```bash
 # Create .env.docker for stronger local security (recommended)
 cp .env.docker.example .env.docker
@@ -121,6 +132,7 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 ### Production Deployment
 
 **Required:**
+
 1. Create `.env.docker` with strong secrets (generate with `openssl rand -base64 64`)
 2. Set `JWT_SECRET` and `JWT_REFRESH_SECRET` (64+ characters each)
 3. Set `DB_PASSWORD` (32+ characters)
@@ -128,6 +140,7 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 5. Configure `WEB_URL` to your production domain
 
 **Recommended:**
+
 - Use Docker Swarm/Kubernetes secrets instead of `.env.docker` file
 - Enable nginx reverse proxy with SSL termination
 - Set up automated PostgreSQL backups
@@ -139,26 +152,26 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 
 ### Environment Variables
 
-| Variable | Required | Purpose | Example |
-|----------|----------|---------|---------|
-| `JWT_SECRET` | Yes (prod) | Sign access tokens | `openssl rand -base64 64` |
-| `JWT_REFRESH_SECRET` | Yes (prod) | Sign refresh tokens | `openssl rand -base64 64` |
-| `DB_PASSWORD` | Yes | PostgreSQL auth | `pwgen 32 1` |
-| `DATABASE_URL` | Optional | Full connection string | `postgresql://...` |
-| `OPENROUTER_API_KEY` | Optional | AI chat feature | `sk-or-v1-...` |
-| `WEB_URL` | No | CORS origin | `https://tradezen.example.com` |
-| `NODE_ENV` | No | Environment mode | `production` |
+| Variable             | Required   | Purpose                | Example                        |
+| -------------------- | ---------- | ---------------------- | ------------------------------ |
+| `JWT_SECRET`         | Yes (prod) | Sign access tokens     | `openssl rand -base64 64`      |
+| `JWT_REFRESH_SECRET` | Yes (prod) | Sign refresh tokens    | `openssl rand -base64 64`      |
+| `DB_PASSWORD`        | Yes        | PostgreSQL auth        | `pwgen 32 1`                   |
+| `DATABASE_URL`       | Optional   | Full connection string | `postgresql://...`             |
+| `OPENROUTER_API_KEY` | Optional   | AI chat feature        | `sk-or-v1-...`                 |
+| `WEB_URL`            | No         | CORS origin            | `https://tradezen.example.com` |
+| `NODE_ENV`           | No         | Environment mode       | `production`                   |
 
 ### Docker Resource Limits
 
 Default limits (configurable in `docker-compose.yml`):
 
-| Service | Memory Limit | CPU Limit |
-|---------|--------------|-----------|
-| API | 512 MB | 0.50 core |
-| Web | 512 MB | 0.50 core |
-| PostgreSQL | 1 GB | 0.50 core |
-| Redis | 256 MB | 0.25 core |
+| Service    | Memory Limit | CPU Limit |
+| ---------- | ------------ | --------- |
+| API        | 512 MB       | 0.50 core |
+| Web        | 512 MB       | 0.50 core |
+| PostgreSQL | 1 GB         | 0.50 core |
+| Redis      | 256 MB       | 0.25 core |
 
 ---
 
@@ -171,7 +184,7 @@ Default limits (configurable in `docker-compose.yml`):
 ✅ **Network isolation** — Services on private bridge network  
 ✅ **Health monitoring** — Automatic restart of unhealthy containers  
 ✅ **Vulnerability scanning** — CI catches known CVEs before deployment  
-✅ **Secret leak prevention** — Pre-commit hook (optional)  
+✅ **Secret leak prevention** — Pre-commit hook (optional)
 
 ### What You Should Still Do
 
@@ -230,6 +243,7 @@ act push -j security
 ## File Changes Summary
 
 ### Modified Files
+
 - `apps/api/Dockerfile`
 - `apps/api/src/main.ts`
 - `apps/api/src/auth/auth.service.ts`
@@ -242,6 +256,7 @@ act push -j security
 - `apps/web/next.config.ts`
 
 ### New Files
+
 - `apps/web/Dockerfile`
 - `apps/web/.dockerignore`
 - `apps/web/nginx.conf`

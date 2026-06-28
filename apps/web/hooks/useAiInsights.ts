@@ -17,5 +17,9 @@ export function useAiInsights() {
       .finally(() => setLoading(false));
   }, []);
 
-  return { insights: data?.insights ?? [], generatedAt: data?.generatedAt ?? null, loading };
+  return {
+    insights: data?.insights ?? [],
+    generatedAt: data?.generatedAt ?? null,
+    loading,
+  };
 }

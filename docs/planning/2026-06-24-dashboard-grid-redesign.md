@@ -9,9 +9,11 @@
 **Tech Stack:** Next.js 14, dnd-kit (already a dependency), CSS grid with Tailwind
 
 ---
+
 ### Task 1: Update LayoutWidget type + DEFAULT_LAYOUT
 
 **Files:**
+
 - Modify: `apps/web/lib/layout-types.ts`
 
 - [ ] **Add `column` and `order` fields to LayoutWidget**
@@ -35,7 +37,7 @@ export const WIDGET_TITLES: Record<WidgetId, string> = {
   "recent-trades": "Recent Trades",
   "journal-snapshot": "Journal",
   "behavior-analytics": "Behavior Analytics",
-  "heatmap": "Trading Heatmap",
+  heatmap: "Trading Heatmap",
   "analytics-insights": "Insights",
   "ai-coach": "AI Coach",
 };
@@ -46,7 +48,7 @@ export const WIDGET_COLORS: Record<WidgetId, string> = {
   "recent-trades": "rgba(255,255,255,0.15)",
   "journal-snapshot": "rgb(168, 85, 247)",
   "behavior-analytics": "rgb(249, 115, 22)",
-  "heatmap": "rgb(234, 179, 8)",
+  heatmap: "rgb(234, 179, 8)",
   "analytics-insights": "rgb(6, 182, 212)",
   "ai-coach": "rgb(34, 197, 94)",
 };
@@ -74,6 +76,7 @@ export const DEFAULT_LAYOUT: DashboardLayout = {
 ### Task 2: Update migrateLayout with column/order migration
 
 **Files:**
+
 - Modify: `apps/web/hooks/useDashboardLayout.ts`
 
 - [ ] **Add column/order migration logic**
@@ -121,6 +124,7 @@ function migrateLayout(layout: DashboardLayout): DashboardLayout {
 ### Task 3: Create WidgetCard component
 
 **Files:**
+
 - Create: `apps/web/components/design-system/WidgetCard.tsx`
 
 - [ ] **Create the WidgetCard component**
@@ -149,7 +153,8 @@ export default function WidgetCard({
   onToggleVisibility,
   onCycleSize,
 }: WidgetCardProps) {
-  const accent = WIDGET_COLORS[widget.id as WidgetId] ?? "rgba(255,255,255,0.15)";
+  const accent =
+    WIDGET_COLORS[widget.id as WidgetId] ?? "rgba(255,255,255,0.15)";
   const title = WIDGET_TITLES[widget.id as WidgetId] ?? widget.id;
 
   return (
@@ -203,12 +208,28 @@ export default function WidgetCard({
             aria-label={widget.visible ? "Hide widget" : "Show widget"}
           >
             {widget.visible ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              >
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
               </svg>
             ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              >
                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
                 <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
                 <line x1="1" y1="1" x2="23" y2="23" />
@@ -226,6 +247,7 @@ export default function WidgetCard({
 ### Task 4: Rewrite DashboardLayout as DashboardGridLayout
 
 **Files:**
+
 - Modify: `apps/web/components/DashboardLayout.tsx`
 
 - [ ] **Replace entire file with grid-based layout**
@@ -276,7 +298,15 @@ function DragHandle({ listeners, attributes }: any) {
       }}
       aria-label="Drag to reorder"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      >
         <circle cx="9" cy="5" r="1.5" fill="currentColor" />
         <circle cx="15" cy="5" r="1.5" fill="currentColor" />
         <circle cx="9" cy="12" r="1.5" fill="currentColor" />
@@ -299,8 +329,14 @@ function SortableWidget({
   onToggleVisibility: () => void;
   onCycleSize: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: widget.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: widget.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -314,7 +350,9 @@ function SortableWidget({
     <div ref={setNodeRef} style={style} className="fade-up">
       <WidgetCard
         widget={widget}
-        dragHandle={<DragHandle listeners={listeners} attributes={attributes} />}
+        dragHandle={
+          <DragHandle listeners={listeners} attributes={attributes} />
+        }
         onToggleVisibility={onToggleVisibility}
         onCycleSize={onCycleSize}
       >
@@ -369,7 +407,9 @@ export default function DashboardGridLayout({
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -422,9 +462,7 @@ export default function DashboardGridLayout({
 
       // Determine target column: use over widget's column, or the column of
       // the last item in the droppable if over is a widget in the other column
-      const targetCol = overWidget
-        ? overWidget.column
-        : activeWidget.column;
+      const targetCol = overWidget ? overWidget.column : activeWidget.column;
       const targetList = targetCol === 0 ? col0 : col1;
 
       // Compute new order within target column
@@ -435,7 +473,8 @@ export default function DashboardGridLayout({
         newOrder = overIndex >= 0 ? overIndex : targetList.length - 1;
       } else {
         // Different column: append to end
-        newOrder = targetList.length - (targetCol === activeWidget.column ? 1 : 0);
+        newOrder =
+          targetList.length - (targetCol === activeWidget.column ? 1 : 0);
       }
 
       // Build new widgets array with updated column/order
@@ -655,6 +694,7 @@ export default function DashboardGridLayout({
 ### Task 5: Update page.tsx wiring
 
 **Files:**
+
 - Modify: `apps/web/app/page.tsx`
 
 - [ ] **Update import from DashboardLayoutManager to DashboardGridLayout**
@@ -680,6 +720,7 @@ import DashboardGridLayout from "@/components/DashboardLayout";
 ### Task 6: Typecheck and lint
 
 **Files:**
+
 - Run: `bun run check-types` in project root
 - Run: `bun run lint` in project root
 

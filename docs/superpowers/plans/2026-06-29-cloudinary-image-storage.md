@@ -14,25 +14,25 @@
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
-| `packages/db/src/schema/trade-images.ts` | Drizzle schema for trade_images table |
-| `apps/api/src/storage/storage.provider.ts` | StorageProvider interface |
-| `apps/api/src/storage/cloudinary.provider.ts` | CloudinaryProvider implementation |
-| `apps/api/src/storage/storage.module.ts` | Storage module |
-| `apps/api/src/storage/storage.config.ts` | Configuration |
-| `apps/api/src/trades/dto/image.dto.ts` | Image DTOs |
-| `apps/api/src/trades/trades-image.service.ts` | Image operations service |
-| `apps/api/src/trades/trades-image.controller.ts` | Image endpoints |
+| File                                             | Purpose                               |
+| ------------------------------------------------ | ------------------------------------- |
+| `packages/db/src/schema/trade-images.ts`         | Drizzle schema for trade_images table |
+| `apps/api/src/storage/storage.provider.ts`       | StorageProvider interface             |
+| `apps/api/src/storage/cloudinary.provider.ts`    | CloudinaryProvider implementation     |
+| `apps/api/src/storage/storage.module.ts`         | Storage module                        |
+| `apps/api/src/storage/storage.config.ts`         | Configuration                         |
+| `apps/api/src/trades/dto/image.dto.ts`           | Image DTOs                            |
+| `apps/api/src/trades/trades-image.service.ts`    | Image operations service              |
+| `apps/api/src/trades/trades-image.controller.ts` | Image endpoints                       |
 
 ### Modified Files
 
-| File | Changes |
-|------|---------|
-| `packages/db/src/schema/index.ts` | Export tradeImages |
-| `apps/api/src/trades/trades.module.ts` | Import StorageModule |
-| `apps/api/src/trades/trades.service.ts` | Update findAll/findOne to include images |
-| `apps/api/src/trades/trades.controller.ts` | Remove old upload endpoint |
+| File                                       | Changes                                  |
+| ------------------------------------------ | ---------------------------------------- |
+| `packages/db/src/schema/index.ts`          | Export tradeImages                       |
+| `apps/api/src/trades/trades.module.ts`     | Import StorageModule                     |
+| `apps/api/src/trades/trades.service.ts`    | Update findAll/findOne to include images |
+| `apps/api/src/trades/trades.controller.ts` | Remove old upload endpoint               |
 
 ---
 
@@ -41,6 +41,7 @@
 ### Task 1: StorageProvider Interface
 
 **Files:**
+
 - Create: `apps/api/src/storage/storage.provider.ts`
 
 - [ ] **Step 1: Create interface**
@@ -79,6 +80,7 @@ git commit -m "feat(storage): add StorageProvider interface"
 ### Task 2: CloudinaryProvider Implementation
 
 **Files:**
+
 - Create: `apps/api/src/storage/cloudinary.provider.ts`
 
 - [ ] **Step 1: Install Cloudinary SDK**
@@ -90,9 +92,9 @@ cd apps/api && bun add cloudinary
 - [ ] **Step 2: Create provider**
 
 ```typescript
-import { Injectable } from '@nestjs/common';
-import { v2 as cloudinary } from 'cloudinary';
-import { StorageProvider, UploadFile, UploadResult } from './storage.provider';
+import { Injectable } from "@nestjs/common";
+import { v2 as cloudinary } from "cloudinary";
+import { StorageProvider, UploadFile, UploadResult } from "./storage.provider";
 
 @Injectable()
 export class CloudinaryProvider implements StorageProvider {
@@ -108,8 +110,8 @@ export class CloudinaryProvider implements StorageProvider {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: process.env.CLOUDINARY_FOLDER || 'tradezen',
-          resource_type: 'image',
+          folder: process.env.CLOUDINARY_FOLDER || "tradezen",
+          resource_type: "image",
         },
         (error, result) => {
           if (error) return reject(error);
@@ -129,7 +131,7 @@ export class CloudinaryProvider implements StorageProvider {
 
   async delete(publicId: string, version: number): Promise<void> {
     await cloudinary.uploader.destroy(publicId, {
-      type: 'upload',
+      type: "upload",
       version,
     });
   }
@@ -139,9 +141,9 @@ export class CloudinaryProvider implements StorageProvider {
       version,
       transformation: [
         {
-          width: parseInt(process.env.THUMBNAIL_WIDTH || '300'),
-          height: parseInt(process.env.THUMBNAIL_HEIGHT || '200'),
-          crop: 'fill',
+          width: parseInt(process.env.THUMBNAIL_WIDTH || "300"),
+          height: parseInt(process.env.THUMBNAIL_HEIGHT || "200"),
+          crop: "fill",
         },
       ],
     });
@@ -152,9 +154,9 @@ export class CloudinaryProvider implements StorageProvider {
       version,
       transformation: [
         {
-          width: parseInt(process.env.FULL_WIDTH || '1200'),
-          height: parseInt(process.env.FULL_HEIGHT || '800'),
-          crop: 'limit',
+          width: parseInt(process.env.FULL_WIDTH || "1200"),
+          height: parseInt(process.env.FULL_HEIGHT || "800"),
+          crop: "limit",
         },
       ],
     });
@@ -172,19 +174,22 @@ git commit -m "feat(storage): add CloudinaryProvider implementation"
 ### Task 3: Storage Configuration
 
 **Files:**
+
 - Create: `apps/api/src/storage/storage.config.ts`
 
 - [ ] **Step 1: Create config**
 
 ```typescript
 export const storageConfig = {
-  maxImagesPerTrade: parseInt(process.env.MAX_IMAGES_PER_TRADE || '10'),
-  maxImageSizeMb: parseInt(process.env.MAX_IMAGE_SIZE_MB || '10'),
-  allowedImageTypes: (process.env.ALLOWED_IMAGE_TYPES || 'jpg,jpeg,png,webp').split(','),
-  thumbnailWidth: parseInt(process.env.THUMBNAIL_WIDTH || '300'),
-  thumbnailHeight: parseInt(process.env.THUMBNAIL_HEIGHT || '200'),
-  fullWidth: parseInt(process.env.FULL_WIDTH || '1200'),
-  fullHeight: parseInt(process.env.FULL_HEIGHT || '800'),
+  maxImagesPerTrade: parseInt(process.env.MAX_IMAGES_PER_TRADE || "10"),
+  maxImageSizeMb: parseInt(process.env.MAX_IMAGE_SIZE_MB || "10"),
+  allowedImageTypes: (
+    process.env.ALLOWED_IMAGE_TYPES || "jpg,jpeg,png,webp"
+  ).split(","),
+  thumbnailWidth: parseInt(process.env.THUMBNAIL_WIDTH || "300"),
+  thumbnailHeight: parseInt(process.env.THUMBNAIL_HEIGHT || "200"),
+  fullWidth: parseInt(process.env.FULL_WIDTH || "1200"),
+  fullHeight: parseInt(process.env.FULL_HEIGHT || "800"),
 };
 ```
 
@@ -198,19 +203,18 @@ git commit -m "feat(storage): add storage configuration"
 ### Task 4: Storage Module
 
 **Files:**
+
 - Create: `apps/api/src/storage/storage.module.ts`
 
 - [ ] **Step 1: Create module**
 
 ```typescript
-import { Module } from '@nestjs/common';
-import { CloudinaryProvider } from './cloudinary.provider';
+import { Module } from "@nestjs/common";
+import { CloudinaryProvider } from "./cloudinary.provider";
 
 @Module({
-  providers: [
-    { provide: 'StorageProvider', useClass: CloudinaryProvider },
-  ],
-  exports: ['StorageProvider'],
+  providers: [{ provide: "StorageProvider", useClass: CloudinaryProvider }],
+  exports: ["StorageProvider"],
 })
 export class StorageModule {}
 ```
@@ -229,6 +233,7 @@ git commit -m "feat(storage): add StorageModule"
 ### Task 5: trade_images Schema
 
 **Files:**
+
 - Create: `packages/db/src/schema/trade-images.ts`
 - Modify: `packages/db/src/schema/index.ts`
 
@@ -244,31 +249,31 @@ import {
   jsonb,
   index,
   unique,
-} from 'drizzle-orm/pg-core';
-import { trades } from './index';
+} from "drizzle-orm/pg-core";
+import { trades } from "./index";
 
 export const tradeImages = pgTable(
-  'trade_images',
+  "trade_images",
   {
-    id: uuid('id').primaryKey().defaultRandom(),
-    tradeId: uuid('trade_id')
+    id: uuid("id").primaryKey().defaultRandom(),
+    tradeId: uuid("trade_id")
       .notNull()
-      .references(() => trades.id, { onDelete: 'cascade' }),
-    cloudinaryPublicId: text('cloudinary_public_id').notNull(),
-    cloudinaryVersion: integer('cloudinary_version').notNull().default(1),
-    width: integer('width'),
-    height: integer('height'),
-    format: text('format'),
-    bytes: integer('bytes'),
-    displayOrder: integer('display_order').notNull().default(0),
-    metadata: jsonb('metadata').notNull().default({}),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+      .references(() => trades.id, { onDelete: "cascade" }),
+    cloudinaryPublicId: text("cloudinary_public_id").notNull(),
+    cloudinaryVersion: integer("cloudinary_version").notNull().default(1),
+    width: integer("width"),
+    height: integer("height"),
+    format: text("format"),
+    bytes: integer("bytes"),
+    displayOrder: integer("display_order").notNull().default(0),
+    metadata: jsonb("metadata").notNull().default({}),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    unique('trade_images_trade_order').on(table.tradeId, table.displayOrder),
-    index('idx_trade_images_trade').on(table.tradeId),
-    index('idx_trade_images_order').on(table.tradeId, table.displayOrder),
+    unique("trade_images_trade_order").on(table.tradeId, table.displayOrder),
+    index("idx_trade_images_trade").on(table.tradeId),
+    index("idx_trade_images_order").on(table.tradeId, table.displayOrder),
   ],
 );
 ```
@@ -277,7 +282,7 @@ export const tradeImages = pgTable(
 
 ```typescript
 // Add to packages/db/src/schema/index.ts
-export { tradeImages } from './trade-images';
+export { tradeImages } from "./trade-images";
 ```
 
 - [ ] **Step 3: Commit**
@@ -290,6 +295,7 @@ git commit -m "feat(db): add trade_images schema"
 ### Task 6: Migration
 
 **Files:**
+
 - Create: `apps/api/drizzle/0001_trade_images.sql`
 
 - [ ] **Step 1: Create migration SQL**
@@ -329,14 +335,22 @@ git commit -m "feat(db): add trade_images migration"
 ### Task 7: Image DTOs
 
 **Files:**
+
 - Create: `apps/api/src/trades/dto/image.dto.ts`
 
 - [ ] **Step 1: Create DTOs**
 
 ```typescript
-import { IsArray, IsNumber, IsUUID, ValidateNested, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsNumber,
+  IsUUID,
+  ValidateNested,
+  Min,
+  Max,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class ReorderImageDto {
   @ApiProperty()
@@ -380,26 +394,34 @@ git commit -m "feat(trades): add image DTOs"
 ### Task 8: TradeImageService
 
 **Files:**
+
 - Create: `apps/api/src/trades/trades-image.service.ts`
 
 - [ ] **Step 1: Create service**
 
 ```typescript
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { eq, and, asc, count } from 'drizzle-orm';
-import { db } from '../db/drizzle';
-import { tradeImages, trades } from '@tradezen/db';
-import { StorageProvider } from '../storage/storage.provider';
-import { storageConfig } from '../storage/storage.config';
-import { ImageResponseDto } from './dto/image.dto';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { eq, and, asc, count } from "drizzle-orm";
+import { db } from "../db/drizzle";
+import { tradeImages, trades } from "@tradezen/db";
+import { StorageProvider } from "../storage/storage.provider";
+import { storageConfig } from "../storage/storage.config";
+import { ImageResponseDto } from "./dto/image.dto";
 
 @Injectable()
 export class TradeImageService {
-  constructor(
-    private readonly storageProvider: StorageProvider,
-  ) {}
+  constructor(private readonly storageProvider: StorageProvider) {}
 
-  async uploadImage(userId: string, tradeId: string, file: Express.Multer.File): Promise<ImageResponseDto> {
+  async uploadImage(
+    userId: string,
+    tradeId: string,
+    file: Express.Multer.File,
+  ): Promise<ImageResponseDto> {
     // Validate trade ownership
     const trade = await this.findTradeWithOwnership(tradeId, userId);
     if (!trade) throw new ForbiddenException();
@@ -422,16 +444,19 @@ export class TradeImageService {
 
     // Insert to database
     try {
-      const image = await db.insert(tradeImages).values({
-        tradeId,
-        cloudinaryPublicId: result.publicId,
-        cloudinaryVersion: result.version,
-        width: result.width,
-        height: result.height,
-        format: result.format,
-        bytes: result.bytes,
-        displayOrder: nextOrder,
-      }).returning();
+      const image = await db
+        .insert(tradeImages)
+        .values({
+          tradeId,
+          cloudinaryPublicId: result.publicId,
+          cloudinaryVersion: result.version,
+          width: result.width,
+          height: result.height,
+          format: result.format,
+          bytes: result.bytes,
+          displayOrder: nextOrder,
+        })
+        .returning();
 
       return this.formatImageResponse(image[0]);
     } catch (error) {
@@ -441,7 +466,11 @@ export class TradeImageService {
     }
   }
 
-  async deleteImage(userId: string, tradeId: string, imageId: string): Promise<void> {
+  async deleteImage(
+    userId: string,
+    tradeId: string,
+    imageId: string,
+  ): Promise<void> {
     // Validate trade ownership
     const trade = await this.findTradeWithOwnership(tradeId, userId);
     if (!trade) throw new ForbiddenException();
@@ -453,13 +482,21 @@ export class TradeImageService {
     if (!image) throw new NotFoundException();
 
     // Delete from Cloudinary
-    await this.storageProvider.delete(image.cloudinaryPublicId, image.cloudinaryVersion);
+    await this.storageProvider.delete(
+      image.cloudinaryPublicId,
+      image.cloudinaryVersion,
+    );
 
     // Delete from database
     await db.delete(tradeImages).where(eq(tradeImages.id, imageId));
   }
 
-  async replaceImage(userId: string, tradeId: string, imageId: string, file: Express.Multer.File): Promise<ImageResponseDto> {
+  async replaceImage(
+    userId: string,
+    tradeId: string,
+    imageId: string,
+    file: Express.Multer.File,
+  ): Promise<ImageResponseDto> {
     // Validate trade ownership
     const trade = await this.findTradeWithOwnership(tradeId, userId);
     if (!trade) throw new ForbiddenException();
@@ -481,7 +518,8 @@ export class TradeImageService {
     });
 
     // Update database
-    const updated = await db.update(tradeImages)
+    const updated = await db
+      .update(tradeImages)
       .set({
         cloudinaryPublicId: newResult.publicId,
         cloudinaryVersion: newResult.version,
@@ -495,12 +533,19 @@ export class TradeImageService {
       .returning();
 
     // Delete old Cloudinary asset
-    await this.storageProvider.delete(existingImage.cloudinaryPublicId, existingImage.cloudinaryVersion);
+    await this.storageProvider.delete(
+      existingImage.cloudinaryPublicId,
+      existingImage.cloudinaryVersion,
+    );
 
     return this.formatImageResponse(updated[0]);
   }
 
-  async reorderImages(userId: string, tradeId: string, imageOrders: { id: string; displayOrder: number }[]): Promise<void> {
+  async reorderImages(
+    userId: string,
+    tradeId: string,
+    imageOrders: { id: string; displayOrder: number }[],
+  ): Promise<void> {
     // Validate trade ownership
     const trade = await this.findTradeWithOwnership(tradeId, userId);
     if (!trade) throw new ForbiddenException();
@@ -508,16 +553,22 @@ export class TradeImageService {
     await db.transaction(async (tx) => {
       // Set temporary negative orders to avoid conflicts
       for (const item of imageOrders) {
-        await tx.update(tradeImages)
+        await tx
+          .update(tradeImages)
           .set({ displayOrder: -1 })
-          .where(and(eq(tradeImages.id, item.id), eq(tradeImages.tradeId, tradeId)));
+          .where(
+            and(eq(tradeImages.id, item.id), eq(tradeImages.tradeId, tradeId)),
+          );
       }
 
       // Set final orders
       for (const item of imageOrders) {
-        await tx.update(tradeImages)
+        await tx
+          .update(tradeImages)
           .set({ displayOrder: item.displayOrder })
-          .where(and(eq(tradeImages.id, item.id), eq(tradeImages.tradeId, tradeId)));
+          .where(
+            and(eq(tradeImages.id, item.id), eq(tradeImages.tradeId, tradeId)),
+          );
       }
     });
   }
@@ -542,7 +593,8 @@ export class TradeImageService {
   }
 
   async getImageCount(tradeId: string): Promise<number> {
-    const result = await db.select({ count: count() })
+    const result = await db
+      .select({ count: count() })
       .from(tradeImages)
       .where(eq(tradeImages.tradeId, tradeId));
     return Number(result[0]?.count ?? 0);
@@ -558,24 +610,31 @@ export class TradeImageService {
   private validateFile(file: Express.Multer.File): void {
     const maxSize = storageConfig.maxImageSizeMb * 1024 * 1024;
     if (file.size > maxSize) {
-      throw new BadRequestException(`File size exceeds ${storageConfig.maxImageSizeMb}MB limit`);
+      throw new BadRequestException(
+        `File size exceeds ${storageConfig.maxImageSizeMb}MB limit`,
+      );
     }
 
-    const ext = file.originalname.split('.').pop()?.toLowerCase() || '';
+    const ext = file.originalname.split(".").pop()?.toLowerCase() || "";
     if (!storageConfig.allowedImageTypes.includes(ext)) {
-      throw new BadRequestException(`File type not allowed. Allowed: ${storageConfig.allowedImageTypes.join(', ')}`);
+      throw new BadRequestException(
+        `File type not allowed. Allowed: ${storageConfig.allowedImageTypes.join(", ")}`,
+      );
     }
   }
 
   private async checkImageCount(tradeId: string): Promise<void> {
     const count = await this.getImageCount(tradeId);
     if (count >= storageConfig.maxImagesPerTrade) {
-      throw new BadRequestException(`Maximum ${storageConfig.maxImagesPerTrade} images per trade`);
+      throw new BadRequestException(
+        `Maximum ${storageConfig.maxImagesPerTrade} images per trade`,
+      );
     }
   }
 
   private async getNextDisplayOrder(tradeId: string): Promise<number> {
-    const result = await db.select({ maxOrder: count() })
+    const result = await db
+      .select({ maxOrder: count() })
       .from(tradeImages)
       .where(eq(tradeImages.tradeId, tradeId));
     return Number(result[0]?.maxOrder ?? 0);
@@ -584,8 +643,14 @@ export class TradeImageService {
   private formatImageResponse(image: any): ImageResponseDto {
     return {
       id: image.id,
-      url: this.storageProvider.getOriginalUrl(image.cloudinaryPublicId, image.cloudinaryVersion),
-      thumbnailUrl: this.storageProvider.getThumbnailUrl(image.cloudinaryPublicId, image.cloudinaryVersion),
+      url: this.storageProvider.getOriginalUrl(
+        image.cloudinaryPublicId,
+        image.cloudinaryVersion,
+      ),
+      thumbnailUrl: this.storageProvider.getThumbnailUrl(
+        image.cloudinaryPublicId,
+        image.cloudinaryVersion,
+      ),
       width: image.width,
       height: image.height,
       format: image.format,
@@ -607,6 +672,7 @@ git commit -m "feat(trades): add TradeImageService"
 ### Task 9: Image Controller
 
 **Files:**
+
 - Create: `apps/api/src/trades/trades-image.controller.ts`
 
 - [ ] **Step 1: Create controller**
@@ -623,81 +689,81 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { CurrentUser } from '../auth/current-user.decorator';
-import { TradeImageService } from './trades-image.service';
-import { ReorderImagesDto } from './dto/image.dto';
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBearerAuth, ApiTags, ApiOperation } from "@nestjs/swagger";
+import { CurrentUser } from "../auth/current-user.decorator";
+import { TradeImageService } from "./trades-image.service";
+import { ReorderImagesDto } from "./dto/image.dto";
 
-@ApiTags('trade-images')
+@ApiTags("trade-images")
 @ApiBearerAuth()
-@Controller('trades/:tradeId/images')
+@Controller("trades/:tradeId/images")
 export class TradeImageController {
   constructor(private readonly imageService: TradeImageService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Upload an image to a trade' })
+  @ApiOperation({ summary: "Upload an image to a trade" })
   @UseInterceptors(
-    FileInterceptor('file', {
+    FileInterceptor("file", {
       limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
+        if (file.mimetype.startsWith("image/")) {
           cb(null, true);
         } else {
-          cb(new BadRequestException('Only image files are allowed'), false);
+          cb(new BadRequestException("Only image files are allowed"), false);
         }
       },
     }),
   )
   upload(
-    @CurrentUser('id') userId: string,
-    @Param('tradeId') tradeId: string,
+    @CurrentUser("id") userId: string,
+    @Param("tradeId") tradeId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    if (!file) throw new BadRequestException('No file provided');
+    if (!file) throw new BadRequestException("No file provided");
     return this.imageService.uploadImage(userId, tradeId, file);
   }
 
-  @Put(':imageId')
-  @ApiOperation({ summary: 'Replace an image' })
+  @Put(":imageId")
+  @ApiOperation({ summary: "Replace an image" })
   @UseInterceptors(
-    FileInterceptor('file', {
+    FileInterceptor("file", {
       limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
+        if (file.mimetype.startsWith("image/")) {
           cb(null, true);
         } else {
-          cb(new BadRequestException('Only image files are allowed'), false);
+          cb(new BadRequestException("Only image files are allowed"), false);
         }
       },
     }),
   )
   replace(
-    @CurrentUser('id') userId: string,
-    @Param('tradeId') tradeId: string,
-    @Param('imageId') imageId: string,
+    @CurrentUser("id") userId: string,
+    @Param("tradeId") tradeId: string,
+    @Param("imageId") imageId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    if (!file) throw new BadRequestException('No file provided');
+    if (!file) throw new BadRequestException("No file provided");
     return this.imageService.replaceImage(userId, tradeId, imageId, file);
   }
 
-  @Delete(':imageId')
-  @ApiOperation({ summary: 'Delete an image' })
+  @Delete(":imageId")
+  @ApiOperation({ summary: "Delete an image" })
   delete(
-    @CurrentUser('id') userId: string,
-    @Param('tradeId') tradeId: string,
-    @Param('imageId') imageId: string,
+    @CurrentUser("id") userId: string,
+    @Param("tradeId") tradeId: string,
+    @Param("imageId") imageId: string,
   ) {
     return this.imageService.deleteImage(userId, tradeId, imageId);
   }
 
-  @Patch('reorder')
-  @ApiOperation({ summary: 'Reorder images' })
+  @Patch("reorder")
+  @ApiOperation({ summary: "Reorder images" })
   reorder(
-    @CurrentUser('id') userId: string,
-    @Param('tradeId') tradeId: string,
+    @CurrentUser("id") userId: string,
+    @Param("tradeId") tradeId: string,
     @Body() dto: ReorderImagesDto,
   ) {
     return this.imageService.reorderImages(userId, tradeId, dto.images);
@@ -715,26 +781,32 @@ git commit -m "feat(trades): add TradeImageController"
 ### Task 10: Update TradesModule
 
 **Files:**
+
 - Modify: `apps/api/src/trades/trades.module.ts`
 
 - [ ] **Step 1: Import StorageModule**
 
 ```typescript
-import { Module } from '@nestjs/common';
-import { TradesController } from './trades.controller';
-import { TradesService } from './trades.service';
-import { TradeImageService } from './trades-image.service';
-import { TradeImageController } from './trades-image.controller';
-import { BehavioralService } from '../analytics/behavioral.service';
-import { EventPublisherService } from '../common/services/event-publisher.service';
-import { QueuesModule } from '../queues/queues.module';
-import { SeedModule } from '../seed/seed.module';
-import { StorageModule } from '../storage/storage.module';
+import { Module } from "@nestjs/common";
+import { TradesController } from "./trades.controller";
+import { TradesService } from "./trades.service";
+import { TradeImageService } from "./trades-image.service";
+import { TradeImageController } from "./trades-image.controller";
+import { BehavioralService } from "../analytics/behavioral.service";
+import { EventPublisherService } from "../common/services/event-publisher.service";
+import { QueuesModule } from "../queues/queues.module";
+import { SeedModule } from "../seed/seed.module";
+import { StorageModule } from "../storage/storage.module";
 
 @Module({
   imports: [QueuesModule, SeedModule, StorageModule],
   controllers: [TradesController, TradeImageController],
-  providers: [TradesService, TradeImageService, BehavioralService, EventPublisherService],
+  providers: [
+    TradesService,
+    TradeImageService,
+    BehavioralService,
+    EventPublisherService,
+  ],
   exports: [TradesService, TradeImageService, BehavioralService],
 })
 export class TradesModule {}
@@ -750,6 +822,7 @@ git commit -m "feat(trades): update TradesModule with image support"
 ### Task 11: Update Trade Queries
 
 **Files:**
+
 - Modify: `apps/api/src/trades/trades.service.ts`
 
 - [ ] **Step 1: Inject TradeImageService**
@@ -773,7 +846,13 @@ const tradesWithImages = await Promise.all(
     const imageCount = await this.imageService.getImageCount(trade.id);
     return {
       ...trade,
-      thumbnail: thumbnail ? { url: thumbnail.url, width: thumbnail.width, height: thumbnail.height } : null,
+      thumbnail: thumbnail
+        ? {
+            url: thumbnail.url,
+            width: thumbnail.width,
+            height: thumbnail.height,
+          }
+        : null,
       imageCount,
     };
   }),
@@ -794,7 +873,7 @@ async findOne(userId: string, id: string) {
     .from(trades)
     .where(and(eq(trades.id, id), eq(trades.userId, userId)));
   if (!result[0]) throw new NotFoundException(`Trade ${id} not found`);
-  
+
   const images = await this.imageService.getImages(id);
   return { ...result[0], images };
 }
@@ -805,14 +884,14 @@ async findOne(userId: string, id: string) {
 ```typescript
 async remove(userId: string, id: string) {
   // ... existing code ...
-  
+
   // Delete all images from Cloudinary
   const images = await this.imageService.getImages(id);
   for (const image of images) {
     // Extract public_id and version from image
     // await this.imageService.deleteImage(userId, id, image.id);
   }
-  
+
   // ... rest of existing code ...
 }
 ```
@@ -831,6 +910,7 @@ git commit -m "feat(trades): update trade queries with image support"
 ### Task 12: Update TradeCard
 
 **Files:**
+
 - Modify: `apps/web/components/TradeCard.tsx`
 
 - [ ] **Step 1: Add image badge**
@@ -865,6 +945,7 @@ git commit -m "feat(web): update TradeCard with image badge"
 ### Task 13: Update Trade Detail
 
 **Files:**
+
 - Modify: `apps/web/app/trades/[id]/edit/page.tsx`
 
 - [ ] **Step 1: Add image gallery**
@@ -902,6 +983,7 @@ git commit -m "feat(web): add image gallery to trade detail"
 ### Task 14: Remove Legacy Upload Code
 
 **Files:**
+
 - Modify: `apps/api/src/trades/trades.controller.ts`
 - Modify: `apps/api/src/trades/trades.service.ts`
 
@@ -938,6 +1020,7 @@ git commit -m "refactor(trades): remove legacy upload code"
 ### Task 15: Add Environment Variables
 
 **Files:**
+
 - Modify: `.env.docker.example`
 - Modify: `apps/api/.env`
 

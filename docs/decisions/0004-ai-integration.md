@@ -7,6 +7,7 @@ Accepted
 ## Context
 
 TradeZen needs AI capabilities for:
+
 - Trading insights and coaching
 - Journal analysis
 - Semantic search
@@ -15,6 +16,7 @@ TradeZen needs AI capabilities for:
 ## Decision
 
 Integrate AI via OpenRouter with:
+
 - LangChain for LLM orchestration
 - LangGraph for complex workflows
 - pgvector for embedding storage
@@ -23,12 +25,14 @@ Integrate AI via OpenRouter with:
 ## Consequences
 
 **Easier:**
+
 - Multiple AI model access via OpenRouter
 - Complex workflows with LangGraph
 - Semantic search with embeddings
 - Cost optimization across models
 
 **Harder:**
+
 - OpenRouter dependency
 - API key management
 - Rate limiting across models

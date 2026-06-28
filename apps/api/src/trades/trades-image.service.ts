@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { eq, and, asc, count } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { tradeImages, trades } from '@tradezen/db';
@@ -8,11 +13,13 @@ import { ImageResponseDto } from './dto/image.dto';
 
 @Injectable()
 export class TradeImageService {
-  constructor(
-    private readonly storageProvider: StorageProvider,
-  ) {}
+  constructor(private readonly storageProvider: StorageProvider) {}
 
-  async uploadImage(userId: string, tradeId: string, file: Express.Multer.File): Promise<ImageResponseDto> {
+  async uploadImage(
+    userId: string,
+    tradeId: string,
+    file: Express.Multer.File,
+  ): Promise<ImageResponseDto> {
     // Validate trade ownership
     const trade = await this.findTradeWithOwnership(tradeId, userId);
     if (!trade) throw new ForbiddenException();
@@ -35,16 +42,19 @@ export class TradeImageService {
 
     // Insert to database
     try {
-      const image = await db.insert(tradeImages).values({
-        tradeId,
-        cloudinaryPublicId: result.publicId,
-        cloudinaryVersion: result.version,
-        width: result.width,
-        height: result.height,
-        format: result.format,
-        bytes: result.bytes,
-        displayOrder: nextOrder,
-      }).returning();
+      const image = await db
+        .insert(tradeImages)
+        .values({
+          tradeId,
+          cloudinaryPublicId: result.publicId,
+          cloudinaryVersion: result.version,
+          width: result.width,
+          height: result.height,
+          format: result.format,
+          bytes: result.bytes,
+          displayOrder: nextOrder,
+        })
+        .returning();
 
       return this.formatImageResponse(image[0]);
     } catch (error) {
@@ -54,7 +64,11 @@ export class TradeImageService {
     }
   }
 
-  async deleteImage(userId: string, tradeId: string, imageId: string): Promise<void> {
+  async deleteImage(
+    userId: string,
+    tradeId: string,
+    imageId: string,
+  ): Promise<void> {
     // Validate trade ownership
     const trade = await this.findTradeWithOwnership(tradeId, userId);
     if (!trade) throw new ForbiddenException();
@@ -66,13 +80,21 @@ export class TradeImageService {
     if (!image) throw new NotFoundException();
 
     // Delete from Cloudinary
-    await this.storageProvider.delete(image.cloudinaryPublicId, image.cloudinaryVersion);
+    await this.storageProvider.delete(
+      image.cloudinaryPublicId,
+      image.cloudinaryVersion,
+    );
 
     // Delete from database
     await db.delete(tradeImages).where(eq(tradeImages.id, imageId));
   }
 
-  async replaceImage(userId: string, tradeId: string, imageId: string, file: Express.Multer.File): Promise<ImageResponseDto> {
+  async replaceImage(
+    userId: string,
+    tradeId: string,
+    imageId: string,
+    file: Express.Multer.File,
+  ): Promise<ImageResponseDto> {
     // Validate trade ownership
     const trade = await this.findTradeWithOwnership(tradeId, userId);
     if (!trade) throw new ForbiddenException();
@@ -94,7 +116,8 @@ export class TradeImageService {
     });
 
     // Update database
-    const updated = await db.update(tradeImages)
+    const updated = await db
+      .update(tradeImages)
       .set({
         cloudinaryPublicId: newResult.publicId,
         cloudinaryVersion: newResult.version,
@@ -108,12 +131,19 @@ export class TradeImageService {
       .returning();
 
     // Delete old Cloudinary asset
-    await this.storageProvider.delete(existingImage.cloudinaryPublicId, existingImage.cloudinaryVersion);
+    await this.storageProvider.delete(
+      existingImage.cloudinaryPublicId,
+      existingImage.cloudinaryVersion,
+    );
 
     return this.formatImageResponse(updated[0]);
   }
 
-  async reorderImages(userId: string, tradeId: string, imageOrders: { id: string; displayOrder: number }[]): Promise<void> {
+  async reorderImages(
+    userId: string,
+    tradeId: string,
+    imageOrders: { id: string; displayOrder: number }[],
+  ): Promise<void> {
     // Validate trade ownership
     const trade = await this.findTradeWithOwnership(tradeId, userId);
     if (!trade) throw new ForbiddenException();
@@ -121,16 +151,22 @@ export class TradeImageService {
     await db.transaction(async (tx) => {
       // Set temporary negative orders to avoid conflicts
       for (const item of imageOrders) {
-        await tx.update(tradeImages)
+        await tx
+          .update(tradeImages)
           .set({ displayOrder: -1 })
-          .where(and(eq(tradeImages.id, item.id), eq(tradeImages.tradeId, tradeId)));
+          .where(
+            and(eq(tradeImages.id, item.id), eq(tradeImages.tradeId, tradeId)),
+          );
       }
 
       // Set final orders
       for (const item of imageOrders) {
-        await tx.update(tradeImages)
+        await tx
+          .update(tradeImages)
           .set({ displayOrder: item.displayOrder })
-          .where(and(eq(tradeImages.id, item.id), eq(tradeImages.tradeId, tradeId)));
+          .where(
+            and(eq(tradeImages.id, item.id), eq(tradeImages.tradeId, tradeId)),
+          );
       }
     });
   }
@@ -155,7 +191,8 @@ export class TradeImageService {
   }
 
   async getImageCount(tradeId: string): Promise<number> {
-    const result = await db.select({ count: count() })
+    const result = await db
+      .select({ count: count() })
       .from(tradeImages)
       .where(eq(tradeImages.tradeId, tradeId));
     return Number(result[0]?.count ?? 0);
@@ -171,24 +208,31 @@ export class TradeImageService {
   private validateFile(file: Express.Multer.File): void {
     const maxSize = storageConfig.maxImageSizeMb * 1024 * 1024;
     if (file.size > maxSize) {
-      throw new BadRequestException(`File size exceeds ${storageConfig.maxImageSizeMb}MB limit`);
+      throw new BadRequestException(
+        `File size exceeds ${storageConfig.maxImageSizeMb}MB limit`,
+      );
     }
 
     const ext = file.originalname.split('.').pop()?.toLowerCase() || '';
     if (!storageConfig.allowedImageTypes.includes(ext)) {
-      throw new BadRequestException(`File type not allowed. Allowed: ${storageConfig.allowedImageTypes.join(', ')}`);
+      throw new BadRequestException(
+        `File type not allowed. Allowed: ${storageConfig.allowedImageTypes.join(', ')}`,
+      );
     }
   }
 
   private async checkImageCount(tradeId: string): Promise<void> {
     const count = await this.getImageCount(tradeId);
     if (count >= storageConfig.maxImagesPerTrade) {
-      throw new BadRequestException(`Maximum ${storageConfig.maxImagesPerTrade} images per trade`);
+      throw new BadRequestException(
+        `Maximum ${storageConfig.maxImagesPerTrade} images per trade`,
+      );
     }
   }
 
   private async getNextDisplayOrder(tradeId: string): Promise<number> {
-    const result = await db.select({ maxOrder: count() })
+    const result = await db
+      .select({ maxOrder: count() })
       .from(tradeImages)
       .where(eq(tradeImages.tradeId, tradeId));
     return Number(result[0]?.maxOrder ?? 0);
@@ -197,8 +241,14 @@ export class TradeImageService {
   private formatImageResponse(image: any): ImageResponseDto {
     return {
       id: image.id,
-      url: this.storageProvider.getOriginalUrl(image.cloudinaryPublicId, image.cloudinaryVersion),
-      thumbnailUrl: this.storageProvider.getThumbnailUrl(image.cloudinaryPublicId, image.cloudinaryVersion),
+      url: this.storageProvider.getOriginalUrl(
+        image.cloudinaryPublicId,
+        image.cloudinaryVersion,
+      ),
+      thumbnailUrl: this.storageProvider.getThumbnailUrl(
+        image.cloudinaryPublicId,
+        image.cloudinaryVersion,
+      ),
       width: image.width,
       height: image.height,
       format: image.format,

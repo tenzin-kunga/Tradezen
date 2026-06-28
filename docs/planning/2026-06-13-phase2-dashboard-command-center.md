@@ -13,11 +13,13 @@
 ## File Map
 
 ### Backend (API)
+
 - **Create:** `apps/api/src/trades/dto/dashboard.dto.ts` — Response DTO for dashboard endpoint
 - **Modify:** `apps/api/src/trades/trades.controller.ts` — Add `GET /trades/dashboard` endpoint
 - **Modify:** `apps/api/src/trades/trades.service.ts` — Add `getDashboardData()` method
 
 ### Frontend — New Components
+
 - `apps/web/components/DashboardHero.tsx` — Welcome + weekly stats
 - `apps/web/components/EquityCurve.tsx` — lightweight-charts equity curve
 - `apps/web/components/DailySummaryCard.tsx` — Today's activity summary
@@ -28,6 +30,7 @@
 - `apps/web/components/AnalyticsPreviewWidget.tsx` — Top insights preview
 
 ### Frontend — Modified
+
 - `apps/web/lib/api.ts` — Add `getDashboardData()` and `getJournalLatest()` API functions
 - `apps/web/app/page.tsx` — Full rewrite: grid layout orchestrating all 8 widgets
 - `apps/web/package.json` — Add `lightweight-charts` and `date-fns` dependencies
@@ -38,11 +41,13 @@
 ### Task 1: Install dependencies
 
 **Files:**
+
 - Modify: `apps/web/package.json`
 
 - [ ] **Install lightweight-charts and date-fns**
 
 Run:
+
 ```powershell
 cd "apps/web"
 bun add lightweight-charts date-fns
@@ -53,6 +58,7 @@ bun add lightweight-charts date-fns
 ### Task 2: Add API functions
 
 **Files:**
+
 - Modify: `apps/web/lib/api.ts`
 
 - [ ] **Add getDashboardData and getJournalLatest functions**
@@ -83,7 +89,12 @@ export interface DashboardData {
     avgRR: number;
     profitFactor: number;
   };
-  heatmap: { date: string; trades: number; pnl: number; disciplined: boolean }[];
+  heatmap: {
+    date: string;
+    trades: number;
+    pnl: number;
+    disciplined: boolean;
+  }[];
 }
 
 export const getDashboardData = async (): Promise<DashboardData> => {
@@ -103,6 +114,7 @@ export const getJournalLatest = async () => {
 ### Task 3: Create backend dashboard endpoint DTO
 
 **Files:**
+
 - Create: `apps/api/src/trades/dto/dashboard.dto.ts`
 
 - [ ] **Create DashboardDto**
@@ -131,7 +143,12 @@ export class DashboardResponseDto {
     avgRR: number;
     profitFactor: number;
   };
-  heatmap!: { date: string; trades: number; pnl: number; disciplined: boolean }[];
+  heatmap!: {
+    date: string;
+    trades: number;
+    pnl: number;
+    disciplined: boolean;
+  }[];
 }
 ```
 
@@ -140,6 +157,7 @@ export class DashboardResponseDto {
 ### Task 4: Add getDashboardData to trades service
 
 **Files:**
+
 - Modify: `apps/api/src/trades/trades.service.ts` — Add getDashboardData() method
 
 - [ ] **Add getDashboardData method to TradesService**
@@ -360,9 +378,25 @@ async getDashboardData(userId: string): Promise<import('./dto/dashboard.dto').Da
 - [ ] **Import asc at top of file** (add to the drizzle-orm imports on lines 11-16)
 
 Find the existing import line:
+
 ```typescript
-import { eq, and, or, ilike, desc, asc, sql, count, lt, gt, gte, lte, inArray } from 'drizzle-orm';
+import {
+  eq,
+  and,
+  or,
+  ilike,
+  desc,
+  asc,
+  sql,
+  count,
+  lt,
+  gt,
+  gte,
+  lte,
+  inArray,
+} from "drizzle-orm";
 ```
+
 Verify `asc` is already in the import (it appears to be). If not, add it.
 
 - [ ] **Add `tradeDate` and `createdAt` to the type guard** (existing drizzle schema already has these fields)
@@ -372,6 +406,7 @@ Verify `asc` is already in the import (it appears to be). If not, add it.
 ### Task 5: Add dashboard endpoint to controller
 
 **Files:**
+
 - Modify: `apps/api/src/trades/trades.controller.ts`
 
 - [ ] **Add GET /trades/dashboard endpoint**
@@ -391,6 +426,7 @@ getDashboard(@CurrentUser('id') userId: string) {
 ### Task 6: Create DashboardHero component
 
 **Files:**
+
 - Create: `apps/web/components/DashboardHero.tsx`
 
 - [ ] **Create DashboardHero with welcome + weekly stats**
@@ -462,6 +498,7 @@ export default function DashboardHero({ tradesThisWeek, weeklyPnl, weeklyWinRate
 ### Task 7: Create EquityCurve component with lightweight-charts
 
 **Files:**
+
 - Create: `apps/web/components/EquityCurve.tsx`
 - Delete: `apps/web/components/EquityChart.tsx`
 
@@ -607,6 +644,7 @@ export default function EquityCurve({ data, loading }: Props) {
 ### Task 8: Create DailySummaryCard component
 
 **Files:**
+
 - Create: `apps/web/components/DailySummaryCard.tsx`
 
 - [ ] **Create DailySummaryCard**
@@ -668,6 +706,7 @@ function Row({ label, value, color }: { label: string; value: string; color?: st
 ### Task 9: Create RecentTradesWidget component
 
 **Files:**
+
 - Create: `apps/web/components/RecentTradesWidget.tsx`
 
 - [ ] **Create RecentTradesWidget**
@@ -824,6 +863,7 @@ export default function RecentTradesWidget({ trades, onDelete, loading }: Props)
 ### Task 10: Create JournalSnapshotWidget component
 
 **Files:**
+
 - Create: `apps/web/components/JournalSnapshotWidget.tsx`
 
 - [ ] **Create JournalSnapshotWidget**
@@ -911,6 +951,7 @@ export default function JournalSnapshotWidget({ entry, loading }: Props) {
 ### Task 11: Create TradingHeatmap component
 
 **Files:**
+
 - Create: `apps/web/components/TradingHeatmap.tsx`
 
 - [ ] **Create TradingHeatmap**
@@ -1025,6 +1066,7 @@ export default function TradingHeatmap({ data, loading }: Props) {
 ### Task 12: Create BehaviorAnalyticsWidget component
 
 **Files:**
+
 - Create: `apps/web/components/BehaviorAnalyticsWidget.tsx`
 
 - [ ] **Create BehaviorAnalyticsWidget**
@@ -1101,6 +1143,7 @@ function BarRow({ label, value, pct, color }: { label: string; value: string; pc
 ### Task 13: Create AnalyticsPreviewWidget component
 
 **Files:**
+
 - Create: `apps/web/components/AnalyticsPreviewWidget.tsx`
 
 - [ ] **Create AnalyticsPreviewWidget**
@@ -1169,6 +1212,7 @@ function InsightRow({ label, value }: { label: string; value: string }) {
 ### Task 14: Rewrite dashboard page
 
 **Files:**
+
 - Modify: `apps/web/app/page.tsx`
 
 - [ ] **Rewrite app/page.tsx with new widget grid**
@@ -1321,11 +1365,13 @@ export default function Dashboard() {
 ### Task 15: Add AuthContext import to AuthProvider check
 
 **Files:**
+
 - Verify: `apps/web/context/AuthContext.tsx` exists and exports `useAuth`
 
 - [ ] **Check AuthContext exports a useAuth hook**
 
 If not, create the context. Expected export:
+
 ```typescript
 export function useAuth() {
   const context = useContext(AuthContext);
@@ -1341,6 +1387,7 @@ This should already exist since DashboardHero references it and Phase 1 worked.
 ### Task 16: Verify build
 
 **Files:**
+
 - N/A
 
 - [ ] **Check types and build**
@@ -1353,6 +1400,7 @@ bun run check-types
 Expected: All 4 packages pass (4 successful, 0 cached, no errors).
 
 If there are type errors, fix them in the affected files. Common issues:
+
 - `DashboardData` type not matching API response shape
 - Missing exports in `api.ts`
 - `useAuth` not found
@@ -1362,6 +1410,7 @@ If there are type errors, fix them in the affected files. Common issues:
 ### Task 17: Commit
 
 **Files:**
+
 - All of the above
 
 - [ ] **Commit Phase 2**
@@ -1384,16 +1433,16 @@ git commit -m "feat: Phase 2 dashboard command center with 8 widgets
 
 ## Self-Review Checklist
 
-| Spec Requirement | Task(s) | Status |
-|---|---|---|
-| Dashboard hero with weekly stats | Task 6 (DashboardHero) + Task 4 (backend data) | ✅ |
-| Equity curve with time filters | Task 7 (EquityCurve) + Task 4 (backend data) | ✅ |
-| Daily summary widget | Task 8 (DailySummaryCard) + Task 4 (backend data) | ✅ |
-| Recent trades with actions | Task 9 (RecentTradesWidget) + Task 14 (dashboard page) | ✅ |
-| Journal snapshot | Task 10 (JournalSnapshotWidget) + Task 2 (+ API) + Task 14 | ✅ |
-| Trading consistency heatmap | Task 11 (TradingHeatmap) + Task 4 (backend data) | ✅ |
-| Behavior analytics widget | Task 12 (BehaviorAnalyticsWidget) + Task 4 (backend data) | ✅ |
-| Analytics preview widget | Task 13 (AnalyticsPreviewWidget) + Task 4 (backend data) | ✅ |
-| Responsive 2-col layout | Task 14 (dashboard page grid classes) | ✅ |
-| Loading/error states | Every widget has loading prop + empty state | ✅ |
-| Build passes | Task 16 | ✅ |
+| Spec Requirement                 | Task(s)                                                    | Status |
+| -------------------------------- | ---------------------------------------------------------- | ------ |
+| Dashboard hero with weekly stats | Task 6 (DashboardHero) + Task 4 (backend data)             | ✅     |
+| Equity curve with time filters   | Task 7 (EquityCurve) + Task 4 (backend data)               | ✅     |
+| Daily summary widget             | Task 8 (DailySummaryCard) + Task 4 (backend data)          | ✅     |
+| Recent trades with actions       | Task 9 (RecentTradesWidget) + Task 14 (dashboard page)     | ✅     |
+| Journal snapshot                 | Task 10 (JournalSnapshotWidget) + Task 2 (+ API) + Task 14 | ✅     |
+| Trading consistency heatmap      | Task 11 (TradingHeatmap) + Task 4 (backend data)           | ✅     |
+| Behavior analytics widget        | Task 12 (BehaviorAnalyticsWidget) + Task 4 (backend data)  | ✅     |
+| Analytics preview widget         | Task 13 (AnalyticsPreviewWidget) + Task 4 (backend data)   | ✅     |
+| Responsive 2-col layout          | Task 14 (dashboard page grid classes)                      | ✅     |
+| Loading/error states             | Every widget has loading prop + empty state                | ✅     |
+| Build passes                     | Task 16                                                    | ✅     |

@@ -74,12 +74,20 @@ export default function StrategyDrawer({
       >
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-sm tracking-widest m-0" style={{ color: "var(--text-primary)" }}>
+            <h2
+              className="text-sm tracking-widest m-0"
+              style={{ color: "var(--text-primary)" }}
+            >
               #{strategy}
             </h2>
             <div
               className="text-lg font-bold mt-1"
-              style={{ color: metrics.totalPnl >= 0 ? "var(--accent-profit)" : "var(--accent-loss)" }}
+              style={{
+                color:
+                  metrics.totalPnl >= 0
+                    ? "var(--accent-profit)"
+                    : "var(--accent-loss)",
+              }}
             >
               {metrics.totalPnl >= 0 ? "+" : ""}${metrics.totalPnl.toFixed(2)}
             </div>
@@ -105,22 +113,37 @@ export default function StrategyDrawer({
             {
               label: "WIN RATE",
               value: `${metrics.winRate.toFixed(2)}%`,
-              color: metrics.winRate >= 50 ? "var(--accent-profit)" : "var(--accent-loss)",
+              color:
+                metrics.winRate >= 50
+                  ? "var(--accent-profit)"
+                  : "var(--accent-loss)",
             },
             {
               label: "PROFIT FACTOR",
-              value: metrics.profitFactor === Infinity ? "∞" : metrics.profitFactor.toFixed(2),
-              color: metrics.profitFactor >= 1.5 ? "var(--accent-profit)" : "var(--accent-warn)",
+              value:
+                metrics.profitFactor === Infinity
+                  ? "∞"
+                  : metrics.profitFactor.toFixed(2),
+              color:
+                metrics.profitFactor >= 1.5
+                  ? "var(--accent-profit)"
+                  : "var(--accent-warn)",
             },
             {
               label: "EXPECTANCY",
               value: `${metrics.expectancy >= 0 ? "+" : ""}$${metrics.expectancy.toFixed(2)}`,
-              color: metrics.expectancy >= 0 ? "var(--accent-profit)" : "var(--accent-loss)",
+              color:
+                metrics.expectancy >= 0
+                  ? "var(--accent-profit)"
+                  : "var(--accent-loss)",
             },
             {
               label: "AVG RR",
               value: metrics.avgRr.toFixed(2),
-              color: metrics.avgRr >= 1.5 ? "var(--accent-profit)" : "var(--accent-warn)",
+              color:
+                metrics.avgRr >= 1.5
+                  ? "var(--accent-profit)"
+                  : "var(--accent-warn)",
             },
             {
               label: "MAX DD",
@@ -133,29 +156,57 @@ export default function StrategyDrawer({
               className="rounded p-3"
               style={{ backgroundColor: "var(--bg-primary)" }}
             >
-              <div className="text-[10px] tracking-widest mb-1" style={{ color: "var(--text-dim)" }}>
+              <div
+                className="text-[10px] tracking-widest mb-1"
+                style={{ color: "var(--text-dim)" }}
+              >
                 {m.label}
               </div>
-              <div className="text-sm font-bold font-mono" style={{ color: m.color ?? "var(--text-primary)" }}>
+              <div
+                className="text-sm font-bold font-mono"
+                style={{ color: m.color ?? "var(--text-primary)" }}
+              >
                 {m.value}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mb-2 text-xs tracking-widest" style={{ color: "var(--text-muted)" }}>
+        <div
+          className="mb-2 text-xs tracking-widest"
+          style={{ color: "var(--text-muted)" }}
+        >
           MONTHLY P&L TREND
         </div>
         {loading ? (
-          <div className="text-xs text-center py-10" style={{ color: "var(--text-dim)" }}>
+          <div
+            className="text-xs text-center py-10"
+            style={{ color: "var(--text-dim)" }}
+          >
             LOADING...
           </div>
         ) : monthly.length > 1 ? (
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={monthly} margin={{ top: 4, right: 4, bottom: 4, left: -20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fill: "var(--text-muted)", fontSize: 9 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "var(--text-muted)", fontSize: 10 }} axisLine={false} tickLine={false} />
+            <LineChart
+              data={monthly}
+              margin={{ top: 4, right: 4, bottom: 4, left: -20 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--border)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="month"
+                tick={{ fill: "var(--text-muted)", fontSize: 9 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "var(--text-muted)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+              />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "var(--bg-surface)",
@@ -166,12 +217,23 @@ export default function StrategyDrawer({
                   fontSize: "11px",
                 }}
               />
-              <Line type="monotone" dataKey="pnl" stroke="var(--accent-profit)" strokeWidth={2} dot={false} />
+              <Line
+                type="monotone"
+                dataKey="pnl"
+                stroke="var(--accent-profit)"
+                strokeWidth={2}
+                dot={false}
+              />
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className="text-xs text-center py-10" style={{ color: "var(--text-dim)" }}>
-            {monthly.length === 1 ? "SINGLE MONTH — MORE DATA NEEDED" : "NO MONTHLY DATA"}
+          <div
+            className="text-xs text-center py-10"
+            style={{ color: "var(--text-dim)" }}
+          >
+            {monthly.length === 1
+              ? "SINGLE MONTH — MORE DATA NEEDED"
+              : "NO MONTHLY DATA"}
           </div>
         )}
       </div>

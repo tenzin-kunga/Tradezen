@@ -71,12 +71,14 @@ export class AiInsightsService {
       }));
 
       const generatedAt = rows.reduce(
-        (latest, r) =>
-          Math.max(latest, new Date(r.createdAt ?? 0).getTime()),
+        (latest, r) => Math.max(latest, new Date(r.createdAt ?? 0).getTime()),
         0,
       );
 
-      return { insights: cards, generatedAt: new Date(generatedAt).toISOString() };
+      return {
+        insights: cards,
+        generatedAt: new Date(generatedAt).toISOString(),
+      };
     }
 
     return null;
@@ -156,13 +158,17 @@ export class AiInsightsService {
           category: 'discipline',
           title: 'Revenge Trading',
           message: `${(vengeanceRate * 100).toFixed(0)}% of your trades are revenge trades after a loss. Taking a 15-minute break after a loss can reduce revenge trading by up to 60%.`,
-          metrics: { vengeanceRate: Math.round(vengeanceRate * 100), totalTrades },
+          metrics: {
+            vengeanceRate: Math.round(vengeanceRate * 100),
+            totalTrades,
+          },
           createdAt: '',
         },
       });
     }
 
-    const trendAlignedCount = (analytics as any).behavioralStats?.trendAlignedCount ?? 0;
+    const trendAlignedCount =
+      (analytics as any).behavioralStats?.trendAlignedCount ?? 0;
     const trendRate = totalTrades > 0 ? trendAlignedCount / totalTrades : 0;
     if (trendAlignedCount >= 5) {
       candidates.push({
@@ -172,7 +178,10 @@ export class AiInsightsService {
           category: 'discipline',
           title: 'Trend Alignment',
           message: `${(trendRate * 100).toFixed(0)}% of your trades are trend-aligned. Traders with >70% trend alignment typically see 15-20% higher win rates.`,
-          metrics: { trendAlignmentRate: Math.round(trendRate * 100), trendAlignedCount },
+          metrics: {
+            trendAlignmentRate: Math.round(trendRate * 100),
+            trendAlignedCount,
+          },
           createdAt: '',
         },
       });
@@ -183,7 +192,10 @@ export class AiInsightsService {
     const validStrategies = byStrategy.filter((s: any) => s.trades >= 5);
     if (validStrategies.length > 0) {
       const best = validStrategies[0];
-      const wr = best.wins && best.trades ? Math.round((best.wins / best.trades) * 100) : 0;
+      const wr =
+        best.wins && best.trades
+          ? Math.round((best.wins / best.trades) * 100)
+          : 0;
       candidates.push({
         priority: 6,
         card: {
@@ -191,7 +203,12 @@ export class AiInsightsService {
           category: 'performance',
           title: 'Best Strategy',
           message: `${best.name} is your best-performing strategy with ${best.trades} trades and a ${wr}% win rate (${best.pnl > 0 ? '+' : ''}$${Number(best.pnl).toFixed(0)} P&L).`,
-          metrics: { strategy: best.name, trades: best.trades, winRate: wr, pnl: Number(best.pnl) },
+          metrics: {
+            strategy: best.name,
+            trades: best.trades,
+            winRate: wr,
+            pnl: Number(best.pnl),
+          },
           createdAt: '',
         },
       });
@@ -258,13 +275,13 @@ export class AiInsightsService {
       });
     }
 
-    const bestDay = (analytics as any).byDayOfWeek?.slice()?.sort(
-      (a: any, b: any) => b.pnl - a.pnl,
-    )[0];
+    const bestDay = (analytics as any).byDayOfWeek
+      ?.slice()
+      ?.sort((a: any, b: any) => b.pnl - a.pnl)[0];
     if (bestDay && bestDay.trades >= 5) {
-      const worstDay = (analytics as any).byDayOfWeek?.slice()?.sort(
-        (a: any, b: any) => a.pnl - b.pnl,
-      )[0];
+      const worstDay = (analytics as any).byDayOfWeek
+        ?.slice()
+        ?.sort((a: any, b: any) => a.pnl - b.pnl)[0];
       candidates.push({
         priority: 9,
         card: {

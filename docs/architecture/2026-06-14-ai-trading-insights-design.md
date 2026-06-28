@@ -25,43 +25,44 @@ Inside: 4 category groups displayed as a vertical stack. All four visible by def
 
 ### Category 1: Performance
 
-| Metric | Source | Notes |
-|--------|--------|-------|
-| Best Strategy | `/trades/analytics` → `bestStrategy` | Show name + `N trades • X% WR` |
-| Best Session | `/trades/analytics` → `bestSession` | Show name + `N trades • PF X.X` |
-| Profit Factor | `/trades/analytics` → `profitFactor` | Show value, `∞` for infinite |
-| Expectancy | `/trades/analytics` → `expectancy` | Show `+$X.XX/trade` |
+| Metric        | Source                               | Notes                           |
+| ------------- | ------------------------------------ | ------------------------------- |
+| Best Strategy | `/trades/analytics` → `bestStrategy` | Show name + `N trades • X% WR`  |
+| Best Session  | `/trades/analytics` → `bestSession`  | Show name + `N trades • PF X.X` |
+| Profit Factor | `/trades/analytics` → `profitFactor` | Show value, `∞` for infinite    |
+| Expectancy    | `/trades/analytics` → `expectancy`   | Show `+$X.XX/trade`             |
 
 ### Category 2: Discipline
 
-| Metric | Source | Notes |
-|--------|--------|-------|
-| FOMO Trades | `/trades/analytics/behavioral` → `fomo.fomoScore` | Show `X%` |
-| Vengeance Trades | `/trades/analytics/behavioral` → `revenge.revengeScore` | Show `X%` |
-| Trend-Aligned Trades | computed from trades (dashboard data) | `trendAlignedCount / totalTrades`, show `X%` |
-| Most Common Mistake | `/trades/analytics/behavioral` → derive from max(fomo.fomoScore, revenge.revengeScore, scores.lossChasing) | Show label: "FOMO Entries", "Revenge Trading", or "Loss Chasing" |
+| Metric               | Source                                                                                                     | Notes                                                            |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| FOMO Trades          | `/trades/analytics/behavioral` → `fomo.fomoScore`                                                          | Show `X%`                                                        |
+| Vengeance Trades     | `/trades/analytics/behavioral` → `revenge.revengeScore`                                                    | Show `X%`                                                        |
+| Trend-Aligned Trades | computed from trades (dashboard data)                                                                      | `trendAlignedCount / totalTrades`, show `X%`                     |
+| Most Common Mistake  | `/trades/analytics/behavioral` → derive from max(fomo.fomoScore, revenge.revengeScore, scores.lossChasing) | Show label: "FOMO Entries", "Revenge Trading", or "Loss Chasing" |
 
 ### Category 3: Risk
 
-| Metric | Source | Notes |
-|--------|--------|-------|
-| Average RR | `/trades/analytics` → `avgRR` | Show `X.X` |
-| Largest Loss | computed from trades | Show `-$X` |
-| Largest Win | computed from trades | Show `+$X` |
-| Position Size Consistency | computed from trades | Show Good/Fair/Inconsistent |
+| Metric                    | Source                        | Notes                       |
+| ------------------------- | ----------------------------- | --------------------------- |
+| Average RR                | `/trades/analytics` → `avgRR` | Show `X.X`                  |
+| Largest Loss              | computed from trades          | Show `-$X`                  |
+| Largest Win               | computed from trades          | Show `+$X`                  |
+| Position Size Consistency | computed from trades          | Show Good/Fair/Inconsistent |
 
 ### Category 4: Consistency
 
-| Metric | Source | Notes |
-|--------|--------|-------|
-| Current Streak | `/trades/analytics/advanced` → `currentStreak` | Show `X Wins` / `X Losses` |
-| Best Week | computed from `/trades/analytics` → `byMonth` | Show `+$X` for best month |
-| Best Day | `/trades/dashboard` → insights `bestDay` | Show day name |
-| Trade Frequency | `/trades/analytics` → `totalTrades / daysSinceFirstTrade` | Show `X.X/day` |
+| Metric          | Source                                                    | Notes                      |
+| --------------- | --------------------------------------------------------- | -------------------------- |
+| Current Streak  | `/trades/analytics/advanced` → `currentStreak`            | Show `X Wins` / `X Losses` |
+| Best Week       | computed from `/trades/analytics` → `byMonth`             | Show `+$X` for best month  |
+| Best Day        | `/trades/dashboard` → insights `bestDay`                  | Show day name              |
+| Trade Frequency | `/trades/analytics` → `totalTrades / daysSinceFirstTrade` | Show `X.X/day`             |
 
 ### Sample Size Rule
 
 Every metric that references a subset of trades MUST display the sample count:
+
 - `34 trades • 68% WR`
 - `52 trades • PF 1.9`
 - `12 trades • +$14.20 avg`
@@ -75,6 +76,7 @@ At the `sm` breakpoint (≤ 640px), categories collapse into accordion sections 
 ### Position Size Consistency Algorithm
 
 Compute the coefficient of variation (CV) = stdDev(lotSizes) / mean(lotSizes):
+
 - CV < 0.3 → "Good"
 - CV < 0.6 → "Fair"
 - CV ≥ 0.6 → "Inconsistent"
@@ -92,11 +94,13 @@ If `totalTrades` is 0, show the existing `EmptyState` with CTA to log the first 
 One `WidgetShell` with the title **AI COACH** below the Analytics Insights card. No link in header.
 
 **Contents:** 1–3 insight cards, each containing:
+
 - A category tag (Performance / Discipline / Risk / Consistency)
 - A natural-language insight sentence that traces to visible dashboard metrics
 - Optional secondary stats shown inline
 
 **Examples of valid insights:**
+
 > Your London session trades have a 68% win rate versus 47% in New York. (reference: Performance → Best Session)
 >
 > Trend-aligned trades show a 73% win rate compared to 41% for non-aligned trades. (reference: Discipline → Trend Alignment)
@@ -104,6 +108,7 @@ One `WidgetShell` with the title **AI COACH** below the Analytics Insights card.
 > Your average RR of 0.8 is below the 1.5 threshold. Improving reward targets could increase profitability. (reference: Risk → Avg RR)
 
 **Examples of invalid insights (must NOT generate):**
+
 > You seem emotionally reactive during volatile conditions. (no traceable metric)
 
 ### Data Source
@@ -115,6 +120,7 @@ One `WidgetShell` with the title **AI COACH** below the Analytics Insights card.
 ### Graceful Fallback
 
 If no insights are available (fresh account, coaching engine disabled, API error):
+
 > AI Coach is warming up. Insights will appear after more trading data is collected.
 
 No loading spinner on dashboard mount. Insights are fetched once and cached.
@@ -148,6 +154,7 @@ Returns structured insights:
 ```
 
 Insight generation logic:
+
 1. Fetch analytics from `/trades/analytics`, `/analytics/advanced`, `/analytics/behavioral`
 2. Apply rule-based templates (no LLM required):
    - Compare session WRs → if gap > 15%, generate session insight
@@ -165,25 +172,25 @@ Insight generation logic:
 
 ### New Files
 
-| File | Purpose |
-|------|---------|
-| `components/AnalyticsInsightsWidget.tsx` | 4-category computed insights card |
-| `components/AiCoachWidget.tsx` | AI Coach insight cards |
-| `hooks/useAiInsights.ts` | Fetch + cache state for AI insights |
-| `lib/api.ts` additions | `getAiInsights()` function |
+| File                                     | Purpose                             |
+| ---------------------------------------- | ----------------------------------- |
+| `components/AnalyticsInsightsWidget.tsx` | 4-category computed insights card   |
+| `components/AiCoachWidget.tsx`           | AI Coach insight cards              |
+| `hooks/useAiInsights.ts`                 | Fetch + cache state for AI insights |
+| `lib/api.ts` additions                   | `getAiInsights()` function          |
 
 ### Changed Files
 
-| File | Change |
-|------|--------|
-| `app/page.tsx` | Swap `AnalyticsPreviewWidget` → `AnalyticsInsightsWidget`, add `AiCoachWidget` below |
-| `lib/layout-types.ts` | Update `WidgetId` to include `"analytics-insights"` and `"ai-coach"` |
-| `lib/api.ts` | Add `getAiInsights()` |
+| File                  | Change                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------ |
+| `app/page.tsx`        | Swap `AnalyticsPreviewWidget` → `AnalyticsInsightsWidget`, add `AiCoachWidget` below |
+| `lib/layout-types.ts` | Update `WidgetId` to include `"analytics-insights"` and `"ai-coach"`                 |
+| `lib/api.ts`          | Add `getAiInsights()`                                                                |
 
 ### Deleted Files
 
-| File | Reason |
-|------|--------|
+| File                                    | Reason                                |
+| --------------------------------------- | ------------------------------------- |
 | `components/AnalyticsPreviewWidget.tsx` | Replaced by `AnalyticsInsightsWidget` |
 
 ### Layout Migration

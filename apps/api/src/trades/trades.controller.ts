@@ -90,7 +90,10 @@ export class TradesController {
   }
 
   @Get('analytics/risk')
-  @ApiOperation({ summary: 'Get risk analytics: VaR, R-multiple distribution, risk by strategy' })
+  @ApiOperation({
+    summary:
+      'Get risk analytics: VaR, R-multiple distribution, risk by strategy',
+  })
   getRiskAnalytics(@CurrentUser('id') userId: string) {
     return this.service.getRiskAnalytics(userId);
   }

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { markNotificationRead } from '../lib/api';
+import { markNotificationRead } from "../lib/api";
 
 interface Notification {
   id: string;
@@ -12,13 +12,13 @@ interface Notification {
 }
 
 const typeConfig: Record<string, { color: string; icon: string }> = {
-  coaching: { color: '#3b82f6', icon: '🎯' },
-  drawdown_alert: { color: '#ef4444', icon: '📉' },
-  journal_reminder: { color: '#f59e0b', icon: '📝' },
-  streak_milestone: { color: '#10b981', icon: '🔥' },
-  weekly_summary: { color: '#8b5cf6', icon: '📊' },
-  fomo_warning: { color: '#f97316', icon: '⚠️' },
-  discipline_reminder: { color: '#06b6d4', icon: '🧠' },
+  coaching: { color: "#3b82f6", icon: "🎯" },
+  drawdown_alert: { color: "#ef4444", icon: "📉" },
+  journal_reminder: { color: "#f59e0b", icon: "📝" },
+  streak_milestone: { color: "#10b981", icon: "🔥" },
+  weekly_summary: { color: "#8b5cf6", icon: "📊" },
+  fomo_warning: { color: "#f97316", icon: "⚠️" },
+  discipline_reminder: { color: "#06b6d4", icon: "🧠" },
 };
 
 export function NotificationItem({
@@ -28,14 +28,17 @@ export function NotificationItem({
   notification: Notification;
   onRead: (id: string) => void;
 }) {
-  const config = typeConfig[notification.type] || { color: '#6b7280', icon: '📌' };
+  const config = typeConfig[notification.type] || {
+    color: "#6b7280",
+    icon: "📌",
+  };
 
   const handleMarkRead = async () => {
     try {
       await markNotificationRead(notification.id);
       onRead(notification.id);
     } catch (err) {
-      console.error('Failed to mark notification read:', err);
+      console.error("Failed to mark notification read:", err);
     }
   };
 
@@ -55,9 +58,21 @@ export function NotificationItem({
           {config.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm" style={{ color: "var(--text-primary)" }}>{notification.title}</div>
-          <div className="text-xs mt-1 line-clamp-2" style={{ color: "var(--text-muted)" }}>{notification.message}</div>
-          <div className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>{timeAgo}</div>
+          <div
+            className="font-medium text-sm"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {notification.title}
+          </div>
+          <div
+            className="text-xs mt-1 line-clamp-2"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {notification.message}
+          </div>
+          <div className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>
+            {timeAgo}
+          </div>
         </div>
       </div>
     </div>
@@ -69,7 +84,7 @@ function getTimeAgo(dateStr: string): string {
   const date = new Date(dateStr);
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (seconds < 60) return 'Just now';
+  if (seconds < 60) return "Just now";
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;

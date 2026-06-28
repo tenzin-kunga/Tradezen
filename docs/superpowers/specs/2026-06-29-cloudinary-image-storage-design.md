@@ -39,21 +39,21 @@ CREATE INDEX idx_trade_images_order ON trade_images(trade_id, display_order);
 
 ### Key Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| No `url` or `thumbnail_url` columns | Derived values generated from `cloudinary_public_id` + `cloudinary_version` at response time. Avoids migrations when CDN/transformation settings change. |
-| No `status` column | Uploads are synchronous. UI shows "Uploading..." without persisting state. Add only if async processing is introduced later. |
-| `metadata JSONB NOT NULL DEFAULT '{}'` | Avoids null checks everywhere. Always an object. |
-| `UNIQUE (trade_id, display_order)` | Prevents duplicate ordering at DB level. |
-| `SELECT COUNT(*) FOR UPDATE` in service | Prevents race conditions on image count limit. |
+| Decision                                | Rationale                                                                                                                                                |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No `url` or `thumbnail_url` columns     | Derived values generated from `cloudinary_public_id` + `cloudinary_version` at response time. Avoids migrations when CDN/transformation settings change. |
+| No `status` column                      | Uploads are synchronous. UI shows "Uploading..." without persisting state. Add only if async processing is introduced later.                             |
+| `metadata JSONB NOT NULL DEFAULT '{}'`  | Avoids null checks everywhere. Always an object.                                                                                                         |
+| `UNIQUE (trade_id, display_order)`      | Prevents duplicate ordering at DB level.                                                                                                                 |
+| `SELECT COUNT(*) FOR UPDATE` in service | Prevents race conditions on image count limit.                                                                                                           |
 
 ### Migration Strategy
 
-| Migration | Action |
-|-----------|--------|
-| 1 | Create `trade_images` table, keep `chart_image` column |
-| 2 | Read from both, write only to `trade_images` |
-| 3 | Remove `chart_image` column |
+| Migration | Action                                                 |
+| --------- | ------------------------------------------------------ |
+| 1         | Create `trade_images` table, keep `chart_image` column |
+| 2         | Read from both, write only to `trade_images`           |
+| 3         | Remove `chart_image` column                            |
 
 ---
 
@@ -105,6 +105,7 @@ Content-Type: multipart/form-data
 **Request:** FormData with `file` field
 
 **Response:**
+
 ```json
 {
   "image": {
@@ -122,6 +123,7 @@ Content-Type: multipart/form-data
 ```
 
 **Rules:**
+
 - Max images per trade: Configurable `MAX_IMAGES_PER_TRADE`
 - Max file size: Configurable `MAX_IMAGE_SIZE_MB`
 - Allowed formats: jpg, jpeg, png, webp
@@ -129,6 +131,7 @@ Content-Type: multipart/form-data
 - Verify `trade.userId == currentUser.id`
 
 **Orphan Prevention:**
+
 ```
 Upload to Cloudinary
 ↓
@@ -140,11 +143,13 @@ Return
 ```
 
 **Image Count Constraint:**
+
 ```sql
 SELECT COUNT(*) FROM trade_images
 WHERE trade_id = $1
 FOR UPDATE;
 ```
+
 Check count before inserting to prevent race conditions.
 
 ### Delete Image
@@ -156,6 +161,7 @@ DELETE /trades/:id/images/:imageId
 **Response:** `{ "success": true }`
 
 **Operation Boundary:**
+
 ```
 Begin operation
 ↓
@@ -180,6 +186,7 @@ Content-Type: multipart/form-data
 **Request:** FormData with `file` field
 
 **Response:**
+
 ```json
 {
   "image": {
@@ -197,6 +204,7 @@ Content-Type: multipart/form-data
 ```
 
 **Operation Boundary:**
+
 ```
 Upload new asset to Cloudinary
 ↓
@@ -218,6 +226,7 @@ PATCH /trades/:id/images/reorder
 ```
 
 **Request:**
+
 ```json
 {
   "images": [
@@ -230,6 +239,7 @@ PATCH /trades/:id/images/reorder
 **Response:** `{ "success": true }`
 
 **Transaction Boundary:**
+
 ```
 Begin transaction
 ↓
@@ -256,7 +266,7 @@ GET /trades
     {
       "id": "uuid",
       "symbol": "EURUSD",
-      "pnl": 253.40,
+      "pnl": 253.4,
       "thumbnail": {
         "url": "https://res.cloudinary.com/.../w_300,h_200,c_fill",
         "width": 300,
@@ -269,6 +279,7 @@ GET /trades
 ```
 
 **Rules:**
+
 - `thumbnail` is the image with `display_order = 0`
 - `imageCount` includes all images
 - Soft failure: if thumbnail unavailable, return `thumbnail: null` but don't fail query
@@ -286,7 +297,7 @@ GET /trades/:id
 {
   "id": "uuid",
   "symbol": "EURUSD",
-  "pnl": 253.40,
+  "pnl": 253.4,
   "images": [
     {
       "id": "uuid",
@@ -332,33 +343,34 @@ GET /trades/:id
 
 ## Configuration
 
-| Config | Default | Description |
-|--------|---------|-------------|
-| `MAX_IMAGES_PER_TRADE` | 10 | Maximum images allowed per trade |
-| `MAX_IMAGE_SIZE_MB` | 10 | Maximum file size in MB |
-| `ALLOWED_IMAGE_TYPES` | jpg,jpeg,png,webp | Allowed file formats |
-| `CLOUDINARY_FOLDER` | tradezen | Base folder for uploads |
-| `THUMBNAIL_WIDTH` | 300 | Thumbnail width in pixels |
-| `THUMBNAIL_HEIGHT` | 200 | Thumbnail height in pixels |
-| `FULL_WIDTH` | 1200 | Full size width in pixels |
-| `FULL_HEIGHT` | 800 | Full size height in pixels |
+| Config                 | Default           | Description                      |
+| ---------------------- | ----------------- | -------------------------------- |
+| `MAX_IMAGES_PER_TRADE` | 10                | Maximum images allowed per trade |
+| `MAX_IMAGE_SIZE_MB`    | 10                | Maximum file size in MB          |
+| `ALLOWED_IMAGE_TYPES`  | jpg,jpeg,png,webp | Allowed file formats             |
+| `CLOUDINARY_FOLDER`    | tradezen          | Base folder for uploads          |
+| `THUMBNAIL_WIDTH`      | 300               | Thumbnail width in pixels        |
+| `THUMBNAIL_HEIGHT`     | 200               | Thumbnail height in pixels       |
+| `FULL_WIDTH`           | 1200              | Full size width in pixels        |
+| `FULL_HEIGHT`          | 800               | Full size height in pixels       |
 
 ---
 
 ## Validation Rules
 
-| Rule | Value |
-|------|-------|
-| Max images per trade | Configurable |
-| Max file size | Configurable |
-| Allowed formats | jpg, jpeg, png, webp |
-| Validation | File signature + dimensions + size |
+| Rule                 | Value                              |
+| -------------------- | ---------------------------------- |
+| Max images per trade | Configurable                       |
+| Max file size        | Configurable                       |
+| Allowed formats      | jpg, jpeg, png, webp               |
+| Validation           | File signature + dimensions + size |
 
 ---
 
 ## Authorization
 
 Every endpoint must verify:
+
 ```typescript
 if (trade.userId !== currentUser.id) {
   throw new ForbiddenException();
@@ -371,38 +383,40 @@ if (trade.userId !== currentUser.id) {
 
 Log these events for debugging:
 
-| Event | Details |
-|-------|---------|
-| Image uploaded | tradeId, imageId, userId, size, format |
-| Image replaced | tradeId, imageId, userId |
-| Image deleted | tradeId, imageId, userId |
-| Image reordered | tradeId, userId, new order |
+| Event           | Details                                |
+| --------------- | -------------------------------------- |
+| Image uploaded  | tradeId, imageId, userId, size, format |
+| Image replaced  | tradeId, imageId, userId               |
+| Image deleted   | tradeId, imageId, userId               |
+| Image reordered | tradeId, userId, new order             |
 
 ---
 
 ## Error Handling
 
-| Scenario | Behavior |
-|----------|----------|
+| Scenario               | Behavior                               |
+| ---------------------- | -------------------------------------- |
 | Cloudinary unavailable | Soft failure, trade list still renders |
-| Upload exceeds limit | Return 400 with clear error message |
-| Invalid file type | Return 400 with allowed types |
-| Unauthorized | Return 403 Forbidden |
-| Image not found | Return 404 Not Found |
-| Too many images | Return 400 with max limit |
-| DB insert fails | Delete uploaded Cloudinary asset |
+| Upload exceeds limit   | Return 400 with clear error message    |
+| Invalid file type      | Return 400 with allowed types          |
+| Unauthorized           | Return 403 Forbidden                   |
+| Image not found        | Return 404 Not Found                   |
+| Too many images        | Return 400 with max limit              |
+| DB insert fails        | Delete uploaded Cloudinary asset       |
 
 ---
 
 ## Testing
 
 ### Unit
+
 - StorageProvider interface
 - Validation logic
 - Authorization checks
 - Reorder logic
 
 ### Integration
+
 - Upload success flow
 - Upload rollback (DB fails)
 - Delete flow
@@ -412,6 +426,7 @@ Log these events for debugging:
 - Too many images
 
 ### E2E
+
 - Create trade with image
 - Edit trade
 - Reorder images
@@ -423,18 +438,21 @@ Log these events for debugging:
 ## Implementation Milestones
 
 ### Milestone 1: Infrastructure
+
 - StorageProvider interface
 - CloudinaryProvider implementation
 - Configuration (env vars, limits)
 - Validation (file signature, dimensions, size)
 
 ### Milestone 2: Database
+
 - Migration for trade_images table
 - Repository layer
 - Query helpers
 - Indexes
 
 ### Milestone 3: Backend API
+
 - Upload endpoint
 - Delete endpoint
 - Replace endpoint
@@ -442,12 +460,14 @@ Log these events for debugging:
 - Audit logging
 
 ### Milestone 4: Frontend
+
 - Uploader component
 - Gallery component
 - Thumbnail display
 - Optimistic UI states
 
 ### Milestone 5: Cleanup
+
 - Remove multer upload code
 - Remove chart_image column
 - Remove legacy code
@@ -496,18 +516,18 @@ delete
 
 ## Summary of Design Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| Storage abstraction | Future-proof for S3, R2, etc. |
-| API owns uploads | Frontend never needs credentials |
-| Multiple images | Design for scale from day one |
-| display_order determines thumbnail | Single source of truth |
-| Configurable limits | Easy to adjust without deployment |
-| Rollback for orphaned uploads | Prevent Cloudinary clutter |
-| Optimistic UI | Better UX during uploads |
-| Separate list/detail payloads | Performance at scale |
-| No stored URLs | Generate from public_id + version |
-| No persisted status | Synchronous uploads, no async complexity |
-| metadata NOT NULL DEFAULT '{}' | Always an object, no null checks |
-| SELECT COUNT FOR UPDATE | Prevent race conditions |
-| Transaction-safe reorder | Prevent uniqueness violations |
+| Decision                           | Rationale                                |
+| ---------------------------------- | ---------------------------------------- |
+| Storage abstraction                | Future-proof for S3, R2, etc.            |
+| API owns uploads                   | Frontend never needs credentials         |
+| Multiple images                    | Design for scale from day one            |
+| display_order determines thumbnail | Single source of truth                   |
+| Configurable limits                | Easy to adjust without deployment        |
+| Rollback for orphaned uploads      | Prevent Cloudinary clutter               |
+| Optimistic UI                      | Better UX during uploads                 |
+| Separate list/detail payloads      | Performance at scale                     |
+| No stored URLs                     | Generate from public_id + version        |
+| No persisted status                | Synchronous uploads, no async complexity |
+| metadata NOT NULL DEFAULT '{}'     | Always an object, no null checks         |
+| SELECT COUNT FOR UPDATE            | Prevent race conditions                  |
+| Transaction-safe reorder           | Prevent uniqueness violations            |

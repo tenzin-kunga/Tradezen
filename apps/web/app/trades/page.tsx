@@ -2,7 +2,14 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { getTrades, deleteTrade, exportCsv, importCsv, getImportJobStatus, getTags } from "@/lib/api";
+import {
+  getTrades,
+  deleteTrade,
+  exportCsv,
+  importCsv,
+  getImportJobStatus,
+  getTags,
+} from "@/lib/api";
 import StatCard from "@/components/StatCard";
 import { useRealtime } from "@/hooks/use-realtime";
 import { useToast } from "@/components/Toast";
@@ -12,7 +19,10 @@ import TradeDetailDrawer from "@/components/TradeDetailDrawer";
 import type { Trade } from "@tradezen/types";
 
 function fmt(n: number) {
-  const abs = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const abs = Math.abs(n).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
   return n >= 0 ? `+$${abs}` : `-$${abs}`;
 }
 
@@ -48,10 +58,18 @@ export default function TradeLog() {
   const [searchQuery, setSearchQuery] = useState("");
   const [resultFilter, setResultFilter] = useState("ALL");
   const [page, setPage] = useState(1);
-  const [importResult, setImportResult] = useState<{ imported: number; errors: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{
+    imported: number;
+    errors: string[];
+  } | null>(null);
   const [importJobId, setImportJobId] = useState<string | null>(null);
   const importJobIdRef = useRef<string | null>(null);
-  const [importProgress, setImportProgress] = useState<{ processed: number; total: number; imported: number; errors: string[] } | null>(null);
+  const [importProgress, setImportProgress] = useState<{
+    processed: number;
+    total: number;
+    imported: number;
+    errors: string[];
+  } | null>(null);
 
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -74,7 +92,8 @@ export default function TradeLog() {
         sort: "created_at",
         order: "desc",
         symbol: assetFilter !== "ALL ASSETS" ? assetFilter : undefined,
-        strategy: strategyFilter !== "ANY STRATEGY" ? strategyFilter : undefined,
+        strategy:
+          strategyFilter !== "ANY STRATEGY" ? strategyFilter : undefined,
         tagId: tagFilter || undefined,
         from: fromDate || undefined,
         to: toDate || undefined,
@@ -91,25 +110,34 @@ export default function TradeLog() {
     fetchTrades();
   }, [fetchTrades]);
 
-  useRealtime('trade:created', () => {
+  useRealtime("trade:created", () => {
     fetchTrades();
   });
 
-  useRealtime('trade:updated', () => {
+  useRealtime("trade:updated", () => {
     fetchTrades();
   });
 
-  useRealtime('trade:deleted', () => {
+  useRealtime("trade:deleted", () => {
     fetchTrades();
   });
 
-  useRealtime('job:progress', (data) => {
+  useRealtime("job:progress", (data) => {
     const payload = data as {
       jobId?: string;
       queue?: string;
-      progress?: { processed: number; total: number; imported: number; errors: string[] };
+      progress?: {
+        processed: number;
+        total: number;
+        imported: number;
+        errors: string[];
+      };
     };
-    if (payload.queue !== 'csv-import' || !payload.jobId || payload.jobId !== importJobIdRef.current) {
+    if (
+      payload.queue !== "csv-import" ||
+      !payload.jobId ||
+      payload.jobId !== importJobIdRef.current
+    ) {
       return;
     }
     if (payload.progress) {
@@ -117,39 +145,51 @@ export default function TradeLog() {
     }
   });
 
-  useRealtime('job:completed', (data) => {
+  useRealtime("job:completed", (data) => {
     const payload = data as {
       jobId?: string;
       queue?: string;
       result?: { imported: number; errors: string[] };
     };
-    if (payload.queue !== 'csv-import' || !payload.jobId || payload.jobId !== importJobIdRef.current) {
+    if (
+      payload.queue !== "csv-import" ||
+      !payload.jobId ||
+      payload.jobId !== importJobIdRef.current
+    ) {
       return;
     }
     if (payload.result) {
       setImportResult(payload.result);
       setImportProgress(null);
       setImportJobId(null);
-        if (payload.result.imported > 0) {
-          fetchTrades();
-          addToast("success", `Imported ${payload.result.imported} trades`);
-        }
-        if (payload.result.errors?.length > 0) {
-          addToast("warn", `${payload.result.errors.length} rows had errors`);
-        }
+      if (payload.result.imported > 0) {
+        fetchTrades();
+        addToast("success", `Imported ${payload.result.imported} trades`);
       }
+      if (payload.result.errors?.length > 0) {
+        addToast("warn", `${payload.result.errors.length} rows had errors`);
+      }
+    }
   });
 
   const [allSymbols, setAllSymbols] = useState<string[]>([]);
   const [allStrategies, setAllStrategies] = useState<string[]>([]);
   useEffect(() => {
-    getTrades({ limit: 100 }).then((res) => {
-      const syms = Array.from(new Set(res.data.map((t: Trade) => t.symbol))).filter(Boolean) as string[];
-      const strats = Array.from(new Set(res.data.map((t: Trade) => t.strategy).filter(Boolean))) as string[];
-      setAllSymbols(syms);
-      setAllStrategies(strats);
-    }).catch(() => {});
-    getTags().then(setAvailableTags).catch(() => {});
+    getTrades({ limit: 100 })
+      .then((res) => {
+        const syms = Array.from(
+          new Set(res.data.map((t: Trade) => t.symbol)),
+        ).filter(Boolean) as string[];
+        const strats = Array.from(
+          new Set(res.data.map((t: Trade) => t.strategy).filter(Boolean)),
+        ) as string[];
+        setAllSymbols(syms);
+        setAllStrategies(strats);
+      })
+      .catch(() => {});
+    getTags()
+      .then(setAvailableTags)
+      .catch(() => {});
   }, []);
 
   async function handleDelete(id: string) {
@@ -210,16 +250,18 @@ export default function TradeLog() {
         const status = await getImportJobStatus(jobId);
         if (!status) return;
 
-        if (typeof status.progress === 'object' && status.progress !== null) {
-          setImportProgress(status.progress as {
-            processed: number;
-            total: number;
-            imported: number;
-            errors: string[];
-          });
+        if (typeof status.progress === "object" && status.progress !== null) {
+          setImportProgress(
+            status.progress as {
+              processed: number;
+              total: number;
+              imported: number;
+              errors: string[];
+            },
+          );
         }
 
-        if (status.state === 'completed' && status.result) {
+        if (status.state === "completed" && status.result) {
           setImportResult(status.result);
           setImportProgress(null);
           setImportJobId(null);
@@ -229,10 +271,10 @@ export default function TradeLog() {
           return;
         }
 
-        if (status.state === 'failed') {
+        if (status.state === "failed") {
           setImportResult({
             imported: 0,
-            errors: [status.failedReason ?? 'Import failed'],
+            errors: [status.failedReason ?? "Import failed"],
           });
           setImportProgress(null);
           setImportJobId(null);
@@ -245,7 +287,10 @@ export default function TradeLog() {
       void poll();
     } catch (err) {
       console.error(err);
-      setImportResult({ imported: 0, errors: [err instanceof Error ? err.message : "Import failed"] });
+      setImportResult({
+        imported: 0,
+        errors: [err instanceof Error ? err.message : "Import failed"],
+      });
       setImportJobId(null);
     }
 
@@ -259,7 +304,13 @@ export default function TradeLog() {
     return trades.filter((t) => {
       if (resultFilter === "WIN" && Number(t.pnl) <= 0) return false;
       if (resultFilter === "LOSS" && Number(t.pnl) >= 0) return false;
-      if (q && !t.symbol.toLowerCase().includes(q) && !(t.notes || "").toLowerCase().includes(q) && !(t.strategy || "").toLowerCase().includes(q)) return false;
+      if (
+        q &&
+        !t.symbol.toLowerCase().includes(q) &&
+        !(t.notes || "").toLowerCase().includes(q) &&
+        !(t.strategy || "").toLowerCase().includes(q)
+      )
+        return false;
       return true;
     });
   }, [trades, resultFilter, searchQuery]);
@@ -269,12 +320,38 @@ export default function TradeLog() {
   const totalPnl = filteredTrades.reduce((s, t) => s + Number(t.pnl), 0);
   const wins = filteredTrades.filter((t) => t.pnl > 0);
   void filteredTrades.filter((t) => t.pnl < 0);
-  const winRate = filteredTrades.length ? ((wins.length / filteredTrades.length) * 100).toFixed(1) + "%" : "--";
-  const rrTrades = filteredTrades.filter((t) => t.stop_loss != null && t.take_profit != null && t.stop_loss !== t.entry_price);
-  const avgRR = rrTrades.length === 0 ? "--" : "1:" + (rrTrades.reduce((s, t) => s + Math.abs(t.take_profit! - t.entry_price) / Math.abs(t.entry_price - t.stop_loss!), 0) / rrTrades.length).toFixed(1);
+  const winRate = filteredTrades.length
+    ? ((wins.length / filteredTrades.length) * 100).toFixed(1) + "%"
+    : "--";
+  const rrTrades = filteredTrades.filter(
+    (t) =>
+      t.stop_loss != null &&
+      t.take_profit != null &&
+      t.stop_loss !== t.entry_price,
+  );
+  const avgRR =
+    rrTrades.length === 0
+      ? "--"
+      : "1:" +
+        (
+          rrTrades.reduce(
+            (s, t) =>
+              s +
+              Math.abs(t.take_profit! - t.entry_price) /
+                Math.abs(t.entry_price - t.stop_loss!),
+            0,
+          ) / rrTrades.length
+        ).toFixed(1);
 
-  const sessionCounts: Record<string, number> = { "NY OPEN": 0, "LONDON": 0, "ASIAN": 0 };
-  filteredTrades.forEach((t) => { sessionCounts[getSessionBucket(t.created_at)] = (sessionCounts[getSessionBucket(t.created_at)] || 0) + 1; });
+  const sessionCounts: Record<string, number> = {
+    "NY OPEN": 0,
+    LONDON: 0,
+    ASIAN: 0,
+  };
+  filteredTrades.forEach((t) => {
+    sessionCounts[getSessionBucket(t.created_at)] =
+      (sessionCounts[getSessionBucket(t.created_at)] || 0) + 1;
+  });
   const sessionTotal = filteredTrades.length || 1;
 
   useEffect(() => {
@@ -294,9 +371,17 @@ export default function TradeLog() {
               <div className="relative">
                 <svg
                   className="absolute left-2.5 top-1/2 -translate-y-1/2"
-                  width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                  style={{ color: "var(--text-dim, #6b7280)", pointerEvents: "none" }}
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  style={{
+                    color: "var(--text-dim, #6b7280)",
+                    pointerEvents: "none",
+                  }}
                 >
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.35-4.35" />
@@ -377,30 +462,55 @@ export default function TradeLog() {
                 aria-haspopup="dialog"
                 aria-expanded="false"
                 onClick={(e) => {
-                  const popup = e.currentTarget.parentElement?.querySelector('.tz-date-range-popup');
+                  const popup = e.currentTarget.parentElement?.querySelector(
+                    ".tz-date-range-popup",
+                  );
                   if (popup) {
-                    const hidden = popup.hasAttribute('hidden');
-                    popup.toggleAttribute('hidden');
+                    const hidden = popup.hasAttribute("hidden");
+                    popup.toggleAttribute("hidden");
                     if (hidden) (popup as HTMLElement).focus();
                   }
                 }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: "var(--text-dim, #6b7280)", flexShrink: 0 }}>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  style={{ color: "var(--text-dim, #6b7280)", flexShrink: 0 }}
+                >
                   <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" />
+                  <path d="M16 2v4" />
+                  <path d="M8 2v4" />
+                  <path d="M3 10h18" />
                 </svg>
                 <span className="flex-1 text-left">
                   {fromDate && toDate
                     ? (() => {
                         const f = new Date(fromDate + "T00:00:00");
                         const t = new Date(toDate + "T00:00:00");
-                        const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+                        const opts: Intl.DateTimeFormatOptions = {
+                          month: "short",
+                          day: "numeric",
+                        };
                         const sameYear = f.getFullYear() === t.getFullYear();
                         return `${f.toLocaleDateString("en-US", opts)} – ${t.toLocaleDateString("en-US", sameYear ? opts : { ...opts, year: "numeric" })}`;
                       })()
                     : "Select date range"}
                 </span>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ color: "var(--text-dim, #6b7280)" }}>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  style={{ color: "var(--text-dim, #6b7280)" }}
+                >
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </button>
@@ -412,7 +522,7 @@ export default function TradeLog() {
                 style={{ minWidth: 280 }}
                 onBlur={(e) => {
                   if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                    e.currentTarget.setAttribute('hidden', '');
+                    e.currentTarget.setAttribute("hidden", "");
                   }
                 }}
               >
@@ -432,11 +542,15 @@ export default function TradeLog() {
                     if (p.days === -2) {
                       startStr = "";
                     } else if (p.days === -1) {
-                      startStr = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
+                      startStr = new Date(now.getFullYear(), 0, 1)
+                        .toISOString()
+                        .slice(0, 10);
                     } else if (p.days === 0) {
                       startStr = endStr;
                     } else {
-                      startStr = new Date(now.getTime() - p.days * 86400000).toISOString().slice(0, 10);
+                      startStr = new Date(now.getTime() - p.days * 86400000)
+                        .toISOString()
+                        .slice(0, 10);
                     }
                     const isActive = fromDate === startStr && toDate === endStr;
                     return (
@@ -445,13 +559,23 @@ export default function TradeLog() {
                         onClick={(e) => {
                           setFromDate(startStr);
                           setToDate(endStr);
-                          (e.currentTarget.closest('.tz-date-range-popup') as HTMLElement)?.setAttribute('hidden', '');
+                          (
+                            e.currentTarget.closest(
+                              ".tz-date-range-popup",
+                            ) as HTMLElement
+                          )?.setAttribute("hidden", "");
                         }}
-                        className={`tz-date-preset text-xs font-medium px-2 py-1.5 rounded-lg ${isActive ? 'active' : ''}`}
+                        className={`tz-date-preset text-xs font-medium px-2 py-1.5 rounded-lg ${isActive ? "active" : ""}`}
                         style={{
-                          border: isActive ? "1px solid rgba(59,130,246,0.35)" : "1px solid var(--border, #23252d)",
-                          color: isActive ? "rgb(96,165,250)" : "var(--text-dim, #6b7280)",
-                          background: isActive ? "rgba(59,130,246,0.12)" : "transparent",
+                          border: isActive
+                            ? "1px solid rgba(59,130,246,0.35)"
+                            : "1px solid var(--border, #23252d)",
+                          color: isActive
+                            ? "rgb(96,165,250)"
+                            : "var(--text-dim, #6b7280)",
+                          background: isActive
+                            ? "rgba(59,130,246,0.12)"
+                            : "transparent",
                           cursor: "pointer",
                           fontFamily: "inherit",
                         }}
@@ -464,9 +588,26 @@ export default function TradeLog() {
 
                 {/* Custom range divider */}
                 <div className="flex items-center gap-2 mb-3">
-                  <div style={{ flex: 1, height: 1, background: "var(--border, #23252d)" }} />
-                  <span className="text-[9px] font-medium tracking-wider" style={{ color: "var(--text-dim, #6b7280)" }}>CUSTOM</span>
-                  <div style={{ flex: 1, height: 1, background: "var(--border, #23252d)" }} />
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      background: "var(--border, #23252d)",
+                    }}
+                  />
+                  <span
+                    className="text-[9px] font-medium tracking-wider"
+                    style={{ color: "var(--text-dim, #6b7280)" }}
+                  >
+                    CUSTOM
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 1,
+                      background: "var(--border, #23252d)",
+                    }}
+                  />
                 </div>
 
                 {/* Custom date inputs */}
@@ -474,12 +615,19 @@ export default function TradeLog() {
                   <div className="flex-1 relative">
                     <svg
                       className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                      width="13" height="13" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                       style={{ color: "var(--text-dim, #6b7280)" }}
                     >
                       <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" />
+                      <path d="M16 2v4" />
+                      <path d="M8 2v4" />
+                      <path d="M3 10h18" />
                     </svg>
                     <input
                       type="date"
@@ -487,19 +635,35 @@ export default function TradeLog() {
                       onChange={(e) => setFromDate(e.target.value)}
                       className="tz-date-input"
                       aria-label="From date"
-                      style={{ paddingLeft: 28, width: "100%", position: "relative" }}
+                      style={{
+                        paddingLeft: 28,
+                        width: "100%",
+                        position: "relative",
+                      }}
                     />
                   </div>
-                  <span className="text-[10px]" style={{ color: "var(--text-dim, #6b7280)" }}>–</span>
+                  <span
+                    className="text-[10px]"
+                    style={{ color: "var(--text-dim, #6b7280)" }}
+                  >
+                    –
+                  </span>
                   <div className="flex-1 relative">
                     <svg
                       className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                      width="13" height="13" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
                       style={{ color: "var(--text-dim, #6b7280)" }}
                     >
                       <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" />
+                      <path d="M16 2v4" />
+                      <path d="M8 2v4" />
+                      <path d="M3 10h18" />
                     </svg>
                     <input
                       type="date"
@@ -507,14 +671,21 @@ export default function TradeLog() {
                       onChange={(e) => setToDate(e.target.value)}
                       className="tz-date-input"
                       aria-label="To date"
-                      style={{ paddingLeft: 28, width: "100%", position: "relative" }}
+                      style={{
+                        paddingLeft: 28,
+                        width: "100%",
+                        position: "relative",
+                      }}
                     />
                   </div>
                 </div>
                 {fromDate && toDate && (
                   <div className="flex justify-end mt-2">
                     <button
-                      onClick={() => { setFromDate(""); setToDate(""); }}
+                      onClick={() => {
+                        setFromDate("");
+                        setToDate("");
+                      }}
                       className="text-[10px] font-medium px-2 py-1 rounded"
                       style={{
                         border: "none",
@@ -535,18 +706,39 @@ export default function TradeLog() {
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
             {/* Dropdown filters */}
             <div className="flex gap-2 flex-wrap">
-              <select value={assetFilter} onChange={(e) => setAssetFilter(e.target.value)} className="select-glass text-xs">
+              <select
+                value={assetFilter}
+                onChange={(e) => setAssetFilter(e.target.value)}
+                className="select-glass text-xs"
+              >
                 <option>ALL ASSETS</option>
-                {allSymbols.map((s) => <option key={s}>{s}</option>)}
+                {allSymbols.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
               </select>
-              <select value={strategyFilter} onChange={(e) => setStrategyFilter(e.target.value)} className="select-glass text-xs">
+              <select
+                value={strategyFilter}
+                onChange={(e) => setStrategyFilter(e.target.value)}
+                className="select-glass text-xs"
+              >
                 <option>ANY STRATEGY</option>
-                {allStrategies.map((s) => <option key={s}>{s}</option>)}
+                {allStrategies.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
               </select>
-              <select value={tagFilter} onChange={(e) => { setTagFilter(e.target.value); setPage(1); }} className="select-glass text-xs">
+              <select
+                value={tagFilter}
+                onChange={(e) => {
+                  setTagFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="select-glass text-xs"
+              >
                 <option value="">ALL TAGS</option>
                 {availableTags.map((t: any) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -560,15 +752,25 @@ export default function TradeLog() {
                 {(["ALL", "WIN", "LOSS"] as const).map((mode, i) => (
                   <button
                     key={mode}
-                    onClick={() => { setResultFilter(mode); setPage(1); }}
+                    onClick={() => {
+                      setResultFilter(mode);
+                      setPage(1);
+                    }}
                     className="text-[11px] font-semibold tracking-wider px-3 py-1.5"
                     style={{
-                      background: resultFilter === mode ? "var(--accent-primary, #3b82f6)" : "transparent",
-                      color: resultFilter === mode ? "#fff" : "var(--text-dim, #6b7280)",
+                      background:
+                        resultFilter === mode
+                          ? "var(--accent-primary, #3b82f6)"
+                          : "transparent",
+                      color:
+                        resultFilter === mode
+                          ? "#fff"
+                          : "var(--text-dim, #6b7280)",
                       border: "none",
                       cursor: "pointer",
                       fontFamily: "inherit",
-                      borderRight: i < 2 ? "1px solid var(--border, #23252d)" : "none",
+                      borderRight:
+                        i < 2 ? "1px solid var(--border, #23252d)" : "none",
                       transition: "background 0.15s",
                     }}
                   >
@@ -577,12 +779,24 @@ export default function TradeLog() {
                 ))}
               </div>
 
-              <button onClick={() => { setPage(1); fetchTrades(); }} className="btn-primary text-xs px-3 py-1.5">
+              <button
+                onClick={() => {
+                  setPage(1);
+                  fetchTrades();
+                }}
+                className="btn-primary text-xs px-3 py-1.5"
+              >
                 APPLY
               </button>
 
               <div className="flex gap-1.5 ml-2">
-                <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCsv} style={{ display: "none" }} />
+                <input
+                  type="file"
+                  accept=".csv"
+                  ref={fileInputRef}
+                  onChange={handleImportCsv}
+                  style={{ display: "none" }}
+                />
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="text-[11px] font-medium px-2.5 py-1.5 rounded"
@@ -616,40 +830,74 @@ export default function TradeLog() {
       </div>
 
       {importProgress && (
-        <div className="glass-card p-3 md:p-4 mb-4" style={{
-          background: "rgba(59,130,246,0.05)",
-          border: "1px solid rgba(59,130,246,0.35)",
-        }}>
-          <div className="text-xs font-semibold mb-2" style={{ color: "var(--accent-primary, #3b82f6)" }}>
-            IMPORTING CSV… {importProgress.processed}/{importProgress.total} rows
+        <div
+          className="glass-card p-3 md:p-4 mb-4"
+          style={{
+            background: "rgba(59,130,246,0.05)",
+            border: "1px solid rgba(59,130,246,0.35)",
+          }}
+        >
+          <div
+            className="text-xs font-semibold mb-2"
+            style={{ color: "var(--accent-primary, #3b82f6)" }}
+          >
+            IMPORTING CSV… {importProgress.processed}/{importProgress.total}{" "}
+            rows
           </div>
           <div className="text-xs" style={{ color: "var(--text-muted)" }}>
             {importProgress.imported} imported
-            {importProgress.errors.length > 0 ? ` · ${importProgress.errors.length} row errors` : ""}
+            {importProgress.errors.length > 0
+              ? ` · ${importProgress.errors.length} row errors`
+              : ""}
           </div>
         </div>
       )}
 
       {importResult && (
-        <div className="glass-card p-3 md:p-4 mb-4" style={{
-          background: importResult.errors.length > 0 ? "rgba(239,68,68,0.05)" : "rgba(16,185,129,0.05)",
-          border: `1px solid ${importResult.errors.length > 0 ? "var(--accent-loss)" : "var(--accent-profit)"}`,
-        }}>
+        <div
+          className="glass-card p-3 md:p-4 mb-4"
+          style={{
+            background:
+              importResult.errors.length > 0
+                ? "rgba(239,68,68,0.05)"
+                : "rgba(16,185,129,0.05)",
+            border: `1px solid ${importResult.errors.length > 0 ? "var(--accent-loss)" : "var(--accent-profit)"}`,
+          }}
+        >
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <div className="text-xs font-semibold mb-1" style={{ color: importResult.errors.length > 0 ? "var(--accent-loss)" : "var(--accent-profit)" }}>
-                {importResult.imported > 0 ? `IMPORTED ${importResult.imported} TRADE${importResult.imported !== 1 ? "S" : ""}` : "IMPORT COMPLETED"}
+              <div
+                className="text-xs font-semibold mb-1"
+                style={{
+                  color:
+                    importResult.errors.length > 0
+                      ? "var(--accent-loss)"
+                      : "var(--accent-profit)",
+                }}
+              >
+                {importResult.imported > 0
+                  ? `IMPORTED ${importResult.imported} TRADE${importResult.imported !== 1 ? "S" : ""}`
+                  : "IMPORT COMPLETED"}
               </div>
               {importResult.errors.length > 0 && (
                 <div className="text-xs" style={{ color: "var(--text-muted)" }}>
                   {importResult.errors.slice(0, 3).map((err, i) => (
                     <div key={i}>{err}</div>
                   ))}
-                  {importResult.errors.length > 3 && <div>...and {importResult.errors.length - 3} more errors</div>}
+                  {importResult.errors.length > 3 && (
+                    <div>
+                      ...and {importResult.errors.length - 3} more errors
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-            <button onClick={() => setImportResult(null)} className="btn-glass text-xs">DISMISS</button>
+            <button
+              onClick={() => setImportResult(null)}
+              className="btn-glass text-xs"
+            >
+              DISMISS
+            </button>
           </div>
         </div>
       )}
@@ -677,24 +925,46 @@ export default function TradeLog() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 md:mb-5">
           <span className="label-caps">EXECUTION ARCHIVE</span>
           <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            SHOWING {Math.min((page - 1) * 10 + 1, total)}–{Math.min(page * 10, total)} OF {total} TRADES
+            SHOWING {Math.min((page - 1) * 10 + 1, total)}–
+            {Math.min(page * 10, total)} OF {total} TRADES
           </span>
         </div>
         {filteredTrades.length === 0 ? (
-          <div style={{ color: "var(--text-muted)", padding: "40px 0", textAlign: "center" }}>
+          <div
+            style={{
+              color: "var(--text-muted)",
+              padding: "40px 0",
+              textAlign: "center",
+            }}
+          >
             {loading ? (
               <TradeLogSkeleton />
             ) : trades.length === 0 ? (
               <>
-                <div className="mb-3 font-semibold" style={{ color: "var(--text-primary)" }}>No trades found.</div>
-                <div className="mb-4">Create a new trade to see it appear here.</div>
-                <button onClick={() => router.push("/add-trade")} className="btn-primary">
+                <div
+                  className="mb-3 font-semibold"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  No trades found.
+                </div>
+                <div className="mb-4">
+                  Create a new trade to see it appear here.
+                </div>
+                <button
+                  onClick={() => router.push("/add-trade")}
+                  className="btn-primary"
+                >
                   Add First Trade
                 </button>
               </>
             ) : (
               <>
-                <div className="mb-3 font-semibold" style={{ color: "var(--text-primary)" }}>No trades match filters.</div>
+                <div
+                  className="mb-3 font-semibold"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  No trades match filters.
+                </div>
                 <button
                   onClick={() => {
                     setAssetFilter("ALL ASSETS");
@@ -721,11 +991,29 @@ export default function TradeLog() {
 
         {totalPages > 1 && (
           <div className="flex gap-1 justify-center mt-5 flex-wrap">
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn-glass text-xs" disabled={page === 1}>{"<"}</button>
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="btn-glass text-xs"
+              disabled={page === 1}
+            >
+              {"<"}
+            </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={`btn-glass text-xs ${p === page ? 'active' : ''}`}>{p}</button>
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`btn-glass text-xs ${p === page ? "active" : ""}`}
+              >
+                {p}
+              </button>
             ))}
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="btn-glass text-xs" disabled={page === totalPages}>{">"}</button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="btn-glass text-xs"
+              disabled={page === totalPages}
+            >
+              {">"}
+            </button>
           </div>
         )}
       </div>
@@ -743,15 +1031,34 @@ export default function TradeLog() {
         <div className="glass-card p-4 md:p-6 fade-up">
           <div className="label-caps mb-4">SESSION DISTRIBUTION</div>
           {["NY OPEN", "LONDON", "ASIAN"].map((session) => {
-            const pct = Math.round((sessionCounts[session] / sessionTotal) * 100);
+            const pct = Math.round(
+              (sessionCounts[session] / sessionTotal) * 100,
+            );
             return (
               <div key={session} className="mb-4">
                 <div className="flex justify-between mb-1.5">
-                  <span className="font-semibold tracking-wide text-xs">{session}</span>
+                  <span className="font-semibold tracking-wide text-xs">
+                    {session}
+                  </span>
                   <span className="mono-data font-semibold">{pct}%</span>
                 </div>
-                <div style={{ height: 4, background: "var(--border)", width: "100%", borderRadius: 2 }}>
-                  <div style={{ height: 4, background: "var(--accent-cyan)", width: `${pct}%`, transition: "width 0.3s", borderRadius: 2 }} />
+                <div
+                  style={{
+                    height: 4,
+                    background: "var(--border)",
+                    width: "100%",
+                    borderRadius: 2,
+                  }}
+                >
+                  <div
+                    style={{
+                      height: 4,
+                      background: "var(--accent-cyan)",
+                      width: `${pct}%`,
+                      transition: "width 0.3s",
+                      borderRadius: 2,
+                    }}
+                  />
                 </div>
               </div>
             );
@@ -761,11 +1068,16 @@ export default function TradeLog() {
         <div className="glass-card p-4 md:p-6 fade-up">
           <div className="label-caps mb-4">STRATEGY TAGS</div>
           {allStrategies.length === 0 ? (
-            <p style={{ color: "var(--text-dim)", fontSize: 12 }}>No strategy tags yet.</p>
+            <p style={{ color: "var(--text-dim)", fontSize: 12 }}>
+              No strategy tags yet.
+            </p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {allStrategies.map((s) => (
-                <span key={s} className="glass-card px-3 py-1.5 text-xs font-semibold">
+                <span
+                  key={s}
+                  className="glass-card px-3 py-1.5 text-xs font-semibold"
+                >
                   #{s}
                 </span>
               ))}
@@ -775,12 +1087,31 @@ export default function TradeLog() {
       </div>
 
       {showAnomaly && (
-        <div className="glass-card p-4 md:p-6 fade-up" style={{ borderColor: "var(--accent-warn)" }}>
-          <div className="text-xs font-bold tracking-widest mb-2" style={{ color: "var(--accent-warn)" }}>ANOMALOUS RISK</div>
-          <p className="text-sm mb-4" style={{ color: "var(--text-muted)", margin: "0 0 16px" }}>
+        <div
+          className="glass-card p-4 md:p-6 fade-up"
+          style={{ borderColor: "var(--accent-warn)" }}
+        >
+          <div
+            className="text-xs font-bold tracking-widest mb-2"
+            style={{ color: "var(--accent-warn)" }}
+          >
+            ANOMALOUS RISK
+          </div>
+          <p
+            className="text-sm mb-4"
+            style={{ color: "var(--text-muted)", margin: "0 0 16px" }}
+          >
             3+ consecutive losses detected. Review your protocol.
           </p>
-          <button className="btn-glass text-xs" style={{ borderColor: "var(--accent-warn)", color: "var(--accent-warn)" }}>REVIEW PROTOCOL</button>
+          <button
+            className="btn-glass text-xs"
+            style={{
+              borderColor: "var(--accent-warn)",
+              color: "var(--accent-warn)",
+            }}
+          >
+            REVIEW PROTOCOL
+          </button>
         </div>
       )}
     </div>

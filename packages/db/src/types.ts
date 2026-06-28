@@ -1,5 +1,5 @@
-import { InferInsertModel, InferSelectModel } from 'drizzle-orm';
-import * as schema from './schema';
+import { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import * as schema from "./schema";
 
 export type User = InferSelectModel<typeof schema.users>;
 export type NewUser = InferInsertModel<typeof schema.users>;
@@ -28,5 +28,9 @@ export type ChecklistItem = InferSelectModel<typeof schema.checklistItems>;
 export type NewChecklistItem = InferInsertModel<typeof schema.checklistItems>;
 export type ChecklistRun = InferSelectModel<typeof schema.checklistRuns>;
 export type NewChecklistRun = InferInsertModel<typeof schema.checklistRuns>;
-export type ChecklistRunItem = InferSelectModel<typeof schema.checklistRunItems>;
-export type NewChecklistRunItem = InferInsertModel<typeof schema.checklistRunItems>;
+export type ChecklistRunItem = InferSelectModel<
+  typeof schema.checklistRunItems
+>;
+export type NewChecklistRunItem = InferInsertModel<
+  typeof schema.checklistRunItems
+>;

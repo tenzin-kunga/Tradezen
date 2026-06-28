@@ -386,7 +386,13 @@ export class TradesService {
         const imageCount = await this.imageService.getImageCount(trade.id);
         return {
           ...trade,
-          thumbnail: thumbnail ? { url: thumbnail.url, width: thumbnail.width, height: thumbnail.height } : null,
+          thumbnail: thumbnail
+            ? {
+                url: thumbnail.url,
+                width: thumbnail.width,
+                height: thumbnail.height,
+              }
+            : null,
           imageCount,
         };
       }),
@@ -409,7 +415,7 @@ export class TradesService {
       .from(trades)
       .where(and(eq(trades.id, id), eq(trades.userId, userId)));
     if (!result[0]) throw new NotFoundException(`Trade ${id} not found`);
-    
+
     const images = await this.imageService.getImages(id);
     return { ...result[0], images };
   }
@@ -1267,41 +1273,32 @@ export class TradesService {
 
     // Daily summary
     const todayTrades = allTrades.filter(
-      (t) =>
-        t.tradeDate && toDateStr(t.tradeDate) === todayStr,
+      (t) => t.tradeDate && toDateStr(t.tradeDate) === todayStr,
     );
     const dailyWins = todayTrades.filter((t) => Number(t.pnl) > 0).length;
     const tradesToday = todayTrades.length;
     const winRateToday =
       tradesToday > 0 ? Math.round((dailyWins / tradesToday) * 100) : 0;
-    const pnlToday = todayTrades.reduce(
-      (sum, t) => sum + Number(t.pnl),
-      0,
-    );
+    const pnlToday = todayTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
     const openRisk = allTrades
       .filter((t) => !t.tradeDate)
       .reduce((sum, t) => {
         const sl = t.stopLoss ? Number(t.stopLoss) : 0;
         const entry = Number(t.entryPrice);
         const lot = Number(t.lotSize);
-        return entry > 0 && sl > 0
-          ? sum + Math.abs(entry - sl) * lot
-          : sum;
+        return entry > 0 && sl > 0 ? sum + Math.abs(entry - sl) * lot : sum;
       }, 0);
 
     // Behavior analytics
     const totalTrades = allTrades.length;
     const fomoCount = allTrades.filter((t) => t.fomoCheck).length;
-    const vengeanceCount = allTrades.filter(
-      (t) => t.vengeanceTrade,
-    ).length;
+    const vengeanceCount = allTrades.filter((t) => t.vengeanceTrade).length;
     const disciplineScore =
       totalTrades > 0
         ? Math.min(
             100,
             Math.round(
-              ((totalTrades - (fomoCount + vengeanceCount)) /
-                totalTrades) *
+              ((totalTrades - (fomoCount + vengeanceCount)) / totalTrades) *
                 100,
             ),
           )
@@ -1318,13 +1315,9 @@ export class TradesService {
         String(t.createdAt).startsWith(thisMonthStr),
     ).length;
 
-    const trendAlignedCount = allTrades.filter(
-      (t) => t.trendAlignment,
-    ).length;
+    const trendAlignedCount = allTrades.filter((t) => t.trendAlignment).length;
     const trendAlignment =
-      totalTrades > 0
-        ? Math.round((trendAlignedCount / totalTrades) * 100)
-        : 0;
+      totalTrades > 0 ? Math.round((trendAlignedCount / totalTrades) * 100) : 0;
 
     // Insights
     const strategyMap = new Map<
@@ -1356,8 +1349,7 @@ export class TradesService {
 
       if (t.createdAt) {
         const dow = new Date(String(t.createdAt)).getDay();
-        if (!dayMap.has(dow))
-          dayMap.set(dow, { trades: 0, wins: 0, pnl: 0 });
+        if (!dayMap.has(dow)) dayMap.set(dow, { trades: 0, wins: 0, pnl: 0 });
         const dm = dayMap.get(dow)!;
         dm.trades++;
         if (Number(t.pnl) > 0) dm.wins++;
@@ -1450,7 +1442,8 @@ export class TradesService {
 
     const totalPnl = allTrades.reduce((sum, t) => sum + Number(t.pnl), 0);
     const overallWins = allTrades.filter((t) => Number(t.pnl) > 0).length;
-    const overallWinRate = totalTrades > 0 ? Math.round((overallWins / totalTrades) * 100) : 0;
+    const overallWinRate =
+      totalTrades > 0 ? Math.round((overallWins / totalTrades) * 100) : 0;
 
     return {
       weeklyTrades,
@@ -1649,7 +1642,10 @@ export class TradesService {
       distribution: [],
       byStrategy: [],
       byWeek: [],
-      riskByDirection: { long: { avgRisk: 0, count: 0, winRate: 0 }, short: { avgRisk: 0, count: 0, winRate: 0 } },
+      riskByDirection: {
+        long: { avgRisk: 0, count: 0, winRate: 0 },
+        short: { avgRisk: 0, count: 0, winRate: 0 },
+      },
     };
 
     if (tradeRows.length === 0) return emptyResponse;
@@ -1670,7 +1666,10 @@ export class TradesService {
       const entry = t.entryPrice !== null ? Number(t.entryPrice) : null;
       const sl = t.stopLoss !== null ? Number(t.stopLoss) : null;
       const lot = Number(t.lotSize);
-      const cs = t.contractSize !== null ? Number(t.contractSize) : DEFAULT_CONTRACT_SIZE;
+      const cs =
+        t.contractSize !== null
+          ? Number(t.contractSize)
+          : DEFAULT_CONTRACT_SIZE;
 
       let risk: number | null = null;
       let rMultiple: number | null = null;
@@ -1690,15 +1689,23 @@ export class TradesService {
       };
     });
 
-    const tradesWithRisk = tradeRisks.filter((t) => t.risk !== null && t.rMultiple !== null) as (TradeRisk & { risk: number; rMultiple: number })[];
+    const tradesWithRisk = tradeRisks.filter(
+      (t) => t.risk !== null && t.rMultiple !== null,
+    ) as (TradeRisk & { risk: number; rMultiple: number })[];
 
     const totalRisk = tradesWithRisk.reduce((sum, t) => sum + t.risk, 0);
     const totalPnl = tradeRisks.reduce((sum, t) => sum + t.pnl, 0);
-    const avgRiskPerTrade = tradesWithRisk.length > 0 ? totalRisk / tradesWithRisk.length : 0;
-    const maxRiskPerTrade = tradesWithRisk.length > 0 ? Math.max(...tradesWithRisk.map((t) => t.risk)) : 0;
-    const avgRMultiple = tradesWithRisk.length > 0
-      ? tradesWithRisk.reduce((sum, t) => sum + t.rMultiple, 0) / tradesWithRisk.length
-      : 0;
+    const avgRiskPerTrade =
+      tradesWithRisk.length > 0 ? totalRisk / tradesWithRisk.length : 0;
+    const maxRiskPerTrade =
+      tradesWithRisk.length > 0
+        ? Math.max(...tradesWithRisk.map((t) => t.risk))
+        : 0;
+    const avgRMultiple =
+      tradesWithRisk.length > 0
+        ? tradesWithRisk.reduce((sum, t) => sum + t.rMultiple, 0) /
+          tradesWithRisk.length
+        : 0;
     const riskEfficiency = totalRisk > 0 ? totalPnl / totalRisk : 0;
 
     const pnls = tradeRisks.map((t) => t.pnl).sort((a, b) => a - b);
@@ -1735,37 +1742,61 @@ export class TradesService {
 
     const byStrategy: RiskByStrategy[] = [];
     for (const [strategy, trades] of strategyMap) {
-      const tradesWithR = trades.filter((t) => t.risk !== null) as (TradeRisk & { risk: number })[];
+      const tradesWithR = trades.filter(
+        (t) => t.risk !== null,
+      ) as (TradeRisk & { risk: number })[];
       const wins = trades.filter((t) => t.pnl > 0);
-      const avgRisk = tradesWithR.length > 0
-        ? tradesWithR.reduce((sum, t) => sum + t.risk, 0) / tradesWithR.length
-        : 0;
-      const maxRisk = tradesWithR.length > 0
-        ? Math.max(...tradesWithR.map((t) => t.risk))
-        : 0;
-      const avgR = tradesWithR.filter((t) => t.rMultiple !== null).length > 0
-        ? tradesWithR.filter((t) => t.rMultiple !== null).reduce((sum, t) => sum + t.rMultiple!, 0) / tradesWithR.filter((t) => t.rMultiple !== null).length
-        : 0;
+      const avgRisk =
+        tradesWithR.length > 0
+          ? tradesWithR.reduce((sum, t) => sum + t.risk, 0) / tradesWithR.length
+          : 0;
+      const maxRisk =
+        tradesWithR.length > 0
+          ? Math.max(...tradesWithR.map((t) => t.risk))
+          : 0;
+      const avgR =
+        tradesWithR.filter((t) => t.rMultiple !== null).length > 0
+          ? tradesWithR
+              .filter((t) => t.rMultiple !== null)
+              .reduce((sum, t) => sum + t.rMultiple!, 0) /
+            tradesWithR.filter((t) => t.rMultiple !== null).length
+          : 0;
 
       byStrategy.push({
         strategy,
         avgRisk: Math.round(avgRisk * 100) / 100,
         maxRisk: Math.round(maxRisk * 100) / 100,
         count: trades.length,
-        winRate: trades.length > 0 ? Math.round((wins.length / trades.length) * 10000) / 100 : 0,
+        winRate:
+          trades.length > 0
+            ? Math.round((wins.length / trades.length) * 10000) / 100
+            : 0,
         avgR: Math.round(avgR * 100) / 100,
       });
     }
 
-    const weekMap = new Map<string, { risk: number; pnl: number; count: number; maxRisk: number }>();
+    const weekMap = new Map<
+      string,
+      { risk: number; pnl: number; count: number; maxRisk: number }
+    >();
     for (const t of tradeRisks) {
       if (!t.tradeDate) continue;
       const d = new Date(t.tradeDate);
       if (isNaN(d.getTime())) continue;
       const yearStart = new Date(d.getFullYear(), 0, 1);
-      const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7);
+      const weekNum = Math.ceil(
+        ((d.getTime() - yearStart.getTime()) / 86400000 +
+          yearStart.getDay() +
+          1) /
+          7,
+      );
       const weekKey = `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-      const existing = weekMap.get(weekKey) || { risk: 0, pnl: 0, count: 0, maxRisk: 0 };
+      const existing = weekMap.get(weekKey) || {
+        risk: 0,
+        pnl: 0,
+        count: 0,
+        maxRisk: 0,
+      };
       existing.risk += t.risk || 0;
       existing.pnl += t.pnl;
       existing.count += 1;
@@ -1787,15 +1818,21 @@ export class TradesService {
     const shortTrades = tradeRisks.filter((t) => t.direction === 'sell');
 
     const computeDirectionRisk = (trades: TradeRisk[]) => {
-      const withRisk = trades.filter((t) => t.risk !== null) as (TradeRisk & { risk: number })[];
+      const withRisk = trades.filter((t) => t.risk !== null) as (TradeRisk & {
+        risk: number;
+      })[];
       const wins = trades.filter((t) => t.pnl > 0);
-      const avgRisk = withRisk.length > 0
-        ? withRisk.reduce((sum, t) => sum + t.risk, 0) / withRisk.length
-        : 0;
+      const avgRisk =
+        withRisk.length > 0
+          ? withRisk.reduce((sum, t) => sum + t.risk, 0) / withRisk.length
+          : 0;
       return {
         avgRisk: Math.round(avgRisk * 100) / 100,
         count: trades.length,
-        winRate: trades.length > 0 ? Math.round((wins.length / trades.length) * 10000) / 100 : 0,
+        winRate:
+          trades.length > 0
+            ? Math.round((wins.length / trades.length) * 10000) / 100
+            : 0,
       };
     };
 

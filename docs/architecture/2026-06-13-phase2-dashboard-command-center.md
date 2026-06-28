@@ -22,10 +22,10 @@ Phase 1 modernized the visual foundation. Phase 2 transforms the dashboard from 
 
 ## Library Decisions
 
-| Library | Purpose | Why |
-|---------|---------|-----|
+| Library              | Purpose            | Why                                                                                 |
+| -------------------- | ------------------ | ----------------------------------------------------------------------------------- |
 | `lightweight-charts` | Equity curve chart | Professional TradingView-grade charting, interactive crosshair, built-in time range |
-| `date-fns` | Date formatting | Lightweight, tree-shakeable, no moment.js bloat |
+| `date-fns`           | Date formatting    | Lightweight, tree-shakeable, no moment.js bloat                                     |
 
 No other new dependencies. All widgets use the Phase 1 design system (Geist, shadcn/ui, existing CSS variables).
 
@@ -64,6 +64,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 **Purpose:** Personalized greeting that instantly shows weekly activity.
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────────────┐
 │  Welcome back, {user.username}  👋          │
@@ -74,6 +75,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 ```
 
 **Data:** Fetched from `GET /api/trades/stats/weekly` or computed client-side from trades array:
+
 - `tradesThisWeek` — count of trades with `exit_date` in current ISO week
 - `weeklyPnl` — sum of `pnl` for those trades (formatted with ₹ prefix, green/red)
 - `weeklyWinRate` — percentage of winning trades this week
@@ -93,15 +95,18 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 **Data:** `GET /api/trades/equity` — array of `{ date: string, cumulativePnl: number }` sorted chronologically.
 
 **Time range tabs:**
+
 ```
 [1W] [1M] [3M] [6M] [1Y] [ALL]
 ```
+
 - Active tab filters the displayed series
 - Default: 1M
 - Smooth line series, gradient fill under the curve
 - Green fill when above zero, red fill when below
 
 **Features:**
+
 - Interactive crosshair tooltip showing date + P&L
 - Responsive width, fixed height ~300px
 - Loading: skeleton shimmer matching StatCard skeleton pattern
@@ -113,6 +118,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 **Purpose:** Instant view of today's trading status.
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────┐
 │  Today's Trading                    │
@@ -125,6 +131,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 ```
 
 **Data:** Computed from trades where `exit_date` is today:
+
 - `tradesToday` — count
 - `winRateToday` — percentage
 - `pnlToday` — sum of PnL
@@ -139,6 +146,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 **Purpose:** Quick access to latest 5 trades.
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────────────┐
 │  Recent Trades                   [View All] │
@@ -152,6 +160,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 **Columns:** Symbol, Direction (LONG/SHORT badge), PnL (green/red), R:R, Date (relative), Actions menu
 
 **Actions menu (⋮):**
+
 - View Details
 - Edit Trade
 - Delete Trade (with confirmation dialog)
@@ -167,6 +176,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 **Purpose:** Surface the latest journal entry to build the journaling habit.
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────┐
 │  Latest Journal Entry     [View All]│
@@ -178,6 +188,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 ```
 
 **Data:** Latest journal entry from `GET /api/journal/latest`:
+
 - `mood` — emoji + label
 - `market_conditions` — short string
 - `lesson` — truncated to 2 lines
@@ -191,6 +202,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 **Purpose:** GitHub-style contributions graph showing trading discipline.
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────┐
 │  Trading Consistency      [Details] │
@@ -205,7 +217,8 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 └─────────────────────────────────────┘
 ```
 
-**Color scale:** 
+**Color scale:**
+
 - Dark green — traded with discipline (journaled, followed plan)
 - Light green — traded (basic)
 - Yellow — traded without journal
@@ -213,6 +226,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 - Gray — no trading
 
 **Data source:** Computed from trades + journals by date. A day is "disciplined" if:
+
 - At least 1 trade with a journal entry
 - No revenge trades flagged
 - Followed risk limits
@@ -226,6 +240,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 **Purpose:** Surface psychological patterns and discipline metrics.
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────┐
 │  Behavior Analytics                 │
@@ -238,6 +253,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 ```
 
 **Data source:** Computed from trade tags + flags:
+
 - `discipline_score` — weighted composite from journaling %, plan adherence, risk compliance
 - `fomo_score` — detected from late entries, above-average position size
 - `revenge_trades` — consecutive losses followed by oversized trade
@@ -252,6 +268,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 **Purpose:** Encourage exploration of the analytics page.
 
 **Layout:**
+
 ```
 ┌─────────────────────────────────────┐
 │  Top Insights           [Full →]    │
@@ -264,6 +281,7 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 ```
 
 **Data source:** Computed from trades:
+
 - `best_strategy` — strategy with highest win rate (min 5 trades)
 - `best_day` — day of week with highest avg P&L
 - `avg_rr` — mean R:R across all trades
@@ -277,13 +295,13 @@ No other new dependencies. All widgets use the Phase 1 design system (Geist, sha
 
 New endpoints needed (or compute client-side from existing trades data):
 
-| Endpoint | Purpose | Status |
-|----------|---------|--------|
-| `GET /trades/stats/weekly` | Weekly trade count, P&L, win rate | New |
-| `GET /trades/equity` | Cumulative P&L over time (daily) | New |
-| `GET /trades/behavior` | Discipline score, FOMO, revenge, trend alignment | New |
-| `GET /trades/insights` | Best strategy, best day, avg RR, profit factor | New |
-| `GET /journal/latest` | Latest journal entry | New |
+| Endpoint                   | Purpose                                          | Status |
+| -------------------------- | ------------------------------------------------ | ------ |
+| `GET /trades/stats/weekly` | Weekly trade count, P&L, win rate                | New    |
+| `GET /trades/equity`       | Cumulative P&L over time (daily)                 | New    |
+| `GET /trades/behavior`     | Discipline score, FOMO, revenge, trend alignment | New    |
+| `GET /trades/insights`     | Best strategy, best day, avg RR, profit factor   | New    |
+| `GET /journal/latest`      | Latest journal entry                             | New    |
 
 If the API scope is too large for a 2-3 day sprint, these can be computed client-side from existing trade data using array reduce/map operations as a fallback.
 

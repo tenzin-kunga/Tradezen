@@ -75,5 +75,10 @@ export class DashboardResponseDto {
       { date: '2025-06-10', trades: 3, pnl: 120.5, disciplined: false },
     ],
   })
-  heatmap!: { date: string; trades: number; pnl: number; disciplined: boolean }[];
+  heatmap!: {
+    date: string;
+    trades: number;
+    pnl: number;
+    disciplined: boolean;
+  }[];
 }

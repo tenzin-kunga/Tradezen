@@ -7,6 +7,7 @@
 ## Memory Types
 
 ### 1. Decisions
+
 Track architectural and strategic decisions with rationale.
 
 ```json
@@ -26,6 +27,7 @@ Track architectural and strategic decisions with rationale.
 ```
 
 ### 2. Constraints
+
 Document technical and business constraints.
 
 ```json
@@ -41,6 +43,7 @@ Document technical and business constraints.
 ```
 
 ### 3. Context
+
 Session context and progress tracking.
 
 ```json
@@ -57,6 +60,7 @@ Session context and progress tracking.
 ```
 
 ### 4. Patterns
+
 Reusable code patterns and anti-patterns.
 
 ```json

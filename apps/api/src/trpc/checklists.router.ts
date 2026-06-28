@@ -17,7 +17,12 @@ const updateChecklistInput = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().max(1000).nullish(),
   items: z
-    .array(z.object({ title: z.string().min(1).max(200), isCritical: z.boolean().optional() }))
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        isCritical: z.boolean().optional(),
+      }),
+    )
     .min(1)
     .max(50)
     .optional(),
@@ -33,9 +38,16 @@ export const checklistsRouter = router({
         description: checklists.description,
         createdAt: checklists.createdAt,
         updatedAt: checklists.updatedAt,
-        itemCount: sql<number>`count(distinct ${checklistItems.id})`.as('item_count'),
-        criticalCount: sql<number>`count(distinct case when ${checklistItems.isCritical} then ${checklistItems.id} end)`.as('critical_count'),
-        lastRunAt: sql<string | null>`max(${checklistRuns.createdAt})`.as('last_run_at'),
+        itemCount: sql<number>`count(distinct ${checklistItems.id})`.as(
+          'item_count',
+        ),
+        criticalCount:
+          sql<number>`count(distinct case when ${checklistItems.isCritical} then ${checklistItems.id} end)`.as(
+            'critical_count',
+          ),
+        lastRunAt: sql<string | null>`max(${checklistRuns.createdAt})`.as(
+          'last_run_at',
+        ),
       })
       .from(checklists)
       .leftJoin(checklistItems, eq(checklistItems.checklistId, checklists.id))
@@ -53,7 +65,9 @@ export const checklistsRouter = router({
       const [template] = await db
         .select()
         .from(checklists)
-        .where(and(eq(checklists.id, input.id), eq(checklists.userId, ctx.userId)))
+        .where(
+          and(eq(checklists.id, input.id), eq(checklists.userId, ctx.userId)),
+        )
         .limit(1);
       if (!template) throw new Error('Checklist not found');
       const items = await db
@@ -70,7 +84,11 @@ export const checklistsRouter = router({
       const db = getDb();
       const [template] = await db
         .insert(checklists)
-        .values({ userId: ctx.userId, name: input.name, description: input.description ?? null })
+        .values({
+          userId: ctx.userId,
+          name: input.name,
+          description: input.description ?? null,
+        })
         .returning();
       if (input.items.length > 0) {
         await db.insert(checklistItems).values(
@@ -79,7 +97,7 @@ export const checklistsRouter = router({
             title: item.title,
             isCritical: item.isCritical ?? false,
             sortOrder: i,
-          }))
+          })),
         );
       }
       const items = await db
@@ -110,7 +128,9 @@ export const checklistsRouter = router({
       }
 
       if (items) {
-        await db.delete(checklistItems).where(eq(checklistItems.checklistId, id));
+        await db
+          .delete(checklistItems)
+          .where(eq(checklistItems.checklistId, id));
         if (items.length > 0) {
           await db.insert(checklistItems).values(
             items.map((item, i) => ({
@@ -118,7 +138,7 @@ export const checklistsRouter = router({
               title: item.title,
               isCritical: item.isCritical ?? false,
               sortOrder: i,
-            }))
+            })),
           );
         }
       }
@@ -142,7 +162,9 @@ export const checklistsRouter = router({
       const db = getDb();
       await db
         .delete(checklists)
-        .where(and(eq(checklists.id, input.id), eq(checklists.userId, ctx.userId)));
+        .where(
+          and(eq(checklists.id, input.id), eq(checklists.userId, ctx.userId)),
+        );
       return { deleted: true };
     }),
 
@@ -153,7 +175,9 @@ export const checklistsRouter = router({
       const [source] = await db
         .select()
         .from(checklists)
-        .where(and(eq(checklists.id, input.id), eq(checklists.userId, ctx.userId)))
+        .where(
+          and(eq(checklists.id, input.id), eq(checklists.userId, ctx.userId)),
+        )
         .limit(1);
       if (!source) throw new Error('Checklist not found');
       const sourceItems = await db
@@ -164,7 +188,11 @@ export const checklistsRouter = router({
 
       const [clone] = await db
         .insert(checklists)
-        .values({ userId: ctx.userId, name: `${source.name} (copy)`, description: source.description })
+        .values({
+          userId: ctx.userId,
+          name: `${source.name} (copy)`,
+          description: source.description,
+        })
         .returning();
 
       if (sourceItems.length > 0) {
@@ -174,7 +202,7 @@ export const checklistsRouter = router({
             title: item.title,
             isCritical: item.isCritical,
             sortOrder: item.sortOrder,
-          }))
+          })),
         );
       }
 
@@ -198,12 +226,25 @@ export const checklistsRouter = router({
             tradeId: checklistRuns.tradeId,
             note: checklistRuns.note,
             createdAt: checklistRuns.createdAt,
-            checkedCount: sql<number>`count(case when ${checklistRunItems.checked} then 1 end)`.as('checked_count'),
-            totalCount: sql<number>`count(${checklistRunItems.id})`.as('total_count'),
+            checkedCount:
+              sql<number>`count(case when ${checklistRunItems.checked} then 1 end)`.as(
+                'checked_count',
+              ),
+            totalCount: sql<number>`count(${checklistRunItems.id})`.as(
+              'total_count',
+            ),
           })
           .from(checklistRuns)
-          .leftJoin(checklistRunItems, eq(checklistRunItems.runId, checklistRuns.id))
-          .where(and(eq(checklistRuns.checklistId, input.checklistId), eq(checklistRuns.userId, ctx.userId)))
+          .leftJoin(
+            checklistRunItems,
+            eq(checklistRunItems.runId, checklistRuns.id),
+          )
+          .where(
+            and(
+              eq(checklistRuns.checklistId, input.checklistId),
+              eq(checklistRuns.userId, ctx.userId),
+            ),
+          )
           .groupBy(checklistRuns.id)
           .orderBy(desc(checklistRuns.createdAt));
         return rows;
@@ -234,7 +275,7 @@ export const checklistsRouter = router({
           items.map((item) => ({
             runId: run.id,
             itemId: item.id,
-          }))
+          })),
         );
 
         const runItems = await db
@@ -251,7 +292,12 @@ export const checklistsRouter = router({
         const [run] = await db
           .select()
           .from(checklistRuns)
-          .where(and(eq(checklistRuns.id, input.id), eq(checklistRuns.userId, ctx.userId)))
+          .where(
+            and(
+              eq(checklistRuns.id, input.id),
+              eq(checklistRuns.userId, ctx.userId),
+            ),
+          )
           .limit(1);
         if (!run) throw new Error('Run not found');
         const runItems = await db
@@ -266,7 +312,10 @@ export const checklistsRouter = router({
             sortOrder: checklistItems.sortOrder,
           })
           .from(checklistRunItems)
-          .innerJoin(checklistItems, eq(checklistRunItems.itemId, checklistItems.id))
+          .innerJoin(
+            checklistItems,
+            eq(checklistRunItems.itemId, checklistItems.id),
+          )
           .where(eq(checklistRunItems.runId, input.id))
           .orderBy(checklistItems.sortOrder);
         return { ...run, runItems };
@@ -278,12 +327,15 @@ export const checklistsRouter = router({
         const db = getDb();
         const [runItem] = await db
           .update(checklistRunItems)
-          .set({ checked: input.checked, checkedAt: input.checked ? new Date() : null })
+          .set({
+            checked: input.checked,
+            checkedAt: input.checked ? new Date() : null,
+          })
           .where(
             and(
               eq(checklistRunItems.runId, input.runId),
               eq(checklistRunItems.itemId, input.itemId),
-            )
+            ),
           )
           .returning();
         return runItem;
@@ -295,7 +347,12 @@ export const checklistsRouter = router({
         const db = getDb();
         await db
           .delete(checklistRuns)
-          .where(and(eq(checklistRuns.id, input.id), eq(checklistRuns.userId, ctx.userId)));
+          .where(
+            and(
+              eq(checklistRuns.id, input.id),
+              eq(checklistRuns.userId, ctx.userId),
+            ),
+          );
         return { deleted: true };
       }),
   },

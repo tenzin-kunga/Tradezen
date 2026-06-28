@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { getSocket } from '../lib/socket';
+import { useEffect, useRef } from "react";
+import { getSocket } from "../lib/socket";
 
 export function useRealtime(event: string, handler: (data: unknown) => void) {
   const handlerRef = useRef(handler);

@@ -14,7 +14,10 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { GithubStrategy } from './strategies/github.strategy';
 
 @Module({
-  imports: [PassportModule.register({ session: false }), JwtModule.register({})],
+  imports: [
+    PassportModule.register({ session: false }),
+    JwtModule.register({}),
+  ],
   controllers: [AuthController, OAuthController],
   providers: [
     AuthService,

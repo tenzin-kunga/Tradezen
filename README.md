@@ -8,12 +8,12 @@ A professional trading journal web app with a Glass Depth design system. Track t
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | Next.js 14.2.25, React 18.2.0, Tailwind CSS v3.4, Recharts |
-| **Backend** | NestJS 11, PostgreSQL (raw `pg`), Passport JWT, Redis |
-| **Database** | PostgreSQL 16-alpine (Docker) / Neon (production) |
-| **Monorepo** | Bun workspaces (Turborepo) |
+| Layer          | Technology                                                       |
+| -------------- | ---------------------------------------------------------------- |
+| **Frontend**   | Next.js 14.2.25, React 18.2.0, Tailwind CSS v3.4, Recharts       |
+| **Backend**    | NestJS 11, PostgreSQL (raw `pg`), Passport JWT, Redis            |
+| **Database**   | PostgreSQL 16-alpine (Docker) / Neon (production)                |
+| **Monorepo**   | Bun workspaces (Turborepo)                                       |
 | **Deployment** | Vercel (web) + Render (API) + Neon (DB) / Docker Compose (local) |
 
 ## Features
@@ -62,6 +62,7 @@ scripts/dev/start.bat
 ```
 
 This script handles:
+
 1. Docker Desktop startup (if not running)
 2. Cleaning stale containers
 3. Starting PostgreSQL + Redis with health checks
@@ -90,42 +91,43 @@ bun run dev
 
 **Docker** (`.env.docker`) — copy from `.env.docker.example`:
 
-| Variable | Default | Description |
-|---|---|---|
-| `DB_PASSWORD` | *(required)* | PostgreSQL password |
-| `JWT_SECRET` | *(required)* | JWT signing secret (min 64 chars) |
-| `JWT_REFRESH_SECRET` | *(required)* | Refresh token secret (min 64 chars) |
-| `OPENROUTER_API_KEY` | *(optional)* | OpenRouter API key for AI chat |
-| `WEB_URL` | `http://localhost:3000` | Frontend URL (CORS origin) |
+| Variable             | Default                 | Description                         |
+| -------------------- | ----------------------- | ----------------------------------- |
+| `DB_PASSWORD`        | _(required)_            | PostgreSQL password                 |
+| `JWT_SECRET`         | _(required)_            | JWT signing secret (min 64 chars)   |
+| `JWT_REFRESH_SECRET` | _(required)_            | Refresh token secret (min 64 chars) |
+| `OPENROUTER_API_KEY` | _(optional)_            | OpenRouter API key for AI chat      |
+| `WEB_URL`            | `http://localhost:3000` | Frontend URL (CORS origin)          |
 
 **API** (`apps/api/.env`) — development defaults:
 
-| Variable | Default | Description |
-|---|---|---|
-| `DB_HOST` | `localhost` | Database host |
-| `DB_PORT` | `5432` | Database port |
-| `DB_USER` | `postgres` | Database user |
-| `DB_NAME` | `tradezen` | Database name |
+| Variable   | Default       | Description      |
+| ---------- | ------------- | ---------------- |
+| `DB_HOST`  | `localhost`   | Database host    |
+| `DB_PORT`  | `5432`        | Database port    |
+| `DB_USER`  | `postgres`    | Database user    |
+| `DB_NAME`  | `tradezen`    | Database name    |
 | `NODE_ENV` | `development` | Environment mode |
 
 **Web** (`apps/web/`):
 
-| Variable | Default | Description |
-|---|---|---|
+| Variable              | Default                 | Description     |
+| --------------------- | ----------------------- | --------------- |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | Backend API URL |
 
 ## Docker Infrastructure
 
 The `infra/docker-compose.yml` provides a production-ready local stack:
 
-| Service | Image | Port | Health Check |
-|---|---|---|---|
-| `postgres` | postgres:16-alpine | 5432 | `pg_isready` |
-| `redis` | redis:7-alpine | 6379 | `redis-cli ping` |
-| `api` | Built from source | 3001 | HTTP endpoint |
-| `web` | Built from source | 3000 | HTTP endpoint |
+| Service    | Image              | Port | Health Check     |
+| ---------- | ------------------ | ---- | ---------------- |
+| `postgres` | postgres:16-alpine | 5432 | `pg_isready`     |
+| `redis`    | redis:7-alpine     | 6379 | `redis-cli ping` |
+| `api`      | Built from source  | 3001 | HTTP endpoint    |
+| `web`      | Built from source  | 3000 | HTTP endpoint    |
 
 **Features:**
+
 - Custom bridge network (`tradezen-net`) with static IPs
 - Named volumes for data persistence (`pgdata`, `redisdata`)
 - Resource limits (CPU/memory) per service
@@ -144,29 +146,29 @@ See [SECURITY.md](docs/SECURITY.md) for full hardening guide.
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/auth/register` | Register new user |
-| `POST` | `/auth/login` | Login |
-| `POST` | `/auth/refresh` | Refresh access token |
-| `POST` | `/auth/logout` | Logout |
-| `GET` | `/auth/me` | Get current user |
-| `POST` | `/trades` | Create trade |
-| `GET` | `/trades` | List trades (paginated) |
-| `GET` | `/trades/analytics` | Trade analytics |
-| `GET` | `/trades/export/csv` | Export CSV |
-| `GET` | `/trades/:id` | Get trade |
-| `PUT` | `/trades/:id` | Update trade |
-| `DELETE` | `/trades/:id` | Delete trade |
-| `POST` | `/journals` | Create/upsert journal entry |
-| `GET` | `/journals` | List journal entries |
-| `GET` | `/journals/streak` | Get journal streak stats |
-| `GET` | `/journals/date/:date` | Get entry by date |
-| `POST` | `/tags` | Create tag |
-| `GET` | `/tags` | List tags |
-| `PUT` | `/tags/:id` | Update tag |
-| `DELETE` | `/tags/:id` | Delete tag |
-| `POST` | `/chat` | AI chat message |
+| Method   | Endpoint               | Description                 |
+| -------- | ---------------------- | --------------------------- |
+| `POST`   | `/auth/register`       | Register new user           |
+| `POST`   | `/auth/login`          | Login                       |
+| `POST`   | `/auth/refresh`        | Refresh access token        |
+| `POST`   | `/auth/logout`         | Logout                      |
+| `GET`    | `/auth/me`             | Get current user            |
+| `POST`   | `/trades`              | Create trade                |
+| `GET`    | `/trades`              | List trades (paginated)     |
+| `GET`    | `/trades/analytics`    | Trade analytics             |
+| `GET`    | `/trades/export/csv`   | Export CSV                  |
+| `GET`    | `/trades/:id`          | Get trade                   |
+| `PUT`    | `/trades/:id`          | Update trade                |
+| `DELETE` | `/trades/:id`          | Delete trade                |
+| `POST`   | `/journals`            | Create/upsert journal entry |
+| `GET`    | `/journals`            | List journal entries        |
+| `GET`    | `/journals/streak`     | Get journal streak stats    |
+| `GET`    | `/journals/date/:date` | Get entry by date           |
+| `POST`   | `/tags`                | Create tag                  |
+| `GET`    | `/tags`                | List tags                   |
+| `PUT`    | `/tags/:id`            | Update tag                  |
+| `DELETE` | `/tags/:id`            | Delete tag                  |
+| `POST`   | `/chat`                | AI chat message             |
 
 Full interactive docs at `/api/docs` (development only).
 
@@ -181,21 +183,21 @@ GitHub Actions workflow (`.github/workflows/ci.yml`):
 
 ## Documentation
 
-| File | Purpose |
-|---|---|
-| [SECURITY.md](docs/SECURITY.md) | Security hardening guide |
-| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production deployment steps |
+| File                                        | Purpose                       |
+| ------------------------------------------- | ----------------------------- |
+| [SECURITY.md](docs/SECURITY.md)             | Security hardening guide      |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md)         | Production deployment steps   |
 | [DEV_QUICKSTART.md](docs/DEV_QUICKSTART.md) | 5-minute developer onboarding |
-| [AUDIT-REPORT.md](docs/AUDIT-REPORT.md) | Infrastructure audit results |
-| [decisions/](docs/decisions/) | Architecture Decision Records |
+| [AUDIT-REPORT.md](docs/AUDIT-REPORT.md)     | Infrastructure audit results  |
+| [decisions/](docs/decisions/)               | Architecture Decision Records |
 
 ## Deployment
 
-| Service | Purpose |
-|---|---|
+| Service                      | Purpose               |
+| ---------------------------- | --------------------- |
 | [Vercel](https://vercel.com) | Frontend (`apps/web`) |
-| [Render](https://render.com) | Backend (`apps/api`) |
-| [Neon](https://neon.tech) | PostgreSQL database |
+| [Render](https://render.com) | Backend (`apps/api`)  |
+| [Neon](https://neon.tech)    | PostgreSQL database   |
 
 Auto-deploys on push to `main`.
 
@@ -203,10 +205,10 @@ Auto-deploys on push to `main`.
 
 Defined in `.github/workflows/ci.yml`. Two environments, gated by branch:
 
-| Branch | Deploys to | Trigger |
-|---|---|---|
-| `develop` | `deploy-staging` env (Render preview service + Vercel preview) | auto on push |
-| `main` | `deploy-prod` env (Render + Vercel) | auto on push, requires approval via GitHub Environment |
+| Branch    | Deploys to                                                     | Trigger                                                |
+| --------- | -------------------------------------------------------------- | ------------------------------------------------------ |
+| `develop` | `deploy-staging` env (Render preview service + Vercel preview) | auto on push                                           |
+| `main`    | `deploy-prod` env (Render + Vercel)                            | auto on push, requires approval via GitHub Environment |
 
 > The env names `deploy-staging` / `deploy-prod` are scoped away from Vercel's auto-created `Production`/`Preview` envs to avoid settings collisions.
 
@@ -230,16 +232,16 @@ Defined in `.github/workflows/ci.yml`. Two environments, gated by branch:
 
 Set in repo **Settings → Secrets and variables → Actions**:
 
-| Secret | Scope | Purpose |
-|---|---|---|
-| `GITHUB_TOKEN` | auto | GHCR push, SARIF upload |
-| `CODECOV_TOKEN` | repo | upload coverage on main |
-| `RENDER_API_KEY` | both envs | Render API authentication |
-| `RENDER_STAGING_SERVICE_ID` | `deploy-staging` env | staging Render service |
-| `STAGING_API_URL` | `deploy-staging` env | e.g. `https://api-staging.tradezen.app` — for staging smoke tests |
-| `RENDER_SERVICE_ID` | `deploy-prod` env | production Render service |
-| `PRODUCTION_API_URL` | `deploy-prod` env | e.g. `https://api.tradezen.app` — for prod smoke tests |
-| `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` / `VERCEL_ORG_ID` | both envs | Vercel deploy |
+| Secret                                                 | Scope                | Purpose                                                           |
+| ------------------------------------------------------ | -------------------- | ----------------------------------------------------------------- |
+| `GITHUB_TOKEN`                                         | auto                 | GHCR push, SARIF upload                                           |
+| `CODECOV_TOKEN`                                        | repo                 | upload coverage on main                                           |
+| `RENDER_API_KEY`                                       | both envs            | Render API authentication                                         |
+| `RENDER_STAGING_SERVICE_ID`                            | `deploy-staging` env | staging Render service                                            |
+| `STAGING_API_URL`                                      | `deploy-staging` env | e.g. `https://api-staging.tradezen.app` — for staging smoke tests |
+| `RENDER_SERVICE_ID`                                    | `deploy-prod` env    | production Render service                                         |
+| `PRODUCTION_API_URL`                                   | `deploy-prod` env    | e.g. `https://api.tradezen.app` — for prod smoke tests            |
+| `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` / `VERCEL_ORG_ID` | both envs            | Vercel deploy                                                     |
 
 > **Required reviewer on `deploy-prod`**: must be set via the GitHub web UI (Settings → Environments → deploy-prod → Required reviewers). GitHub's API doesn't expose a way to enable the Required Reviewers rule programmatically.
 

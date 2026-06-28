@@ -27,12 +27,20 @@ export default function JournalSnapshotWidget({ entry, loading }: Props) {
   return (
     <WidgetShell
       title="LATEST JOURNAL"
-      headerAction={<Link href="/journal" className="text-xs text-accent no-underline">View All →</Link>}
+      headerAction={
+        <Link href="/journal" className="text-xs text-accent no-underline">
+          View All →
+        </Link>
+      }
       loading={loading}
       isEmpty={!entry}
       emptyMessage="No journal entries yet. Start building the habit."
       emptyAction={
-        <Link href="/journal" className="btn-glass inline-block text-xs no-underline" style={{ padding: "6px 16px" }}>
+        <Link
+          href="/journal"
+          className="btn-glass inline-block text-xs no-underline"
+          style={{ padding: "6px 16px" }}
+        >
           Write Entry
         </Link>
       }

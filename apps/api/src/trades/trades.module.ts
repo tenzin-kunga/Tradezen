@@ -12,7 +12,12 @@ import { StorageModule } from '../storage/storage.module';
 @Module({
   imports: [QueuesModule, SeedModule, StorageModule],
   controllers: [TradesController, TradeImageController],
-  providers: [TradesService, TradeImageService, BehavioralService, EventPublisherService],
+  providers: [
+    TradesService,
+    TradeImageService,
+    BehavioralService,
+    EventPublisherService,
+  ],
   exports: [TradesService, TradeImageService, BehavioralService],
 })
 export class TradesModule {}

@@ -18,9 +18,9 @@ Enrich the existing Strategy tab on `/analytics` with 5 grouped bar charts (one 
 
 Add two fields to each `StrategyPerformance` entry:
 
-| Field | Source | Notes |
-|-------|--------|-------|
-| `avgRr` | Compute from trades: avg(r/r ratio) | Per strategy |
+| Field         | Source                                        | Notes        |
+| ------------- | --------------------------------------------- | ------------ |
+| `avgRr`       | Compute from trades: avg(r/r ratio)           | Per strategy |
 | `maxDrawdown` | Compute from trades via cumulative PnL series | Per strategy |
 
 ### 2. New Endpoint: `GET /trades/analytics/strategy/:name/performance`
@@ -28,15 +28,17 @@ Add two fields to each `StrategyPerformance` entry:
 Returns monthly time series + summary for a single strategy.
 
 **Response:**
+
 ```ts
 {
   strategy: string;
   monthly: {
-    month: string;     // "YYYY-MM"
+    month: string; // "YYYY-MM"
     trades: number;
     pnl: number;
-    winRate: number;   // 0-100
-  }[];
+    winRate: number; // 0-100
+  }
+  [];
 }
 ```
 
@@ -48,14 +50,14 @@ Implementation: Query trades filtered by strategy, group by `strftime('%Y-%m', e
 
 ### Files Changed
 
-| File | Change |
-|------|--------|
-| `app/analytics/page.tsx` | Enrich Strategy tab content |
-| `components/StrategyBarCharts.tsx` | **New** — 5 grouped bar charts |
-| `components/StrategyTrendChart.tsx` | **New** — Multi-line trend chart |
-| `components/StrategyDrawer.tsx` | **New** — Side drawer with strategy detail |
+| File                                     | Change                                             |
+| ---------------------------------------- | -------------------------------------------------- |
+| `app/analytics/page.tsx`                 | Enrich Strategy tab content                        |
+| `components/StrategyBarCharts.tsx`       | **New** — 5 grouped bar charts                     |
+| `components/StrategyTrendChart.tsx`      | **New** — Multi-line trend chart                   |
+| `components/StrategyDrawer.tsx`          | **New** — Side drawer with strategy detail         |
 | `components/StrategyComparisonTable.tsx` | **New** — Replace inline table with richer version |
-| `lib/api.ts` | Add `getStrategyPerformance(strategyName)` |
+| `lib/api.ts`                             | Add `getStrategyPerformance(strategyName)`         |
 
 ### Strategy Tab Layout
 
@@ -98,19 +100,20 @@ Implementation: Query trades filtered by strategy, group by `strftime('%Y-%m', e
 
 Each chart is a `ResponsiveContainer` + `BarChart` from Recharts:
 
-| Chart | Metric | Color | Notes |
-|-------|--------|-------|-------|
-| Win Rate | winRate (0-100%) | Green scale | Show % on bars |
-| Profit Factor | profitFactor | Blue scale | Clip at 5+ for outliers |
-| Expectancy | expectancy ($) | Purple scale | Show $ value |
-| Avg RR | avgRr | Orange scale | Show X.X |
-| Max Drawdown | maxDrawdown (%) | Red scale | Show negative value |
+| Chart         | Metric           | Color        | Notes                   |
+| ------------- | ---------------- | ------------ | ----------------------- |
+| Win Rate      | winRate (0-100%) | Green scale  | Show % on bars          |
+| Profit Factor | profitFactor     | Blue scale   | Clip at 5+ for outliers |
+| Expectancy    | expectancy ($)   | Purple scale | Show $ value            |
+| Avg RR        | avgRr            | Orange scale | Show X.X                |
+| Max Drawdown  | maxDrawdown (%)  | Red scale    | Show negative value     |
 
 Layout: 3-column grid on `lg+`, 2-column on `md`, 1-column on `sm`.
 
 ### Multi-line Trend Chart
 
 Single `LineChart` with:
+
 - X-axis: month labels ("Jan", "Feb", etc.)
 - Y-axis: PnL ($)
 - One `Line` per strategy with `type="monotone"`, color from chart color palette
@@ -122,6 +125,7 @@ Single `LineChart` with:
 Opens from the right edge when a strategy name/row is clicked.
 
 **Contents:**
+
 1. **Header**: Strategy name + total PnL (colored green/red) + badge ("Best Strategy" / "Worst Strategy" if applicable)
 2. **Metric Summary**: 5 small stat cards in a row:
    - Win Rate, Profit Factor, Expectancy, Avg RR, Max Drawdown
@@ -133,6 +137,7 @@ Opens from the right edge when a strategy name/row is clicked.
 ### Enhanced Comparison Table
 
 Same structure as current table but:
+
 - Updated with all 7 columns (Strategy, Trades, Win Rate, Profit Factor, Expectancy, Avg RR, Max Drawdown)
 - Each row is clickable → opens StrategyDrawer
 - Sortable by any column header click

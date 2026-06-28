@@ -10,27 +10,27 @@ Last Updated: May 2026
 
 TradeZen is a modern AI-assisted trading journal platform designed to help traders:
 
-* Track trades
-* Analyze performance
-* Improve trading psychology
-* Maintain trading journals
-* Receive AI-driven coaching and insights
+- Track trades
+- Analyze performance
+- Improve trading psychology
+- Maintain trading journals
+- Receive AI-driven coaching and insights
 
 The platform follows a cloud-native architecture that separates concerns between:
 
-* Frontend
-* Backend API
-* Database
-* Caching
-* AI Services
-* Monitoring
+- Frontend
+- Backend API
+- Database
+- Caching
+- AI Services
+- Monitoring
 
 This architecture is designed to:
 
-* Scale from a single user to thousands of traders
-* Maintain high reliability
-* Preserve data integrity
-* Support future AI-driven coaching features
+- Scale from a single user to thousands of traders
+- Maintain high reliability
+- Preserve data integrity
+- Support future AI-driven coaching features
 
 ---
 
@@ -76,27 +76,27 @@ API instances do not store session state.
 
 Benefits:
 
-* Easy scaling
-* Easy deployments
-* Fault tolerance
+- Easy scaling
+- Easy deployments
+- Fault tolerance
 
 ## Security First
 
-* JWT Authentication
-* HTTP-only cookies
-* User-level data isolation
-* Parameterized queries
+- JWT Authentication
+- HTTP-only cookies
+- User-level data isolation
+- Parameterized queries
 
 ## Cloud Native
 
 Infrastructure can be deployed on:
 
-* Railway
-* Render
-* AWS
-* Azure
-* GCP
-* Kubernetes
+- Railway
+- Render
+- AWS
+- Azure
+- GCP
+- Kubernetes
 
 without code changes.
 
@@ -108,10 +108,10 @@ without code changes.
 
 Optimized for:
 
-* Hot reload
-* Fast iteration
-* Debugging
-* Local testing
+- Hot reload
+- Fast iteration
+- Debugging
+- Local testing
 
 ---
 
@@ -137,10 +137,10 @@ Developer Machine
 
 Running API and Web locally provides:
 
-* Fast refresh
-* Better debugging
-* Direct VSCode integration
-* Lower memory consumption
+- Fast refresh
+- Better debugging
+- Direct VSCode integration
+- Lower memory consumption
 
 Docker is used only for infrastructure services.
 
@@ -196,10 +196,10 @@ Vercel
 
 Responsibilities:
 
-* Serve Next.js application
-* CDN distribution
-* Static asset optimization
-* SSL
+- Serve Next.js application
+- CDN distribution
+- Static asset optimization
+- SSL
 
 ---
 
@@ -211,10 +211,10 @@ Railway
 
 Responsibilities:
 
-* REST APIs
-* Authentication
-* Business logic
-* Database access
+- REST APIs
+- Authentication
+- Business logic
+- Database access
 
 ---
 
@@ -226,10 +226,10 @@ Neon PostgreSQL
 
 Responsibilities:
 
-* User management
-* Trade storage
-* Journal storage
-* Analytics storage
+- User management
+- Trade storage
+- Journal storage
+- Analytics storage
 
 ---
 
@@ -283,10 +283,10 @@ Single source of truth.
 Example:
 
 ```ts
-Trade
-User
-Journal
-Analytics
+Trade;
+User;
+Journal;
+Analytics;
 ```
 
 Shared between frontend and backend.
@@ -339,10 +339,10 @@ API
 
 Responsibilities:
 
-* Registration
-* Login
-* JWT issuance
-* Refresh tokens
+- Registration
+- Login
+- JWT issuance
+- Refresh tokens
 
 ---
 
@@ -350,9 +350,9 @@ Responsibilities:
 
 Responsibilities:
 
-* CRUD operations
-* Trade calculations
-* Behavioral tracking
+- CRUD operations
+- Trade calculations
+- Behavioral tracking
 
 ---
 
@@ -360,9 +360,9 @@ Responsibilities:
 
 Responsibilities:
 
-* Daily journals
-* Reflections
-* Emotional tracking
+- Daily journals
+- Reflections
+- Emotional tracking
 
 ---
 
@@ -370,11 +370,11 @@ Responsibilities:
 
 Responsibilities:
 
-* Win rate
-* Profit factor
-* Drawdown
-* Expectancy
-* Sharpe Ratio
+- Win rate
+- Profit factor
+- Drawdown
+- Expectancy
+- Sharpe Ratio
 
 ---
 
@@ -386,9 +386,9 @@ PostgreSQL
 
 Reasons:
 
-* ACID compliance
-* Reliability
-* Advanced analytics support
+- ACID compliance
+- Reliability
+- Advanced analytics support
 
 ---
 
@@ -447,11 +447,11 @@ Optional
 
 Future Uses:
 
-* Session cache
-* Analytics cache
-* AI memory cache
-* Rate limiting
-* WebSockets
+- Session cache
+- Analytics cache
+- AI memory cache
+- Rate limiting
+- WebSockets
 
 ---
 
@@ -467,9 +467,9 @@ TradeZen
 
 Supported Models:
 
-* Qwen
-* Gemma
-* Nemotron
+- Qwen
+- Gemma
+- Nemotron
 
 ---
 
@@ -499,10 +499,10 @@ LLM
 
 Stores:
 
-* User habits
-* Mistakes
-* Trading strengths
-* Emotional patterns
+- User habits
+- Mistakes
+- Trading strengths
+- Emotional patterns
 
 ---
 
@@ -510,9 +510,9 @@ Stores:
 
 Provides:
 
-* Historical context
-* Journal history
-* Trade history
+- Historical context
+- Journal history
+- Trade history
 
 ---
 
@@ -520,9 +520,9 @@ Provides:
 
 Generates:
 
-* Personalized coaching
-* Behavioral analysis
-* Performance reviews
+- Personalized coaching
+- Behavioral analysis
+- Performance reviews
 
 ---
 
@@ -640,10 +640,10 @@ Deploy
 
 Checks:
 
-* TypeScript
-* ESLint
-* Build validation
-* Unit tests
+- TypeScript
+- ESLint
+- Build validation
+- Unit tests
 
 ---
 
@@ -660,10 +660,10 @@ Application
 
 Metrics:
 
-* API latency
-* Error rates
-* DB performance
-* User activity
+- API latency
+- Error rates
+- DB performance
+- User activity
 
 ---
 
@@ -725,8 +725,8 @@ Neon automated backups.
 
 Additional:
 
-* Weekly exports
-* Monthly snapshots
+- Weekly exports
+- Monthly snapshots
 
 ---
 
@@ -744,21 +744,21 @@ rollback.
 
 # 17. Architecture Decisions
 
-| Decision   | Reason                  |
-| ---------- | ----------------------- |
-| Next.js    | SEO + Performance       |
-| NestJS     | Enterprise architecture |
-| PostgreSQL | Reliability             |
-| Neon       | Managed Postgres        |
-| Railway    | Fast deployment         |
-| Vercel     | Best Next.js support    |
-| Docker     | Environment consistency |
-| Redis      | Future caching          |
-| tRPC       | Type-safe API layer     |
-| OpenRouter | Model flexibility       |
-| Drizzle ORM | Type-safe SQL queries   |
+| Decision     | Reason                  |
+| ------------ | ----------------------- |
+| Next.js      | SEO + Performance       |
+| NestJS       | Enterprise architecture |
+| PostgreSQL   | Reliability             |
+| Neon         | Managed Postgres        |
+| Railway      | Fast deployment         |
+| Vercel       | Best Next.js support    |
+| Docker       | Environment consistency |
+| Redis        | Future caching          |
+| tRPC         | Type-safe API layer     |
+| OpenRouter   | Model flexibility       |
+| Drizzle ORM  | Type-safe SQL queries   |
 | @tradezen/db | Shared schema & types   |
-| pgvector   | AI embedding storage    |
+| pgvector     | AI embedding storage    |
 
 ---
 
@@ -778,20 +778,21 @@ AI Trading Performance Platform
 
 with:
 
-* Memory
-* Coaching
-* Behavioral analytics
-* Trade review automation
-* Strategy intelligence
-* Personalized growth tracking
+- Memory
+- Coaching
+- Behavioral analytics
+- Trade review automation
+- Strategy intelligence
+- Personalized growth tracking
 
 while maintaining the core principles:
 
-* Reliability
-* Accuracy
-* Security
-* User trust
-* Data ownership
+- Reliability
+- Accuracy
+- Security
+- User trust
+- Data ownership
 
 ```
+
 ```

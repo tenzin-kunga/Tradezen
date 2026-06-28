@@ -10,6 +10,7 @@
 This document summarizes the Docker, CI/CD, and security improvements made to TradeZen. The changes enhance production readiness while keeping local development straightforward.
 
 For detailed information, see:
+
 - `docs/SECURITY.md` — Complete security configuration guide
 - `docs/DEPLOYMENT.md` — Step-by-step production deployment
 - `DEV_QUICKSTART.md` — Local development setup
@@ -18,16 +19,16 @@ For detailed information, see:
 
 ## High-Level Changes
 
-| Change | Files Modified | Benefit |
-|--------|---------------|---------|
-| **Docker multi-stage builds** | `apps/api/Dockerfile`, `apps/web/Dockerfile` (new) | Smaller images, faster deploys |
-| **Non-root container users** | Both Dockerfiles | Improved security posture |
-| **Health checks** | Both Dockerfiles | Self-healing deployments |
-| **Docker Compose hardening** | `infra/docker-compose.yml` | Network isolation, resource limits |
-| **CI/CD expansion** | `.github/workflows/ci.yml` | Automated quality gates |
-| **Secrets validation** | `apps/api/src/main.ts` | Fail fast if misconfigured |
-| **Swagger prod-conditional** | `apps/api/src/main.ts` | Reduces attack surface |
-| **Docs** | New: 7 files | Better onboarding & deployment |
+| Change                        | Files Modified                                     | Benefit                            |
+| ----------------------------- | -------------------------------------------------- | ---------------------------------- |
+| **Docker multi-stage builds** | `apps/api/Dockerfile`, `apps/web/Dockerfile` (new) | Smaller images, faster deploys     |
+| **Non-root container users**  | Both Dockerfiles                                   | Improved security posture          |
+| **Health checks**             | Both Dockerfiles                                   | Self-healing deployments           |
+| **Docker Compose hardening**  | `infra/docker-compose.yml`                         | Network isolation, resource limits |
+| **CI/CD expansion**           | `.github/workflows/ci.yml`                         | Automated quality gates            |
+| **Secrets validation**        | `apps/api/src/main.ts`                             | Fail fast if misconfigured         |
+| **Swagger prod-conditional**  | `apps/api/src/main.ts`                             | Reduces attack surface             |
+| **Docs**                      | New: 7 files                                       | Better onboarding & deployment     |
 
 ---
 
@@ -35,21 +36,22 @@ For detailed information, see:
 
 ### Before → After
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| **API image** | Single-stage, root user | 3-stage, non-root |
-| **Web image** | Not containerized | Full Dockerfile |
-| **Health monitoring** | None | HTTP endpoint checks |
-| **Network** | Default bridge | Private `tradezen-net` |
-| **Resources** | Unlimited | CPU/memory caps |
-| **Restart policy** | None | `unless-stopped` |
-| **Redis persistence** | None | AOF + maxmemory policy |
+| Aspect                | Before                  | After                  |
+| --------------------- | ----------------------- | ---------------------- |
+| **API image**         | Single-stage, root user | 3-stage, non-root      |
+| **Web image**         | Not containerized       | Full Dockerfile        |
+| **Health monitoring** | None                    | HTTP endpoint checks   |
+| **Network**           | Default bridge          | Private `tradezen-net` |
+| **Resources**         | Unlimited               | CPU/memory caps        |
+| **Restart policy**    | None                    | `unless-stopped`       |
+| **Redis persistence** | None                    | AOF + maxmemory policy |
 
 ### Action Required
 
 None for local development. All changes are backward-compatible.
 
 **For production:**
+
 - Create `.env.docker` with your secrets
 - Deploy updated images
 - Verify health checks pass
@@ -62,8 +64,8 @@ None for local development. All changes are backward-compatible.
 
 ```yaml
 push/PR → [security → lint → test → e2e] (all branches)
-            ↓ (only on main)
-         [build → deploy] (production)
+↓ (only on main)
+[build → deploy] (production)
 ```
 
 ### New Capabilities
@@ -103,12 +105,12 @@ RENDER_SERVICE_ID         # Render service ID
 
 ### Files
 
-| File | Purpose | Committed? |
-|------|---------|------------|
-| `.env.docker.example` | Template with all variables | Yes |
-| `.env.docker` | Your actual secrets (local/CI) | No (gitignored) |
-| `scripts/security/rotate-secrets.sh` | Linux/Mac rotation script | Yes |
-| `scripts/security/rotate-secrets.bat` | Windows rotation script | Yes |
+| File                                  | Purpose                        | Committed?      |
+| ------------------------------------- | ------------------------------ | --------------- |
+| `.env.docker.example`                 | Template with all variables    | Yes             |
+| `.env.docker`                         | Your actual secrets (local/CI) | No (gitignored) |
+| `scripts/security/rotate-secrets.sh`  | Linux/Mac rotation script      | Yes             |
+| `scripts/security/rotate-secrets.bat` | Windows rotation script        | Yes             |
 
 ### Rotation Process
 

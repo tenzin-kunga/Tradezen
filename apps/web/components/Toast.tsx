@@ -1,5 +1,12 @@
 "use client";
-import { useEffect, useState, useCallback, createContext, useContext, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  type ReactNode,
+} from "react";
 
 type ToastType = "success" | "error" | "info" | "warn";
 
@@ -32,7 +39,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none" style={{ minWidth: 280, maxWidth: 400 }}>
+      <div
+        className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none"
+        style={{ minWidth: 280, maxWidth: 400 }}
+      >
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onDone={() => removeToast(t.id)} />
         ))}
@@ -76,13 +86,22 @@ function ToastItem({ toast, onDone }: { toast: Toast; onDone: () => void }) {
       }}
     >
       <div className="flex justify-between items-start gap-2">
-        <span className="text-xs font-semibold tracking-wide" style={{ color: "var(--text-primary)" }}>
+        <span
+          className="text-xs font-semibold tracking-wide"
+          style={{ color: "var(--text-primary)" }}
+        >
           {toast.message}
         </span>
         <button
-          onClick={() => { setExiting(true); setTimeout(onDone, 300); }}
+          onClick={() => {
+            setExiting(true);
+            setTimeout(onDone, 300);
+          }}
           className="bg-transparent border-none cursor-pointer p-0 text-xs"
-          style={{ color: "var(--text-muted)", fontFamily: "var(--font-display)" }}
+          style={{
+            color: "var(--text-muted)",
+            fontFamily: "var(--font-display)",
+          }}
         >
           ×
         </button>

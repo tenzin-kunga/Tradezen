@@ -16,8 +16,16 @@ type TagPickerProps = {
 };
 
 const TAG_COLORS = [
-  "#22c55e", "#3b82f6", "#e8603c", "#a855f7", "#f59e0b",
-  "#ec4899", "#14b8a6", "#ef4444", "#6366f1", "#84cc16",
+  "#22c55e",
+  "#3b82f6",
+  "#e8603c",
+  "#a855f7",
+  "#f59e0b",
+  "#ec4899",
+  "#14b8a6",
+  "#ef4444",
+  "#6366f1",
+  "#84cc16",
 ];
 
 export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
@@ -47,7 +55,11 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
     const name = newName.trim();
     if (!name) return;
     try {
-      const tag = await createTag({ name, color: newColor, category: newCategory });
+      const tag = await createTag({
+        name,
+        color: newColor,
+        category: newCategory,
+      });
       setTags([...tags, tag]);
       onChange([...selectedTags, tag]);
       setNewName("");
@@ -59,7 +71,13 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
     <div>
       <div className="flex flex-wrap gap-2 mb-2">
         {tags.length === 0 && (
-          <span style={{ color: "var(--text-dim)", fontSize: 12, fontStyle: "italic" }}>
+          <span
+            style={{
+              color: "var(--text-dim)",
+              fontSize: 12,
+              fontStyle: "italic",
+            }}
+          >
             No tags yet. Create one below.
           </span>
         )}
@@ -87,7 +105,10 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
       {showCreate && (
         <div
           className="rounded p-3 mb-2"
-          style={{ backgroundColor: "var(--bg-primary)", border: "1px solid var(--border)" }}
+          style={{
+            backgroundColor: "var(--bg-primary)",
+            border: "1px solid var(--border)",
+          }}
         >
           <div className="flex flex-col gap-2">
             <input
@@ -102,7 +123,12 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
                 fontFamily: "var(--font-display)",
               }}
               autoFocus
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleCreate(); } }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleCreate();
+                }
+              }}
             />
             <div className="flex gap-2 items-center">
               <div className="flex gap-1">
@@ -114,7 +140,10 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
                     className="w-4 h-4 rounded-full border-none cursor-pointer p-0"
                     style={{
                       backgroundColor: c,
-                      outline: newColor === c ? "2px solid var(--text-primary)" : "none",
+                      outline:
+                        newColor === c
+                          ? "2px solid var(--text-primary)"
+                          : "none",
                       outlineOffset: 1,
                     }}
                   />
@@ -140,7 +169,10 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
                 type="button"
                 onClick={handleCreate}
                 className="text-xs font-bold tracking-widest border-none cursor-pointer px-3 py-1.5 rounded"
-                style={{ backgroundColor: "var(--text-primary)", color: "var(--bg-primary)" }}
+                style={{
+                  backgroundColor: "var(--text-primary)",
+                  color: "var(--bg-primary)",
+                }}
               >
                 ADD
               </button>
@@ -148,7 +180,10 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
                 type="button"
                 onClick={() => setShowCreate(false)}
                 className="text-xs border-none cursor-pointer px-2 py-1 rounded"
-                style={{ color: "var(--text-muted)", backgroundColor: "transparent" }}
+                style={{
+                  color: "var(--text-muted)",
+                  backgroundColor: "transparent",
+                }}
               >
                 CANCEL
               </button>
@@ -162,7 +197,10 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
           type="button"
           onClick={() => setShowCreate(true)}
           className="text-xs border-none cursor-pointer px-2 py-1 rounded"
-          style={{ color: "var(--accent-cyan)", backgroundColor: "transparent" }}
+          style={{
+            color: "var(--accent-cyan)",
+            backgroundColor: "transparent",
+          }}
         >
           + NEW TAG
         </button>

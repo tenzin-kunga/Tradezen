@@ -33,8 +33,25 @@ const SEED_TAGS = [
   { name: 'Fibonacci', color: '#06b6d4', category: 'setup' as const },
 ];
 
-const SYMBOLS = ['EURUSD', 'GBPUSD', 'BTCUSD', 'XAUUSD', 'GBPJPY', 'US30', 'ETHUSD', 'AUDUSD', 'USDJPY', 'NAS100'];
-const STRATEGIES = ['BREAKOUT', 'SMC', 'TREND_FOLLOWING', 'REVERSAL', 'SCALPING'];
+const SYMBOLS = [
+  'EURUSD',
+  'GBPUSD',
+  'BTCUSD',
+  'XAUUSD',
+  'GBPJPY',
+  'US30',
+  'ETHUSD',
+  'AUDUSD',
+  'USDJPY',
+  'NAS100',
+];
+const STRATEGIES = [
+  'BREAKOUT',
+  'SMC',
+  'TREND_FOLLOWING',
+  'REVERSAL',
+  'SCALPING',
+];
 const NOTES_POOL = [
   'Clean break of structure, rode the momentum',
   'Smart money stop hunt, then price reversed as expected',
@@ -65,9 +82,16 @@ function pickTags(): number[] {
 
 function getBasePrice(symbol: string): number {
   const prices: Record<string, number> = {
-    EURUSD: 1.08, GBPUSD: 1.27, BTCUSD: 67000, XAUUSD: 2300,
-    GBPJPY: 190, US30: 39000, ETHUSD: 3400, AUDUSD: 0.66,
-    USDJPY: 150, NAS100: 19000,
+    EURUSD: 1.08,
+    GBPUSD: 1.27,
+    BTCUSD: 67000,
+    XAUUSD: 2300,
+    GBPJPY: 190,
+    US30: 39000,
+    ETHUSD: 3400,
+    AUDUSD: 0.66,
+    USDJPY: 150,
+    NAS100: 19000,
   };
   return prices[symbol] ?? 1.0;
 }
@@ -78,7 +102,8 @@ function generateSeedTrades(): SeedTrade[] {
   baseDate.setDate(baseDate.getDate() - 90);
 
   for (let i = 0; i < 30; i++) {
-    const symIdx = i < 20 ? i % SYMBOLS.length : Math.floor(Math.random() * SYMBOLS.length);
+    const symIdx =
+      i < 20 ? i % SYMBOLS.length : Math.floor(Math.random() * SYMBOLS.length);
     const symbol = SYMBOLS[symIdx];
     const direction = Math.random() > 0.5 ? 'buy' : 'sell';
     const isWin = i < 18;
@@ -91,25 +116,34 @@ function generateSeedTrades(): SeedTrade[] {
     const pnlPercent = isWin
       ? 0.002 + Math.random() * 0.008
       : -(0.002 + Math.random() * 0.005);
-    const exitPrice = direction === 'buy'
-      ? entryPrice * (1 + pnlPercent)
-      : entryPrice * (1 - pnlPercent);
+    const exitPrice =
+      direction === 'buy'
+        ? entryPrice * (1 + pnlPercent)
+        : entryPrice * (1 - pnlPercent);
 
     const slWidth = basePrice * 0.002;
-    const stopLoss = direction === 'buy' ? entryPrice - slWidth : entryPrice + slWidth;
+    const stopLoss =
+      direction === 'buy' ? entryPrice - slWidth : entryPrice + slWidth;
     const tpWidth = basePrice * (0.003 + Math.random() * 0.005);
-    const takeProfit = direction === 'buy' ? entryPrice + tpWidth : entryPrice - tpWidth;
+    const takeProfit =
+      direction === 'buy' ? entryPrice + tpWidth : entryPrice - tpWidth;
 
     const lotSize = 0.01 + Math.floor(Math.random() * 10) * 0.01;
     const commission = lotSize * 0.5;
 
     const tradeDate = new Date(baseDate);
-    tradeDate.setDate(tradeDate.getDate() + Math.floor(i * 2.5) + Math.floor(Math.random() * 2));
-    tradeDate.setHours(8 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 60));
+    tradeDate.setDate(
+      tradeDate.getDate() + Math.floor(i * 2.5) + Math.floor(Math.random() * 2),
+    );
+    tradeDate.setHours(
+      8 + Math.floor(Math.random() * 10),
+      Math.floor(Math.random() * 60),
+    );
     const contractSize = 100000;
-    const rawPnl = direction === 'buy'
-      ? (exitPrice - entryPrice) * lotSize * contractSize
-      : (entryPrice - exitPrice) * lotSize * contractSize;
+    const rawPnl =
+      direction === 'buy'
+        ? (exitPrice - entryPrice) * lotSize * contractSize
+        : (entryPrice - exitPrice) * lotSize * contractSize;
     const netPnl = rawPnl - commission;
 
     trades.push({
@@ -137,39 +171,58 @@ function generateSeedTrades(): SeedTrade[] {
 
 const SEED_JOURNALS = [
   {
-    preMarketNotes: 'Asian session showed strong buying pressure on EURUSD. Expecting continuation if London opens with same momentum. Key level at 1.0850.',
-    postMarketNotes: 'Good session overall. Took 3 trades, 2 winners 1 loser. The loser was a revenge trade after a false breakout. Need to wait for confirmation.',
+    preMarketNotes:
+      'Asian session showed strong buying pressure on EURUSD. Expecting continuation if London opens with same momentum. Key level at 1.0850.',
+    postMarketNotes:
+      'Good session overall. Took 3 trades, 2 winners 1 loser. The loser was a revenge trade after a false breakout. Need to wait for confirmation.',
     mood: 'Focused',
-    marketConditions: 'Trending with good volatility. London session provided clear direction.',
-    lessons: 'Patience is key. The revenge trade cost me 2R. Stick to the plan even when market seems obvious.',
+    marketConditions:
+      'Trending with good volatility. London session provided clear direction.',
+    lessons:
+      'Patience is key. The revenge trade cost me 2R. Stick to the plan even when market seems obvious.',
   },
   {
-    preMarketNotes: 'Range-bound conditions on major pairs. NFP tomorrow so expect low volatility today. Focus on 15min scalps with tight stops.',
-    postMarketNotes: 'Tough day. Took 5 trades, won 2 lost 3. Market was choppy and my entries were early. Should have waited for better risk/reward.',
+    preMarketNotes:
+      'Range-bound conditions on major pairs. NFP tomorrow so expect low volatility today. Focus on 15min scalps with tight stops.',
+    postMarketNotes:
+      'Tough day. Took 5 trades, won 2 lost 3. Market was choppy and my entries were early. Should have waited for better risk/reward.',
     mood: 'Frustrated',
-    marketConditions: 'Low volatility range day. Most pairs stayed within 20-pip ranges.',
-    lessons: 'In range days, fade the extremes don\'t chase breakouts. Cut losses faster in low vol conditions.',
+    marketConditions:
+      'Low volatility range day. Most pairs stayed within 20-pip ranges.',
+    lessons:
+      "In range days, fade the extremes don't chase breakouts. Cut losses faster in low vol conditions.",
   },
   {
-    preMarketNotes: 'BTC showing signs of accumulation around 67K. Watching for a breakout above 68K for a momentum play. Risk management critical.',
-    postMarketNotes: 'Beautiful trade! BTC broke out and ran 2% before resistance. Took partial profits at 1:2 and 1:3. Let the runner go with a trailing stop.',
+    preMarketNotes:
+      'BTC showing signs of accumulation around 67K. Watching for a breakout above 68K for a momentum play. Risk management critical.',
+    postMarketNotes:
+      'Beautiful trade! BTC broke out and ran 2% before resistance. Took partial profits at 1:2 and 1:3. Let the runner go with a trailing stop.',
     mood: 'Confident',
-    marketConditions: 'Risk-on sentiment. Crypto leading the move with strong volume.',
-    lessons: 'Trailing stops work well in strong trends. Let winners run and cut losers short.',
+    marketConditions:
+      'Risk-on sentiment. Crypto leading the move with strong volume.',
+    lessons:
+      'Trailing stops work well in strong trends. Let winners run and cut losers short.',
   },
   {
-    preMarketNotes: 'Aussie weakened after RBA minutes. Considering AUDUSD shorts if it breaks below 0.6600. Watch for lunchtime reversal.',
-    postMarketNotes: 'Breakout trade worked perfectly. AUDUSD dropped 40 pips after the break. Scaled out at 1:1.5 and 1:3. No revenge trades today.',
+    preMarketNotes:
+      'Aussie weakened after RBA minutes. Considering AUDUSD shorts if it breaks below 0.6600. Watch for lunchtime reversal.',
+    postMarketNotes:
+      'Breakout trade worked perfectly. AUDUSD dropped 40 pips after the break. Scaled out at 1:1.5 and 1:3. No revenge trades today.',
     mood: 'Disciplined',
-    marketConditions: 'Trend following day. Clear levels held and price respected technicals.',
-    lessons: 'When the stars align (fundamentals + technicals + price action), trade with confidence. 3R day.',
+    marketConditions:
+      'Trend following day. Clear levels held and price respected technicals.',
+    lessons:
+      'When the stars align (fundamentals + technicals + price action), trade with confidence. 3R day.',
   },
   {
-    preMarketNotes: 'US30 at resistance after a 3-day rally. Looking for reversal signals on lower timeframes. Also watching XAUUSD for support hold.',
-    postMarketNotes: 'Mixed session. US30 reversal was premature - got stopped out. Gold trade worked well. Overall flat for the day which is acceptable.',
+    preMarketNotes:
+      'US30 at resistance after a 3-day rally. Looking for reversal signals on lower timeframes. Also watching XAUUSD for support hold.',
+    postMarketNotes:
+      'Mixed session. US30 reversal was premature - got stopped out. Gold trade worked well. Overall flat for the day which is acceptable.',
     mood: 'Neutral',
     marketConditions: 'Mixed conditions. Indices strong, commodities weak.',
-    lessons: 'Don\'t anticipate reversals without confirmation. Let price prove itself first.',
+    lessons:
+      "Don't anticipate reversals without confirmation. Let price prove itself first.",
   },
 ];
 
@@ -246,21 +299,21 @@ export class SeedService {
     const now = new Date();
     for (let i = 0; i < SEED_JOURNALS.length; i++) {
       const journalDate = new Date(now);
-      journalDate.setDate(journalDate.getDate() - (SEED_JOURNALS.length - 1 - i) * 7);
+      journalDate.setDate(
+        journalDate.getDate() - (SEED_JOURNALS.length - 1 - i) * 7,
+      );
       const j = SEED_JOURNALS[i];
       try {
-        await db
-          .insert(journals)
-          .values({
-            userId,
-            date: journalDate.toISOString().slice(0, 10),
-            preMarketNotes: j.preMarketNotes,
-            postMarketNotes: j.postMarketNotes,
-            mood: j.mood,
-            marketConditions: j.marketConditions,
-            lessons: j.lessons,
-            isSample: true,
-          });
+        await db.insert(journals).values({
+          userId,
+          date: journalDate.toISOString().slice(0, 10),
+          preMarketNotes: j.preMarketNotes,
+          postMarketNotes: j.postMarketNotes,
+          mood: j.mood,
+          marketConditions: j.marketConditions,
+          lessons: j.lessons,
+          isSample: true,
+        });
       } catch {
         // Skip if journal for this date already exists
       }
@@ -275,12 +328,20 @@ export class SeedService {
 
     if (sampleTrades.length > 0) {
       const sampleTradeIds = sampleTrades.map((t) => t.id);
-      await db.delete(tradeTags).where(inArray(tradeTags.tradeId, sampleTradeIds));
-      await db.delete(trades).where(and(eq(trades.userId, userId), eq(trades.isSample, true)));
+      await db
+        .delete(tradeTags)
+        .where(inArray(tradeTags.tradeId, sampleTradeIds));
+      await db
+        .delete(trades)
+        .where(and(eq(trades.userId, userId), eq(trades.isSample, true)));
     }
 
-    await db.delete(tags).where(and(eq(tags.userId, userId), eq(tags.isSample, true)));
-    await db.delete(journals).where(and(eq(journals.userId, userId), eq(journals.isSample, true)));
+    await db
+      .delete(tags)
+      .where(and(eq(tags.userId, userId), eq(tags.isSample, true)));
+    await db
+      .delete(journals)
+      .where(and(eq(journals.userId, userId), eq(journals.isSample, true)));
   }
 
   async deleteAllUserData(userId: string) {

@@ -29,7 +29,12 @@ export type User = {
   created_at: string;
 };
 
-export type JournalMood = "confident" | "neutral" | "anxious" | "frustrated" | "excited";
+export type JournalMood =
+  | "confident"
+  | "neutral"
+  | "anxious"
+  | "frustrated"
+  | "excited";
 
 export type Journal = {
   id: string;

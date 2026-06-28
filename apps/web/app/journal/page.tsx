@@ -31,7 +31,11 @@ function fmtDate(d: string) {
 
 export default function JournalPage() {
   const [entries, setEntries] = useState<any[]>([]);
-  const [streak, setStreak] = useState({ currentStreak: 0, longestStreak: 0, totalEntries: 0 });
+  const [streak, setStreak] = useState({
+    currentStreak: 0,
+    longestStreak: 0,
+    totalEntries: 0,
+  });
   const [selectedDate, setSelectedDate] = useState(toDateStr(new Date()));
   const [currentEntry, setCurrentEntry] = useState<any>(null);
   const [preMarket, setPreMarket] = useState("");
@@ -44,7 +48,10 @@ export default function JournalPage() {
 
   const loadEntries = useCallback(async () => {
     try {
-      const [journalRes, streakRes] = await Promise.all([getJournals(60), getJournalStreak()]);
+      const [journalRes, streakRes] = await Promise.all([
+        getJournals(60),
+        getJournalStreak(),
+      ]);
       setEntries(journalRes.data);
       setStreak(streakRes);
     } catch {}
@@ -61,17 +68,27 @@ export default function JournalPage() {
         setMarketConditions(entry.market_conditions || "");
         setLessons(entry.lessons || "");
       } else {
-        setPreMarket(""); setPostMarket(""); setMood(""); setMarketConditions(""); setLessons("");
+        setPreMarket("");
+        setPostMarket("");
+        setMood("");
+        setMarketConditions("");
+        setLessons("");
         setCurrentEntry(null);
       }
     } catch {
-      setPreMarket(""); setPostMarket(""); setMood(""); setMarketConditions(""); setLessons("");
+      setPreMarket("");
+      setPostMarket("");
+      setMood("");
+      setMarketConditions("");
+      setLessons("");
       setCurrentEntry(null);
     }
   }, []);
 
   useEffect(() => {
-    Promise.all([loadEntries(), loadDateEntry(selectedDate)]).finally(() => setLoading(false));
+    Promise.all([loadEntries(), loadDateEntry(selectedDate)]).finally(() =>
+      setLoading(false),
+    );
   }, [loadEntries, loadDateEntry, selectedDate]);
 
   async function handleSave() {
@@ -102,13 +119,20 @@ export default function JournalPage() {
     if (!confirm("Delete this journal entry?")) return;
     await deleteJournal(currentEntry.id);
     setCurrentEntry(null);
-    setPreMarket(""); setPostMarket(""); setMood(""); setMarketConditions(""); setLessons("");
+    setPreMarket("");
+    setPostMarket("");
+    setMood("");
+    setMarketConditions("");
+    setLessons("");
     await loadEntries();
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ color: "var(--text-muted)" }}
+      >
         <div className="text-xs tracking-widest">LOADING JOURNAL...</div>
       </div>
     );
@@ -119,30 +143,90 @@ export default function JournalPage() {
   return (
     <div className="min-h-screen" style={{ color: "var(--text-primary)" }}>
       {/* Two-panel grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 20, maxWidth: 1100, margin: "0 auto", padding: "20px", alignItems: "start" }}>
-
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "220px 1fr",
+          gap: 20,
+          maxWidth: 1100,
+          margin: "0 auto",
+          padding: "20px",
+          alignItems: "start",
+        }}
+      >
         {/* ─── Side Panel ─── */}
-        <div style={{ position: "sticky", top: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-
+        <div
+          style={{
+            position: "sticky",
+            top: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
           {/* Streak */}
-          <div className="rounded-xl px-3 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
+          <div
+            className="rounded-xl px-3 py-3"
+            style={{
+              background: "var(--bg-surface, #111214)",
+              border: "1px solid var(--border, #23252d)",
+            }}
+          >
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               {[
-                { label: "Current", value: `${streak.currentStreak}d`, color: streak.currentStreak >= 7 ? "var(--accent-profit)" : "var(--text-primary)" },
-                { label: "Best", value: `${streak.longestStreak}d`, color: "var(--text-muted)" },
-                { label: "Total", value: `${streak.totalEntries}`, color: "var(--text-muted)" },
+                {
+                  label: "Current",
+                  value: `${streak.currentStreak}d`,
+                  color:
+                    streak.currentStreak >= 7
+                      ? "var(--accent-profit)"
+                      : "var(--text-primary)",
+                },
+                {
+                  label: "Best",
+                  value: `${streak.longestStreak}d`,
+                  color: "var(--text-muted)",
+                },
+                {
+                  label: "Total",
+                  value: `${streak.totalEntries}`,
+                  color: "var(--text-muted)",
+                },
               ].map((s) => (
                 <div key={s.label} className="text-center">
-                  <div className="text-[9px] font-semibold tracking-wider mb-1" style={{ color: "var(--text-dim)" }}>{s.label}</div>
-                  <div className="text-base font-bold" style={{ color: s.color }}>{s.value}</div>
+                  <div
+                    className="text-[9px] font-semibold tracking-wider mb-1"
+                    style={{ color: "var(--text-dim)" }}
+                  >
+                    {s.label}
+                  </div>
+                  <div
+                    className="text-base font-bold"
+                    style={{ color: s.color }}
+                  >
+                    {s.value}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Timeline Strip */}
-          <div className="rounded-xl px-3 py-2.5" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
-            <div style={{ display: "flex", gap: 1, overflowX: "auto", scrollbarWidth: "thin" }}>
+          <div
+            className="rounded-xl px-3 py-2.5"
+            style={{
+              background: "var(--bg-surface, #111214)",
+              border: "1px solid var(--border, #23252d)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: 1,
+                overflowX: "auto",
+                scrollbarWidth: "thin",
+              }}
+            >
               {entries.slice(0, 21).map((e) => {
                 const dateStr = e.date?.slice(0, 10);
                 if (!dateStr) return null;
@@ -159,8 +243,12 @@ export default function JournalPage() {
                       gap: 2,
                       padding: "5px 8px",
                       borderRadius: 6,
-                      border: isActive ? "1px solid var(--accent-primary, #3b82f6)" : "1px solid transparent",
-                      background: isActive ? "rgba(59,130,246,0.08)" : "transparent",
+                      border: isActive
+                        ? "1px solid var(--accent-primary, #3b82f6)"
+                        : "1px solid transparent",
+                      background: isActive
+                        ? "rgba(59,130,246,0.08)"
+                        : "transparent",
                       cursor: "pointer",
                       fontFamily: "inherit",
                       flexShrink: 0,
@@ -168,24 +256,52 @@ export default function JournalPage() {
                       transition: "all 0.12s ease",
                     }}
                   >
-                    <span style={{ fontSize: 14, lineHeight: 1 }}>{moodObj?.emoji || "⚪"}</span>
-                    <span style={{ fontSize: 8, fontWeight: 600, fontFamily: "var(--font-display)", color: isActive ? "var(--accent-primary)" : "var(--text-dim)" }}>
-                      {new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    <span style={{ fontSize: 14, lineHeight: 1 }}>
+                      {moodObj?.emoji || "⚪"}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 8,
+                        fontWeight: 600,
+                        fontFamily: "var(--font-display)",
+                        color: isActive
+                          ? "var(--accent-primary)"
+                          : "var(--text-dim)",
+                      }}
+                    >
+                      {new Date(dateStr + "T00:00:00").toLocaleDateString(
+                        "en-US",
+                        { month: "short", day: "numeric" },
+                      )}
                     </span>
                   </button>
                 );
               })}
             </div>
             {entries.length === 0 && (
-              <div className="text-xs text-center py-3" style={{ color: "var(--text-dim)" }}>
+              <div
+                className="text-xs text-center py-3"
+                style={{ color: "var(--text-dim)" }}
+              >
                 No entries yet — start writing today
               </div>
             )}
           </div>
 
           {/* Mood selector */}
-          <div className="rounded-xl px-3 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
-            <div className="text-[9px] font-semibold tracking-widest mb-2" style={{ color: "var(--text-dim)" }}>MOOD</div>
+          <div
+            className="rounded-xl px-3 py-3"
+            style={{
+              background: "var(--bg-surface, #111214)",
+              border: "1px solid var(--border, #23252d)",
+            }}
+          >
+            <div
+              className="text-[9px] font-semibold tracking-widest mb-2"
+              style={{ color: "var(--text-dim)" }}
+            >
+              MOOD
+            </div>
             <div style={{ display: "flex", gap: 4 }}>
               {moods.map((m) => (
                 <button
@@ -195,8 +311,12 @@ export default function JournalPage() {
                     flex: 1,
                     padding: "6px 2px",
                     borderRadius: 6,
-                    border: mood === m.value ? `2px solid ${m.color}` : "1px solid var(--border, #23252d)",
-                    background: mood === m.value ? `${m.color}18` : "transparent",
+                    border:
+                      mood === m.value
+                        ? `2px solid ${m.color}`
+                        : "1px solid var(--border, #23252d)",
+                    background:
+                      mood === m.value ? `${m.color}18` : "transparent",
                     cursor: "pointer",
                     textAlign: "center",
                     transition: "all 0.12s ease",
@@ -204,7 +324,14 @@ export default function JournalPage() {
                   }}
                 >
                   <div style={{ fontSize: 16, marginBottom: 1 }}>{m.emoji}</div>
-                  <div style={{ fontSize: 6, fontWeight: 700, letterSpacing: "0.3px", color: mood === m.value ? m.color : "var(--text-dim)" }}>
+                  <div
+                    style={{
+                      fontSize: 6,
+                      fontWeight: 700,
+                      letterSpacing: "0.3px",
+                      color: mood === m.value ? m.color : "var(--text-dim)",
+                    }}
+                  >
                     {m.label}
                   </div>
                 </button>
@@ -213,12 +340,28 @@ export default function JournalPage() {
           </div>
 
           {/* Entry history */}
-          <div className="rounded-xl" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)", maxHeight: 260, overflowY: "auto" }}>
-            <div className="px-3 pt-2.5 pb-1.5 text-[9px] font-semibold tracking-widest" style={{ color: "var(--text-dim)" }}>
+          <div
+            className="rounded-xl"
+            style={{
+              background: "var(--bg-surface, #111214)",
+              border: "1px solid var(--border, #23252d)",
+              maxHeight: 260,
+              overflowY: "auto",
+            }}
+          >
+            <div
+              className="px-3 pt-2.5 pb-1.5 text-[9px] font-semibold tracking-widest"
+              style={{ color: "var(--text-dim)" }}
+            >
               HISTORY
             </div>
             {entries.length === 0 ? (
-              <div className="px-3 pb-3 text-xs" style={{ color: "var(--text-dim)" }}>No entries yet</div>
+              <div
+                className="px-3 pb-3 text-xs"
+                style={{ color: "var(--text-dim)" }}
+              >
+                No entries yet
+              </div>
             ) : (
               entries.map((e) => {
                 const dateStr = e.date?.slice(0, 10);
@@ -236,18 +379,33 @@ export default function JournalPage() {
                       width: "100%",
                       padding: "6px 12px",
                       border: "none",
-                      borderLeft: isActive ? "2px solid var(--accent-primary)" : "2px solid transparent",
-                      background: isActive ? "rgba(59,130,246,0.06)" : "transparent",
+                      borderLeft: isActive
+                        ? "2px solid var(--accent-primary)"
+                        : "2px solid transparent",
+                      background: isActive
+                        ? "rgba(59,130,246,0.06)"
+                        : "transparent",
                       cursor: "pointer",
                       fontFamily: "inherit",
                       textAlign: "left",
                       transition: "all 0.12s ease",
                     }}
                   >
-                    <span style={{ fontSize: 14, flexShrink: 0 }}>{moodObj?.emoji || "⚪"}</span>
+                    <span style={{ fontSize: 14, flexShrink: 0 }}>
+                      {moodObj?.emoji || "⚪"}
+                    </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 10, fontWeight: 600, fontFamily: "var(--font-display)" }}>
-                        {new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          fontFamily: "var(--font-display)",
+                        }}
+                      >
+                        {new Date(dateStr + "T00:00:00").toLocaleDateString(
+                          "en-US",
+                          { month: "short", day: "numeric" },
+                        )}
                       </div>
                     </div>
                   </button>
@@ -261,18 +419,41 @@ export default function JournalPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {/* Header */}
           <div>
-            <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "0.5px", margin: 0 }}>
+            <h1
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                letterSpacing: "0.5px",
+                margin: 0,
+              }}
+            >
               Trade Journal
             </h1>
             <p style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4 }}>
               {fmtDate(selectedDate)}
               {entryDates.has(selectedDate) && (
-                <span style={{ marginLeft: 8, padding: "2px 8px", borderRadius: 999, fontSize: 9, fontWeight: 600, background: "rgba(34,197,94,0.1)", color: "var(--accent-profit)" }}>
+                <span
+                  style={{
+                    marginLeft: 8,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    fontSize: 9,
+                    fontWeight: 600,
+                    background: "rgba(34,197,94,0.1)",
+                    color: "var(--accent-profit)",
+                  }}
+                >
                   ● Saved
                 </span>
               )}
               {streak.currentStreak >= 3 && (
-                <span style={{ marginLeft: 8, fontSize: 11, color: "var(--accent-profit)" }}>
+                <span
+                  style={{
+                    marginLeft: 8,
+                    fontSize: 11,
+                    color: "var(--accent-profit)",
+                  }}
+                >
                   ⚡ {streak.currentStreak}-day streak
                 </span>
               )}
@@ -280,8 +461,19 @@ export default function JournalPage() {
           </div>
 
           {/* Pre-market */}
-          <div className="rounded-xl px-4 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
-            <div className="text-[10px] font-semibold tracking-wider mb-1.5" style={{ color: "var(--text-dim)" }}>PRE-MARKET NOTES</div>
+          <div
+            className="rounded-xl px-4 py-3"
+            style={{
+              background: "var(--bg-surface, #111214)",
+              border: "1px solid var(--border, #23252d)",
+            }}
+          >
+            <div
+              className="text-[10px] font-semibold tracking-wider mb-1.5"
+              style={{ color: "var(--text-dim)" }}
+            >
+              PRE-MARKET NOTES
+            </div>
             <textarea
               className="w-full min-h-[90px] resize-y text-sm outline-none box-border"
               value={preMarket}
@@ -297,12 +489,23 @@ export default function JournalPage() {
                 fontSize: 12,
                 resize: "vertical",
               }}
-              />
-            </div>
+            />
+          </div>
 
           {/* Post-market */}
-          <div className="rounded-xl px-4 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
-            <div className="text-[10px] font-semibold tracking-wider mb-1.5" style={{ color: "var(--text-dim)" }}>POST-MARKET NOTES</div>
+          <div
+            className="rounded-xl px-4 py-3"
+            style={{
+              background: "var(--bg-surface, #111214)",
+              border: "1px solid var(--border, #23252d)",
+            }}
+          >
+            <div
+              className="text-[10px] font-semibold tracking-wider mb-1.5"
+              style={{ color: "var(--text-dim)" }}
+            >
+              POST-MARKET NOTES
+            </div>
             <textarea
               className="w-full min-h-[90px] resize-y text-sm outline-none box-border"
               value={postMarket}
@@ -322,9 +525,22 @@ export default function JournalPage() {
           </div>
 
           {/* Market conditions + Lessons side by side */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div className="rounded-xl px-4 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
-              <div className="text-[10px] font-semibold tracking-wider mb-1.5" style={{ color: "var(--text-dim)" }}>MARKET CONDITIONS</div>
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+          >
+            <div
+              className="rounded-xl px-4 py-3"
+              style={{
+                background: "var(--bg-surface, #111214)",
+                border: "1px solid var(--border, #23252d)",
+              }}
+            >
+              <div
+                className="text-[10px] font-semibold tracking-wider mb-1.5"
+                style={{ color: "var(--text-dim)" }}
+              >
+                MARKET CONDITIONS
+              </div>
               <textarea
                 className="w-full min-h-[60px] resize-y text-sm outline-none box-border"
                 value={marketConditions}
@@ -342,8 +558,19 @@ export default function JournalPage() {
                 }}
               />
             </div>
-            <div className="rounded-xl px-4 py-3" style={{ background: "var(--bg-surface, #111214)", border: "1px solid var(--border, #23252d)" }}>
-              <div className="text-[10px] font-semibold tracking-wider mb-1.5" style={{ color: "var(--text-dim)" }}>KEY LESSONS</div>
+            <div
+              className="rounded-xl px-4 py-3"
+              style={{
+                background: "var(--bg-surface, #111214)",
+                border: "1px solid var(--border, #23252d)",
+              }}
+            >
+              <div
+                className="text-[10px] font-semibold tracking-wider mb-1.5"
+                style={{ color: "var(--text-dim)" }}
+              >
+                KEY LESSONS
+              </div>
               <textarea
                 className="w-full min-h-[60px] resize-y text-sm outline-none box-border"
                 value={lessons}
@@ -395,7 +622,9 @@ export default function JournalPage() {
                 </button>
               ) : (
                 <span className="text-xs" style={{ color: "var(--text-dim)" }}>
-                  {entryDates.has(selectedDate) ? "ENTRY EXISTS" : "NO ENTRY FOR THIS DATE"}
+                  {entryDates.has(selectedDate)
+                    ? "ENTRY EXISTS"
+                    : "NO ENTRY FOR THIS DATE"}
                 </span>
               )}
             </div>
@@ -408,15 +637,23 @@ export default function JournalPage() {
                 fontWeight: 700,
                 letterSpacing: "1px",
                 fontFamily: "inherit",
-                background: saving ? "var(--border, #23252d)" : "var(--text-primary)",
-                color: saving ? "var(--text-muted)" : "var(--bg-primary, #0a0b0e)",
+                background: saving
+                  ? "var(--border, #23252d)"
+                  : "var(--text-primary)",
+                color: saving
+                  ? "var(--text-muted)"
+                  : "var(--bg-primary, #0a0b0e)",
                 border: "none",
                 borderRadius: 8,
                 cursor: saving ? "not-allowed" : "pointer",
                 transition: "all 0.12s ease",
               }}
             >
-              {saving ? "SAVING..." : currentEntry ? "UPDATE ENTRY" : "SAVE ENTRY"}
+              {saving
+                ? "SAVING..."
+                : currentEntry
+                  ? "UPDATE ENTRY"
+                  : "SAVE ENTRY"}
             </button>
           </div>
         </div>

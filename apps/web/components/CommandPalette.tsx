@@ -2,10 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { globalSearch } from "@/lib/api";
 
 const RECENT_KEY = "tradezen_recent_searches";
@@ -36,7 +33,10 @@ function addRecent(term: string) {
   try {
     const items = getRecent().filter((s) => s !== term);
     items.unshift(term);
-    localStorage.setItem(RECENT_KEY, JSON.stringify(items.slice(0, MAX_RECENT)));
+    localStorage.setItem(
+      RECENT_KEY,
+      JSON.stringify(items.slice(0, MAX_RECENT)),
+    );
   } catch {}
 }
 
@@ -47,7 +47,10 @@ function Truncated({ text, max }: { text: string; max: number }) {
 
 function SectionHeader({ label }: { label: string }) {
   return (
-    <div className="label-caps px-4 py-2" style={{ color: "var(--text-dim, #6b7280)" }}>
+    <div
+      className="label-caps px-4 py-2"
+      style={{ color: "var(--text-dim, #6b7280)" }}
+    >
       {label}
     </div>
   );
@@ -72,7 +75,9 @@ function ItemRow({
         padding: "8px 16px",
         fontSize: 13,
         background: active ? "var(--bg-surface-hover, #17181c)" : "transparent",
-        color: active ? "var(--text-primary, #fafafa)" : "var(--text-primary, #fafafa)",
+        color: active
+          ? "var(--text-primary, #fafafa)"
+          : "var(--text-primary, #fafafa)",
         border: "none",
         cursor: "pointer",
         fontFamily: "inherit",
@@ -80,28 +85,45 @@ function ItemRow({
       }}
     >
       {item.icon && (
-        <span style={{ flexShrink: 0, color: "var(--text-muted, #9ca3af)", width: 18, height: 18 }}>
+        <span
+          style={{
+            flexShrink: 0,
+            color: "var(--text-muted, #9ca3af)",
+            width: 18,
+            height: 18,
+          }}
+        >
           {item.icon}
         </span>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 500 }}><Truncated text={item.label} max={60} /></div>
+        <div style={{ fontWeight: 500 }}>
+          <Truncated text={item.label} max={60} />
+        </div>
         {item.description && (
-          <div style={{ fontSize: 11, color: "var(--text-dim, #6b7280)", marginTop: 2 }}>
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--text-dim, #6b7280)",
+              marginTop: 2,
+            }}
+          >
             <Truncated text={item.description} max={80} />
           </div>
         )}
       </div>
       {active && (
-        <kbd style={{
-          fontSize: 10,
-          padding: "2px 5px",
-          borderRadius: 4,
-          background: "var(--bg-surface, #111214)",
-          color: "var(--text-dim, #6b7280)",
-          border: "1px solid var(--border, #23252d)",
-          flexShrink: 0,
-        }}>
+        <kbd
+          style={{
+            fontSize: 10,
+            padding: "2px 5px",
+            borderRadius: 4,
+            background: "var(--bg-surface, #111214)",
+            color: "var(--text-dim, #6b7280)",
+            border: "1px solid var(--border, #23252d)",
+            flexShrink: 0,
+          }}
+        >
           ↵
         </kbd>
       )}
@@ -112,8 +134,19 @@ function ItemRow({
 // ─── Icons ──────────────────────────────────────────
 
 const IconTrade = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 6h18" /><path d="M3 12h18" /><path d="M3 18h18" />
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M3 6h18" />
+    <path d="M3 12h18" />
+    <path d="M3 18h18" />
     <circle cx="8" cy="6" r="1" fill="currentColor" stroke="none" />
     <circle cx="16" cy="12" r="1" fill="currentColor" stroke="none" />
     <circle cx="10" cy="18" r="1" fill="currentColor" stroke="none" />
@@ -121,22 +154,50 @@ const IconTrade = (
 );
 
 const IconJournal = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    <path d="M8 7h8" /><path d="M8 11h6" />
+    <path d="M8 7h8" />
+    <path d="M8 11h6" />
   </svg>
 );
 
 const IconTag = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M12 2H2v10l9.29 9.29a2 2 0 0 0 2.83 0l6.17-6.17a2 2 0 0 0 0-2.83L12 2z" />
     <line x1="7" y1="7" x2="7.01" y2="7" />
   </svg>
 );
 
 const IconDashboard = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="3" width="7" height="7" rx="1" />
     <rect x="14" y="3" width="7" height="7" rx="1" />
     <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -145,37 +206,85 @@ const IconDashboard = (
 );
 
 const IconAnalytics = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 3v18h18" /><path d="M7 16l4-8 4 4 4-6" />
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M3 3v18h18" />
+    <path d="M7 16l4-8 4 4 4-6" />
   </svg>
 );
 
 const IconReports = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
-    <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
     <polyline points="10 9 9 9 8 9" />
   </svg>
 );
 
 const IconCalendar = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-    <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
     <line x1="3" y1="10" x2="21" y2="10" />
   </svg>
 );
 
 const IconChecklist = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="9 11 12 14 22 4" />
     <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
   </svg>
 );
 
 const IconCalculator = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="4" y="2" width="16" height="20" rx="2" />
     <line x1="8" y1="6" x2="16" y2="6" />
     <line x1="8" y1="10" x2="8" y2="10.01" />
@@ -189,31 +298,79 @@ const IconCalculator = (
 );
 
 const IconSearch = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 );
 
 const IconPlus = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 );
 
 const IconClock = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
   </svg>
 );
 
 const IconSparkles = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M12 2l2.4 7.2L22 9l-6 4.8L18 22l-6-4.8L6 22l2-8.2L2 9l7.6.2z" />
   </svg>
 );
 
 const IconFilter = (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
   </svg>
 );
@@ -281,60 +438,97 @@ export default function CommandPalette({
       // Quick Actions
       list.push({
         id: "nav-dashboard",
-        label: "Dashboard", icon: IconDashboard,
-        onSelect: () => { close(); router.push("/"); },
+        label: "Dashboard",
+        icon: IconDashboard,
+        onSelect: () => {
+          close();
+          router.push("/");
+        },
       });
       list.push({
         id: "nav-trades",
-        label: "Log Trade", icon: IconPlus,
+        label: "Log Trade",
+        icon: IconPlus,
         description: "Create a new trade entry",
-        onSelect: () => { close(); router.push("/add-trade"); },
+        onSelect: () => {
+          close();
+          router.push("/add-trade");
+        },
       });
       list.push({
         id: "nav-journal",
-        label: "Today's Journal", icon: IconJournal,
+        label: "Today's Journal",
+        icon: IconJournal,
         description: "Open today's journal entry",
-        onSelect: () => { close(); router.push(`/journal?date=${new Date().toISOString().slice(0, 10)}`); },
+        onSelect: () => {
+          close();
+          router.push(`/journal?date=${new Date().toISOString().slice(0, 10)}`);
+        },
       });
       list.push({
         id: "nav-analytics",
-        label: "Analytics", icon: IconAnalytics,
-        onSelect: () => { close(); router.push("/analytics"); },
+        label: "Analytics",
+        icon: IconAnalytics,
+        onSelect: () => {
+          close();
+          router.push("/analytics");
+        },
       });
       list.push({
         id: "nav-reports",
-        label: "Reports", icon: IconReports,
-        onSelect: () => { close(); router.push("/reports"); },
+        label: "Reports",
+        icon: IconReports,
+        onSelect: () => {
+          close();
+          router.push("/reports");
+        },
       });
       list.push({
         id: "nav-calendar",
-        label: "Calendar", icon: IconCalendar,
-        onSelect: () => { close(); router.push("/calendar"); },
+        label: "Calendar",
+        icon: IconCalendar,
+        onSelect: () => {
+          close();
+          router.push("/calendar");
+        },
       });
       list.push({
         id: "nav-checklists",
-        label: "Checklists", icon: IconChecklist,
-        onSelect: () => { close(); router.push("/checklists"); },
+        label: "Checklists",
+        icon: IconChecklist,
+        onSelect: () => {
+          close();
+          router.push("/checklists");
+        },
       });
       list.push({
         id: "nav-calculator",
-        label: "Calculator", icon: IconCalculator,
-        onSelect: () => { close(); router.push("/calculator"); },
+        label: "Calculator",
+        icon: IconCalculator,
+        onSelect: () => {
+          close();
+          router.push("/calculator");
+        },
       });
 
       // AI Actions
       list.push({
         id: "ai-insight",
-        label: "AI Trading Insight", icon: IconSparkles,
+        label: "AI Trading Insight",
+        icon: IconSparkles,
         description: "Get AI-powered analysis of your recent performance",
-        onSelect: () => { close(); router.push("/analytics"); },
+        onSelect: () => {
+          close();
+          router.push("/analytics");
+        },
       });
 
       // Recent Searches
       for (const term of recentSearches) {
         list.push({
           id: `recent-${term}`,
-          label: term, icon: IconClock,
+          label: term,
+          icon: IconClock,
           onSelect: () => {
             addRecent(term);
             close();
@@ -348,21 +542,24 @@ export default function CommandPalette({
     const filterMatch = query.match(/^(tag|symbol|strategy):(.+)/i);
     if (filterMatch) {
       const [, prefix, value] = filterMatch;
-      const label = prefix.toLowerCase() === "tag"
-        ? `Filter by tag: ${value.trim()}`
-        : prefix.toLowerCase() === "symbol"
-        ? `View trades for ${value.trim().toUpperCase()}`
-        : `View strategy: ${value.trim()}`;
+      const label =
+        prefix.toLowerCase() === "tag"
+          ? `Filter by tag: ${value.trim()}`
+          : prefix.toLowerCase() === "symbol"
+            ? `View trades for ${value.trim().toUpperCase()}`
+            : `View strategy: ${value.trim()}`;
       list.push({
         id: `filter-${prefix}-${value}`,
-        label, icon: IconFilter,
+        label,
+        icon: IconFilter,
         onSelect: () => {
           const term = query.trim();
           addRecent(term);
           close();
           const params = new URLSearchParams();
           if (prefix.toLowerCase() === "tag") params.set("tag", value.trim());
-          else if (prefix.toLowerCase() === "symbol") params.set("symbol", value.trim().toUpperCase());
+          else if (prefix.toLowerCase() === "symbol")
+            params.set("symbol", value.trim().toUpperCase());
           else params.set("strategy", value.trim());
           router.push(`/trades?${params.toString()}`);
         },
@@ -373,13 +570,17 @@ export default function CommandPalette({
     if (results) {
       for (const t of results.trades) {
         const pnl = Number(t.pnl);
-        const pnlStr = pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`;
+        const pnlStr =
+          pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`;
         list.push({
           id: `trade-${t.id}`,
           label: `${t.symbol}  ${t.direction.toUpperCase()}  ${pnlStr}`,
           description: t.strategy ? `Strategy: ${t.strategy}` : undefined,
           icon: IconTrade,
-          onSelect: () => { close(); router.push(`/trades/${t.id}`); },
+          onSelect: () => {
+            close();
+            router.push(`/trades/${t.id}`);
+          },
         });
       }
       for (const j of results.journals) {
@@ -388,7 +589,10 @@ export default function CommandPalette({
           label: `Journal — ${j.date}`,
           description: j.lessons ? `Lesson: ${j.lessons}` : undefined,
           icon: IconJournal,
-          onSelect: () => { close(); router.push(`/journal?date=${j.date}`); },
+          onSelect: () => {
+            close();
+            router.push(`/journal?date=${j.date}`);
+          },
         });
       }
       for (const t of results.tags) {
@@ -407,9 +611,13 @@ export default function CommandPalette({
     }
 
     // Trade shortcut — create trade when no results match
-    if (query.trim().length >= 2 && results && !results.trades.some(
-      (t) => t.symbol.toLowerCase() === query.trim().toLowerCase(),
-    )) {
+    if (
+      query.trim().length >= 2 &&
+      results &&
+      !results.trades.some(
+        (t) => t.symbol.toLowerCase() === query.trim().toLowerCase(),
+      )
+    ) {
       list.push({
         id: `create-trade-${query.trim()}`,
         label: `Log Trade: ${query.trim().toUpperCase()}`,
@@ -419,7 +627,9 @@ export default function CommandPalette({
           const term = query.trim();
           addRecent(term);
           close();
-          router.push(`/add-trade?symbol=${encodeURIComponent(term.toUpperCase())}`);
+          router.push(
+            `/add-trade?symbol=${encodeURIComponent(term.toUpperCase())}`,
+          );
         },
       });
     }
@@ -430,7 +640,9 @@ export default function CommandPalette({
   // Scroll active item into view
   useEffect(() => {
     if (!listRef.current) return;
-    const active = listRef.current.querySelector(`[data-index="${activeIndex}"]`);
+    const active = listRef.current.querySelector(
+      `[data-index="${activeIndex}"]`,
+    );
     active?.scrollIntoView({ block: "nearest" });
   }, [activeIndex]);
 
@@ -470,7 +682,8 @@ export default function CommandPalette({
         style={{
           background: "var(--bg-surface, #111214)",
           border: "1px solid var(--border, #23252d)",
-          boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 16px 48px rgba(0,0,0,0.5)",
+          boxShadow:
+            "0 0 0 1px rgba(255,255,255,0.03), 0 16px 48px rgba(0,0,0,0.5)",
           overflow: "hidden",
         }}
       >
@@ -483,7 +696,13 @@ export default function CommandPalette({
             flexShrink: 0,
           }}
         >
-          <span style={{ color: "var(--text-muted, #9ca3af)", flexShrink: 0, display: "flex" }}>
+          <span
+            style={{
+              color: "var(--text-muted, #9ca3af)",
+              flexShrink: 0,
+              display: "flex",
+            }}
+          >
             {IconSearch}
           </span>
           <input
@@ -536,29 +755,43 @@ export default function CommandPalette({
           )}
 
           {hasResults && (
-            <div
-              onMouseMove={() => {}}
-            >
+            <div onMouseMove={() => {}}>
               {(() => {
-                const sections: { label: string; start: number; end: number }[] = [];
+                const sections: {
+                  label: string;
+                  start: number;
+                  end: number;
+                }[] = [];
                 let idx = 0;
 
                 if (query.trim().length === 0) {
                   // Quick actions section
                   const quickCount = 9; // 8 nav + 1 AI
-                  sections.push({ label: "QUICK ACTIONS", start: 0, end: quickCount });
+                  sections.push({
+                    label: "QUICK ACTIONS",
+                    start: 0,
+                    end: quickCount,
+                  });
                   idx = quickCount;
 
                   // Recent searches
                   if (recentSearches.length > 0) {
-                    sections.push({ label: "RECENT", start: idx, end: idx + recentSearches.length });
+                    sections.push({
+                      label: "RECENT",
+                      start: idx,
+                      end: idx + recentSearches.length,
+                    });
                     idx += recentSearches.length;
                   }
                 }
 
                 // Quick filters
                 if (query.match(/^(tag|symbol|strategy):/i)) {
-                  sections.push({ label: "QUICK FILTERS", start: idx, end: idx + 1 });
+                  sections.push({
+                    label: "QUICK FILTERS",
+                    start: idx,
+                    end: idx + 1,
+                  });
                   idx += 1;
                 }
 
@@ -567,27 +800,44 @@ export default function CommandPalette({
                   const tradeStart = idx;
                   const tradeEnd = idx + results.trades.length;
                   if (results.trades.length > 0) {
-                    sections.push({ label: "TRADES", start: tradeStart, end: tradeEnd });
+                    sections.push({
+                      label: "TRADES",
+                      start: tradeStart,
+                      end: tradeEnd,
+                    });
                     idx = tradeEnd;
                   }
                   const journalStart = idx;
                   const journalEnd = idx + results.journals.length;
                   if (results.journals.length > 0) {
-                    sections.push({ label: "JOURNALS", start: journalStart, end: journalEnd });
+                    sections.push({
+                      label: "JOURNALS",
+                      start: journalStart,
+                      end: journalEnd,
+                    });
                     idx = journalEnd;
                   }
                   const tagStart = idx;
                   const tagEnd = idx + results.tags.length;
                   if (results.tags.length > 0) {
-                    sections.push({ label: "TAGS", start: tagStart, end: tagEnd });
+                    sections.push({
+                      label: "TAGS",
+                      start: tagStart,
+                      end: tagEnd,
+                    });
                     idx = tagEnd;
                   }
                 }
 
                 // Create trade shortcut
-                if (query.trim().length >= 2 && results && !results.trades.some(
-                  (t) => t.symbol.toLowerCase() === query.trim().toLowerCase(),
-                )) {
+                if (
+                  query.trim().length >= 2 &&
+                  results &&
+                  !results.trades.some(
+                    (t) =>
+                      t.symbol.toLowerCase() === query.trim().toLowerCase(),
+                  )
+                ) {
                   sections.push({ label: "ACTIONS", start: idx, end: idx + 1 });
                 }
 
@@ -619,20 +869,40 @@ export default function CommandPalette({
 
           {!hasResults && query.trim().length < 3 && !loading && (
             <div className="flex flex-col items-center py-10 px-4 text-center">
-              <kbd style={{
-                fontSize: 10,
-                padding: "3px 7px",
-                borderRadius: 4,
-                background: "var(--bg-surface-hover, #17181c)",
-                color: "var(--text-dim, #6b7280)",
-                border: "1px solid var(--border, #23252d)",
-                marginBottom: 12,
-              }}>
+              <kbd
+                style={{
+                  fontSize: 10,
+                  padding: "3px 7px",
+                  borderRadius: 4,
+                  background: "var(--bg-surface-hover, #17181c)",
+                  color: "var(--text-dim, #6b7280)",
+                  border: "1px solid var(--border, #23252d)",
+                  marginBottom: 12,
+                }}
+              >
                 Ctrl+K
               </kbd>
-              <div style={{ fontSize: 13, color: "var(--text-dim, #6b7280)", lineHeight: 1.5 }}>
-                Search trades, journals, and tags<br />
-                Type <kbd style={{ background: "var(--bg-surface-hover)", padding: "1px 4px", borderRadius: 3, fontSize: 11 }}>symbol:EURUSD</kbd> to filter
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "var(--text-dim, #6b7280)",
+                  lineHeight: 1.5,
+                }}
+              >
+                Search trades, journals, and tags
+                <br />
+                Type{" "}
+                <kbd
+                  style={{
+                    background: "var(--bg-surface-hover)",
+                    padding: "1px 4px",
+                    borderRadius: 3,
+                    fontSize: 11,
+                  }}
+                >
+                  symbol:EURUSD
+                </kbd>{" "}
+                to filter
               </div>
             </div>
           )}

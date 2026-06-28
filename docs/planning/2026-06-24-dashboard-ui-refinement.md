@@ -22,6 +22,7 @@
 ### Task 1: Refine DashboardHero
 
 **Files:**
+
 - Modify: `apps/web/components/DashboardHero.tsx`
 
 - [ ] **Step 1: Remove emoji and clean up greeting**
@@ -47,23 +48,32 @@ Render greeting on the left and weekly stat chips on the right in a flex row. On
     <div className="flex gap-6 flex-wrap">
       <div>
         <div className="label-caps mb-1">TRADES THIS WEEK</div>
-        <div className="text-2xl font-bold text-text-primary">{tradesThisWeek}</div>
+        <div className="text-2xl font-bold text-text-primary">
+          {tradesThisWeek}
+        </div>
       </div>
       <div>
         <div className="label-caps mb-1">WEEKLY P&L</div>
-        <div className={`text-2xl font-bold ${weeklyPnl >= 0 ? "text-profit" : "text-loss"}`}>
+        <div
+          className={`text-2xl font-bold ${weeklyPnl >= 0 ? "text-profit" : "text-loss"}`}
+        >
           {weeklyPnl >= 0 ? "+" : ""}${Math.abs(weeklyPnl).toLocaleString()}
         </div>
       </div>
       <div>
         <div className="label-caps mb-1">WIN RATE</div>
-        <div className="text-2xl font-bold text-text-primary">{weeklyWinRate}%</div>
+        <div className="text-2xl font-bold text-text-primary">
+          {weeklyWinRate}%
+        </div>
       </div>
     </div>
   ) : (
     <p className="text-sm text-text-muted">
       Start this week strong —{" "}
-      <Link href="/add-trade" className="text-text-primary underline">log your first trade</Link>.
+      <Link href="/add-trade" className="text-text-primary underline">
+        log your first trade
+      </Link>
+      .
     </p>
   )}
 </div>
@@ -78,6 +88,7 @@ Change the outer wrapper from `p-6` to `p-5` and keep the existing gradient back
 ### Task 2: Add Contrast to StatCard
 
 **Files:**
+
 - Modify: `apps/web/components/StatCard.tsx`
 
 - [ ] **Step 1: Accept optional accent props**
@@ -100,10 +111,10 @@ Use a `variant` map for background and border colors:
 ```tsx
 const variantStyles = {
   profit: { bg: "rgba(34,197,94,0.08)", border: "var(--accent-profit)" },
-  loss:   { bg: "rgba(239,68,68,0.08)", border: "var(--accent-loss)" },
-  blue:   { bg: "rgba(59,130,246,0.08)", border: "var(--accent)" },
-  amber:  { bg: "rgba(245,158,11,0.08)", border: "var(--accent-warn)" },
-  cyan:   { bg: "rgba(6,182,212,0.08)", border: "var(--accent-cyan)" },
+  loss: { bg: "rgba(239,68,68,0.08)", border: "var(--accent-loss)" },
+  blue: { bg: "rgba(59,130,246,0.08)", border: "var(--accent)" },
+  amber: { bg: "rgba(245,158,11,0.08)", border: "var(--accent-warn)" },
+  cyan: { bg: "rgba(6,182,212,0.08)", border: "var(--accent-cyan)" },
 };
 ```
 
@@ -115,10 +126,14 @@ const active = variant ? variantStyles[variant] : null;
 return (
   <div
     className="glass-card-interactive rounded-xl p-5 flex flex-col gap-1"
-    style={active ? {
-      background: active.bg,
-      borderTop: `3px solid ${active.border}`,
-    } : undefined}
+    style={
+      active
+        ? {
+            background: active.bg,
+            borderTop: `3px solid ${active.border}`,
+          }
+        : undefined
+    }
   >
     ...existing content...
   </div>
@@ -145,6 +160,7 @@ In `apps/web/app/page.tsx`, pass a `variant` prop to each `<StatCard>`:
 ### Task 3: Enlarge and Fill TradingHeatmap
 
 **Files:**
+
 - Modify: `apps/web/components/TradingHeatmap.tsx`
 
 - [ ] **Step 1: Increase cell size and fill width**
@@ -158,7 +174,9 @@ Replace the current heatmap scrollable flex container with a grid that fills the
       key={i}
       className="aspect-square rounded-xs transition-opacity min-h-[28px]"
       style={{ backgroundColor: intensity(day) }}
-      title={day ? `${day.date}: ${day.trades} trades, $${day.pnl}` : "No trades"}
+      title={
+        day ? `${day.date}: ${day.trades} trades, $${day.pnl}` : "No trades"
+      }
     />
   ))}
 </div>
@@ -189,6 +207,7 @@ Move the legend into a single inline row under the grid with smaller labels and 
 ### Task 4: Verify Visual Output
 
 **Files:**
+
 - No file changes.
 
 - [ ] **Step 1: Start the dev server**
@@ -198,6 +217,7 @@ Run: `bun run dev` from the project root (or `apps/web`) and open `http://localh
 - [ ] **Step 2: Check the dashboard**
 
 Verify:
+
 1. Hero shows "Welcome back, {name}" with no emoji.
 2. Weekly stats sit to the right of the greeting on desktop.
 3. Top four stat cards have tinted backgrounds and colored top borders.

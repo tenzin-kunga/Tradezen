@@ -17,7 +17,11 @@ type Trade = {
   created_at: string;
 };
 
-type Props = { trades: Trade[]; onDelete?: (id: string) => void; loading?: boolean };
+type Props = {
+  trades: Trade[];
+  onDelete?: (id: string) => void;
+  loading?: boolean;
+};
 
 function fmtPnl(n: number) {
   const abs = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2 });
@@ -32,7 +36,11 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-export default function RecentTradesWidget({ trades, onDelete, loading }: Props) {
+export default function RecentTradesWidget({
+  trades,
+  onDelete,
+  loading,
+}: Props) {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
@@ -51,7 +59,11 @@ export default function RecentTradesWidget({ trades, onDelete, loading }: Props)
   return (
     <WidgetShell
       title="RECENT TRADES"
-      headerAction={<Link href="/trades" className="text-xs text-accent no-underline">View All →</Link>}
+      headerAction={
+        <Link href="/trades" className="text-xs text-accent no-underline">
+          View All →
+        </Link>
+      }
       loading={loading}
       isEmpty={trades.length === 0}
       emptyMessage="No trades yet. Log your first trade to get started."
@@ -61,7 +73,12 @@ export default function RecentTradesWidget({ trades, onDelete, loading }: Props)
           <thead>
             <tr className="border-b border-border">
               {["SYMBOL", "DIRECTION", "P&L", "R:R", "DATE", ""].map((h) => (
-                <th key={h} className="label-caps text-left pb-2 pr-3 whitespace-nowrap">{h}</th>
+                <th
+                  key={h}
+                  className="label-caps text-left pb-2 pr-3 whitespace-nowrap"
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -71,15 +88,22 @@ export default function RecentTradesWidget({ trades, onDelete, loading }: Props)
               const isLong = t.direction === "buy";
               const rr =
                 t.stop_loss && t.take_profit && t.entry_price
-                  ? Math.abs(t.take_profit - t.entry_price) / Math.abs(t.entry_price - t.stop_loss)
+                  ? Math.abs(t.take_profit - t.entry_price) /
+                    Math.abs(t.entry_price - t.stop_loss)
                   : 0;
               return (
                 <tr key={t.id} className="border-b border-border">
-                  <td className="py-2.5 pr-3 font-semibold text-base">{t.symbol}</td>
-                  <td className={`py-2.5 pr-3 text-sm font-semibold ${isLong ? "text-profit" : "text-loss"}`}>
+                  <td className="py-2.5 pr-3 font-semibold text-base">
+                    {t.symbol}
+                  </td>
+                  <td
+                    className={`py-2.5 pr-3 text-sm font-semibold ${isLong ? "text-profit" : "text-loss"}`}
+                  >
                     {isLong ? "LONG" : "SHORT"}
                   </td>
-                  <td className={`py-2.5 pr-3 text-base font-semibold ${isWin ? "text-profit" : "text-loss"}`}>
+                  <td
+                    className={`py-2.5 pr-3 text-base font-semibold ${isWin ? "text-profit" : "text-loss"}`}
+                  >
                     {fmtPnl(t.pnl)}
                   </td>
                   <td className="py-2.5 pr-3 text-sm text-text-muted">
@@ -92,8 +116,11 @@ export default function RecentTradesWidget({ trades, onDelete, loading }: Props)
                     <div className="relative inline-block">
                       <button
                         onClick={(e) => {
-                          const menu = e.currentTarget.nextElementSibling as HTMLElement;
-                          if (menu) menu.style.display = menu.style.display === "block" ? "none" : "block";
+                          const menu = e.currentTarget
+                            .nextElementSibling as HTMLElement;
+                          if (menu)
+                            menu.style.display =
+                              menu.style.display === "block" ? "none" : "block";
                         }}
                         className="bg-transparent border-none text-text-muted cursor-pointer text-base px-1.5 py-0.5"
                       >
@@ -103,7 +130,10 @@ export default function RecentTradesWidget({ trades, onDelete, loading }: Props)
                         className="hidden absolute right-0 top-full bg-bg-surface border border-border rounded-lg z-10"
                         style={{ minWidth: 120 }}
                       >
-                        <Link href={`/trades/${t.id}`} className="block px-3 py-2 text-xs text-text-primary no-underline">
+                        <Link
+                          href={`/trades/${t.id}`}
+                          className="block px-3 py-2 text-xs text-text-primary no-underline"
+                        >
                           View Details
                         </Link>
                         <button

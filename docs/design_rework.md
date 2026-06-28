@@ -1,4 +1,5 @@
 # TradeZen Frontend Revamp — Phase 1
+
 ### Foundation Refresh & Fintech UI Modernization
 
 **Version:** 1.0
@@ -847,6 +848,7 @@ rather than
 **"a CRUD application with charts."**
 
 # TradeZen Frontend Revamp — Phase 2
+
 ### Dashboard Transformation & Analytics Experience
 
 **Version:** 1.0
@@ -1501,8 +1503,8 @@ A user should be able to open the dashboard and answer these questions within 5 
 
 If the dashboard can answer those four questions instantly, Phase 2 is successful.
 
-
 # TradeZen Frontend Revamp — Phase 3
+
 ### Premium Experience, Personalization & AI-Powered Trading Intelligence
 
 **Version:** 1.0

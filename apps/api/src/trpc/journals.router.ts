@@ -9,7 +9,9 @@ const queryJournalsSchema = z.object({
   offset: z.number().min(0).optional(),
 });
 
-const journalDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
+const journalDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD');
 
 const createJournalInput = createJournalSchema.extend({
   mood: journalMoodEnum.optional(),
