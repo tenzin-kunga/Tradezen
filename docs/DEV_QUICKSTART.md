@@ -88,19 +88,19 @@ Create account → log in → add a trade → see it in the trade log.
 ### Reset Database
 
 ```bash
-docker-compose down -v  # WARNING: deletes all data
-docker-compose up -d postgres
-docker-compose exec api npm run migrate  # npm inside container
+docker compose --file infra/docker-compose.yml down -v  # WARNING: deletes all data
+docker compose --file infra/docker-compose.yml up -d postgres
+docker compose --file infra/docker-compose.yml exec api npm run migrate  # npm inside container
 ```
 
 ### View Logs
 
 ```bash
 # All services
-docker-compose logs -f
+docker compose --file infra/docker-compose.yml logs -f
 
 # Specific service
-docker-compose logs -f api
+docker compose --file infra/docker-compose.yml logs -f api
 ```
 
 ### Run Tests
@@ -110,7 +110,7 @@ docker-compose logs -f api
 bun run test
 
 # E2E tests (requires DB running)
-docker-compose up -d postgres redis
+docker compose --file infra/docker-compose.yml up -d postgres redis
 bun run test:e2e --filter=api
 ```
 
@@ -129,10 +129,10 @@ bun run format
 bun run build
 
 # Build Docker images
-docker-compose --env-file .env.docker build
+docker compose --file infra/docker-compose.yml --env-file .env.docker build
 
 # Run production stack
-docker-compose --env-file .env.docker up -d
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 ```
 
 ---
@@ -163,10 +163,10 @@ sudo systemctl start docker
 
 ```bash
 # Check Postgres is running
-docker-compose ps postgres
+docker compose --file infra/docker-compose.yml ps postgres
 
 # View logs
-docker-compose logs postgres
+docker compose --file infra/docker-compose.yml logs postgres
 
 # Wait longer — first startup can take 20-30s for init
 ```
@@ -185,10 +185,10 @@ docker-compose logs postgres
 
 ```bash
 # Check if migrations table exists
-docker-compose exec postgres psql -U postgres -d tradezen -c "\dt"
+docker compose --file infra/docker-compose.yml exec postgres psql -U postgres -d tradezen -c "\dt"
 
 # Run migrations manually
-docker-compose exec api npm run migrate  # npm inside container
+docker compose --file infra/docker-compose.yml exec api npm run migrate  # npm inside container
 ```
 
 ---
@@ -254,10 +254,10 @@ ext install:
 
 ## Next Steps
 
-1. **Read Architecture:** `PROJECT_RUNDDOWN.md` (full technical deep-dive)
-2. **Security Review:** `SECURITY.md` (Docker, CI/CD hardening)
-3. **Deploy:** `DEPLOYMENT.md` (when ready for production)
-4. **Todo List:** `IMPLEMENTATION-TASK.md` (feature roadmap)
+1. **Read Architecture:** `docs/Architecture.md` (full technical deep-dive)
+2. **Security Review:** `docs/SECURITY.md` (Docker, CI/CD hardening)
+3. **Deploy:** `docs/DEPLOYMENT.md` (when ready for production)
+4. **Architecture Decisions:** `docs/decisions/` (ADRs)
 
 ---
 
