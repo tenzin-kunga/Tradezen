@@ -475,3 +475,5 @@ export const checklistRunItems = pgTable(
     runIdx: index('idx_run_items_run').on(table.runId),
   }),
 );
+
+export { tradeImages } from './trade-images';
