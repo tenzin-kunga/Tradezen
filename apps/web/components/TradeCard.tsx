@@ -27,7 +27,10 @@ export default function TradeCard({ trade, onView }: { trade: Trade; onView: (t:
   const isWin = trade.pnl >= 0;
   const isLong = trade.direction === "buy";
   const d = trade.trade_date ?? trade.created_at;
-  const imageUrl = trade.chart_image ? `${API}${trade.chart_image}` : null;
+  
+  // Support both new thumbnail structure and legacy chart_image
+  const thumbnailUrl = trade.thumbnail?.url ?? (trade.chart_image ? `${API}${trade.chart_image}` : null);
+  const imageCount = trade.imageCount ?? 0;
 
   return (
     <div
@@ -76,19 +79,27 @@ export default function TradeCard({ trade, onView }: { trade: Trade; onView: (t:
         className="flex items-center gap-3 px-4 pb-3 pt-2"
         style={{ borderTop: "1px solid var(--border, #23252d)" }}
       >
-        {imageUrl ? (
+        {thumbnailUrl ? (
           <div
-            className="rounded overflow-hidden flex-shrink-0"
+            className="relative rounded overflow-hidden flex-shrink-0"
             style={{ width: 56, height: 40, background: "var(--bg-surface-hover, #1a1c23)" }}
           >
             <img
-              src={imageUrl}
+              src={thumbnailUrl}
               alt="Chart"
               className="w-full h-full object-cover"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).style.display = "none";
               }}
             />
+            {imageCount > 1 && (
+              <div
+                className="absolute bottom-0.5 right-0.5 bg-black/70 px-1 py-0.5 rounded text-[8px]"
+                style={{ color: "var(--text-primary, #fff)" }}
+              >
+                +{imageCount - 1}
+              </div>
+            )}
           </div>
         ) : (
           <div
