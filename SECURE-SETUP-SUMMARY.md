@@ -107,13 +107,13 @@ RENDER_SERVICE_ID         # Render service ID
 |------|---------|------------|
 | `.env.docker.example` | Template with all variables | Yes |
 | `.env.docker` | Your actual secrets (local/CI) | No (gitignored) |
-| `scripts/rotate-secrets.sh` | Linux/Mac rotation script | Yes |
-| `scripts/rotate-secrets.bat` | Windows rotation script | Yes |
+| `scripts/security/rotate-secrets.sh` | Linux/Mac rotation script | Yes |
+| `scripts/security/rotate-secrets.bat` | Windows rotation script | Yes |
 
 ### Rotation Process
 
 ```bash
-./scripts/rotate-secrets.sh  # or .bat on Windows
+./scripts/security/rotate-secrets.sh  # or .bat on Windows
 # Updates .env.docker with new secrets
 # Also prompts to update GitHub Secrets
 # Restarts Docker services with new credentials
@@ -214,8 +214,8 @@ docs/DEPLOYMENT.md
 DEV_QUICKSTART.md
 docs/AUDIT-REPORT.md
 SECURE-SETUP-SUMMARY.md
-scripts/rotate-secrets.sh
-scripts/rotate-secrets.bat
+scripts/security/rotate-secrets.sh
+scripts/security/rotate-secrets.bat
 .githooks/pre-commit
 ```
 

@@ -48,7 +48,7 @@ All changes are **backward-compatible** and can be adopted incrementally.
 
 **New Tools:**
 - `.env.docker.example` — documented template for all environment variables
-- `scripts/rotate-secrets.sh` / `.bat` — automated secret rotation utility
+- `scripts/security/rotate-secrets.sh` / `.bat` — automated secret rotation utility
 - `.githooks/pre-commit` — optional pre-commit hook to catch accidental secret commits
 
 **Best Practices Enforced:**
@@ -177,7 +177,7 @@ Default limits (configurable in `docker-compose.yml`):
 
 - Use strong, randomly generated secrets (no dictionary words)
 - Keep `.env.docker` out of version control (already gitignored)
-- Rotate secrets periodically (use `scripts/rotate-secrets.sh`)
+- Rotate secrets periodically (use `scripts/security/rotate-secrets.sh`)
 - Monitor GitHub Security tab for vulnerability alerts
 - Enable Docker content trust (DCT) in production
 - Use SSL/TLS certificates (Let's Encrypt) for all public endpoints
@@ -252,8 +252,8 @@ act push -j security
 - `DEV_QUICKSTART.md`
 - `docs/AUDIT-REPORT.md`
 - `SECURE-SETUP-SUMMARY.md`
-- `scripts/rotate-secrets.sh`
-- `scripts/rotate-secrets.bat`
+- `scripts/security/rotate-secrets.sh`
+- `scripts/security/rotate-secrets.bat`
 - `.githooks/pre-commit`
 
 ---

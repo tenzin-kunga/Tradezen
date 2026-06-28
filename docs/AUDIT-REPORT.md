@@ -84,7 +84,7 @@ All modifications are optional for local development but recommended for product
 **New Capabilities:**
 
 1. **`.env.docker.example`** — Template documenting all variables
-2. **`scripts/rotate-secrets.sh/.bat`** — One-click secret rotation
+2. **`scripts/security/rotate-secrets.sh/.bat`** — One-click secret rotation
 3. **Runtime validation** — JWT secrets must be set in production
 4. **Pre-commit hook** (optional) — Catches accidental secret commits
 

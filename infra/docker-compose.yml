@@ -146,7 +146,7 @@ services:
     container_name: tradezen-backup
     restart: "no"
     volumes:
-      - ../scripts:/scripts:ro
+      - ../scripts/db:/scripts:ro
       - ../backups:/backups
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
