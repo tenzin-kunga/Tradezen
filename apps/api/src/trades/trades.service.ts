@@ -530,15 +530,6 @@ export class TradesService {
       { id },
     ]);
 
-    if (trade.chartImage) {
-      const imagePath = path.join(process.cwd(), trade.chartImage);
-      try {
-        fs.unlinkSync(imagePath);
-      } catch {
-        // File already deleted or inaccessible — non-fatal
-      }
-    }
-
     return { deleted: true };
   }
 

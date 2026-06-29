@@ -242,14 +242,21 @@ export const deleteTrade = async (id: string) => {
   return handleResponse<{ deleted: boolean }>(res);
 };
 
-export const uploadTradeImage = async (id: string, file: File) => {
+export const uploadTradeImage = async (tradeId: string, file: File) => {
   const form = new FormData();
-  form.append("image", file);
-  const res = await authFetch(`${API}/trades/${id}/image`, {
+  form.append("file", file);
+  const res = await authFetch(`${API}/trades/${tradeId}/images`, {
     method: "POST",
     body: form,
   });
-  return handleResponse<{ chart_image: string }>(res);
+  return handleResponse<{ id: string; url: string; thumbnailUrl: string }>(res);
+};
+
+export const deleteTradeImage = async (tradeId: string, imageId: string) => {
+  const res = await authFetch(`${API}/trades/${tradeId}/images/${imageId}`, {
+    method: "DELETE",
+  });
+  return handleResponse<{ success: boolean }>(res);
 };
 
 // ─── Analytics ─────────────────────────────────────

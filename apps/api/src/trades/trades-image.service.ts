@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { eq, and, asc, count } from 'drizzle-orm';
+import { eq, and, asc, count, sql } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { tradeImages, trades } from '@tradezen/db';
 import { StorageProvider } from '../storage/storage.provider';
@@ -232,10 +232,10 @@ export class TradeImageService {
 
   private async getNextDisplayOrder(tradeId: string): Promise<number> {
     const result = await db
-      .select({ maxOrder: count() })
+      .select({ maxOrder: sql<number>`COALESCE(MAX(${tradeImages.displayOrder}), -1)` })
       .from(tradeImages)
       .where(eq(tradeImages.tradeId, tradeId));
-    return Number(result[0]?.maxOrder ?? 0);
+    return Number(result[0]?.maxOrder ?? -1) + 1;
   }
 
   private formatImageResponse(image: any): ImageResponseDto {
