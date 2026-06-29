@@ -7,13 +7,15 @@ import {
 import { eq, and, asc, count, sql, inArray } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { tradeImages, trades } from '@tradezen/db';
-import { StorageProvider } from '../storage/storage.provider';
+import { CloudinaryProvider } from '../storage/cloudinary.provider';
 import { storageConfig } from '../storage/storage.config';
 import { ImageResponseDto } from './dto/image.dto';
 
 @Injectable()
 export class TradeImageService {
-  constructor(private readonly storageProvider: StorageProvider) {}
+  constructor(
+    private readonly storageProvider: CloudinaryProvider,
+  ) {}
 
   async uploadImage(
     userId: string,
@@ -177,7 +179,7 @@ export class TradeImageService {
       orderBy: [asc(tradeImages.displayOrder)],
     });
 
-    return images.map(this.formatImageResponse);
+    return images.map((img) => this.formatImageResponse(img));
   }
 
   async getThumbnail(tradeId: string): Promise<ImageResponseDto | null> {
