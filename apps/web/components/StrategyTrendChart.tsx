@@ -61,15 +61,28 @@ export default function StrategyTrendChart({
   return (
     <div
       className="rounded p-4 md:p-5 mb-4"
-      style={{ backgroundColor: "var(--bg-surface)", border: "1px solid var(--border)" }}
+      style={{
+        backgroundColor: "var(--bg-surface)",
+        border: "1px solid var(--border)",
+      }}
     >
-      <div className="text-xs tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
+      <div
+        className="text-xs tracking-widest mb-4"
+        style={{ color: "var(--text-muted)" }}
+      >
         STRATEGY P&L TREND
       </div>
       {combined.length > 1 ? (
         <ResponsiveContainer width="100%" height={240}>
-          <LineChart data={combined} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+          <LineChart
+            data={combined}
+            margin={{ top: 4, right: 8, bottom: 4, left: -20 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--border)"
+              vertical={false}
+            />
             <XAxis
               dataKey="month"
               tick={{ fill: "var(--text-muted)", fontSize: 9 }}
@@ -93,7 +106,11 @@ export default function StrategyTrendChart({
             />
             <Legend
               onClick={(e) => toggleLine(e.value)}
-              wrapperStyle={{ fontSize: "10px", cursor: "pointer", fontFamily: "var(--font-display)" }}
+              wrapperStyle={{
+                fontSize: "10px",
+                cursor: "pointer",
+                fontFamily: "var(--font-display)",
+              }}
             />
             {series.map((s, i) => (
               <Line
@@ -110,7 +127,10 @@ export default function StrategyTrendChart({
           </LineChart>
         </ResponsiveContainer>
       ) : (
-        <div className="text-xs text-center py-10" style={{ color: "var(--text-dim)" }}>
+        <div
+          className="text-xs text-center py-10"
+          style={{ color: "var(--text-dim)" }}
+        >
           INSUFFICIENT DATA FOR TREND CHART
         </div>
       )}

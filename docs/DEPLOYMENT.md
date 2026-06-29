@@ -31,6 +31,7 @@
 **Provider:** DigitalOcean, Linode, AWS EC2, Vultr
 
 **Example (DigitalOcean Droplet):**
+
 ```bash
 # 1. Create Ubuntu 22.04 LTS droplet (2GB RAM, 1 vCPU, 40GB SSD)
 # 2. SSH into server
@@ -108,6 +109,7 @@ nano .env.docker
 ```
 
 Fill in:
+
 ```bash
 DB_PASSWORD=<from db-password.txt>
 JWT_SECRET=<from jwt-secret.txt>
@@ -135,17 +137,20 @@ echo ".env.docker" >> .gitignore  # Ensure it's never committed
 Already configured in `infra/docker-compose.yml`.
 
 **Initialize:**
+
 ```bash
 docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres
 docker compose --file infra/docker-compose.yml --env-file .env.docker exec postgres psql -U postgres -c "SELECT version();"
 ```
 
 **Backup:**
+
 ```bash
 docker compose --file infra/docker-compose.yml --env-file .env.docker exec postgres pg_dump -U postgres tradezen > backup_$(date +%Y%m%d).sql
 ```
 
 **Restore:**
+
 ```bash
 docker compose --file infra/docker-compose.yml --env-file .env.docker exec -T postgres psql -U postgres tradezen < backup_20250101.sql
 ```
@@ -153,6 +158,7 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker exec -T po
 ### Cloud PostgreSQL (Production Recommendation)
 
 **Providers:**
+
 - **Neon** — serverless, auto-scaling, branching
 - **Railway** — simple deployment, backups included
 - **Supabase** — managed Postgres + auth (but you have custom auth)
@@ -243,6 +249,7 @@ vercel --prod
 ```
 
 **Environment variables in Vercel:**
+
 - `NEXT_PUBLIC_API_URL` = `https://api.tradezen.yourdomain.com` (or Railway/Render URL)
 
 ---
@@ -328,6 +335,7 @@ docker compose --file infra/docker-compose.yml logs -f api
 ### Application Monitoring
 
 **Options:**
+
 - **Prometheus + Grafana** — scrape metrics from app (add `/metrics` endpoint)
 - **Datadog** — agent-based monitoring
 - **New Relic** — APM for Node.js
@@ -403,6 +411,7 @@ docker compose --file infra/docker-compose.yml up -d --scale api=3
 ```
 
 **Requires:**
+
 - Load balancer (nginx, HAProxy, Traefik) in front
 - Session stickiness disabled (JWT is stateless)
 
@@ -411,16 +420,16 @@ docker compose --file infra/docker-compose.yml up -d --scale api=3
 Use PgBouncer:
 
 ```yaml
-  pgbouncer:
-    image: pgbouncer/pgbouncer:latest
-    environment:
-      - DATABASES=tradezen=postgres=postgres:5432
-      - PGBOUNCER_AUTH_TYPE=md5
-      - PGBOUNCER_ADMIN_USERS=postgres
-    networks:
-      - tradezen-net
-    depends_on:
-      - postgres
+pgbouncer:
+  image: pgbouncer/pgbouncer:latest
+  environment:
+    - DATABASES=tradezen=postgres=postgres:5432
+    - PGBOUNCER_AUTH_TYPE=md5
+    - PGBOUNCER_ADMIN_USERS=postgres
+  networks:
+    - tradezen-net
+  depends_on:
+    - postgres
 ```
 
 API connects to `pgbouncer:6432` instead of `postgres:5432`.
@@ -493,14 +502,14 @@ docker stats
 
 ## Cost Estimate (Monthly)
 
-| Service | Provider | Cost (USD) |
-|---------|----------|------------|
-| VPS (2GB RAM) | DigitalOcean | $12 |
-| PostgreSQL (Neon) | Neon | Free tier → $19 (100GB) |
-| SSL Certificate | Let's Encrypt | Free |
-| Backups (S3) | Backblaze B2 | $0.005/GB/month |
-| Monitoring | Grafana Cloud | Free tier |
-| **Total** | | **~$31-50/month** |
+| Service           | Provider      | Cost (USD)              |
+| ----------------- | ------------- | ----------------------- |
+| VPS (2GB RAM)     | DigitalOcean  | $12                     |
+| PostgreSQL (Neon) | Neon          | Free tier → $19 (100GB) |
+| SSL Certificate   | Let's Encrypt | Free                    |
+| Backups (S3)      | Backblaze B2  | $0.005/GB/month         |
+| Monitoring        | Grafana Cloud | Free tier               |
+| **Total**         |               | **~$31-50/month**       |
 
 (Using Render/Railway instead of VPS: ~$7-25/month for hobby/prod tiers)
 
@@ -509,6 +518,7 @@ docker stats
 ## Support
 
 For questions, refer to:
+
 - `SECURITY.md` — Security hardening details
 - `docs/Architecture.md` — Full architecture & dev guide
 - `README.md` — Quick start

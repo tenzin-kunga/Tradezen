@@ -32,9 +32,9 @@ Each ADR follows this template:
 
 ## Index
 
-| ADR | Title | Status |
-|-----|-------|--------|
-| 0001 | Monorepo Structure | Accepted |
-| 0002 | PostgreSQL + pgvector | Accepted |
+| ADR  | Title                   | Status   |
+| ---- | ----------------------- | -------- |
+| 0001 | Monorepo Structure      | Accepted |
+| 0002 | PostgreSQL + pgvector   | Accepted |
 | 0003 | Authentication Strategy | Accepted |
-| 0004 | AI Integration | Accepted |
+| 0004 | AI Integration          | Accepted |

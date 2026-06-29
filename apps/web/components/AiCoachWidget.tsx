@@ -12,7 +12,10 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 function CategoryTag({ category }: { category: string }) {
-  const colors = CATEGORY_COLORS[category] ?? { bg: "rgba(255,255,255,0.06)", text: "var(--text-dim)" };
+  const colors = CATEGORY_COLORS[category] ?? {
+    bg: "rgba(255,255,255,0.06)",
+    text: "var(--text-dim)",
+  };
   return (
     <span
       className="inline-block text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded"
@@ -25,11 +28,17 @@ function CategoryTag({ category }: { category: string }) {
 
 function InsightCard({ insight }: { insight: AiInsight }) {
   return (
-    <div className="flex flex-col gap-1.5 p-3 rounded-lg" style={{ background: "var(--glass-bg-alt, rgba(255,255,255,0.03))" }}>
+    <div
+      className="flex flex-col gap-1.5 p-3 rounded-lg"
+      style={{ background: "var(--glass-bg-alt, rgba(255,255,255,0.03))" }}
+    >
       <div className="flex items-center gap-2">
         <CategoryTag category={insight.category} />
       </div>
-      <p className="text-sm leading-relaxed" style={{ color: "var(--text-primary)" }}>
+      <p
+        className="text-sm leading-relaxed"
+        style={{ color: "var(--text-primary)" }}
+      >
         {insight.message}
       </p>
     </div>

@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getDashboardData, getJournalLatest, getTrades, type DashboardData } from "@/lib/api";
+import {
+  getDashboardData,
+  getJournalLatest,
+  getTrades,
+  type DashboardData,
+} from "@/lib/api";
 import DashboardHero from "@/components/DashboardHero";
 import EquityCurve from "@/components/EquityCurve";
 import StatCard from "@/components/StatCard";
@@ -29,7 +34,8 @@ export default function Dashboard() {
   const [recentTrades, setRecentTrades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { layout, loaded, reorderWidgets, updateWidget, resetLayout } = useDashboardLayout();
+  const { layout, loaded, reorderWidgets, updateWidget, resetLayout } =
+    useDashboardLayout();
 
   const loadData = useCallback(() => {
     Promise.all([
@@ -46,26 +52,64 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const statsLoading = loading || !dashboard;
-  const hasTrades = dashboard && (dashboard.equityCurve.length > 0 || recentTrades.length > 0);
+  const hasTrades =
+    dashboard && (dashboard.equityCurve.length > 0 || recentTrades.length > 0);
 
   const renderWidget = useCallback(
     (widget: { id: string }) => {
       switch (widget.id) {
         case "equity-curve":
-          return <EquityCurve data={dashboard?.equityCurve ?? []} loading={loading} />;
+          return (
+            <EquityCurve
+              data={dashboard?.equityCurve ?? []}
+              loading={loading}
+            />
+          );
         case "daily-summary":
-          return <DailySummaryCard tradesToday={dashboard?.dailySummary.tradesToday ?? 0} winRateToday={dashboard?.dailySummary.winRateToday ?? 0} pnlToday={dashboard?.dailySummary.pnlToday ?? 0} openRisk={dashboard?.dailySummary.openRisk ?? 0} loading={loading} />;
+          return (
+            <DailySummaryCard
+              tradesToday={dashboard?.dailySummary.tradesToday ?? 0}
+              winRateToday={dashboard?.dailySummary.winRateToday ?? 0}
+              pnlToday={dashboard?.dailySummary.pnlToday ?? 0}
+              openRisk={dashboard?.dailySummary.openRisk ?? 0}
+              loading={loading}
+            />
+          );
         case "recent-trades":
-          return <RecentTradesWidget trades={recentTrades} onDelete={loadData} loading={loading} />;
+          return (
+            <RecentTradesWidget
+              trades={recentTrades}
+              onDelete={loadData}
+              loading={loading}
+            />
+          );
         case "journal-snapshot":
-          return <JournalSnapshotWidget entry={journalEntry} loading={loading} />;
+          return (
+            <JournalSnapshotWidget entry={journalEntry} loading={loading} />
+          );
         case "behavior-analytics":
-          return <BehaviorAnalyticsWidget disciplineScore={dashboard?.behaviorAnalytics.disciplineScore ?? 0} fomoScore={dashboard?.behaviorAnalytics.fomoScore ?? "Low"} revengeTradesThisMonth={dashboard?.behaviorAnalytics.revengeTradesThisMonth ?? 0} trendAlignment={dashboard?.behaviorAnalytics.trendAlignment ?? 0} loading={loading} />;
+          return (
+            <BehaviorAnalyticsWidget
+              disciplineScore={
+                dashboard?.behaviorAnalytics.disciplineScore ?? 0
+              }
+              fomoScore={dashboard?.behaviorAnalytics.fomoScore ?? "Low"}
+              revengeTradesThisMonth={
+                dashboard?.behaviorAnalytics.revengeTradesThisMonth ?? 0
+              }
+              trendAlignment={dashboard?.behaviorAnalytics.trendAlignment ?? 0}
+              loading={loading}
+            />
+          );
         case "heatmap":
-          return <TradingHeatmap data={dashboard?.heatmap ?? []} loading={loading} />;
+          return (
+            <TradingHeatmap data={dashboard?.heatmap ?? []} loading={loading} />
+          );
         case "analytics-insights":
           return <AnalyticsInsightsWidget />;
         case "ai-coach":
@@ -85,9 +129,10 @@ export default function Dashboard() {
         const colWidgets = layout.widgets.filter(
           (x) => x.visible && x.column === w.column,
         );
-        const maxOrder = colWidgets.length > 0
-          ? Math.max(...colWidgets.map((x) => x.order))
-          : -1;
+        const maxOrder =
+          colWidgets.length > 0
+            ? Math.max(...colWidgets.map((x) => x.order))
+            : -1;
         updateWidget(id, { visible: true, order: maxOrder + 1 });
       } else {
         updateWidget(id, { visible: false });
@@ -100,7 +145,12 @@ export default function Dashboard() {
     (id: string) => {
       const w = layout.widgets.find((x) => x.id === id);
       if (w) {
-        const next = w.size === "S" ? "M" as const : w.size === "M" ? "L" as const : "S" as const;
+        const next =
+          w.size === "S"
+            ? ("M" as const)
+            : w.size === "M"
+              ? ("L" as const)
+              : ("S" as const);
         updateWidget(id, { size: next });
       }
     },
@@ -121,14 +171,43 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {statsLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="fade-up"><StatCardSkeleton /></div>
+            <div key={i} className="fade-up">
+              <StatCardSkeleton />
+            </div>
           ))
         ) : (
           <>
-            <StatCard title="Total P&L" value={formatPnl(dashboard!.totalPnl)} variant={dashboard!.totalPnl >= 0 ? "profit" : "loss"} />
-            <StatCard title="Win Rate" value={hasTrades ? `${dashboard!.overallWinRate}%` : "--"} variant="blue" />
-            <StatCard title="Profit Factor" value={dashboard!.insights.profitFactor > 0 && dashboard!.insights.profitFactor < 999 ? String(dashboard!.insights.profitFactor) : dashboard!.insights.profitFactor >= 999 ? "∞" : "--"} variant="amber" />
-            <StatCard title="Avg Risk:Reward" value={dashboard!.insights.avgRR > 0 ? `1:${dashboard!.insights.avgRR.toFixed(1)}` : "--"} variant="cyan" />
+            <StatCard
+              title="Total P&L"
+              value={formatPnl(dashboard!.totalPnl)}
+              variant={dashboard!.totalPnl >= 0 ? "profit" : "loss"}
+            />
+            <StatCard
+              title="Win Rate"
+              value={hasTrades ? `${dashboard!.overallWinRate}%` : "--"}
+              variant="blue"
+            />
+            <StatCard
+              title="Profit Factor"
+              value={
+                dashboard!.insights.profitFactor > 0 &&
+                dashboard!.insights.profitFactor < 999
+                  ? String(dashboard!.insights.profitFactor)
+                  : dashboard!.insights.profitFactor >= 999
+                    ? "∞"
+                    : "--"
+              }
+              variant="amber"
+            />
+            <StatCard
+              title="Avg Risk:Reward"
+              value={
+                dashboard!.insights.avgRR > 0
+                  ? `1:${dashboard!.insights.avgRR.toFixed(1)}`
+                  : "--"
+              }
+              variant="cyan"
+            />
           </>
         )}
       </div>

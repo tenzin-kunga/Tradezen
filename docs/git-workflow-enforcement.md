@@ -9,6 +9,7 @@
 Configure these in GitHub → Settings → Branches → Add rule:
 
 ### `main` Branch
+
 - [x] Require pull request reviews before merging (1 approval)
 - [x] Require status checks to pass before merging
   - Required checks: `Security Audit`, `Lint & Type Check`, `Unit Tests`, `E2E Tests`
@@ -20,6 +21,7 @@ Configure these in GitHub → Settings → Branches → Add rule:
 - [x] Restrict who can push to matching branches
 
 ### `develop` Branch
+
 - [x] Require pull request reviews before merging (1 approval)
 - [x] Require status checks to pass before merging
   - Required checks: `Security Audit`, `Lint & Type Check`, `Unit Tests`
@@ -30,13 +32,13 @@ Configure these in GitHub → Settings → Branches → Add rule:
 
 Enforce via pre-receive hook or CI check:
 
-| Pattern | Purpose | Example |
-|---------|---------|---------|
-| `feature/TZ-XXX-description` | New features | `feature/TZ-070-mobile-responsive` |
-| `fix/TZ-XXX-description` | Bug fixes | `fix/TZ-001-validation-error` |
-| `chore/description` | Maintenance | `chore/update-dependencies` |
-| `docs/description` | Documentation | `docs/add-api-reference` |
-| `release/vX.Y.Z` | Releases | `release/v1.0.0` |
+| Pattern                      | Purpose       | Example                            |
+| ---------------------------- | ------------- | ---------------------------------- |
+| `feature/TZ-XXX-description` | New features  | `feature/TZ-070-mobile-responsive` |
+| `fix/TZ-XXX-description`     | Bug fixes     | `fix/TZ-001-validation-error`      |
+| `chore/description`          | Maintenance   | `chore/update-dependencies`        |
+| `docs/description`           | Documentation | `docs/add-api-reference`           |
+| `release/vX.Y.Z`             | Releases      | `release/v1.0.0`                   |
 
 ## Commit Message Convention
 
@@ -50,17 +52,18 @@ type(scope): description
 [optional footer]
 ```
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation |
-| `style` | Formatting (no code change) |
-| `refactor` | Code refactoring |
-| `test` | Test changes |
-| `chore` | Maintenance |
+| Type       | Description                 |
+| ---------- | --------------------------- |
+| `feat`     | New feature                 |
+| `fix`      | Bug fix                     |
+| `docs`     | Documentation               |
+| `style`    | Formatting (no code change) |
+| `refactor` | Code refactoring            |
+| `test`     | Test changes                |
+| `chore`    | Maintenance                 |
 
 Examples:
+
 - `feat(api): add rate limiting with @nestjs/throttler (TZ-010)`
 - `fix(web): resolve mobile layout overflow on dashboard (TZ-070)`
 - `docs: update API reference with new tRPC procedures (TZ-023)`
@@ -81,6 +84,7 @@ Examples:
 ## Enforcement Mechanisms
 
 ### Automated (CI/CD)
+
 - [x] Security audit (Trivy + `bun pm audit`)
 - [x] Lint checks (ESLint)
 - [x] Type checks (TypeScript)
@@ -89,13 +93,16 @@ Examples:
 - [x] Docker build verification
 
 ### Manual (GitHub Settings)
+
 - [ ] Branch protection rules (configure in Settings)
 - [ ] Required reviewers (set to 1 minimum)
 - [ ] Dismiss stale approvals on new commits
 - [ ] Require signed commits (optional)
 
 ### Local (Git Hooks)
+
 Consider adding to `.husky/`:
+
 - `pre-commit`: Run lint-staged
 - `commit-msg`: Validate conventional commit format
 - `pre-push`: Run type check

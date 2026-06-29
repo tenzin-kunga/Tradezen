@@ -31,6 +31,7 @@ nano .env.docker
 ```
 
 For local development, you can use simple defaults:
+
 ```bash
 DB_PASSWORD=localdevpassword123
 JWT_SECRET=dev-secret-only-for-local-development-not-for-production-1234567890

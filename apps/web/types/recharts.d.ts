@@ -1,12 +1,14 @@
-import React from 'react';
+import React from "react";
 
-declare module 'recharts' {
+declare module "recharts" {
   interface ResponsiveContainerProps {
     width?: string | number;
     height?: string | number;
     children?: React.ReactNode;
   }
-  export function ResponsiveContainer(props: ResponsiveContainerProps): React.ReactElement;
+  export function ResponsiveContainer(
+    props: ResponsiveContainerProps,
+  ): React.ReactElement;
   export function BarChart(props: any): React.ReactElement;
   export function AreaChart(props: any): React.ReactElement;
   export function LineChart(props: any): React.ReactElement;

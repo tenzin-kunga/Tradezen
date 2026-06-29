@@ -84,10 +84,7 @@ export class AuthController {
   @Patch('layout')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Save dashboard layout configuration' })
-  saveLayout(
-    @CurrentUser('id') userId: string,
-    @Body() dto: SaveLayoutDto,
-  ) {
+  saveLayout(@CurrentUser('id') userId: string, @Body() dto: SaveLayoutDto) {
     return this.authService.saveLayout(userId, dto);
   }
 }

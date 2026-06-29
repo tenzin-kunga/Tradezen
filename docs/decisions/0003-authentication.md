@@ -7,6 +7,7 @@ Accepted
 ## Context
 
 TradeZen needs:
+
 - Secure user authentication
 - OAuth support (Google, GitHub)
 - JWT-based API authentication
@@ -16,6 +17,7 @@ TradeZen needs:
 ## Decision
 
 Implement JWT-based authentication with:
+
 - Access tokens (short-lived, 15 minutes)
 - Refresh tokens (HTTP-only cookies, 7 days)
 - OAuth via Passport.js (Google, GitHub)
@@ -25,12 +27,14 @@ Implement JWT-based authentication with:
 ## Consequences
 
 **Easier:**
+
 - Stateless API authentication
 - OAuth for quick signup
 - Refresh tokens for seamless UX
 - 2FA for security-conscious users
 
 **Harder:**
+
 - Token rotation complexity
 - OAuth provider integration
 - Session management

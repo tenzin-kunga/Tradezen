@@ -121,10 +121,7 @@ export class AuthService {
 
     await this.bruteForce.clearAttempts(identifier);
 
-    const flags = await this.suspiciousLogin.detectAnomalies(
-      user.id,
-      ip,
-    );
+    const flags = await this.suspiciousLogin.detectAnomalies(user.id, ip);
 
     await this.audit.log({
       userId: user.id,

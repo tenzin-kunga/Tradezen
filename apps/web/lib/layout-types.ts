@@ -28,7 +28,7 @@ export const WIDGET_TITLES: Record<WidgetId, string> = {
   "recent-trades": "Recent Trades",
   "journal-snapshot": "Journal",
   "behavior-analytics": "Behavior Analytics",
-  "heatmap": "Trading Heatmap",
+  heatmap: "Trading Heatmap",
   "analytics-insights": "Insights",
   "ai-coach": "AI Coach",
 };
@@ -39,7 +39,7 @@ export const WIDGET_COLORS: Record<WidgetId, string> = {
   "recent-trades": "rgba(255,255,255,0.15)",
   "journal-snapshot": "rgb(168, 85, 247)",
   "behavior-analytics": "rgb(249, 115, 22)",
-  "heatmap": "rgb(234, 179, 8)",
+  heatmap: "rgb(234, 179, 8)",
   "analytics-insights": "rgb(6, 182, 212)",
   "ai-coach": "rgb(34, 197, 94)",
 };

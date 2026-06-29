@@ -8,9 +8,21 @@ import { EventPublisherService } from '../common/services/event-publisher.servic
 
 jest.mock('../db/drizzle', () => ({
   db: {
-    select: () => ({ from: () => ({ where: () => ({ orderBy: () => ({ limit: () => ({ offset: () => Promise.resolve([]) }) }) }) }) }),
-    insert: () => ({ values: () => ({ returning: () => Promise.resolve([]) }) }),
-    update: () => ({ set: () => ({ where: () => ({ returning: () => Promise.resolve([]) }) }) }),
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          orderBy: () => ({
+            limit: () => ({ offset: () => Promise.resolve([]) }),
+          }),
+        }),
+      }),
+    }),
+    insert: () => ({
+      values: () => ({ returning: () => Promise.resolve([]) }),
+    }),
+    update: () => ({
+      set: () => ({ where: () => ({ returning: () => Promise.resolve([]) }) }),
+    }),
     delete: () => ({ where: () => Promise.resolve([]) }),
     execute: () => Promise.resolve([]),
   },
@@ -23,8 +35,14 @@ describe('TradesController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TradesController],
       providers: [
-        { provide: 'BullQueue_csv-import', useValue: { add: jest.fn(), getJob: jest.fn() } },
-        { provide: 'BullQueue_ai-processing', useValue: { add: jest.fn(), getJob: jest.fn() } },
+        {
+          provide: 'BullQueue_csv-import',
+          useValue: { add: jest.fn(), getJob: jest.fn() },
+        },
+        {
+          provide: 'BullQueue_ai-processing',
+          useValue: { add: jest.fn(), getJob: jest.fn() },
+        },
         { provide: EventPublisherService, useValue: { publish: jest.fn() } },
         TradesService,
         BehavioralService,

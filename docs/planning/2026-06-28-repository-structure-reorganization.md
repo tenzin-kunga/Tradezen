@@ -71,6 +71,7 @@ tradezen/
 ### Task 1: Create Infrastructure Directory and Move Configs
 
 **Files:**
+
 - Create: `infra/docker/nginx.conf`
 - Create: `infra/docker/postgresql.conf`
 - Create: `infra/docker-compose.yml`
@@ -116,35 +117,41 @@ move render.yaml infra/render.yaml
 - [ ] **Step 6: Update docker-compose.scaling.yml nginx path**
 
 Edit `infra/docker-compose.scaling.yml` line 21:
+
 - Before: `./nginx.conf:/etc/nginx/nginx.conf:ro`
 - After: `./docker/nginx.conf:/etc/nginx/nginx.conf:ro`
 
 - [ ] **Step 7: Update docker-compose.yml postgresql.conf path**
 
 Edit `infra/docker-compose.yml` line 36 (commented out):
+
 - Before: `# - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro`
 - After: `# - ./docker/postgresql.conf:/etc/postgresql/postgresql.conf:ro`
 
 - [ ] **Step 8: Update docker-compose.yml scripts path**
 
 Edit `infra/docker-compose.yml` line 157:
+
 - Before: `./scripts:/scripts:ro`
 - After: `../scripts:/scripts:ro`
 
 - [ ] **Step 9: Update docker-compose.yml backups path**
 
 Edit `infra/docker-compose.yml` line 150:
+
 - Before: `./backups:/backups`
 - After: `../backups:/backups`
 
 - [ ] **Step 10: Update start.bat docker compose commands**
 
 Edit `scripts/dev/start.bat` to use `--file infra/docker-compose.yml`:
+
 - Replace all `docker compose --env-file .env.docker` with `docker compose --file infra/docker-compose.yml --env-file .env.docker`
 
 - [ ] **Step 11: Update docs/scaling.md usage instructions**
 
 Edit `docs/scaling.md` lines 8, 11:
+
 - Before: `docker-compose -f docker-compose.yml -f docker-compose.scaling.yml up -d --scale api=3`
 - After: `docker compose --file infra/docker-compose.yml --file infra/docker-compose.scaling.yml up -d --scale api=3`
 
@@ -161,6 +168,7 @@ git commit -m "refactor: move infrastructure configs to infra/ directory"
 ### Task 2: Reorganize Documentation Structure
 
 **Files:**
+
 - Create: `docs/architecture/` (from `docs/superpowers/specs/`)
 - Create: `docs/planning/` (from `docs/superpowers/plans/`)
 - Move: `docs/superpowers/claude-mem-schema.md` to `docs/`
@@ -210,6 +218,7 @@ rmdir docs/superpowers
 - [ ] **Step 6: Update AGENTS.md plan location reference**
 
 Edit `AGENTS.md` line 47:
+
 - Before: `docs/superpowers/plans/`
 - After: `docs/planning/`
 
@@ -230,6 +239,7 @@ git commit -m "refactor: reorganize docs into architecture/, planning/, decision
 ### Task 3: Add Architecture Decision Records
 
 **Files:**
+
 - Create: `docs/decisions/README.md`
 - Create: `docs/decisions/0001-monorepo-structure.md`
 - Create: `docs/decisions/0002-postgres-pgvector.md`
@@ -246,7 +256,7 @@ mkdir -p docs/decisions
 
 Create `docs/decisions/README.md`:
 
-```markdown
+````markdown
 # Architecture Decision Records (ADRs)
 
 This directory contains Architecture Decision Records for the TradeZen project.
@@ -278,16 +288,18 @@ Each ADR follows this template:
 
 [What becomes easier or more difficult to do because of this change?]
 ```
+````
 
 ## Index
 
-| ADR | Title | Status |
-|-----|-------|--------|
-| 0001 | Monorepo Structure | Accepted |
-| 0002 | PostgreSQL + pgvector | Accepted |
+| ADR  | Title                   | Status   |
+| ---- | ----------------------- | -------- |
+| 0001 | Monorepo Structure      | Accepted |
+| 0002 | PostgreSQL + pgvector   | Accepted |
 | 0003 | Authentication Strategy | Accepted |
-| 0004 | AI Integration | Accepted |
-```
+| 0004 | AI Integration          | Accepted |
+
+````
 
 - [ ] **Step 3: Create ADR 0001 - Monorepo Structure**
 
@@ -331,7 +343,7 @@ Use Turborepo with Bun workspaces in a monorepo structure:
 - More complex initial setup
 - Need to understand workspace protocol
 - Build order dependencies (db before api)
-```
+````
 
 - [ ] **Step 4: Create ADR 0002 - PostgreSQL + pgvector**
 
@@ -347,6 +359,7 @@ Accepted
 ## Context
 
 TradeZen needs:
+
 - Relational database for trades, journals, users
 - Vector storage for AI embeddings (semantic search)
 - Full-text search capabilities
@@ -355,6 +368,7 @@ TradeZen needs:
 ## Decision
 
 Use PostgreSQL 16 with pgvector extension:
+
 - Primary database for all structured data
 - pgvector for AI embedding storage and similarity search
 - Drizzle ORM for type-safe database access
@@ -363,12 +377,14 @@ Use PostgreSQL 16 with pgvector extension:
 ## Consequences
 
 **Easier:**
+
 - Single database technology to manage
 - Vector search without separate vector database
 - Full-text search built-in
 - JSONB for flexible schemas
 
 **Harder:**
+
 - pgvector requires extension installation
 - Some vector operations may be slower than specialized vector databases
 - Migration management with Drizzle
@@ -388,6 +404,7 @@ Accepted
 ## Context
 
 TradeZen needs:
+
 - Secure user authentication
 - OAuth support (Google, GitHub)
 - JWT-based API authentication
@@ -397,6 +414,7 @@ TradeZen needs:
 ## Decision
 
 Implement JWT-based authentication with:
+
 - Access tokens (short-lived, 15 minutes)
 - Refresh tokens (HTTP-only cookies, 7 days)
 - OAuth via Passport.js (Google, GitHub)
@@ -406,12 +424,14 @@ Implement JWT-based authentication with:
 ## Consequences
 
 **Easier:**
+
 - Stateless API authentication
 - OAuth for quick signup
 - Refresh tokens for seamless UX
 - 2FA for security-conscious users
 
 **Harder:**
+
 - Token rotation complexity
 - OAuth provider integration
 - Session management
@@ -432,6 +452,7 @@ Accepted
 ## Context
 
 TradeZen needs AI capabilities for:
+
 - Trading insights and coaching
 - Journal analysis
 - Semantic search
@@ -440,6 +461,7 @@ TradeZen needs AI capabilities for:
 ## Decision
 
 Integrate AI via OpenRouter with:
+
 - LangChain for LLM orchestration
 - LangGraph for complex workflows
 - pgvector for embedding storage
@@ -448,12 +470,14 @@ Integrate AI via OpenRouter with:
 ## Consequences
 
 **Easier:**
+
 - Multiple AI model access via OpenRouter
 - Complex workflows with LangGraph
 - Semantic search with embeddings
 - Cost optimization across models
 
 **Harder:**
+
 - OpenRouter dependency
 - API key management
 - Rate limiting across models
@@ -472,6 +496,7 @@ git commit -m "docs: add Architecture Decision Records (ADRs)"
 ### Task 4: Organize Scripts into Subfolders
 
 **Files:**
+
 - Create: `scripts/dev/`
 - Create: `scripts/db/`
 - Create: `scripts/security/`
@@ -519,12 +544,14 @@ move scripts/redis-benchmark.sh scripts/monitoring/redis-benchmark.sh
 - [ ] **Step 6: Update docker-compose.yml scripts path**
 
 Edit `infra/docker-compose.yml` line 157:
+
 - Before: `../scripts:/scripts:ro`
 - After: `../scripts/db:/scripts:ro`
 
 - [ ] **Step 7: Update start.bat internal paths**
 
 Edit `scripts/dev/start.bat` to update relative paths:
+
 - Line 61: Change `cd /d "%~dp0apps\api"` to `cd /d "%~dp0..\apps\api"`
 - Line 79: Change `cd /d "%~dp0apps\web"` to `cd /d "%~dp0..\apps\web"`
 - Line 89: Change `cd /d "%~dp0apps\web"` to `cd /d "%~dp0..\apps\web"`
@@ -532,48 +559,56 @@ Edit `scripts/dev/start.bat` to update relative paths:
 - [ ] **Step 8: Update AGENTS.md start.bat reference**
 
 Edit `AGENTS.md` line 32:
+
 - Before: `start.bat`
 - After: `scripts/dev/start.bat`
 
 - [ ] **Step 9: Update README.md start.bat references**
 
 Edit `README.md` lines 48, 62:
+
 - Before: `start.bat`
 - After: `scripts/dev/start.bat`
 
 - [ ] **Step 10: Update docs/Architecture.md start.bat reference**
 
 Edit `docs/Architecture.md` line 180:
+
 - Before: `start.bat`
 - After: `scripts/dev/start.bat`
 
 - [ ] **Step 11: Update docs/DEV_QUICKSTART.md start.bat references**
 
 Edit `docs/DEV_QUICKSTART.md` lines 58-59, 229:
+
 - Before: `start.bat`
 - After: `scripts/dev/start.bat`
 
 - [ ] **Step 12: Update SECURE-SETUP-SUMMARY.md rotate-secrets references**
 
 Edit `SECURE-SETUP-SUMMARY.md` lines 110, 116, 217:
+
 - Before: `scripts/rotate-secrets.sh` and `scripts/rotate-secrets.bat`
 - After: `scripts/security/rotate-secrets.sh` and `scripts/security/rotate-secrets.bat`
 
 - [ ] **Step 13: Update docs/AUDIT-REPORT.md rotate-secrets reference**
 
 Edit `docs/AUDIT-REPORT.md` line 87:
+
 - Before: `scripts/rotate-secrets.sh`
 - After: `scripts/security/rotate-secrets.sh`
 
 - [ ] **Step 14: Update docs/SECURITY.md references**
 
 Edit `docs/SECURITY.md` lines 51, 180, 255:
+
 - Before: `scripts/rotate-secrets.sh`
 - After: `scripts/security/rotate-secrets.sh`
 
 - [ ] **Step 15: Update docs/DEPLOYMENT.md backup reference**
 
 Edit `docs/DEPLOYMENT.md` line 355:
+
 - Before: `scripts/backup.sh`
 - After: `scripts/db/backup.sh`
 
@@ -589,6 +624,7 @@ git commit -m "refactor: organize scripts into dev/, db/, security/, monitoring/
 ### Task 5: Clean Up Empty Directories
 
 **Files:**
+
 - Delete: `backups/` (if exists)
 - Delete: `drizzle/` (if exists)
 - Delete: `apps/api/uploads/` (if exists)
@@ -623,6 +659,7 @@ git commit -m "chore: remove empty directories"
 ### Task 6: Update Documentation References
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `AGENTS.md`
 - Modify: `docs/Architecture.md`
@@ -636,12 +673,14 @@ git commit -m "chore: remove empty directories"
 - [ ] **Step 1: Update README.md Docker commands**
 
 Edit `README.md` to update all Docker commands:
+
 - Before: `docker compose --env-file .env.docker up -d postgres redis`
 - After: `docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis`
 
 - [ ] **Step 2: Update AGENTS.md Docker commands**
 
 Edit `AGENTS.md` to update all Docker commands:
+
 - Before: `docker compose --env-file .env.docker up -d postgres redis`
 - After: `docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis`
 

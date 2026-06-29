@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { runMigrations, pool } from './db';
 
 async function main() {

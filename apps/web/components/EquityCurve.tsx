@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { createChart, ColorType, LineStyle, AreaSeries, type Time } from "lightweight-charts";
+import {
+  createChart,
+  ColorType,
+  LineStyle,
+  AreaSeries,
+  type Time,
+} from "lightweight-charts";
 import { WidgetShell } from "@/components/design-system";
 
 type DataPoint = { date: string; equity: number };
@@ -26,7 +32,10 @@ export default function EquityCurve({ data, loading }: Props) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [activeRange, setActiveRange] = useState("1M");
 
-  const filtered = useMemo(() => filterData(data, activeRange), [data, activeRange]);
+  const filtered = useMemo(
+    () => filterData(data, activeRange),
+    [data, activeRange],
+  );
 
   useEffect(() => {
     if (!chartContainerRef.current || filtered.length === 0) return;
@@ -43,8 +52,18 @@ export default function EquityCurve({ data, loading }: Props) {
         horzLines: { color: "#23252d" },
       },
       crosshair: {
-        vertLine: { color: "#3b82f6", width: 1, style: LineStyle.Dashed, labelBackgroundColor: "#3b82f6" },
-        horzLine: { color: "#3b82f6", width: 1, style: LineStyle.Dashed, labelBackgroundColor: "#3b82f6" },
+        vertLine: {
+          color: "#3b82f6",
+          width: 1,
+          style: LineStyle.Dashed,
+          labelBackgroundColor: "#3b82f6",
+        },
+        horzLine: {
+          color: "#3b82f6",
+          width: 1,
+          style: LineStyle.Dashed,
+          labelBackgroundColor: "#3b82f6",
+        },
       },
       rightPriceScale: { borderColor: "#23252d" },
       timeScale: {
@@ -105,9 +124,16 @@ export default function EquityCurve({ data, loading }: Props) {
       }
       loading={loading}
       isEmpty={filtered.length === 0}
-      emptyMessage={data.length === 0 ? "Equity data will appear once you start trading." : "No data in this range. Try a wider time range."}
+      emptyMessage={
+        data.length === 0
+          ? "Equity data will appear once you start trading."
+          : "No data in this range. Try a wider time range."
+      }
     >
-      <div ref={chartContainerRef} style={filtered.length === 0 ? { height: 300 } : undefined} />
+      <div
+        ref={chartContainerRef}
+        style={filtered.length === 0 ? { height: 300 } : undefined}
+      />
     </WidgetShell>
   );
 }

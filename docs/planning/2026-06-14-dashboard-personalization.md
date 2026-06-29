@@ -13,6 +13,7 @@
 ### Task 1: Add `dashboard_layout` column to users table
 
 **Files:**
+
 - Modify: `packages/db/src/schema/index.ts` — add column to `users` table
 
 - [ ] **Add `dashboardLayout` column to users schema**
@@ -46,6 +47,7 @@ git commit -m "feat: add dashboard_layout jsonb column to users"
 ### Task 2: Backend layout endpoints
 
 **Files:**
+
 - Create: `apps/api/src/auth/dto/save-layout.dto.ts`
 - Modify: `apps/api/src/auth/dto/index.ts` — export new DTO
 - Modify: `apps/api/src/auth/auth.controller.ts` — add GET/PATCH /auth/layout
@@ -54,11 +56,17 @@ git commit -m "feat: add dashboard_layout jsonb column to users"
 - [ ] **Create SaveLayoutDto**
 
 ```ts
-import { IsArray, IsString, IsBoolean, IsIn, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsString,
+  IsBoolean,
+  IsIn,
+  IsOptional,
+} from "class-validator";
+import { ApiProperty } from "@nestjs/swagger";
 
 class LayoutWidgetDto {
-  @ApiProperty({ example: 'equity-curve' })
+  @ApiProperty({ example: "equity-curve" })
   @IsString()
   id: string;
 
@@ -66,9 +74,9 @@ class LayoutWidgetDto {
   @IsBoolean()
   visible: boolean;
 
-  @ApiProperty({ enum: ['S', 'M', 'L'] })
-  @IsIn(['S', 'M', 'L'])
-  size: 'S' | 'M' | 'L';
+  @ApiProperty({ enum: ["S", "M", "L"] })
+  @IsIn(["S", "M", "L"])
+  size: "S" | "M" | "L";
 }
 
 export class SaveLayoutDto {
@@ -82,7 +90,7 @@ export class SaveLayoutDto {
 
 ```ts
 // apps/api/src/auth/dto/index.ts — add to existing exports
-export { SaveLayoutDto } from './save-layout.dto';
+export { SaveLayoutDto } from "./save-layout.dto";
 ```
 
 - [ ] **Add getLayout/saveLayout to AuthService**
@@ -145,6 +153,7 @@ git commit -m "feat: add GET/PATCH /auth/layout endpoints"
 ### Task 3: Install `@dnd-kit` on web
 
 **Files:**
+
 - Modify: `apps/web/package.json`
 
 - [ ] **Install packages**
@@ -166,6 +175,7 @@ git commit -m "feat: add @dnd-kit for drag-and-drop"
 ### Task 4: Layout types and API client
 
 **Files:**
+
 - Create: `apps/web/lib/layout-types.ts`
 - Modify: `apps/web/lib/api.ts` — add `getLayout()` and `saveLayout()`
 
@@ -173,15 +183,15 @@ git commit -m "feat: add @dnd-kit for drag-and-drop"
 
 ```ts
 export type WidgetId =
-  | 'equity-curve'
-  | 'daily-summary'
-  | 'recent-trades'
-  | 'journal-snapshot'
-  | 'behavior-analytics'
-  | 'heatmap'
-  | 'analytics-preview';
+  | "equity-curve"
+  | "daily-summary"
+  | "recent-trades"
+  | "journal-snapshot"
+  | "behavior-analytics"
+  | "heatmap"
+  | "analytics-preview";
 
-export type WidgetSize = 'S' | 'M' | 'L';
+export type WidgetSize = "S" | "M" | "L";
 
 export interface LayoutWidget {
   id: WidgetId;
@@ -195,13 +205,13 @@ export interface DashboardLayout {
 
 export const DEFAULT_LAYOUT: DashboardLayout = {
   widgets: [
-    { id: 'equity-curve', visible: true, size: 'M' },
-    { id: 'daily-summary', visible: true, size: 'M' },
-    { id: 'recent-trades', visible: true, size: 'M' },
-    { id: 'journal-snapshot', visible: true, size: 'M' },
-    { id: 'behavior-analytics', visible: true, size: 'M' },
-    { id: 'heatmap', visible: true, size: 'M' },
-    { id: 'analytics-preview', visible: true, size: 'M' },
+    { id: "equity-curve", visible: true, size: "M" },
+    { id: "daily-summary", visible: true, size: "M" },
+    { id: "recent-trades", visible: true, size: "M" },
+    { id: "journal-snapshot", visible: true, size: "M" },
+    { id: "behavior-analytics", visible: true, size: "M" },
+    { id: "heatmap", visible: true, size: "M" },
+    { id: "analytics-preview", visible: true, size: "M" },
   ],
 };
 ```
@@ -246,6 +256,7 @@ git commit -m "feat: add layout types and API functions"
 ### Task 5: Create `useDashboardLayout` hook
 
 **Files:**
+
 - Create: `apps/web/hooks/useDashboardLayout.ts`
 
 - [ ] **Write the hook**
@@ -345,6 +356,7 @@ git commit -m "feat: add useDashboardLayout hook with debounced persistence"
 ### Task 6: Create DashboardLayout wrapper component
 
 **Files:**
+
 - Create: `apps/web/components/DashboardLayout.tsx`
 
 - [ ] **Write the DnD wrapper component**
@@ -405,7 +417,8 @@ function WidgetControls({
   onToggleVisibility: () => void;
   onCycleSize: () => void;
 }) {
-  const sizeLabel = widget.size === "S" ? "SM" : widget.size === "M" ? "MD" : "LG";
+  const sizeLabel =
+    widget.size === "S" ? "SM" : widget.size === "M" ? "MD" : "LG";
   return (
     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
       <button
@@ -437,12 +450,28 @@ function WidgetControls({
         aria-label={widget.visible ? "Hide widget" : "Show widget"}
       >
         {widget.visible ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          >
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
             <circle cx="12" cy="12" r="3" />
           </svg>
         ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          >
             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
             <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
             <line x1="1" y1="1" x2="23" y2="23" />
@@ -464,8 +493,14 @@ function SortableWidgetRow({
   onToggleVisibility: () => void;
   onCycleSize: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: widget.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: widget.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -517,7 +552,9 @@ export default function DashboardLayoutManager({
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const visibleWidgets = layout.widgets.filter((w) => w.visible);
@@ -547,9 +584,22 @@ export default function DashboardLayoutManager({
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16, gap: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: 16,
+          gap: 8,
+        }}
+      >
         {hiddenWidgets.length > 0 && (
-          <span style={{ fontSize: 11, color: "var(--text-dim, #6b7280)", alignSelf: "center" }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: "var(--text-dim, #6b7280)",
+              alignSelf: "center",
+            }}
+          >
             {hiddenWidgets.length} hidden
           </span>
         )}
@@ -570,8 +620,15 @@ export default function DashboardLayoutManager({
         </button>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={widgetIds} strategy={verticalListSortingStrategy}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={widgetIds}
+          strategy={verticalListSortingStrategy}
+        >
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {visibleWidgets.map((widget) => (
               <SortableWidgetRow
@@ -601,7 +658,14 @@ export default function DashboardLayoutManager({
           >
             Hidden Widgets ({hiddenWidgets.length})
           </summary>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+              marginTop: 8,
+            }}
+          >
             {hiddenWidgets.map((widget) => (
               <SortableWidgetRow
                 key={widget.id}
@@ -632,6 +696,7 @@ git commit -m "feat: add DashboardLayout DnD wrapper with controls"
 ### Task 7: Integrate DashboardLayout into page.tsx
 
 **Files:**
+
 - Modify: `apps/web/app/page.tsx` — wrap widget rendering with DashboardLayout + useDashboardLayout
 
 - [ ] **Refactor page.tsx**
@@ -642,7 +707,12 @@ Replace the hardcoded widget grid with `DashboardLayoutManager` that renders wid
 "use client";
 
 import { useEffect, useState } from "react";
-import { getDashboardData, getJournalLatest, getTrades, type DashboardData } from "@/lib/api";
+import {
+  getDashboardData,
+  getJournalLatest,
+  getTrades,
+  type DashboardData,
+} from "@/lib/api";
 import { useDashboardLayout } from "@/hooks/useDashboardLayout";
 import DashboardLayoutManager from "@/components/DashboardLayout";
 import DashboardHero from "@/components/DashboardHero";
@@ -663,7 +733,8 @@ export default function Dashboard() {
   const [journalEntry, setJournalEntry] = useState<any>(null);
   const [recentTrades, setRecentTrades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const { layout, loaded, updateWidget, reorderWidgets, resetLayout } = useDashboardLayout();
+  const { layout, loaded, updateWidget, reorderWidgets, resetLayout } =
+    useDashboardLayout();
 
   const loadData = () => {
     Promise.all([
@@ -680,13 +751,18 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const statsLoading = loading || !dashboard;
-  const hasTrades = dashboard && (dashboard.equityCurve.length > 0 || recentTrades.length > 0);
+  const hasTrades =
+    dashboard && (dashboard.equityCurve.length > 0 || recentTrades.length > 0);
 
   const handleToggleVisibility = (id: string) => {
-    updateWidget(id, { visible: !layout.widgets.find((w) => w.id === id)?.visible });
+    updateWidget(id, {
+      visible: !layout.widgets.find((w) => w.id === id)?.visible,
+    });
   };
 
   const handleCycleSize = (id: string) => {
@@ -696,12 +772,14 @@ export default function Dashboard() {
   };
 
   const renderWidget = (widget: LayoutWidget) => {
-    const padding = widget.size === "S" ? "sm" : widget.size === "L" ? "md" : "lg";
-    const gridClass = widget.size === "L"
-      ? "w-full"
-      : widget.size === "S"
-      ? "w-full sm:w-1/3"
-      : "w-full sm:w-1/2";
+    const padding =
+      widget.size === "S" ? "sm" : widget.size === "L" ? "md" : "lg";
+    const gridClass =
+      widget.size === "L"
+        ? "w-full"
+        : widget.size === "S"
+          ? "w-full sm:w-1/3"
+          : "w-full sm:w-1/2";
 
     return (
       <div className={gridClass}>
@@ -718,7 +796,11 @@ export default function Dashboard() {
           />
         )}
         {widget.id === "recent-trades" && (
-          <RecentTradesWidget trades={recentTrades} onDelete={loadData} loading={loading} />
+          <RecentTradesWidget
+            trades={recentTrades}
+            onDelete={loadData}
+            loading={loading}
+          />
         )}
         {widget.id === "journal-snapshot" && (
           <JournalSnapshotWidget entry={journalEntry} loading={loading} />
@@ -727,7 +809,9 @@ export default function Dashboard() {
           <BehaviorAnalyticsWidget
             disciplineScore={dashboard?.behaviorAnalytics.disciplineScore ?? 0}
             fomoScore={dashboard?.behaviorAnalytics.fomoScore ?? "Low"}
-            revengeTradesThisMonth={dashboard?.behaviorAnalytics.revengeTradesThisMonth ?? 0}
+            revengeTradesThisMonth={
+              dashboard?.behaviorAnalytics.revengeTradesThisMonth ?? 0
+            }
             trendAlignment={dashboard?.behaviorAnalytics.trendAlignment ?? 0}
             loading={loading}
           />
@@ -764,14 +848,36 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {statsLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="fade-up"><StatCardSkeleton /></div>
+            <div key={i} className="fade-up">
+              <StatCardSkeleton />
+            </div>
           ))
         ) : (
           <>
-            <StatCard title="Total P&L" value={`${dashboard!.weeklyPnl >= 0 ? "+" : ""}$${Math.abs(dashboard!.weeklyPnl).toLocaleString()}`} />
+            <StatCard
+              title="Total P&L"
+              value={`${dashboard!.weeklyPnl >= 0 ? "+" : ""}$${Math.abs(dashboard!.weeklyPnl).toLocaleString()}`}
+            />
             <StatCard title="Win Rate" value={`${dashboard!.weeklyWinRate}%`} />
-            <StatCard title="Profit Factor" value={dashboard!.insights.profitFactor > 0 && dashboard!.insights.profitFactor < 999 ? String(dashboard!.insights.profitFactor) : dashboard!.insights.profitFactor >= 999 ? "∞" : "--"} />
-            <StatCard title="Avg Risk:Reward" value={dashboard!.insights.avgRR > 0 ? `1:${dashboard!.insights.avgRR.toFixed(1)}` : "--"} />
+            <StatCard
+              title="Profit Factor"
+              value={
+                dashboard!.insights.profitFactor > 0 &&
+                dashboard!.insights.profitFactor < 999
+                  ? String(dashboard!.insights.profitFactor)
+                  : dashboard!.insights.profitFactor >= 999
+                    ? "∞"
+                    : "--"
+              }
+            />
+            <StatCard
+              title="Avg Risk:Reward"
+              value={
+                dashboard!.insights.avgRR > 0
+                  ? `1:${dashboard!.insights.avgRR.toFixed(1)}`
+                  : "--"
+              }
+            />
           </>
         )}
       </div>

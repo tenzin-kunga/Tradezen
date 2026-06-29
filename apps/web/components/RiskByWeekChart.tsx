@@ -13,7 +13,13 @@ import {
 export default function RiskByWeekChart({
   data,
 }: {
-  data: { week: string; totalRisk: number; totalPnl: number; tradeCount: number; maxRisk: number }[];
+  data: {
+    week: string;
+    totalRisk: number;
+    totalPnl: number;
+    tradeCount: number;
+    maxRisk: number;
+  }[];
 }) {
   if (data.length === 0) return null;
 
@@ -25,7 +31,10 @@ export default function RiskByWeekChart({
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--border-subtle)"
+            />
             <XAxis
               dataKey="week"
               tick={{ fontSize: 10, fill: "var(--text-muted)" }}

@@ -4,6 +4,7 @@
 > AI, scalability, and operational standards for TradeZen.
 >
 > This document defines the non-negotiable rules that govern:
+>
 > - engineering decisions
 > - product integrity
 > - infrastructure evolution
@@ -20,11 +21,13 @@
 # 1. Philosophy & Governance
 
 TradeZen is:
+
 - a professional-grade trading journal
 - a behavioral analytics platform
 - an AI-assisted trading psychology system
 
 TradeZen is NOT:
+
 - a signal provider
 - a financial advisory platform
 - a gambling system
@@ -60,6 +63,7 @@ Core engineering priorities:
 # 3. Data Integrity Rules
 
 ## 3.1 Trade Preservation
+
 - Trades must never be silently modified
 - Trades must never be silently deleted
 - User-entered data must remain recoverable
@@ -70,12 +74,14 @@ Core engineering priorities:
 ## 3.2 Deterministic Financial Logic
 
 All calculations must be:
+
 - deterministic
 - reproducible
 - backend-controlled
 - versioned
 
 Frontend must never become authoritative for:
+
 - PnL
 - analytics
 - risk calculations
@@ -84,12 +90,14 @@ Frontend must never become authoritative for:
 ---
 
 ## 3.3 UTC Time Standards
+
 - All timestamps stored in UTC
 - Timezone conversion only at presentation layer
 
 ---
 
 ## 3.4 Numeric Precision
+
 - Prices stored as raw numeric values
 - No rounding during storage
 - Avoid floating-point precision drift
@@ -98,7 +106,9 @@ Frontend must never become authoritative for:
 ---
 
 ## 3.5 Immutable Auditability
+
 Critical actions must remain traceable:
+
 - trade creation
 - trade edits
 - imports
@@ -112,11 +122,13 @@ Critical actions must remain traceable:
 ## 4.1 PnL Formula
 
 ### BUY
+
 ```text
 PnL = (Exit Price - Entry Price) × Lot Size
 ```
 
 ### SELL
+
 ```text
 PnL = (Entry Price - Exit Price) × Lot Size
 ```
@@ -140,6 +152,7 @@ Reward = |Take Profit - Entry|
 ---
 
 ## 4.4 Calculation Rules
+
 - Calculations must never depend on live market feeds
 - Stored trade data is the source of truth
 - Formula changes must:
@@ -150,7 +163,9 @@ Reward = |Take Profit - Entry|
 ---
 
 ## 4.5 No Hidden Calculations
+
 Every metric shown to users must:
+
 - be explainable
 - be reproducible
 - expose methodology if requested
@@ -162,6 +177,7 @@ Every metric shown to users must:
 ## 5.1 Backend as Source of Truth
 
 Critical logic must remain backend-controlled:
+
 - analytics
 - trade calculations
 - validation
@@ -174,6 +190,7 @@ Critical logic must remain backend-controlled:
 ## 5.2 Frontend Restrictions
 
 Frontend must never:
+
 - bypass validation
 - mutate financial calculations
 - compute authoritative analytics
@@ -184,6 +201,7 @@ Frontend must never:
 # 6. Security Rules
 
 ## 6.1 Authentication
+
 - All endpoints require authentication except auth endpoints
 - Sessions must expire
 - Refresh tokens must rotate
@@ -192,7 +210,9 @@ Frontend must never:
 ---
 
 ## 6.2 Password Rules
+
 Passwords must:
+
 - use bcrypt or stronger
 - never be logged
 - never be exposed
@@ -201,7 +221,9 @@ Passwords must:
 ---
 
 ## 6.3 JWT Rules
+
 JWT tokens must:
+
 - expire
 - use strong secrets
 - never use fallback secrets
@@ -210,11 +232,14 @@ JWT tokens must:
 ---
 
 ## 6.4 Authorization Rules
+
 Users may only:
+
 - view their own data
 - modify their own data
 
 All queries must enforce:
+
 ```sql
 WHERE user_id = ?
 ```
@@ -222,7 +247,9 @@ WHERE user_id = ?
 ---
 
 ## 6.5 Infrastructure Security
+
 Production systems must include:
+
 - HTTPS
 - HSTS
 - CSP
@@ -233,7 +260,9 @@ Production systems must include:
 ---
 
 ## 6.6 Secrets Management
+
 Secrets must:
+
 - never be committed
 - never exist in logs
 - never exist in frontend bundles
@@ -244,7 +273,9 @@ Secrets must:
 # 7. Validation Rules
 
 ## 7.1 Input Validation
+
 Validate:
+
 - request bodies
 - query params
 - route params
@@ -254,7 +285,9 @@ Validate:
 ---
 
 ## 7.2 Schema Validation
+
 Validation must enforce:
+
 - numeric ranges
 - enums
 - required fields
@@ -264,6 +297,7 @@ Validation must enforce:
 ---
 
 ## 7.3 Unknown Fields
+
 Reject unknown request payload fields.
 
 ---
@@ -273,20 +307,25 @@ Reject unknown request payload fields.
 ## 8.1 Database Standards
 
 Primary database:
+
 - PostgreSQL
 
 Realtime/cache:
+
 - Redis
 
 ---
 
 ## 8.2 Query Standards
+
 Avoid:
+
 - N+1 queries
 - unindexed scans
 - expensive joins on hot paths
 
 Critical indexes:
+
 - user_id
 - symbol_id
 - created_at
@@ -294,7 +333,9 @@ Critical indexes:
 ---
 
 ## 8.3 Transactions
+
 Critical writes require transactions:
+
 - trade CRUD
 - imports
 - analytics snapshots
@@ -303,6 +344,7 @@ Critical writes require transactions:
 ---
 
 ## 8.4 Migrations
+
 - Every migration reversible
 - Destructive migrations require backups
 - Production migrations require rollback plans
@@ -314,6 +356,7 @@ Critical writes require transactions:
 ## 9.1 Redis Usage
 
 Redis allowed only for:
+
 - caching
 - pub/sub
 - websocket scaling
@@ -321,13 +364,16 @@ Redis allowed only for:
 - ephemeral realtime state
 
 Redis must NEVER become:
+
 - source of truth
 - permanent storage
 
 ---
 
 ## 9.2 Cache Expiration
+
 Realtime market cache:
+
 ```text
 ≤ 5 seconds
 ```
@@ -335,7 +381,9 @@ Realtime market cache:
 ---
 
 ## 9.3 Stale Data Handling
+
 If market APIs fail:
+
 - show last known value
 - mark data stale
 - never overwrite trade history
@@ -343,6 +391,7 @@ If market APIs fail:
 ---
 
 ## 9.4 WebSocket Limits
+
 ```text
 ≤ 1 websocket update/sec/symbol
 ```
@@ -350,7 +399,9 @@ If market APIs fail:
 ---
 
 ## 9.5 Realtime Isolation
+
 Realtime systems must:
+
 - authenticate users
 - isolate subscriptions
 - avoid direct DB polling
@@ -361,7 +412,9 @@ Realtime systems must:
 # 10. Queue & Worker Rules
 
 ## 10.1 Queue Requirements
+
 Every async job must be:
+
 - idempotent
 - retry-safe
 - observable
@@ -370,7 +423,9 @@ Every async job must be:
 ---
 
 ## 10.2 Queue Usage
+
 Queues required for:
+
 - CSV imports
 - analytics snapshots
 - AI summarization
@@ -383,7 +438,9 @@ Queues required for:
 # 11. Analytics Rules
 
 ## 11.1 Analytics Integrity
+
 Analytics must:
+
 - derive only from stored trades
 - remain deterministic
 - remain reproducible
@@ -391,7 +448,9 @@ Analytics must:
 ---
 
 ## 11.2 Metrics Governance
+
 Metrics definitions must:
+
 - never silently change
 - be documented
 - be versioned
@@ -399,7 +458,9 @@ Metrics definitions must:
 ---
 
 ## 11.3 Required Analytics
+
 Core analytics include:
+
 - expectancy
 - win rate
 - Sharpe ratio
@@ -413,7 +474,9 @@ Core analytics include:
 # 12. AI Governance Rules
 
 ## 12.1 AI Boundaries
+
 TradeZen AI must NOT:
+
 - provide financial advice
 - generate trade signals
 - encourage overtrading
@@ -422,7 +485,9 @@ TradeZen AI must NOT:
 ---
 
 ## 12.2 AI Purpose
+
 AI exists to:
+
 - summarize journals
 - identify patterns
 - provide coaching insights
@@ -431,7 +496,9 @@ AI exists to:
 ---
 
 ## 12.3 AI Memory Rules
+
 AI memory systems must:
+
 - remain user-isolated
 - support deletion requests
 - avoid hallucinated claims
@@ -440,13 +507,16 @@ AI memory systems must:
 ---
 
 ## 12.4 Embeddings Rules
+
 Embeddings may include:
+
 - journals
 - trade notes
 - setups
 - behavioral metadata
 
 Embeddings must never include:
+
 - passwords
 - tokens
 - secrets
@@ -456,6 +526,7 @@ Embeddings must never include:
 # 13. UX & Product Integrity Rules
 
 ## 13.1 UX Consistency
+
 - Profit always green
 - Loss always red
 - Neutral values gray
@@ -463,6 +534,7 @@ Embeddings must never include:
 ---
 
 ## 13.2 Trade Entry UX
+
 ```text
 ≤ 3 interactions required to log a trade
 ```
@@ -470,7 +542,9 @@ Embeddings must never include:
 ---
 
 ## 13.3 Transparency
+
 Users must always be able to:
+
 - verify calculations
 - edit data
 - delete data
@@ -479,7 +553,9 @@ Users must always be able to:
 ---
 
 ## 13.4 No Misleading UX
+
 Do NOT:
+
 - hide sample sizes
 - exaggerate performance
 - imply guaranteed profitability
@@ -489,6 +565,7 @@ Do NOT:
 # 14. Performance & Scalability Rules
 
 ## 14.1 API Targets
+
 ```text
 p95 < 500ms
 ```
@@ -496,6 +573,7 @@ p95 < 500ms
 ---
 
 ## 14.2 Dashboard Targets
+
 ```text
 < 2 seconds load time
 ```
@@ -503,7 +581,9 @@ p95 < 500ms
 ---
 
 ## 14.3 Scalability Targets
+
 System must support:
+
 ```text
 ≥ 100K trades per user
 ```
@@ -513,7 +593,9 @@ without major degradation.
 ---
 
 ## 14.4 Realtime Scaling
+
 Realtime systems must:
+
 - use Redis caching
 - avoid direct DB polling
 - scale horizontally
@@ -523,12 +605,15 @@ Realtime systems must:
 # 15. Infrastructure Rules
 
 ## 15.1 Environment Parity
+
 Development, staging, and production should remain similar.
 
 ---
 
 ## 15.2 Docker Standards
+
 Infrastructure must remain containerized:
+
 - PostgreSQL
 - Redis
 - workers
@@ -537,7 +622,9 @@ Infrastructure must remain containerized:
 ---
 
 ## 15.3 Deployment Safety
+
 Production deploys require:
+
 - rollback strategy
 - health checks
 - monitoring
@@ -546,7 +633,9 @@ Production deploys require:
 ---
 
 ## 15.4 Observability
+
 Monitoring must include:
+
 - API latency
 - DB latency
 - websocket health
@@ -559,6 +648,7 @@ Monitoring must include:
 # 16. Logging & Monitoring Rules
 
 ## Must Log
+
 - errors
 - failed imports
 - API failures
@@ -568,6 +658,7 @@ Monitoring must include:
 ---
 
 ## Must NEVER Log
+
 - passwords
 - tokens
 - secrets
@@ -578,7 +669,9 @@ Monitoring must include:
 # 17. Testing Standards
 
 ## 17.1 Required Coverage
+
 Critical systems require testing:
+
 - auth
 - calculations
 - analytics
@@ -589,7 +682,9 @@ Critical systems require testing:
 ---
 
 ## 17.2 CI Requirements
+
 CI must fail on:
+
 - lint errors
 - type errors
 - test failures
@@ -600,29 +695,37 @@ CI must fail on:
 # 18. Git & CI/CD Rules
 
 ## 18.1 Branching Rules
+
 Every task requires:
+
 - dedicated branch
 - PR targeting develop
 
 ---
 
 ## 18.2 Main Branch Protection
+
 Direct pushes to main forbidden.
 
 ---
 
 ## 18.3 Merge Rules
+
 Allowed:
+
 - squash merge
 - rebase merge
 
 Avoid:
+
 - messy merge commits
 
 ---
 
 ## 18.4 Commit Standards
+
 Commits should:
+
 - remain atomic
 - remain descriptive
 - avoid unrelated changes
@@ -632,7 +735,9 @@ Commits should:
 # 19. MVP Discipline Rules
 
 ## 19.1 Avoid Premature Complexity
+
 Do NOT:
+
 - microservice too early
 - overengineer abstractions
 - optimize without bottlenecks
@@ -640,6 +745,7 @@ Do NOT:
 ---
 
 ## 19.2 Prioritize
+
 1. Reliability
 2. Simplicity
 3. Accuracy
@@ -651,7 +757,9 @@ Do NOT:
 # 20. Architecture Evolution Rules
 
 ## 20.1 Current Architecture
+
 Preferred architecture:
+
 ```text
 Modular Monolith
 ```
@@ -659,7 +767,9 @@ Modular Monolith
 ---
 
 ## 20.2 Microservice Transition Rules
+
 Do NOT adopt microservices until:
+
 - bottlenecks proven
 - operational overhead justified
 - service boundaries stable
@@ -669,6 +779,7 @@ Do NOT adopt microservices until:
 # 21. Production Readiness Requirements
 
 Before production:
+
 - backups verified
 - monitoring operational
 - HTTPS enforced
@@ -682,6 +793,7 @@ Before production:
 # 22. Engineering Culture Rules
 
 TradeZen engineering should prioritize:
+
 - long-term thinking
 - maintainability
 - readability
@@ -689,6 +801,7 @@ TradeZen engineering should prioritize:
 - transparency
 
 Avoid:
+
 - hype-driven architecture
 - unnecessary rewrites
 - fragile abstractions

@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Trade schemas
 export const createTradeSchema = z.object({
   symbol: z.string().min(2).max(20),
-  direction: z.enum(['buy', 'sell']),
+  direction: z.enum(["buy", "sell"]),
   entry: z.number().positive().max(99999999.99999999),
   exit: z.number().positive().max(99999999.99999999),
   lot: z.number().min(0.01).max(1000),
@@ -30,20 +30,20 @@ export const updateSettingsSchema = z.object({
   initial_capital: z.number().min(0).max(10000000).optional(),
   default_lot_size: z.number().min(0.01).max(1000).optional(),
   timezone: z.string().max(50).optional(),
-  theme: z.enum(['dark', 'light']).optional(),
+  theme: z.enum(["dark", "light"]).optional(),
 });
 
 // Journal schemas
 export const journalMoodEnum = z.enum([
-  'great',
-  'good',
-  'neutral',
-  'bad',
-  'terrible',
+  "great",
+  "good",
+  "neutral",
+  "bad",
+  "terrible",
 ]);
 
 export const createJournalSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD'),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
   pre_market_notes: z.string().max(5000).optional(),
   post_market_notes: z.string().max(5000).optional(),
   mood: journalMoodEnum.optional(),
@@ -52,21 +52,21 @@ export const createJournalSchema = z.object({
 });
 
 // Tag schemas
-export const tagCategoryEnum = z.enum(['setup', 'condition', 'emotion']);
+export const tagCategoryEnum = z.enum(["setup", "condition", "emotion"]);
 
 export const createTagSchema = z.object({
   name: z.string().min(1).max(30),
   color: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, {
-      message: 'Color must be a valid hex color (e.g., #888888)',
+      message: "Color must be a valid hex color (e.g., #888888)",
     })
     .optional(),
   category: tagCategoryEnum.optional(),
 });
 
 // Chat schemas
-export const chatRoleEnum = z.enum(['system', 'user', 'assistant']);
+export const chatRoleEnum = z.enum(["system", "user", "assistant"]);
 
 export const chatMessageSchema = z.object({
   role: chatRoleEnum,
@@ -107,7 +107,9 @@ export const updateChecklistRunItemSchema = z.object({
 export type CreateChecklistInput = z.infer<typeof createChecklistSchema>;
 export type UpdateChecklistInput = z.infer<typeof updateChecklistSchema>;
 export type CreateChecklistRunInput = z.infer<typeof createChecklistRunSchema>;
-export type UpdateChecklistRunItemInput = z.infer<typeof updateChecklistRunItemSchema>;
+export type UpdateChecklistRunItemInput = z.infer<
+  typeof updateChecklistRunItemSchema
+>;
 
 // Export inferred types
 export type CreateTradeInput = z.infer<typeof createTradeSchema>;

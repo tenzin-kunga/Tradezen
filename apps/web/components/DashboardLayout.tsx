@@ -41,7 +41,15 @@ function DragHandle({ listeners, attributes }: any) {
       }}
       aria-label="Drag to reorder"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      >
         <circle cx="9" cy="5" r="1.5" fill="currentColor" />
         <circle cx="15" cy="5" r="1.5" fill="currentColor" />
         <circle cx="9" cy="12" r="1.5" fill="currentColor" />
@@ -66,8 +74,14 @@ function SortableWidget({
   onCycleSize: () => void;
   noCard?: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: widget.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: widget.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -89,7 +103,9 @@ function SortableWidget({
     <div ref={setNodeRef} style={style} className="fade-up">
       <WidgetCard
         widget={widget}
-        dragHandle={<DragHandle listeners={listeners} attributes={attributes} />}
+        dragHandle={
+          <DragHandle listeners={listeners} attributes={attributes} />
+        }
         onToggleVisibility={onToggleVisibility}
         onCycleSize={onCycleSize}
       >
@@ -116,7 +132,9 @@ export default function DashboardGridLayout({
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const visibleWidgets = useMemo(
@@ -295,7 +313,10 @@ export default function DashboardGridLayout({
                   opacity: 0.3,
                 }}
               >
-                <span className="text-xs" style={{ color: "var(--text-dim, #6b7280)" }}>
+                <span
+                  className="text-xs"
+                  style={{ color: "var(--text-dim, #6b7280)" }}
+                >
                   Drop widgets here
                 </span>
               </div>
@@ -308,7 +329,10 @@ export default function DashboardGridLayout({
                   <SortableWidget
                     key={widget.id}
                     widget={widget}
-                    noCard={widget.id === "analytics-insights" || widget.id === "ai-coach"}
+                    noCard={
+                      widget.id === "analytics-insights" ||
+                      widget.id === "ai-coach"
+                    }
                     onToggleVisibility={() => onToggleVisibility(widget.id)}
                     onCycleSize={() => onCycleSize(widget.id)}
                   >
@@ -330,7 +354,10 @@ export default function DashboardGridLayout({
                   opacity: 0.3,
                 }}
               >
-                <span className="text-xs" style={{ color: "var(--text-dim, #6b7280)" }}>
+                <span
+                  className="text-xs"
+                  style={{ color: "var(--text-dim, #6b7280)" }}
+                >
                   Drop widgets here
                 </span>
               </div>
@@ -343,7 +370,10 @@ export default function DashboardGridLayout({
                   <SortableWidget
                     key={widget.id}
                     widget={widget}
-                    noCard={widget.id === "analytics-insights" || widget.id === "ai-coach"}
+                    noCard={
+                      widget.id === "analytics-insights" ||
+                      widget.id === "ai-coach"
+                    }
                     onToggleVisibility={() => onToggleVisibility(widget.id)}
                     onCycleSize={() => onCycleSize(widget.id)}
                   >
@@ -391,7 +421,10 @@ export default function DashboardGridLayout({
                 >
                   Col {widget.column + 1}
                 </span>
-                <span className="text-[9px]" style={{ color: "var(--text-dim, #6b7280)" }}>
+                <span
+                  className="text-[9px]"
+                  style={{ color: "var(--text-dim, #6b7280)" }}
+                >
                   {widget.visible ? "Visible" : "Hidden"}
                 </span>
                 <button

@@ -4,14 +4,27 @@ import { EventPublisherService } from '../common/services/event-publisher.servic
 
 jest.mock('../db/drizzle', () => ({
   db: {
-    select: () => ({ from: () => ({ where: () => ({ orderBy: () => ({ limit: () => ({ offset: () => Promise.resolve([]) }) }) }) }) }),
-    insert: () => ({ values: () => ({ returning: () => Promise.resolve([]) }) }),
-    update: () => ({ set: () => ({ where: () => ({ returning: () => Promise.resolve([]) }) }) }),
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          orderBy: () => ({
+            limit: () => ({ offset: () => Promise.resolve([]) }),
+          }),
+        }),
+      }),
+    }),
+    insert: () => ({
+      values: () => ({ returning: () => Promise.resolve([]) }),
+    }),
+    update: () => ({
+      set: () => ({ where: () => ({ returning: () => Promise.resolve([]) }) }),
+    }),
     delete: () => ({ where: () => Promise.resolve([]) }),
     execute: () => Promise.resolve([]),
-    transaction: (fn: (tx: any) => any) => fn({
-      insert: () => ({ values: () => ({}) }),
-    }),
+    transaction: (fn: (tx: any) => any) =>
+      fn({
+        insert: () => ({ values: () => ({}) }),
+      }),
   },
 }));
 

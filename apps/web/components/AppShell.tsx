@@ -94,20 +94,47 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile header */}
       <header
         className="md:hidden flex items-center justify-between px-4"
-        style={{ height: 48, background: "var(--bg-surface, #111214)", borderBottom: "1px solid var(--border, #23252d)", flexShrink: 0 }}
+        style={{
+          height: 48,
+          background: "var(--bg-surface, #111214)",
+          borderBottom: "1px solid var(--border, #23252d)",
+          flexShrink: 0,
+        }}
       >
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          style={{ background: "none", border: "none", color: "var(--text-primary, #fafafa)", cursor: "pointer", padding: 8, display: "flex" }}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--text-primary, #fafafa)",
+            cursor: "pointer",
+            padding: 8,
+            display: "flex",
+          }}
           aria-label="Toggle menu"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          >
             <line x1="3" y1="6" x2="21" y2="6" />
             <line x1="3" y1="12" x2="21" y2="12" />
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
         </button>
-        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.15em", color: "var(--text-primary, #fafafa)" }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: "0.15em",
+            color: "var(--text-primary, #fafafa)",
+          }}
+        >
           TRADEZEN
         </span>
         <div style={{ width: 34 }} />
@@ -126,8 +153,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Main area */}
       <div className="flex flex-col flex-1" style={{ minWidth: 0 }}>
         <TopBar onSearchClick={() => setPaletteOpen(true)} />
-        <main className="pb-14 md:pb-0" style={{ flex: 1, overflowY: "auto", padding: 32, background: "var(--bg-primary, #09090b)" }}>
-          <KeyboardShortcutProvider onPaletteToggle={() => setPaletteOpen((v) => !v)}>
+        <main
+          className="pb-14 md:pb-0"
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: 32,
+            background: "var(--bg-primary, #09090b)",
+          }}
+        >
+          <KeyboardShortcutProvider
+            onPaletteToggle={() => setPaletteOpen((v) => !v)}
+          >
             {children}
           </KeyboardShortcutProvider>
         </main>

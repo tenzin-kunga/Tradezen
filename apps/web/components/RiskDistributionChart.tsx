@@ -22,8 +22,7 @@ export default function RiskDistributionChart({
 }) {
   if (data.length === 0) return null;
 
-  const isNegBucket = (b: string) =>
-    b.startsWith("<") || b.startsWith("-");
+  const isNegBucket = (b: string) => b.startsWith("<") || b.startsWith("-");
 
   const loserBuckets = data.filter((b) => isNegBucket(b.bucket));
   const winnerBuckets = data.filter((b) => !isNegBucket(b.bucket));
@@ -38,7 +37,10 @@ export default function RiskDistributionChart({
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--border-subtle)"
+            />
             <XAxis
               dataKey="bucket"
               tick={{ fontSize: 10, fill: "var(--text-muted)" }}
@@ -103,10 +105,15 @@ export default function RiskDistributionChart({
               <div className="text-[10px] text-[var(--text-muted)]">TOTAL</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold" style={{ color: 'var(--accent-profit)' }}>
+              <div
+                className="text-lg font-bold"
+                style={{ color: "var(--accent-profit)" }}
+              >
                 {formatCurrency(data.reduce((s, b) => s + b.totalPnl, 0))}
               </div>
-              <div className="text-[10px] text-[var(--text-muted)]">TOTAL PNL</div>
+              <div className="text-[10px] text-[var(--text-muted)]">
+                TOTAL PNL
+              </div>
             </div>
           </>
         )}

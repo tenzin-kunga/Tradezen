@@ -15,14 +15,14 @@ All modifications are optional for local development but recommended for product
 
 ## Summary of Changes
 
-| Area | Improvement | Benefit |
-|------|-------------|---------|
-| **Docker** | Multi-stage builds, non-root users, health checks | Smaller images, better security, self-healing |
-| **Compose** | Network isolation, resource limits, restart policies | Improved isolation, stability, reliability |
-| **CI/CD** | Expanded pipeline with security scanning, tests, deployment | Higher quality, automated releases |
-| **Secrets** | Runtime injection, validation, rotation tools | Reduced exposure risk, easier key management |
-| **Web** | Dockerfile added (was missing) | Consistent deployment, containerization |
-| **Docs** | Comprehensive guides for deployment, security, onboarding | Faster onboarding, fewer configuration errors |
+| Area        | Improvement                                                 | Benefit                                       |
+| ----------- | ----------------------------------------------------------- | --------------------------------------------- |
+| **Docker**  | Multi-stage builds, non-root users, health checks           | Smaller images, better security, self-healing |
+| **Compose** | Network isolation, resource limits, restart policies        | Improved isolation, stability, reliability    |
+| **CI/CD**   | Expanded pipeline with security scanning, tests, deployment | Higher quality, automated releases            |
+| **Secrets** | Runtime injection, validation, rotation tools               | Reduced exposure risk, easier key management  |
+| **Web**     | Dockerfile added (was missing)                              | Consistent deployment, containerization       |
+| **Docs**    | Comprehensive guides for deployment, security, onboarding   | Faster onboarding, fewer configuration errors |
 
 ---
 
@@ -35,12 +35,14 @@ All modifications are optional for local development but recommended for product
 **Before:** Single-stage build running as root, no health check
 
 **After:**
+
 - Three stages: `deps` → `builder` → `runner`
 - Non-root user `nestjs` (UID 1001)
 - `dumb-init` for signal handling
 - Health check with 30-second interval
 
 **Impact:**
+
 - Image size reduced by separating dev dependencies from runtime
 - Reduced privilege escalation risk
 - Orchestrator can detect and restart hung containers
@@ -50,6 +52,7 @@ All modifications are optional for local development but recommended for product
 **Added:** Production-ready Dockerfile for Next.js app
 
 **Features:**
+
 - Multi-stage build with dependency layer caching
 - Non-root user `nextjs`
 - Standalone output (minimal server)
@@ -64,6 +67,7 @@ All modifications are optional for local development but recommended for product
 **Before:** Basic services with default settings
 
 **After:**
+
 - Custom bridge network `tradezen-net` with subnet `172.28.0.0/16`
 - Resource limits on all services (CPU/memory)
 - Health checks configured
@@ -72,6 +76,7 @@ All modifications are optional for local development but recommended for product
 - PostgreSQL tuned with custom config option
 
 **Impact:**
+
 - Services isolated from host network
 - Prevents resource exhaustion
 - Automatic recovery from failures
@@ -89,6 +94,7 @@ All modifications are optional for local development but recommended for product
 4. **Pre-commit hook** (optional) — Catches accidental secret commits
 
 **Best Practices:**
+
 - Secrets passed via `--env-file` (not baked into images)
 - Gitignored `.env.docker` for local secrets
 - GitHub Secrets for CI/CD environment variables
@@ -100,34 +106,40 @@ All modifications are optional for local development but recommended for product
 **Expanded from basic build to full deployment pipeline:**
 
 #### Job 1: Security Audit
+
 - `bun pm audit` for dependency vulnerabilities
 - Trivy filesystem scan (OS packages, Bun deps)
 - Pattern-based secret leak detection
 - Results uploaded to GitHub Security tab (SARIF)
 
 #### Job 2: Lint & Type Check
+
 - ESLint with auto-fix
 - TypeScript type checking (`tsc --noEmit`)
 - Fails fast on quality issues
 
 #### Job 3: Unit Tests
+
 - Matrix across Node 18, 20, 22
 - Coverage collection and upload (Codecov)
 - Artifacts retained for debugging
 
 #### Job 4: E2E Tests
+
 - Spins up Postgres + Redis as services
 - Runs database migrations
 - Executes integration test suite
 - Uploads results as artifacts
 
 #### Job 5: Build & Dockerize (main branch only)
+
 - Builds multi-platform images (amd64 + arm64)
 - Docker Buildx layer caching from registry
 - Pushes to Docker Hub with version tags
 - Post-build Trivy image scan
 
 #### Job 6: Deploy (main branch only)
+
 - Triggers Render API redeploy
 - Triggers Vercel frontend deployment
 - Environment: `production`
@@ -161,8 +173,8 @@ private getJwtSecret(): string {
 **Change:** Conditionally enable based on environment
 
 ```typescript
-if (process.env.NODE_ENV !== 'production') {
-  SwaggerModule.setup('api/docs', app, document);
+if (process.env.NODE_ENV !== "production") {
+  SwaggerModule.setup("api/docs", app, document);
 }
 ```
 
@@ -173,7 +185,7 @@ if (process.env.NODE_ENV !== 'production') {
 **Change:** Environment-aware
 
 ```typescript
-sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+sameSite: process.env.NODE_ENV === "production" ? "none" : "lax";
 ```
 
 **Rationale:** Matches deployment topology (production uses cross-site, local uses lax).
@@ -184,17 +196,17 @@ sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
 
 ### Checklist for Deployment
 
-| Item | Status | Notes |
-|------|--------|-------|
-| Docker images built and tested | Ready | Run `docker compose --file infra/docker-compose.yml up -d` |
-| JWT secrets set (64+ chars) | Required | Generate with `openssl rand -base64 64` |
-| Database password set (32+ chars) | Required | |
-| `.env.docker` configured | Required | For local or use cloud secrets |
-| Health checks passing | Verify | `docker compose --file infra/docker-compose.yml ps` shows "healthy" |
-| CI/CD secrets configured | Required | GitHub → Settings → Secrets |
-| SSL/TLS certificates | Optional (prod) | Let's Encrypt via Caddy/nginx |
-| Monitoring set up | Recommended | Grafana Cloud free tier |
-| Automated backups | Recommended | Daily pg_dump to cloud storage |
+| Item                              | Status          | Notes                                                               |
+| --------------------------------- | --------------- | ------------------------------------------------------------------- |
+| Docker images built and tested    | Ready           | Run `docker compose --file infra/docker-compose.yml up -d`          |
+| JWT secrets set (64+ chars)       | Required        | Generate with `openssl rand -base64 64`                             |
+| Database password set (32+ chars) | Required        |                                                                     |
+| `.env.docker` configured          | Required        | For local or use cloud secrets                                      |
+| Health checks passing             | Verify          | `docker compose --file infra/docker-compose.yml ps` shows "healthy" |
+| CI/CD secrets configured          | Required        | GitHub → Settings → Secrets                                         |
+| SSL/TLS certificates              | Optional (prod) | Let's Encrypt via Caddy/nginx                                       |
+| Monitoring set up                 | Recommended     | Grafana Cloud free tier                                             |
+| Automated backups                 | Recommended     | Daily pg_dump to cloud storage                                      |
 
 ---
 
@@ -205,6 +217,7 @@ sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
 No action required. Current setup continues to work.
 
 **Optional upgrade:**
+
 ```bash
 # Use stronger secrets locally (recommended)
 cp .env.docker.example .env.docker
@@ -253,7 +266,7 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '1.0'
+          cpus: "1.0"
 
   web:
     environment:

@@ -40,6 +40,7 @@ SENTRY_AUTH_TOKEN=
 ### `apps/api/.env` (local dev, if not using Docker)
 
 Same as above, plus:
+
 ```bash
 DATABASE_URL=postgresql://postgres:<password>@localhost:5432/tradezen
 NODE_ENV=development
@@ -104,10 +105,12 @@ bunx drizzle-kit migrate
 ```
 
 ### New schema changes:
+
 - `users` table: `password_hash` now nullable, added `auth_method` column (default: `'password'`)
 - `accounts` table: new table for OAuth provider linking
 
 ### If using raw SQL:
+
 ```sql
 ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 ALTER TABLE users ADD COLUMN auth_method TEXT NOT NULL DEFAULT 'password';
@@ -153,6 +156,7 @@ docker-compose exec api npm run migrate  # npm inside container
 Go to https://github.com/tampered-sin/Tradezen/settings/branches
 
 ### `main` branch:
+
 - [x] Require pull request reviews before merging (1 approval)
 - [x] Require status checks: `Security Audit`, `Lint & Type Check`, `Unit Tests`, `E2E Tests`
 - [x] Require branches to be up to date
@@ -161,6 +165,7 @@ Go to https://github.com/tampered-sin/Tradezen/settings/branches
 - [x] Do not allow force pushes
 
 ### `develop` branch:
+
 - [x] Require pull request reviews before merging (1 approval)
 - [x] Require status checks: `Security Audit`, `Lint & Type Check`, `Unit Tests`
 - [x] Require branches to be up to date
@@ -172,17 +177,17 @@ Go to https://github.com/tampered-sin/Tradezen/settings/branches
 Go to https://github.com/tampered-sin/Tradezen/settings/secrets/actions
 
 ### Required secrets for `main` branch deployments:
-| Secret | Purpose |
-|--------|---------|
-| `DOCKERHUB_USERNAME` | Docker Hub username |
-| `DOCKERHUB_TOKEN` | Docker Hub access token |
-| `RENDER_API_KEY` | Render deployment API key |
-| `RENDER_SERVICE_ID` | Render service ID |
-| `VERCEL_TOKEN` | Vercel deployment token |
-| `VERCEL_PROJECT_ID` | Vercel project ID |
-| `VERCEL_ORG_ID` | Vercel org ID |
-| `CODECOV_TOKEN` | Codecov upload token (optional) |
 
+| Secret               | Purpose                         |
+| -------------------- | ------------------------------- |
+| `DOCKERHUB_USERNAME` | Docker Hub username             |
+| `DOCKERHUB_TOKEN`    | Docker Hub access token         |
+| `RENDER_API_KEY`     | Render deployment API key       |
+| `RENDER_SERVICE_ID`  | Render service ID               |
+| `VERCEL_TOKEN`       | Vercel deployment token         |
+| `VERCEL_PROJECT_ID`  | Vercel project ID               |
+| `VERCEL_ORG_ID`      | Vercel org ID                   |
+| `CODECOV_TOKEN`      | Codecov upload token (optional) |
 
 ---
 
@@ -210,15 +215,18 @@ Verify: `redis-cli ping` → should return `PONG`
 ## 8. AI/LLM Configuration
 
 ### OpenRouter (already configured)
+
 - Set `OPENROUTER_API_KEY` in `.env`
 - Models are pre-configured in `.env.example`
 
 ### If using OpenAI directly (for embeddings/AI memory):
+
 ```bash
 OPENAI_API_KEY=sk-...
 ```
 
 ### If using local embeddings:
+
 - No additional setup needed (pgvector handles it)
 
 ---
@@ -226,6 +234,7 @@ OPENAI_API_KEY=sk-...
 ## 9. Production Deployment
 
 ### Render (API):
+
 1. Connect repo → `apps/api`
 2. Build command: `bun install && bun run build --filter=api`
 3. Start command: `bun run start:prod`
@@ -233,12 +242,14 @@ OPENAI_API_KEY=sk-...
 5. Attach PostgreSQL database
 
 ### Vercel (Web):
+
 1. Connect repo → `apps/web`
 2. Root directory: `apps/web`
 3. Build command: `next build`
 4. Add env vars: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SENTRY_DSN`
 
 ### Or Docker Compose (self-hosted):
+
 ```bash
 docker-compose --env-file .env.docker up -d
 ```
@@ -262,33 +273,33 @@ After deployment, verify:
 
 ## Quick Reference: What's Automated vs Manual
 
-| Feature | Status | Manual Step |
-|---------|--------|-------------|
-| Validation hardening | ✅ Done | None |
-| Error handling | ✅ Done | None |
-| Transaction-safe DB | ✅ Done | None |
-| Structured logging | ✅ Done | None |
-| Rate limiting | ✅ Done | None |
-| Security headers | ✅ Done | None |
-| 2FA foundation | ✅ Done | Enable in UI |
-| Drizzle ORM | ✅ Done | Run migration |
-| tRPC integration | ✅ Done | None |
-| Analytics engine | ✅ Done | None |
-| BullMQ queues | ✅ Done | Start Redis |
-| Socket.IO realtime | ✅ Done | None |
-| AI memory (pgvector) | ✅ Done | Set OpenAI key |
-| LangGraph workflows | ✅ Done | Set OpenAI key |
-| Mobile responsive | ✅ Done | None |
-| Notifications | ✅ Done | None |
-| Report generation | ✅ Done | None |
-| Backup automation | ✅ Done | Docker only |
-| CI/CD pipeline | ✅ Done | Set secrets |
-| Horizontal scaling | ✅ Done | Configure nginx |
-| **OAuth (Google/GitHub)** | ✅ Done | **Create OAuth apps, set env vars** |
-| **Database migration** | ✅ Code ready | **Run migration** |
-| **Branch protection** | ✅ Guide ready | **Configure in GitHub** |
-| **Environment variables** | ✅ Template ready | **Fill real values** |
+| Feature                   | Status            | Manual Step                         |
+| ------------------------- | ----------------- | ----------------------------------- |
+| Validation hardening      | ✅ Done           | None                                |
+| Error handling            | ✅ Done           | None                                |
+| Transaction-safe DB       | ✅ Done           | None                                |
+| Structured logging        | ✅ Done           | None                                |
+| Rate limiting             | ✅ Done           | None                                |
+| Security headers          | ✅ Done           | None                                |
+| 2FA foundation            | ✅ Done           | Enable in UI                        |
+| Drizzle ORM               | ✅ Done           | Run migration                       |
+| tRPC integration          | ✅ Done           | None                                |
+| Analytics engine          | ✅ Done           | None                                |
+| BullMQ queues             | ✅ Done           | Start Redis                         |
+| Socket.IO realtime        | ✅ Done           | None                                |
+| AI memory (pgvector)      | ✅ Done           | Set OpenAI key                      |
+| LangGraph workflows       | ✅ Done           | Set OpenAI key                      |
+| Mobile responsive         | ✅ Done           | None                                |
+| Notifications             | ✅ Done           | None                                |
+| Report generation         | ✅ Done           | None                                |
+| Backup automation         | ✅ Done           | Docker only                         |
+| CI/CD pipeline            | ✅ Done           | Set secrets                         |
+| Horizontal scaling        | ✅ Done           | Configure nginx                     |
+| **OAuth (Google/GitHub)** | ✅ Done           | **Create OAuth apps, set env vars** |
+| **Database migration**    | ✅ Code ready     | **Run migration**                   |
+| **Branch protection**     | ✅ Guide ready    | **Configure in GitHub**             |
+| **Environment variables** | ✅ Template ready | **Fill real values**                |
 
 ---
 
-*Generated 2026-05-17. All code implemented, these steps are configuration-only.*
+_Generated 2026-05-17. All code implemented, these steps are configuration-only._

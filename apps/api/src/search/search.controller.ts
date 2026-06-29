@@ -11,10 +11,7 @@ import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 export class SearchController {
   @Get('global')
   @ApiOperation({ summary: 'Global search across trades, journals, and tags' })
-  async globalSearch(
-    @CurrentUser('id') userId: string,
-    @Query('q') q: string,
-  ) {
+  async globalSearch(@CurrentUser('id') userId: string, @Query('q') q: string) {
     if (!q || q.trim().length < 2) {
       return { trades: [], journals: [], tags: [] };
     }
@@ -76,12 +73,7 @@ export class SearchController {
           category: tags.category,
         })
         .from(tags)
-        .where(
-          and(
-            eq(tags.userId, userId),
-            ilike(tags.name, term),
-          ),
-        )
+        .where(and(eq(tags.userId, userId), ilike(tags.name, term)))
         .orderBy(asc(tags.name))
         .limit(5),
     ]);

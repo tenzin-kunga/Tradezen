@@ -4,7 +4,12 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { WidgetShell } from "@/components/design-system";
 
-type DayData = { date: string; trades: number; pnl: number; disciplined: boolean };
+type DayData = {
+  date: string;
+  trades: number;
+  pnl: number;
+  disciplined: boolean;
+};
 
 type Props = { data: DayData[]; loading?: boolean };
 
@@ -45,7 +50,11 @@ export default function TradingHeatmap({ data, loading }: Props) {
   return (
     <WidgetShell
       title="TRADING CONSISTENCY"
-      headerAction={<Link href="/analytics" className="text-xs text-accent no-underline">Details →</Link>}
+      headerAction={
+        <Link href="/analytics" className="text-xs text-accent no-underline">
+          Details →
+        </Link>
+      }
       loading={loading}
       isEmpty={data.length === 0}
       emptyMessage="Consistency data will appear once you start trading."
@@ -57,16 +66,32 @@ export default function TradingHeatmap({ data, loading }: Props) {
             key={i}
             className="aspect-square rounded-xs transition-opacity min-h-[10px]"
             style={{ backgroundColor: intensity(day) }}
-            title={day ? `${day.date}: ${day.trades} trades, $${day.pnl}` : "No trades"}
+            title={
+              day
+                ? `${day.date}: ${day.trades} trades, $${day.pnl}`
+                : "No trades"
+            }
           />
         ))}
       </div>
       <div className="flex items-center gap-1.5 mt-2 justify-end">
         <span className="text-[10px] text-text-dim">Less</span>
-        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "var(--bg-hover, #1e2028)" }} />
-        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "var(--accent, #3b82f6)" }} />
-        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "var(--accent-profit, #22c55e)" }} />
-        <div className="w-3 h-3 rounded-xs" style={{ backgroundColor: "var(--accent-loss, #ef4444)" }} />
+        <div
+          className="w-3 h-3 rounded-xs"
+          style={{ backgroundColor: "var(--bg-hover, #1e2028)" }}
+        />
+        <div
+          className="w-3 h-3 rounded-xs"
+          style={{ backgroundColor: "var(--accent, #3b82f6)" }}
+        />
+        <div
+          className="w-3 h-3 rounded-xs"
+          style={{ backgroundColor: "var(--accent-profit, #22c55e)" }}
+        />
+        <div
+          className="w-3 h-3 rounded-xs"
+          style={{ backgroundColor: "var(--accent-loss, #ef4444)" }}
+        />
         <span className="text-[10px] text-text-dim">More</span>
       </div>
     </WidgetShell>

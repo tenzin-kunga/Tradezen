@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm';
+import { relations } from "drizzle-orm";
 import {
   users,
   accounts,
@@ -7,7 +7,7 @@ import {
   checklistItems,
   checklistRuns,
   checklistRunItems,
-} from './schema';
+} from "./schema";
 
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
@@ -36,29 +36,35 @@ export const checklistItemsRelations = relations(checklistItems, ({ one }) => ({
   }),
 }));
 
-export const checklistRunsRelations = relations(checklistRuns, ({ one, many }) => ({
-  user: one(users, {
-    fields: [checklistRuns.userId],
-    references: [users.id],
+export const checklistRunsRelations = relations(
+  checklistRuns,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [checklistRuns.userId],
+      references: [users.id],
+    }),
+    checklist: one(checklists, {
+      fields: [checklistRuns.checklistId],
+      references: [checklists.id],
+    }),
+    trade: one(trades, {
+      fields: [checklistRuns.tradeId],
+      references: [trades.id],
+    }),
+    runItems: many(checklistRunItems),
   }),
-  checklist: one(checklists, {
-    fields: [checklistRuns.checklistId],
-    references: [checklists.id],
-  }),
-  trade: one(trades, {
-    fields: [checklistRuns.tradeId],
-    references: [trades.id],
-  }),
-  runItems: many(checklistRunItems),
-}));
+);
 
-export const checklistRunItemsRelations = relations(checklistRunItems, ({ one }) => ({
-  run: one(checklistRuns, {
-    fields: [checklistRunItems.runId],
-    references: [checklistRuns.id],
+export const checklistRunItemsRelations = relations(
+  checklistRunItems,
+  ({ one }) => ({
+    run: one(checklistRuns, {
+      fields: [checklistRunItems.runId],
+      references: [checklistRuns.id],
+    }),
+    item: one(checklistItems, {
+      fields: [checklistRunItems.itemId],
+      references: [checklistItems.id],
+    }),
   }),
-  item: one(checklistItems, {
-    fields: [checklistRunItems.itemId],
-    references: [checklistItems.id],
-  }),
-}));
+);

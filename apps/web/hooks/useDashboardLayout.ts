@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { DashboardLayout, LayoutWidget, WidgetId } from "@/lib/layout-types";
+import type {
+  DashboardLayout,
+  LayoutWidget,
+  WidgetId,
+} from "@/lib/layout-types";
 import { DEFAULT_LAYOUT } from "@/lib/layout-types";
 import { getLayout, saveLayout } from "@/lib/api";
 
@@ -16,8 +20,20 @@ function migrateLayout(layout: DashboardLayout): DashboardLayout {
     if (w.id === "analytics-preview") {
       changed = true;
       return [
-        { id: "analytics-insights" as const, visible: w.visible, size: w.size, column: 0 as const, order: 0 },
-        { id: "ai-coach" as const, visible: w.visible, size: w.size, column: 1 as const, order: 0 },
+        {
+          id: "analytics-insights" as const,
+          visible: w.visible,
+          size: w.size,
+          column: 0 as const,
+          order: 0,
+        },
+        {
+          id: "ai-coach" as const,
+          visible: w.visible,
+          size: w.size,
+          column: 1 as const,
+          order: 0,
+        },
       ];
     }
     return [w];

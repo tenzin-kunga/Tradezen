@@ -31,7 +31,6 @@ import { AiInsightsService } from './ai/ai-insights.service';
 import { AiController } from './ai/ai.controller';
 import { NotificationService } from './common/services/notification.service';
 import { NotificationTriggersService } from './common/services/notification-triggers.service';
-import { TradesService } from './trades/trades.service';
 import { JournalsService } from './journals/journals.service';
 
 @Global()
@@ -98,7 +97,6 @@ import { JournalsService } from './journals/journals.service';
     AiInsightsService,
     NotificationService,
     NotificationTriggersService,
-    TradesService,
     JournalsService,
   ],
   exports: [
@@ -114,7 +112,6 @@ import { JournalsService } from './journals/journals.service';
     AiInsightsService,
     NotificationService,
     NotificationTriggersService,
-    TradesService,
     JournalsService,
   ],
 })
