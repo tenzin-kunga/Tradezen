@@ -35,11 +35,8 @@ export class CloudinaryProvider implements StorageProvider {
     });
   }
 
-  async delete(publicId: string, version: number): Promise<void> {
-    await cloudinary.uploader.destroy(publicId, {
-      type: 'upload',
-      version,
-    });
+  async delete(publicId: string, _version: number): Promise<void> {
+    await cloudinary.uploader.destroy(publicId);
   }
 
   getThumbnailUrl(publicId: string, version: number): string {

@@ -204,7 +204,7 @@ export class TradeImageService {
     if (tradeIds.length === 0) return new Map();
 
     const results = await db
-      .selectDistinctOn(tradeImages.tradeId)
+      .selectDistinctOn([tradeImages.tradeId])
       .from(tradeImages)
       .where(inArray(tradeImages.tradeId, tradeIds))
       .orderBy(asc(tradeImages.tradeId), asc(tradeImages.displayOrder));
