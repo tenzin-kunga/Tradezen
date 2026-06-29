@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   eq,
   and,
@@ -20,6 +20,7 @@ import { CsvUtils } from '../common/utils/csv';
 import { CursorPagination } from '../common/utils/cursor-pagination';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import { EventPublisherService } from '../common/services/event-publisher.service';
+import { calculateRiskReward } from '../common/trading/risk-reward';
 import { SeedService } from '../seed/seed.service';
 import { TradeImageService } from './trades-image.service';
 import * as fs from 'fs';
@@ -387,17 +388,26 @@ export class TradesService {
     ]);
 
     const tradesWithImages = paginated.map((trade) => {
-      const thumbnail = thumbnailMap.get(trade.id) ?? null;
+      const previewImage = thumbnailMap.get(trade.id) ?? null;
+      const imageCount = countMap.get(trade.id) ?? 0;
+      const riskReward = calculateRiskReward(
+        Number(trade.entryPrice),
+        trade.stopLoss != null ? Number(trade.stopLoss) : null,
+        trade.takeProfit != null ? Number(trade.takeProfit) : null,
+      );
       return {
         ...trade,
-        thumbnail: thumbnail
+        previewImage: previewImage
           ? {
-              url: thumbnail.url,
-              width: thumbnail.width,
-              height: thumbnail.height,
+              id: previewImage.id,
+              url: previewImage.url,
+              width: previewImage.width,
+              height: previewImage.height,
             }
           : null,
-        imageCount: countMap.get(trade.id) ?? 0,
+        imageCount,
+        hasImages: imageCount > 0,
+        riskReward,
       };
     });
 

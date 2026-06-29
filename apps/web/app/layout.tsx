@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/lib/theme-context";
 import { ToastProvider } from "@/components/Toast";
 import AppShell from "@/components/AppShell";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { TrpcProvider } from "@/providers/trpc-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -35,9 +36,11 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>
-              <TooltipProvider>
-                <AppShell>{children}</AppShell>
-              </TooltipProvider>
+              <TrpcProvider>
+                <TooltipProvider>
+                  <AppShell>{children}</AppShell>
+                </TooltipProvider>
+              </TrpcProvider>
             </ToastProvider>
           </AuthProvider>
         </ThemeProvider>

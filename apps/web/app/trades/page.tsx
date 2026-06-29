@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -33,15 +33,7 @@ function fmtDate(d: string | null | undefined) {
   return dt.toISOString().replace("T", " ").slice(0, 16);
 }
 
-function getSessionBucket(dateStr: string) {
-  if (!dateStr) return "--";
-  const dt = new Date(dateStr);
-  if (isNaN(dt.getTime())) return "--";
-  const h = dt.getUTCHours();
-  if (h >= 13 && h < 18) return "NY OPEN";
-  if (h >= 7 && h < 13) return "LONDON";
-  return "ASIAN";
-}
+import { getTradingSession } from "@/lib/session";
 
 export default function TradeLog() {
   const router = useRouter();
@@ -325,9 +317,9 @@ export default function TradeLog() {
     : "--";
   const rrTrades = filteredTrades.filter(
     (t) =>
-      t.stop_loss != null &&
-      t.take_profit != null &&
-      t.stop_loss !== t.entry_price,
+      t.stopLoss != null &&
+      t.takeProfit != null &&
+      t.stopLoss !== t.entryPrice,
   );
   const avgRR =
     rrTrades.length === 0
@@ -337,8 +329,8 @@ export default function TradeLog() {
           rrTrades.reduce(
             (s, t) =>
               s +
-              Math.abs(t.take_profit! - t.entry_price) /
-                Math.abs(t.entry_price - t.stop_loss!),
+              Math.abs(t.takeProfit! - t.entryPrice) /
+                Math.abs(t.entryPrice - t.stopLoss!),
             0,
           ) / rrTrades.length
         ).toFixed(1);
@@ -349,8 +341,8 @@ export default function TradeLog() {
     ASIAN: 0,
   };
   filteredTrades.forEach((t) => {
-    sessionCounts[getSessionBucket(t.created_at)] =
-      (sessionCounts[getSessionBucket(t.created_at)] || 0) + 1;
+    sessionCounts[getTradingSession(t.createdAt)] =
+      (sessionCounts[getTradingSession(t.createdAt)] || 0) + 1;
   });
   const sessionTotal = filteredTrades.length || 1;
 
@@ -982,7 +974,7 @@ export default function TradeLog() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {filteredTrades.slice((page - 1) * 10, page * 10).map((t) => (
               <TradeCard key={t.id} trade={t} onView={handleTradeView} />
             ))}

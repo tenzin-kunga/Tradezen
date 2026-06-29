@@ -1,5 +1,6 @@
-import {
+﻿import {
   Controller,
+  Get,
   Post,
   Put,
   Delete,
@@ -21,6 +22,15 @@ import { ReorderImagesDto } from './dto/image.dto';
 @Controller('trades/:tradeId/images')
 export class TradeImageController {
   constructor(private readonly imageService: TradeImageService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List all images for a trade' })
+  getImages(
+    @CurrentUser('id') userId: string,
+    @Param('tradeId') tradeId: string,
+  ) {
+    return this.imageService.getImages(tradeId);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Upload an image to a trade' })

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { Trade } from "@tradezen/types";
 import {
@@ -42,7 +42,7 @@ export default function TradeDetailDrawer({
 
   const isWin = trade.pnl >= 0;
   const isLong = trade.direction === "buy";
-  const imageUrl = trade.chart_image ? `${API}${trade.chart_image}` : null;
+  const imageUrl = trade.chartImage ? `${API}${trade.chartImage}` : null;
 
   return (
     <Sheet
@@ -121,24 +121,24 @@ export default function TradeDetailDrawer({
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="ENTRY" value={String(trade.entry_price)} mono />
-            <Field label="EXIT" value={String(trade.exit_price)} mono />
+            <Field label="ENTRY" value={String(trade.entryPrice)} mono />
+            <Field label="EXIT" value={String(trade.exitPrice)} mono />
             <Field
               label="STOP LOSS"
-              value={trade.stop_loss != null ? String(trade.stop_loss) : "--"}
+              value={trade.stopLoss != null ? String(trade.stopLoss) : "--"}
               mono
             />
             <Field
               label="TAKE PROFIT"
               value={
-                trade.take_profit != null ? String(trade.take_profit) : "--"
+                trade.takeProfit != null ? String(trade.takeProfit) : "--"
               }
               mono
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="LOT SIZE" value={String(trade.lot_size)} />
+            <Field label="LOT SIZE" value={String(trade.lotSize)} />
             <Field
               label="COMMISSION"
               value={`$${Number(trade.commission ?? 0).toFixed(2)}`}
@@ -146,7 +146,7 @@ export default function TradeDetailDrawer({
             <Field label="DIRECTION" value={isLong ? "LONG" : "SHORT"} />
             <Field
               label="DATE"
-              value={fmtDate(trade.trade_date ?? trade.created_at)}
+              value={fmtDate(trade.tradeDate ?? trade.createdAt)}
             />
           </div>
 
@@ -157,17 +157,17 @@ export default function TradeDetailDrawer({
             </div>
           )}
 
-          {(trade.fomo_check ||
-            trade.trend_alignment ||
-            trade.vengeance_trade) && (
+          {(trade.fomoCheck ||
+            trade.trendAlignment ||
+            trade.vengeanceTrade) && (
             <div>
               <div className="label-caps mb-2">PSYCHOLOGY</div>
               <div className="flex flex-col gap-1.5">
-                {trade.fomo_check && <PsychologyLabel label="FOMO ENTRY" />}
-                {trade.trend_alignment && (
+                {trade.fomoCheck && <PsychologyLabel label="FOMO ENTRY" />}
+                {trade.trendAlignment && (
                   <PsychologyLabel label="TREND ALIGNED" positive />
                 )}
-                {trade.vengeance_trade && (
+                {trade.vengeanceTrade && (
                   <PsychologyLabel label="VENGEANCE TRADE" />
                 )}
               </div>

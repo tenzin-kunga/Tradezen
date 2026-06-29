@@ -1,4 +1,5 @@
-import type { DashboardLayout } from "@/lib/layout-types";
+﻿import type { DashboardLayout } from "@/lib/layout-types";
+import { useQuery } from '@tanstack/react-query';
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -252,6 +253,30 @@ export const uploadTradeImage = async (tradeId: string, file: File) => {
   return handleResponse<{ id: string; url: string; thumbnailUrl: string }>(res);
 };
 
+
+export interface TradeImageDto {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+  width: number | null;
+  height: number | null;
+  displayOrder: number;
+}
+
+export const getTradeImages = async (tradeId: string): Promise<TradeImageDto[]> => {
+  const res = await authFetch(`${API}/trades/${tradeId}/images`);
+  return handleResponse<TradeImageDto[]>(res);
+};
+
+export const useTradeImages = (tradeId: string, enabled: boolean) => {
+  return useQuery({
+    queryKey: ['trade-images', tradeId],
+    queryFn: () => getTradeImages(tradeId),
+    enabled: !!tradeId && enabled,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+};
 export const deleteTradeImage = async (tradeId: string, imageId: string) => {
   const res = await authFetch(`${API}/trades/${tradeId}/images/${imageId}`, {
     method: "DELETE",

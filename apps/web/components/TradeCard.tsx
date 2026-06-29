@@ -1,23 +1,23 @@
-"use client";
+﻿"use client";
 
 import type { Trade } from "@tradezen/types";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-
-function rr(t: Trade): string {
-  if (!t.stop_loss || !t.take_profit || t.stop_loss === t.entry_price)
-    return "--";
-  const risk = Math.abs(t.entry_price - Number(t.stop_loss));
-  const reward = Math.abs(Number(t.take_profit) - t.entry_price);
-  return (reward / risk).toFixed(1);
-}
+import Image from "next/image";
+import {
+  Card,
+  CardContent,
+  Badge,
+  Separator,
+} from "@/components/ui";
+import { getTradingSession } from "@/lib/session";
+import { ImageLightbox } from "./ImageLightbox";
+import { useState } from "react";
 
 function fmtPnl(n: number): string {
   const abs = Math.abs(n).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return n >= 0 ? `+$${abs}` : `-$${abs}`;
+  const prefix = n >= 0 ? '+$' : '-$'; return prefix + abs;
 }
 
 function fmtDate(d: string | null | undefined): string {
@@ -40,186 +40,175 @@ export default function TradeCard({
 }) {
   const isWin = trade.pnl >= 0;
   const isLong = trade.direction === "buy";
-  const d = trade.trade_date ?? trade.created_at;
+  const d = trade.tradeDate ?? trade.createdAt;
+  const session = getTradingSession(d);
 
-  // Support both new thumbnail structure and legacy chart_image
-  const thumbnailUrl =
-    trade.thumbnail?.url ??
-    (trade.chart_image ? `${API}${trade.chart_image}` : null);
-  const imageCount = trade.imageCount ?? 0;
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const metrics = [
+    { label: "Entry", value: trade.entryPrice },
+    { label: "Exit", value: trade.exitPrice },
+    { label: "Stop Loss", value: trade.stopLoss },
+    { label: "Take Profit", value: trade.takeProfit },
+    { label: "R:R", value: trade.riskReward },
+    { label: "Lot Size", value: trade.lotSize },
+  ];
+
+  function fmtMetric(val: number | string | null | undefined): string {
+    if (val == null || val === undefined) return "--";
+    if (typeof val === "number") {
+      return val.toString();
+    }
+    return String(val);
+  }
 
   return (
-    <div
-      className="glass-card cursor-pointer transition-all hover:brightness-110 overflow-hidden"
-      onClick={() => onView(trade)}
-    >
-      {/* Row 1: Symbol + WIN/LOSS + P&L */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-sm tracking-tight">
-            {trade.symbol}
-          </span>
-          <span
-            className="text-[10px] font-semibold tracking-widest px-1.5 py-0.5 rounded"
-            style={{
-              background: isWin
-                ? "rgba(34,197,94,0.15)"
-                : "rgba(239,68,68,0.15)",
-              color: isWin ? "var(--accent-profit)" : "var(--accent-loss)",
-            }}
-          >
-            {isWin ? "WIN" : "LOSS"}
-          </span>
-        </div>
-        <span
-          className="mono-data font-semibold text-sm"
-          style={{
-            color: isWin ? "var(--accent-profit)" : "var(--accent-loss)",
-          }}
-        >
-          {fmtPnl(Number(trade.pnl))}
-        </span>
-      </div>
-
-      {/* Row 2: Trade details */}
-      <div
-        className="flex items-center gap-2 px-4 pb-2 text-[11px]"
-        style={{ color: "var(--text-muted)" }}
+    <>
+      <Card
+        className="cursor-pointer transition-all hover:brightness-110 overflow-hidden p-4"
+        onClick={() => onView(trade)}
       >
-        <span
-          style={{
-            color: isLong ? "var(--accent-profit)" : "var(--accent-loss)",
-          }}
-        >
-          {isLong ? "LONG" : "SHORT"}
-        </span>
-        <span>•</span>
-        <span>{trade.strategy || "—"}</span>
-        <span>•</span>
-        <span>RR {rr(trade)}</span>
-        <span>•</span>
-        <span>Lot {trade.lot_size}</span>
-        <span>•</span>
-        <span>{fmtDate(d)}</span>
-      </div>
-
-      {/* Row 3: Screenshot + behavioral tags + chevron */}
-      <div
-        className="flex items-center gap-3 px-4 pb-3 pt-2"
-        style={{ borderTop: "1px solid var(--border, #23252d)" }}
-      >
-        {thumbnailUrl ? (
-          <div
-            className="relative rounded overflow-hidden flex-shrink-0"
-            style={{
-              width: 56,
-              height: 40,
-              background: "var(--bg-surface-hover, #1a1c23)",
-            }}
-          >
-            <img
-              src={thumbnailUrl}
-              alt="Chart"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
-            {imageCount > 1 && (
-              <div
-                className="absolute bottom-0.5 right-0.5 bg-black/70 px-1 py-0.5 rounded text-[8px]"
-                style={{ color: "var(--text-primary, #fff)" }}
-              >
-                +{imageCount - 1}
+        {/* Screenshot area */}
+        <div onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}>
+          <div className="relative w-full bg-[var(--bg-surface-hover)] rounded-lg overflow-hidden mb-4" style={{ aspectRatio: "16/9" }}>
+            {trade.previewImage ? (
+              <Image
+                src={trade.previewImage.url}
+                alt={trade.symbol + " chart"}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1" style={{ color: "var(--text-dim)" }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="m21 15-5-5L5 21" />
+                </svg>
+                <span className="text-[10px] font-medium">No screenshot</span>
               </div>
             )}
+            {/* Overlay badges */}
+            <div className="absolute top-3 right-3 flex gap-1">
+              {(trade.imageCount ?? 0) > 1 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 h-auto">
+                  {trade.imageCount}
+                </Badge>
+              )}
+              {trade.notes && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 h-auto">
+                  NOTES
+                </Badge>
+              )}
+            </div>
           </div>
-        ) : (
-          <div
-            className="rounded flex items-center justify-center flex-shrink-0"
-            style={{
-              width: 56,
-              height: 40,
-              background: "var(--bg-surface-hover, #1a1c23)",
-              color: "var(--text-dim, #6b7280)",
-              fontSize: 10,
-            }}
-          >
+        </div>
+
+        {/* Header: Symbol + P&L */}
+        <CardContent className="pb-0 mb-4">
+          <div className="flex items-center justify-between mb-0.5">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm tracking-tight">{trade.symbol}</span>
+              <Badge
+                variant="secondary"
+                className="text-[10px] px-1.5 py-0.5 h-auto"
+                style={{
+                  background: isWin
+                    ? "rgba(34,197,94,0.15)"
+                    : "rgba(239,68,68,0.15)",
+                  color: isWin ? "var(--accent-profit)" : "var(--accent-loss)",
+                }}
+              >
+                {isWin ? "WIN" : "LOSS"}
+              </Badge>
+            </div>
+            <span
+              className="mono-data text-lg font-bold"
+              style={{
+                color: isWin ? "var(--accent-profit)" : "var(--accent-loss)",
+              }}
+            >
+              {fmtPnl(Number(trade.pnl))}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] flex-wrap" style={{ color: "var(--text-muted)" }}>
+            {[
+              { el: <span key="dir" style={{ color: isLong ? "var(--accent-profit)" : "var(--accent-loss)" }}>{isLong ? "LONG" : "SHORT"}</span> },
+              trade.strategy && { el: <span key="strat">{trade.strategy}</span> },
+              { el: <span key="date">{fmtDate(d)}</span> },
+              session !== "--" && { el: <span key="sess">{session}</span> },
+            ].filter(Boolean).reduce<React.ReactNode[]>((acc, item, i) => {
+              if (i === 0) return [item.el];
+              return [...acc, <span key={`dot-${i}`}>·</span>, item.el];
+            }, [])}
+          </div>
+        </CardContent>
+
+        <Separator className="my-2.5" />
+
+        {/* Metrics grid */}
+        <CardContent className="pb-0">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+            {metrics.map((m) => (
+              <div key={m.label}>
+                <div className="label-caps text-[9px]">{m.label}</div>
+                <div className="mono-data font-semibold text-sm leading-snug">
+                  {fmtMetric(m.value)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+
+        <Separator className="my-2.5" />
+
+        {/* Footer: tags + notes + chevron */}
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center gap-1.5 flex-1 flex-wrap">
+            {trade.fomoCheck && (
+              <Badge variant="destructive" className="text-[9px] px-1.5 py-0.5 h-auto">
+                FOMO
+              </Badge>
+            )}
+            {trade.vengeanceTrade && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 h-auto" style={{ color: "rgb(249,115,22)", borderColor: "rgba(249,115,22,0.3)" }}>
+                REVENGE
+              </Badge>
+            )}
+            {trade.trendAlignment && (
+              <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 h-auto" style={{ color: "var(--accent-profit)", borderColor: "rgba(34,197,94,0.3)" }}>
+                TREND
+              </Badge>
+            )}
+            <div className="flex-1" />
             <svg
-              width="20"
-              height="20"
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.5"
+              strokeWidth="2"
               strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ color: "var(--text-dim)", flexShrink: 0, opacity: 0.5 }}
             >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="m21 15-5-5L5 21" />
+              <path d="m9 18 6-6-6-6" />
             </svg>
           </div>
-        )}
+        </CardContent>
+      </Card>
 
-        <div className="flex items-center gap-1.5 flex-1 flex-wrap">
-          {trade.fomo_check && (
-            <span
-              className="text-[9px] font-medium px-1.5 py-0.5 rounded"
-              style={{
-                background: "rgba(239,68,68,0.1)",
-                color: "var(--accent-loss)",
-              }}
-            >
-              FOMO
-            </span>
-          )}
-          {trade.vengeance_trade && (
-            <span
-              className="text-[9px] font-medium px-1.5 py-0.5 rounded"
-              style={{
-                background: "rgba(249,115,22,0.1)",
-                color: "rgb(249,115,22)",
-              }}
-            >
-              REVENGE
-            </span>
-          )}
-          {trade.trend_alignment && (
-            <span
-              className="text-[9px] font-medium px-1.5 py-0.5 rounded"
-              style={{
-                background: "rgba(59,130,246,0.1)",
-                color: "var(--accent-profit)",
-              }}
-            >
-              TREND
-            </span>
-          )}
-          {trade.notes && (
-            <span
-              className="text-[10px] truncate max-w-[200px]"
-              style={{ color: "var(--text-dim, #6b7280)" }}
-            >
-              {trade.notes}
-            </span>
-          )}
-        </div>
-
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ color: "var(--text-dim)", flexShrink: 0, opacity: 0.5 }}
-        >
-          <path d="m9 18 6-6-6-6" />
-        </svg>
-      </div>
-    </div>
+      {trade.previewImage && (
+        <ImageLightbox
+          tradeId={trade.id}
+          previewImage={trade.previewImage}
+          imageCount={trade.imageCount ?? 0}
+          open={lightboxOpen}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+    </>
   );
 }
