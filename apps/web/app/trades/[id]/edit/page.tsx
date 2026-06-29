@@ -6,6 +6,7 @@ import {
   getTrade,
   updateTrade,
   uploadTradeImage,
+  deleteTradeImage,
   getTagsForTrade,
   tagTrade,
   untagTrade,
@@ -647,18 +648,7 @@ export default function EditTradePage() {
                           onClick={async () => {
                             if (confirm("Delete this screenshot?")) {
                               try {
-                                const API =
-                                  process.env.NEXT_PUBLIC_API_URL ||
-                                  "http://localhost:3001";
-                                await fetch(
-                                  `${API}/trades/${tradeId}/images/${image.id}`,
-                                  {
-                                    method: "DELETE",
-                                    headers: {
-                                      Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                    },
-                                  },
-                                );
+                                await deleteTradeImage(tradeId, image.id);
                                 setImages(
                                   images.filter((img) => img.id !== image.id),
                                 );

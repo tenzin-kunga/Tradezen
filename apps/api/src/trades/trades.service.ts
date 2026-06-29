@@ -380,23 +380,26 @@ export class TradesService {
 
     const paginated = data.slice(offset, offset + limit);
 
-    const tradesWithImages = await Promise.all(
-      paginated.map(async (trade) => {
-        const thumbnail = await this.imageService.getThumbnail(trade.id);
-        const imageCount = await this.imageService.getImageCount(trade.id);
-        return {
-          ...trade,
-          thumbnail: thumbnail
-            ? {
-                url: thumbnail.url,
-                width: thumbnail.width,
-                height: thumbnail.height,
-              }
-            : null,
-          imageCount,
-        };
-      }),
-    );
+    const tradeIds = paginated.map((t) => t.id);
+    const [thumbnailMap, countMap] = await Promise.all([
+      this.imageService.getThumbnails(tradeIds),
+      this.imageService.getImageCounts(tradeIds),
+    ]);
+
+    const tradesWithImages = paginated.map((trade) => {
+      const thumbnail = thumbnailMap.get(trade.id) ?? null;
+      return {
+        ...trade,
+        thumbnail: thumbnail
+          ? {
+              url: thumbnail.url,
+              width: thumbnail.width,
+              height: thumbnail.height,
+            }
+          : null,
+        imageCount: countMap.get(trade.id) ?? 0,
+      };
+    });
 
     return {
       data: tradesWithImages,

@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { eq, and, asc, count, sql } from 'drizzle-orm';
+import { eq, and, asc, count, sql, inArray } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { tradeImages, trades } from '@tradezen/db';
 import { StorageProvider } from '../storage/storage.provider';
@@ -196,6 +196,45 @@ export class TradeImageService {
       .from(tradeImages)
       .where(eq(tradeImages.tradeId, tradeId));
     return Number(result[0]?.count ?? 0);
+  }
+
+  async getThumbnails(
+    tradeIds: string[],
+  ): Promise<Map<string, ImageResponseDto>> {
+    if (tradeIds.length === 0) return new Map();
+
+    const results = await db
+      .selectDistinctOn(tradeImages.tradeId)
+      .from(tradeImages)
+      .where(inArray(tradeImages.tradeId, tradeIds))
+      .orderBy(asc(tradeImages.tradeId), asc(tradeImages.displayOrder));
+
+    const map = new Map<string, ImageResponseDto>();
+    for (const row of results) {
+      map.set(row.tradeId, this.formatImageResponse(row));
+    }
+    return map;
+  }
+
+  async getImageCounts(
+    tradeIds: string[],
+  ): Promise<Map<string, number>> {
+    if (tradeIds.length === 0) return new Map();
+
+    const results = await db
+      .select({
+        tradeId: tradeImages.tradeId,
+        count: count(),
+      })
+      .from(tradeImages)
+      .where(inArray(tradeImages.tradeId, tradeIds))
+      .groupBy(tradeImages.tradeId);
+
+    const map = new Map<string, number>();
+    for (const row of results) {
+      map.set(row.tradeId, Number(row.count));
+    }
+    return map;
   }
 
   private async findTradeWithOwnership(tradeId: string, userId: string) {
