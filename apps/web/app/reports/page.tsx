@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getWeeklyReport, downloadCSV as downloadCSVApi } from "../../lib/api";
+import DashboardShell from "@/components/DashboardShell";
 
 interface WeeklyReport {
   period: string;
@@ -55,18 +56,15 @@ export default function ReportsPage() {
   };
 
   return (
-    <div>
+    <DashboardShell>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
-            WEEKLY REPORTS
+          <h1 className="text-lg md:text-xl font-bold tracking-tight m-0">
+            Weekly Reports
           </h1>
-          <p
-            className="text-xs mt-1 tracking-wide"
-            style={{ color: "var(--text-dim)" }}
-          >
-            PERFORMANCE ANALYSIS // AUTOMATED INSIGHTS
+          <p className="text-xs mt-1" style={{ color: "var(--text-dim)" }}>
+            Performance analysis and automated insights
           </p>
         </div>
         <div className="flex gap-3">
@@ -84,32 +82,42 @@ export default function ReportsPage() {
       </div>
 
       {!report && !loading && (
-        <div
-          className="text-center py-16 tracking-widest"
-          style={{ color: "var(--text-dim)" }}
-        >
-          NO REPORT DATA AVAILABLE
+        <div className="surface-1 rounded-xl p-6 py-14 text-center">
+          <p
+            className="text-sm font-semibold mb-2"
+            style={{ color: "var(--text-primary)" }}
+          >
+            No report generated
+          </p>
+          <p className="text-xs" style={{ color: "var(--text-dim)" }}>
+            Click Generate to create your weekly performance analysis.
+          </p>
         </div>
       )}
 
       {loading && (
-        <div
-          className="text-center py-16 tracking-widest"
-          style={{ color: "var(--text-muted)" }}
-        >
-          GENERATING PROTOCOL REPORT...
+        <div className="surface-1 rounded-xl p-6 py-14">
+          <div className="space-y-3">
+            <div className="skeleton" style={{ width: "35%", height: 16 }} />
+            <div className="skeleton" style={{ width: "60%", height: 12 }} />
+            <div className="skeleton" style={{ width: "45%", height: 12 }} />
+            <div
+              className="skeleton"
+              style={{ width: "100%", height: 120, marginTop: 16 }}
+            />
+          </div>
         </div>
       )}
 
       {report && (
-        <div className="space-y-4">
+        <div className="space-y-4 stagger-fade">
           {/* Summary */}
           <div className="glass-card p-4 md:p-6">
             <div
               className="text-xs tracking-widest mb-4"
               style={{ color: "var(--text-muted)" }}
             >
-              WEEKLY SUMMARY — {report.period}
+              Weekly Summary — {report.period}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               <div>
@@ -176,7 +184,7 @@ export default function ReportsPage() {
               className="text-xs tracking-widest mb-4"
               style={{ color: "var(--text-muted)" }}
             >
-              BEHAVIORAL ANALYSIS
+              Behavioral Analysis
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="glass-card p-4">
@@ -254,7 +262,7 @@ export default function ReportsPage() {
                         : "var(--text-muted)",
                 }}
               >
-                COACHING — {report.coaching.severity.toUpperCase()}
+                AI Coaching — {report.coaching.severity.toUpperCase()}
               </div>
               <p
                 className="text-sm"
@@ -271,7 +279,7 @@ export default function ReportsPage() {
               className="text-xs tracking-widest mb-4"
               style={{ color: "var(--text-muted)" }}
             >
-              KEY INSIGHTS
+              Key Insights
             </div>
             <div className="flex flex-col gap-3">
               {report.topInsights.map((insight, i) => (
@@ -288,6 +296,6 @@ export default function ReportsPage() {
           </div>
         </div>
       )}
-    </div>
+    </DashboardShell>
   );
 }

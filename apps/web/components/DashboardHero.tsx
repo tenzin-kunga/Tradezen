@@ -1,17 +1,20 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import Link from "next/link";
-
+import { AnimatedNumber } from "./AnimatedNumber";
 type Props = {
-  tradesThisWeek: number;
+  todayPnl: number;
+  tradesToday: number;
+  winRateToday: number;
   weeklyPnl: number;
   weeklyWinRate: number;
   loading?: boolean;
 };
 
 export default function DashboardHero({
-  tradesThisWeek,
+  todayPnl,
+  tradesToday,
+  winRateToday,
   weeklyPnl,
   weeklyWinRate,
   loading,
@@ -20,70 +23,118 @@ export default function DashboardHero({
 
   if (loading) {
     return (
-      <div
-        className="rounded-xl p-5"
-        style={{
-          background: "linear-gradient(135deg, var(--accent) 0%, #1e293b 100%)",
-        }}
-      >
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="skeleton h-6 w-48" />
-          <div className="flex gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="skeleton h-10 w-24" />
-            ))}
+      <div className="surface-1 rounded-xl p-8 mb-4">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="flex flex-col gap-3">
+            <div className="skeleton" style={{ width: 160, height: 36 }} />
+            <div className="skeleton" style={{ width: 180, height: 14 }} />
+          </div>
+          <div className="flex gap-8">
+            <div className="skeleton" style={{ width: 80, height: 40 }} />
+            <div className="skeleton" style={{ width: 80, height: 40 }} />
           </div>
         </div>
       </div>
     );
   }
 
-  const hasData = tradesThisWeek > 0;
-
   return (
-    <div
-      className="rounded-xl p-5"
-      style={{
-        background: "linear-gradient(135deg, var(--accent) 0%, #1e293b 100%)",
-      }}
-    >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h1 className="text-xl font-bold text-text-primary">
-          Welcome back, {user?.username || "Trader"}
-        </h1>
-        {hasData ? (
-          <div className="flex gap-6 flex-wrap">
-            <div>
-              <div className="label-caps mb-1">TRADES THIS WEEK</div>
-              <div className="text-2xl font-bold text-text-primary">
-                {tradesThisWeek}
-              </div>
-            </div>
-            <div>
-              <div className="label-caps mb-1">WEEKLY P&L</div>
-              <div
-                className={`text-2xl font-bold ${weeklyPnl >= 0 ? "text-profit" : "text-loss"}`}
-              >
-                {weeklyPnl >= 0 ? "+" : ""}$
-                {Math.abs(weeklyPnl).toLocaleString()}
-              </div>
-            </div>
-            <div>
-              <div className="label-caps mb-1">WIN RATE</div>
-              <div className="text-2xl font-bold text-text-primary">
-                {weeklyWinRate}%
-              </div>
-            </div>
+    <div className="surface-1 rounded-xl p-8 mb-4">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div className="flex flex-col">
+          <span
+            className="font-bold tracking-tight"
+            style={{
+              fontSize: "var(--text-4xl)",
+              lineHeight: "var(--text-4xl--line-height)",
+              letterSpacing: "var(--text-4xl--letter-spacing)",
+              color:
+                todayPnl > 0
+                  ? "var(--accent-profit)"
+                  : todayPnl < 0
+                    ? "var(--accent-loss)"
+                    : "var(--text-muted)",
+            }}
+          >
+            {todayPnl >= 0 ? "+" : "-"}$
+            <AnimatedNumber
+              value={Math.abs(todayPnl)}
+              decimals={2}
+              duration={600}
+            />
+          </span>
+          <span
+            className="mt-1"
+            style={{
+              fontSize: "var(--label)",
+              color: "var(--text-muted)",
+              fontWeight: 500,
+            }}
+          >
+            Today&apos;s P&L
+            {tradesToday > 0 && (
+              <>
+                {" "}
+                <span style={{ color: "var(--text-dim)" }}>·</span>{" "}
+                {tradesToday} trade{tradesToday !== 1 ? "s" : ""}{" "}
+                <span style={{ color: "var(--text-dim)" }}>·</span>{" "}
+                {winRateToday}% win
+              </>
+            )}
+          </span>
+        </div>
+
+        <div className="flex gap-8">
+          <div className="flex flex-col">
+            <span
+              style={{
+                fontSize: "var(--metric-primary)",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                lineHeight: 1,
+              }}
+            >
+              {weeklyPnl >= 0 ? "+" : "-"}$
+              <AnimatedNumber
+                value={Math.abs(weeklyPnl)}
+                decimals={0}
+                duration={600}
+              />
+            </span>
+            <span
+              className="mt-0.5"
+              style={{
+                fontSize: "var(--meta)",
+                color: "var(--text-muted)",
+                fontWeight: 500,
+              }}
+            >
+              This week
+            </span>
           </div>
-        ) : (
-          <p className="text-sm text-text-muted">
-            Start this week strong —{" "}
-            <Link href="/add-trade" className="text-text-primary underline">
-              log your first trade
-            </Link>
-            .
-          </p>
-        )}
+          <div className="flex flex-col">
+            <span
+              style={{
+                fontSize: "var(--metric-primary)",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                lineHeight: 1,
+              }}
+            >
+              <AnimatedNumber value={weeklyWinRate} duration={600} />%
+            </span>
+            <span
+              className="mt-0.5"
+              style={{
+                fontSize: "var(--meta)",
+                color: "var(--text-muted)",
+                fontWeight: 500,
+              }}
+            >
+              Week win rate
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );

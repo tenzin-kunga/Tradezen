@@ -28,21 +28,33 @@ export const tradesRouter = router({
   findAll: protectedProcedure
     .input(queryTradesSchema)
     .query(async ({ ctx, input }) => {
-      const service = new TradesService(eventPublisher, seedService, imageService);
+      const service = new TradesService(
+        eventPublisher,
+        seedService,
+        imageService,
+      );
       return service.findAll(ctx.userId, input);
     }),
 
   findOne: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
-      const service = new TradesService(eventPublisher, seedService, imageService);
+      const service = new TradesService(
+        eventPublisher,
+        seedService,
+        imageService,
+      );
       return service.findOne(ctx.userId, input.id);
     }),
 
   create: protectedProcedure
     .input(createTradeSchema)
     .mutation(async ({ ctx, input }) => {
-      const service = new TradesService(eventPublisher, seedService, imageService);
+      const service = new TradesService(
+        eventPublisher,
+        seedService,
+        imageService,
+      );
       return service.create(ctx.userId, input);
     }),
 
@@ -68,7 +80,11 @@ export const tradesRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const service = new TradesService(eventPublisher, seedService, imageService);
+      const service = new TradesService(
+        eventPublisher,
+        seedService,
+        imageService,
+      );
       const { id, ...data } = input;
       return service.update(ctx.userId, id, data);
     }),
@@ -76,26 +92,42 @@ export const tradesRouter = router({
   remove: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const service = new TradesService(eventPublisher, seedService, imageService);
+      const service = new TradesService(
+        eventPublisher,
+        seedService,
+        imageService,
+      );
       return service.remove(ctx.userId, input.id);
     }),
 
   getAnalytics: protectedProcedure.input(z.void()).query(async ({ ctx }) => {
-    const service = new TradesService(eventPublisher, seedService, imageService);
+    const service = new TradesService(
+      eventPublisher,
+      seedService,
+      imageService,
+    );
     return service.getAnalytics(ctx.userId);
   }),
 
   getDailyPnl: protectedProcedure
     .input(z.object({ from: z.string().optional(), to: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      const service = new TradesService(eventPublisher, seedService, imageService);
+      const service = new TradesService(
+        eventPublisher,
+        seedService,
+        imageService,
+      );
       return service.getDailyPnl(ctx.userId, input.from, input.to);
     }),
 
   getAdvancedAnalytics: protectedProcedure
     .input(z.void())
     .query(async ({ ctx }) => {
-      const service = new TradesService(eventPublisher, seedService, imageService);
+      const service = new TradesService(
+        eventPublisher,
+        seedService,
+        imageService,
+      );
       return service.getAdvancedAnalytics(ctx.userId);
     }),
 
@@ -109,19 +141,31 @@ export const tradesRouter = router({
   getStrategyAnalytics: protectedProcedure
     .input(z.void())
     .query(async ({ ctx }) => {
-      const service = new TradesService(eventPublisher, seedService, imageService);
+      const service = new TradesService(
+        eventPublisher,
+        seedService,
+        imageService,
+      );
       return service.getStrategyAnalytics(ctx.userId);
     }),
 
   getTagAnalytics: protectedProcedure.input(z.void()).query(async ({ ctx }) => {
-    const service = new TradesService(eventPublisher, seedService, imageService);
+    const service = new TradesService(
+      eventPublisher,
+      seedService,
+      imageService,
+    );
     return service.getTagAnalytics(ctx.userId);
   }),
 
   compareStrategies: protectedProcedure
     .input(z.object({ strategyA: z.string(), strategyB: z.string() }))
     .query(async ({ ctx, input }) => {
-      const service = new TradesService(eventPublisher, seedService, imageService);
+      const service = new TradesService(
+        eventPublisher,
+        seedService,
+        imageService,
+      );
       return service.compareStrategies(
         ctx.userId,
         input.strategyA,

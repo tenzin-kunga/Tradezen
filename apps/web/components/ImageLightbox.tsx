@@ -2,11 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
-import {
-  Dialog,
-  DialogContent,
-  Button,
-} from "@/components/ui";
+import { Dialog, DialogContent, Button } from "@/components/ui";
 import { useTradeImages, type TradeImageDto } from "@/lib/api";
 
 interface ImageLightboxProps {
@@ -26,16 +22,21 @@ export function ImageLightbox({
 }: ImageLightboxProps) {
   const hasMultipleImages = imageCount > 1;
 
-  const { data: allImages, isLoading } = useTradeImages(tradeId, open && hasMultipleImages);
+  const { data: allImages, isLoading } = useTradeImages(
+    tradeId,
+    open && hasMultipleImages,
+  );
 
   const images: TradeImageDto[] = allImages ?? [];
-  const totalImages = hasMultipleImages && images.length > 0 ? images.length : 1;
+  const totalImages =
+    hasMultipleImages && images.length > 0 ? images.length : 1;
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const currentUrl = hasMultipleImages && images.length > 0
-    ? images[currentIndex]?.url ?? previewImage.url
-    : previewImage.url;
+  const currentUrl =
+    hasMultipleImages && images.length > 0
+      ? (images[currentIndex]?.url ?? previewImage.url)
+      : previewImage.url;
 
   const goNext = useCallback(() => {
     if (currentIndex < totalImages - 1) setCurrentIndex((i) => i + 1);
@@ -60,7 +61,12 @@ export function ImageLightbox({
   }, [open]);
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
+    >
       <DialogContent
         className="max-w-[90vw] max-h-[90vh] bg-black/90 border-none p-0"
         showCloseButton={false}
@@ -75,15 +81,34 @@ export function ImageLightbox({
               onClick={goPrev}
               aria-label="Previous image"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </Button>
           )}
 
           {isLoading && hasMultipleImages && images.length === 0 ? (
-            <div className="flex flex-col items-center gap-2" style={{ color: "var(--text-muted)" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="animate-spin">
+            <div
+              className="flex flex-col items-center gap-2"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                className="animate-spin"
+              >
                 <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               </svg>
               <span className="text-xs">Loading images...</span>
@@ -109,7 +134,15 @@ export function ImageLightbox({
               onClick={goNext}
               aria-label="Next image"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </Button>
@@ -119,11 +152,17 @@ export function ImageLightbox({
         {/* Counter */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
           {hasMultipleImages && images.length > 0 ? (
-            <span className="text-xs font-medium px-2 py-1 rounded bg-black/60" style={{ color: "var(--text-muted)" }}>
+            <span
+              className="text-xs font-medium px-2 py-1 rounded bg-black/60"
+              style={{ color: "var(--text-muted)" }}
+            >
               {currentIndex + 1} of {totalImages}
             </span>
           ) : !hasMultipleImages ? (
-            <span className="text-xs font-medium px-2 py-1 rounded bg-black/60" style={{ color: "var(--text-muted)" }}>
+            <span
+              className="text-xs font-medium px-2 py-1 rounded bg-black/60"
+              style={{ color: "var(--text-muted)" }}
+            >
               1 of 1
             </span>
           ) : null}
@@ -135,7 +174,15 @@ export function ImageLightbox({
           className="absolute top-2 right-2 z-10 opacity-70 hover:opacity-100 p-1 rounded"
           aria-label="Close lightbox"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
             <path d="M18 6 6 18" />
             <path d="m6 6 12 12" />
           </svg>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getChecklists } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import DashboardShell from "@/components/DashboardShell";
 
 export default function ChecklistsPage() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function ChecklistsPage() {
   }
 
   return (
-    <div>
+    <DashboardShell>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
@@ -47,36 +48,32 @@ export default function ChecklistsPage() {
       </div>
 
       {loading ? (
-        <div className="glass-card p-4" style={{ color: "var(--text-muted)" }}>
-          Loading...
+        <div className="surface-1 rounded-xl p-6 py-14">
+          <div className="space-y-3">
+            <div className="skeleton" style={{ width: "35%", height: 14 }} />
+            <div className="skeleton" style={{ width: "60%", height: 12 }} />
+          </div>
         </div>
       ) : templates.length === 0 ? (
-        <div
-          className="glass-card p-4"
-          style={{
-            textAlign: "center",
-            color: "var(--text-muted)",
-            padding: "40px 0",
-          }}
-        >
+        <div className="surface-1 rounded-xl p-6 py-14 text-center">
           <div
             className="mb-3 font-semibold"
             style={{ color: "var(--text-primary)" }}
           >
-            No checklists yet.
+            No checklists yet
           </div>
-          <div className="mb-4">
-            Create your first trading checklist template.
+          <div className="mb-4 text-xs" style={{ color: "var(--text-dim)" }}>
+            Create your first pre-trade checklist template.
           </div>
           <button
             onClick={() => router.push("/checklists/new")}
-            className="btn-primary"
+            className="btn-primary text-xs"
           >
             Create Checklist
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-fade">
           {templates.map((t: any) => (
             <div
               key={t.id}
@@ -115,6 +112,6 @@ export default function ChecklistsPage() {
           ))}
         </div>
       )}
-    </div>
+    </DashboardShell>
   );
 }

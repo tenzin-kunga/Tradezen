@@ -3,136 +3,155 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type {
   DashboardLayout,
-  LayoutWidget,
-  WidgetId,
+  SectionLayout,
+  PresetName,
 } from "@/lib/layout-types";
-import { DEFAULT_LAYOUT } from "@/lib/layout-types";
+import { DEFAULT_SECTIONS, SECTION_PRESETS } from "@/lib/layout-types";
 import { getLayout, saveLayout } from "@/lib/api";
 
 const LAYOUT_KEY = "tradezen_dashboard_layout";
 const DEBOUNCE_MS = 2000;
 
-function migrateLayout(layout: DashboardLayout): DashboardLayout {
-  let changed = false;
-
-  const widgets = layout.widgets.flatMap((w) => {
-    // @ts-expect-error — legacy migration from analytics-preview
-    if (w.id === "analytics-preview") {
-      changed = true;
-      return [
-        {
-          id: "analytics-insights" as const,
-          visible: w.visible,
-          size: w.size,
-          column: 0 as const,
-          order: 0,
-        },
-        {
-          id: "ai-coach" as const,
-          visible: w.visible,
-          size: w.size,
-          column: 1 as const,
-          order: 0,
-        },
-      ];
-    }
-    return [w];
-  });
-
-  const migrated = widgets.map((w, i) => {
-    if (w.column === undefined || w.order === undefined) {
-      changed = true;
-      return { ...w, column: (i % 2) as 0 | 1, order: Math.floor(i / 2) };
-    }
-    return w;
-  });
-
-  const existingIds = new Set(migrated.map((w) => w.id));
-  const defaults = DEFAULT_LAYOUT.widgets;
-  for (const def of defaults) {
-    if (!existingIds.has(def.id)) {
-      changed = true;
-      migrated.push({ ...def });
+function mergeSections(stored: SectionLayout[]): SectionLayout[] {
+  const merged = [...stored];
+  for (const def of DEFAULT_SECTIONS) {
+    if (!merged.find((s) => s.id === def.id)) {
+      merged.push({
+        id: def.id,
+        visible: def.visible,
+        column: def.column,
+        order: def.order,
+      });
     }
   }
-
-  return changed ? { ...layout, widgets: migrated } : layout;
+  return merged;
 }
 
 export function useDashboardLayout() {
-  const [layout, setLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
+  const [sections, setSections] = useState<SectionLayout[]>(DEFAULT_SECTIONS);
+  const [preset, setPreset] = useState<string>("default");
   const [loaded, setLoaded] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    let stored: DashboardLayout | null = null;
     const raw = localStorage.getItem(LAYOUT_KEY);
     if (raw) {
       try {
-        stored = JSON.parse(raw);
+        const stored: DashboardLayout = JSON.parse(raw);
+        if (stored.sections?.length > 0) {
+          setSections(mergeSections(stored.sections));
+          setPreset(stored.preset ?? "default");
+        }
       } catch {}
     }
-    if (stored) {
-      const migrated = migrateLayout(stored);
-      setLayout(migrated);
-      if (migrated !== stored) {
-        localStorage.setItem(LAYOUT_KEY, JSON.stringify(migrated));
-      }
-    }
-    getLayout().then((apiLayout) => {
-      if (apiLayout) {
-        const migrated = migrateLayout(apiLayout);
-        setLayout(migrated);
-        localStorage.setItem(LAYOUT_KEY, JSON.stringify(migrated));
-      }
-      setLoaded(true);
-    });
+    getLayout()
+      .then((apiLayout) => {
+        if (apiLayout?.sections?.length > 0) {
+          const merged = mergeSections(apiLayout.sections);
+          setSections(merged);
+          setPreset(apiLayout.preset ?? "default");
+          localStorage.setItem(
+            LAYOUT_KEY,
+            JSON.stringify({ sections: merged, preset: apiLayout.preset }),
+          );
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, []);
 
-  const persist = useCallback((l: DashboardLayout) => {
+  const persist = useCallback((s: SectionLayout[], p: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      saveLayout(l).catch(() => {});
+      saveLayout({ sections: s, preset: p }).catch(() => {});
     }, DEBOUNCE_MS);
   }, []);
 
   const setAndPersist = useCallback(
-    (l: DashboardLayout) => {
-      setLayout(l);
-      localStorage.setItem(LAYOUT_KEY, JSON.stringify(l));
-      persist(l);
+    (s: SectionLayout[], p: string) => {
+      setSections(s);
+      setPreset(p);
+      localStorage.setItem(
+        LAYOUT_KEY,
+        JSON.stringify({ sections: s, preset: p }),
+      );
+      persist(s, p);
     },
     [persist],
   );
 
-  const updateWidget = useCallback(
-    (id: string, patch: Partial<LayoutWidget>) => {
-      setAndPersist({
-        ...layout,
-        widgets: layout.widgets.map((w) =>
-          w.id === id ? { ...w, ...patch } : w,
-        ),
+  const applyPreset = useCallback(
+    (name: PresetName) => {
+      setAndPersist(SECTION_PRESETS[name], name);
+    },
+    [setAndPersist],
+  );
+
+  const toggleVisibility = useCallback(
+    (id: string) => {
+      setAndPersist(
+        sections.map((s) => (s.id === id ? { ...s, visible: !s.visible } : s)),
+        "custom",
+      );
+    },
+    [sections, setAndPersist],
+  );
+
+  const reorderInColumn = useCallback(
+    (id: string, direction: "up" | "down") => {
+      const target = sections.find((s) => s.id === id);
+      if (!target) return;
+      const colSections = sections
+        .filter((s) => s.column === target.column)
+        .sort((a, b) => a.order - b.order);
+      const idx = colSections.findIndex((s) => s.id === id);
+      if (idx === -1) return;
+      const newIdx =
+        direction === "up"
+          ? Math.max(0, idx - 1)
+          : Math.min(colSections.length - 1, idx + 1);
+      if (newIdx === idx) return;
+
+      const updated = [...colSections];
+      const [moved] = updated.splice(idx, 1);
+      updated.splice(newIdx, 0, moved);
+
+      const newSections = sections.map((s) => {
+        if (s.column !== target.column) return s;
+        const newOrder = updated.findIndex((u) => u.id === s.id);
+        return { ...s, order: newOrder };
       });
+
+      setAndPersist(newSections, "custom");
     },
-    [layout, setAndPersist],
+    [sections, setAndPersist],
   );
 
-  const reorderWidgets = useCallback(
-    (widgets: LayoutWidget[]) => {
-      setAndPersist({ ...layout, widgets });
-    },
-    [layout, setAndPersist],
-  );
+  const moveToColumn = useCallback(
+    (id: string) => {
+      const target = sections.find((s) => s.id === id);
+      if (!target) return;
+      const newColumn: "left" | "right" =
+        target.column === "left" ? "right" : "left";
+      const maxOrder = sections
+        .filter((s) => s.column === newColumn)
+        .reduce((max, s) => Math.max(max, s.order), -1);
 
-  const resetLayout = useCallback(() => {
-    setAndPersist(DEFAULT_LAYOUT);
-  }, [setAndPersist]);
+      const newSections = sections.map((s) =>
+        s.id === id ? { ...s, column: newColumn, order: maxOrder + 1 } : s,
+      );
+      setAndPersist(newSections, "custom");
+    },
+    [sections, setAndPersist],
+  );
 
   return {
-    layout,
+    sections,
+    preset,
     loaded,
-    updateWidget,
-    reorderWidgets,
-    resetLayout,
+    toggleVisibility,
+    reorderInColumn,
+    moveToColumn,
+    applyPreset,
   };
 }

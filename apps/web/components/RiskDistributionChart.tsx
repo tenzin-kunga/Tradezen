@@ -30,7 +30,7 @@ export default function RiskDistributionChart({
   const winnerCount = winnerBuckets.reduce((s, b) => s + b.count, 0);
 
   return (
-    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-lg p-4">
+    <div className="surface-1 rounded-xl p-4">
       <h3 className="text-xs font-semibold tracking-widest text-[var(--text-muted)] uppercase mb-3">
         R-MULTIPLE DISTRIBUTION
       </h3>
@@ -59,6 +59,7 @@ export default function RiskDistributionChart({
                 borderRadius: "6px",
                 fontSize: 12,
               }}
+              cursor={{ fill: "transparent" }}
               formatter={(value: any) => [`${value} trades`, "Count"]}
               labelFormatter={(label) => `R-Multiple: ${label}`}
             />
