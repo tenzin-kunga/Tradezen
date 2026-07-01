@@ -18,6 +18,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [pinned, setPinned] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("tradezen-sidebar-pinned") === "true";
+  });
+
+  const sidebarWidth = pinned ? 220 : 72;
 
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
@@ -41,6 +47,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       document.body.style.overflow = "";
     };
   }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    localStorage.setItem("tradezen-sidebar-pinned", String(pinned));
+  }, [pinned]);
 
   // Command palette keyboard shortcut
   useEffect(() => {
@@ -142,16 +152,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar - desktop always visible, mobile in overlay */}
       <div
-        className={`md:relative md:flex-shrink-0 ${
+        className={`md:fixed md:inset-y-0 md:left-0 md:z-50 md:flex-shrink-0 ${
           mobileMenuOpen ? "fixed inset-y-0 left-0 z-50" : "hidden md:block"
         }`}
         style={{ transition: "transform 0.2s ease" }}
       >
-        <Sidebar onClose={() => setMobileMenuOpen(false)} />
+        <Sidebar
+          onClose={() => setMobileMenuOpen(false)}
+          pinned={pinned}
+          onPinToggle={() => setPinned((p) => !p)}
+        />
       </div>
 
       {/* Main area */}
-      <div className="flex flex-col flex-1" style={{ minWidth: 0 }}>
+      <div
+        className="flex flex-col flex-1"
+        style={{
+          minWidth: 0,
+          marginLeft: typeof window !== "undefined" ? sidebarWidth : 72,
+        }}
+      >
         <TopBar onSearchClick={() => setPaletteOpen(true)} />
         <main
           className="pb-14 md:pb-0"

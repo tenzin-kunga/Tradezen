@@ -2,12 +2,7 @@
 
 import type { Trade } from "@tradezen/types";
 import Image from "next/image";
-import {
-  Card,
-  CardContent,
-  Badge,
-  Separator,
-} from "@/components/ui";
+import { Badge } from "@/components/ui";
 import { getTradingSession } from "@/lib/session";
 import { ImageLightbox } from "./ImageLightbox";
 import { useState } from "react";
@@ -17,7 +12,8 @@ function fmtPnl(n: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  const prefix = n >= 0 ? '+$' : '-$'; return prefix + abs;
+  const prefix = n >= 0 ? "+$" : "-$";
+  return prefix + abs;
 }
 
 function fmtDate(d: string | null | undefined): string {
@@ -31,6 +27,11 @@ function fmtDate(d: string | null | undefined): string {
   });
 }
 
+function fmtMetric(val: number | string | null | undefined): string {
+  if (val == null || val === undefined) return "--";
+  return typeof val === "number" ? val.toString() : String(val);
+}
+
 export default function TradeCard({
   trade,
   onView,
@@ -42,36 +43,44 @@ export default function TradeCard({
   const isLong = trade.direction === "buy";
   const d = trade.tradeDate ?? trade.createdAt;
   const session = getTradingSession(d);
+  const pnlColor = isWin ? "var(--accent-profit)" : "var(--accent-loss)";
+  const dirColor = isLong ? "var(--accent-profit)" : "var(--accent-loss)";
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const metrics = [
-    { label: "Entry", value: trade.entryPrice },
-    { label: "Exit", value: trade.exitPrice },
-    { label: "Stop Loss", value: trade.stopLoss },
-    { label: "Take Profit", value: trade.takeProfit },
-    { label: "R:R", value: trade.riskReward },
-    { label: "Lot Size", value: trade.lotSize },
-  ];
-
-  function fmtMetric(val: number | string | null | undefined): string {
-    if (val == null || val === undefined) return "--";
-    if (typeof val === "number") {
-      return val.toString();
-    }
-    return String(val);
-  }
+  const showFomo = trade.fomoCheck;
+  const showVengeance = trade.vengeanceTrade;
+  const showTrend = trade.trendAlignment;
+  const hasOverlayTags = showFomo || showVengeance || showTrend;
 
   return (
     <>
-      <Card
-        className="cursor-pointer transition-all hover:brightness-110 overflow-hidden p-4"
+      {/* Desktop card */}
+      <div
+        className="hidden md:block surface-2 rounded-xl overflow-hidden cursor-pointer"
         onClick={() => onView(trade)}
+        style={{
+          transition:
+            "background var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out)",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.background =
+            "var(--bg-surface-hover)";
+        }}
       >
-        {/* Screenshot area */}
-        <div onClick={(e) => { e.stopPropagation(); setLightboxOpen(true); }}>
-          <div className="relative w-full bg-[var(--bg-surface-hover)] rounded-lg overflow-hidden mb-4" style={{ aspectRatio: "16/9" }}>
-            {trade.previewImage ? (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setLightboxOpen(true);
+          }}
+          className="relative w-full bg-[var(--bg-surface)] overflow-hidden"
+          style={{ aspectRatio: "16/9" }}
+        >
+          {trade.previewImage ? (
+            <>
               <Image
                 src={trade.previewImage.url}
                 alt={trade.symbol + " chart"}
@@ -79,109 +88,144 @@ export default function TradeCard({
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
               />
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1" style={{ color: "var(--text-dim)" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <path d="m21 15-5-5L5 21" />
-                </svg>
-                <span className="text-[10px] font-medium">No screenshot</span>
+              <div className="absolute top-3 right-3 flex gap-1">
+                {(trade.imageCount ?? 0) > 1 && (
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] px-1.5 py-0.5 h-auto"
+                  >
+                    {trade.imageCount}
+                  </Badge>
+                )}
+                {trade.notes && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0.5 h-auto"
+                  >
+                    NOTES
+                  </Badge>
+                )}
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0.5 h-auto"
+                  style={{
+                    background: isWin
+                      ? "rgba(34,197,94,0.15)"
+                      : "rgba(239,68,68,0.15)",
+                    color: pnlColor,
+                  }}
+                >
+                  {isWin ? "WIN" : "LOSS"}
+                </Badge>
               </div>
-            )}
-            {/* Overlay badges */}
-            <div className="absolute top-3 right-3 flex gap-1">
-              {(trade.imageCount ?? 0) > 1 && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 h-auto">
-                  {trade.imageCount}
-                </Badge>
+              {hasOverlayTags && (
+                <div className="absolute bottom-3 left-3 flex gap-1 flex-wrap">
+                  {showFomo && (
+                    <Badge
+                      variant="destructive"
+                      className="text-[9px] px-1.5 py-0.5 h-auto"
+                    >
+                      FOMO
+                    </Badge>
+                  )}
+                  {showVengeance && (
+                    <Badge
+                      variant="outline"
+                      className="text-[9px] px-1.5 py-0.5 h-auto"
+                      style={{
+                        color: "rgb(249,115,22)",
+                        borderColor: "rgba(249,115,22,0.3)",
+                      }}
+                    >
+                      REVENGE
+                    </Badge>
+                  )}
+                  {showTrend && (
+                    <Badge
+                      variant="outline"
+                      className="text-[9px] px-1.5 py-0.5 h-auto"
+                      style={{
+                        color: "var(--accent-profit)",
+                        borderColor: "rgba(34,197,94,0.3)",
+                      }}
+                    >
+                      TREND
+                    </Badge>
+                  )}
+                </div>
               )}
-              {trade.notes && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 h-auto">
-                  NOTES
-                </Badge>
-              )}
+            </>
+          ) : (
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center gap-1"
+              style={{ color: "var(--text-dim)" }}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="m21 15-5-5L5 21" />
+              </svg>
+              <span className="text-[10px] font-medium">No screenshot</span>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Header: Symbol + P&L */}
-        <CardContent className="pb-0 mb-4">
-          <div className="flex items-center justify-between mb-0.5">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm tracking-tight">{trade.symbol}</span>
-              <Badge
-                variant="secondary"
-                className="text-[10px] px-1.5 py-0.5 h-auto"
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div
+                className="font-bold tracking-tight"
                 style={{
-                  background: isWin
-                    ? "rgba(34,197,94,0.15)"
-                    : "rgba(239,68,68,0.15)",
-                  color: isWin ? "var(--accent-profit)" : "var(--accent-loss)",
+                  fontSize: "var(--metric-primary)",
+                  color: pnlColor,
                 }}
               >
-                {isWin ? "WIN" : "LOSS"}
-              </Badge>
-            </div>
-            <span
-              className="mono-data text-lg font-bold"
-              style={{
-                color: isWin ? "var(--accent-profit)" : "var(--accent-loss)",
-              }}
-            >
-              {fmtPnl(Number(trade.pnl))}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] flex-wrap" style={{ color: "var(--text-muted)" }}>
-            {[
-              { el: <span key="dir" style={{ color: isLong ? "var(--accent-profit)" : "var(--accent-loss)" }}>{isLong ? "LONG" : "SHORT"}</span> },
-              trade.strategy && { el: <span key="strat">{trade.strategy}</span> },
-              { el: <span key="date">{fmtDate(d)}</span> },
-              session !== "--" && { el: <span key="sess">{session}</span> },
-            ].filter(Boolean).reduce<React.ReactNode[]>((acc, item, i) => {
-              if (i === 0) return [item.el];
-              return [...acc, <span key={`dot-${i}`}>·</span>, item.el];
-            }, [])}
-          </div>
-        </CardContent>
-
-        <Separator className="my-2.5" />
-
-        {/* Metrics grid */}
-        <CardContent className="pb-0">
-          <div className="grid grid-cols-2 gap-x-4 gap-y-5">
-            {metrics.map((m) => (
-              <div key={m.label}>
-                <div className="label-caps text-[9px]">{m.label}</div>
-                <div className="mono-data font-semibold text-sm leading-snug">
-                  {fmtMetric(m.value)}
-                </div>
+                {fmtPnl(Number(trade.pnl))}
               </div>
-            ))}
-          </div>
-        </CardContent>
+              <div
+                className="mt-0.5 font-semibold truncate"
+                style={{
+                  fontSize: "var(--text-lg)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {trade.symbol}
+              </div>
+              <div
+                className="mt-1 flex items-center gap-1.5 flex-wrap"
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <span style={{ color: dirColor }}>
+                  {isLong ? "LONG" : "SHORT"}
+                </span>
+                <span style={{ color: "var(--text-dim)" }}>·</span>
+                <span>{fmtDate(d)}</span>
+                {session !== "--" && (
+                  <>
+                    <span style={{ color: "var(--text-dim)" }}>·</span>
+                    <span>{session}</span>
+                  </>
+                )}
+                {trade.strategy && (
+                  <>
+                    <span style={{ color: "var(--text-dim)" }}>·</span>
+                    <span className="truncate">{trade.strategy}</span>
+                  </>
+                )}
+              </div>
+            </div>
 
-        <Separator className="my-2.5" />
-
-        {/* Footer: tags + notes + chevron */}
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-center gap-1.5 flex-1 flex-wrap">
-            {trade.fomoCheck && (
-              <Badge variant="destructive" className="text-[9px] px-1.5 py-0.5 h-auto">
-                FOMO
-              </Badge>
-            )}
-            {trade.vengeanceTrade && (
-              <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 h-auto" style={{ color: "rgb(249,115,22)", borderColor: "rgba(249,115,22,0.3)" }}>
-                REVENGE
-              </Badge>
-            )}
-            {trade.trendAlignment && (
-              <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 h-auto" style={{ color: "var(--accent-profit)", borderColor: "rgba(34,197,94,0.3)" }}>
-                TREND
-              </Badge>
-            )}
-            <div className="flex-1" />
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="14"
@@ -192,13 +236,129 @@ export default function TradeCard({
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ color: "var(--text-dim)", flexShrink: 0, opacity: 0.5 }}
+              style={{
+                color: "var(--text-dim)",
+                flexShrink: 0,
+                opacity: 0.5,
+                marginTop: 2,
+              }}
             >
               <path d="m9 18 6-6-6-6" />
             </svg>
           </div>
-        </CardContent>
-      </Card>
+
+          <div
+            className="mt-3 flex gap-4"
+            style={{ fontSize: "var(--text-xs)" }}
+          >
+            <div>
+              <div className="label-caps text-[9px]">Entry</div>
+              <div
+                className="font-semibold leading-snug"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {fmtMetric(trade.entryPrice)}
+              </div>
+            </div>
+            <div>
+              <div className="label-caps text-[9px]">Exit</div>
+              <div
+                className="font-semibold leading-snug"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {fmtMetric(trade.exitPrice)}
+              </div>
+            </div>
+            <div>
+              <div className="label-caps text-[9px]">R:R</div>
+              <div
+                className="font-semibold leading-snug"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {fmtMetric(trade.riskReward)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile card */}
+      <div
+        className="block md:hidden surface-2 rounded-xl overflow-hidden cursor-pointer px-4 py-3"
+        onClick={() => onView(trade)}
+        style={{
+          transition: "background var(--duration-fast) var(--ease-out)",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.background =
+            "var(--bg-surface-hover)";
+        }}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span
+                className="font-bold tracking-tight"
+                style={{
+                  fontSize: "var(--metric-primary)",
+                  color: pnlColor,
+                }}
+              >
+                {fmtPnl(Number(trade.pnl))}
+              </span>
+              <span
+                className="font-semibold truncate"
+                style={{
+                  fontSize: "var(--text-base)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                {trade.symbol}
+              </span>
+            </div>
+            <div
+              className="mt-0.5 flex items-center gap-1.5"
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "var(--text-muted)",
+              }}
+            >
+              <span className="font-medium" style={{ color: dirColor }}>
+                {isLong ? "LONG" : "SHORT"}
+              </span>
+              <span style={{ color: "var(--text-dim)" }}>·</span>
+              <span>{fmtDate(d)}</span>
+              {session !== "--" && (
+                <>
+                  <span style={{ color: "var(--text-dim)" }}>·</span>
+                  <span>{session}</span>
+                </>
+              )}
+            </div>
+          </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              color: "var(--text-dim)",
+              flexShrink: 0,
+              opacity: 0.5,
+            }}
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </div>
+      </div>
 
       {trade.previewImage && (
         <ImageLightbox

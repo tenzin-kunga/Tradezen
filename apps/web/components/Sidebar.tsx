@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 
 type NavItem = {
   label: string;
@@ -198,23 +198,34 @@ function NavItemLink({
   item,
   pathname,
   collapsed,
+  onHoverStart,
+  onHoverEnd,
 }: {
   item: NavItem;
   pathname: string;
   collapsed: boolean;
+  onHoverStart: (label: string, rect: DOMRect) => void;
+  onHoverEnd: () => void;
 }) {
+  const ref = useRef<HTMLAnchorElement>(null);
   const active = isActive(pathname, item.href);
   return (
     <Link
+      ref={ref}
       href={item.href}
       className="group relative flex items-center"
+      onMouseEnter={() => {
+        if (collapsed && ref.current) {
+          onHoverStart(item.label, ref.current.getBoundingClientRect());
+        }
+      }}
+      onMouseLeave={onHoverEnd}
       style={{
-        height: 36,
+        height: 44,
         borderRadius: 6,
         marginLeft: collapsed ? 12 : 8,
         marginRight: collapsed ? 12 : 8,
         textDecoration: "none",
-        transition: "background 0.15s",
       }}
     >
       {active && (
@@ -222,17 +233,20 @@ function NavItemLink({
           style={{
             position: "absolute",
             left: collapsed ? 0 : -8,
-            top: 8,
-            bottom: 8,
+            top: 10,
+            bottom: 10,
             width: 3,
             borderRadius: "0 2px 2px 0",
             background: "var(--accent, #3b82f6)",
+            transition:
+              "transform 0.2s var(--ease-spring), top 0.2s var(--ease-spring), bottom 0.2s var(--ease-spring)",
           }}
         />
       )}
       <div
         className="flex items-center gap-3 w-full"
         style={{
+          position: "relative",
           paddingLeft: collapsed ? 0 : 12,
           paddingRight: 12,
           justifyContent: collapsed ? "center" : "flex-start",
@@ -241,7 +255,7 @@ function NavItemLink({
           background: active
             ? "var(--bg-surface-hover, #17181c)"
             : "transparent",
-          transition: "background 0.15s",
+          transition: "background 0.15s var(--ease-out)",
         }}
       >
         <span
@@ -250,7 +264,9 @@ function NavItemLink({
             color: active
               ? "var(--text-primary, #fafafa)"
               : "var(--text-muted, #9ca3af)",
-            transition: "color 0.15s",
+            transition:
+              "color 0.15s var(--ease-out), transform 0.15s var(--ease-spring)",
+            transform: active ? "scale(1.08)" : "scale(1)",
           }}
         >
           {item.icon}
@@ -266,7 +282,7 @@ function NavItemLink({
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              transition: "color 0.15s",
+              transition: "color 0.15s var(--ease-out)",
             }}
           >
             {item.label}
@@ -277,23 +293,98 @@ function NavItemLink({
   );
 }
 
-export default function Sidebar({ onClose }: { onClose?: () => void }) {
+function SessionIndicator() {
+  const now = new Date();
+  const h = now.getUTCHours();
+
+  let session: { name: string; color: string; endHour: number } | null = null;
+
+  if (h >= 13 && h < 18) {
+    session = { name: "New York", color: "var(--accent)", endHour: 18 };
+  } else if (h >= 7 && h < 13) {
+    session = { name: "London", color: "var(--accent-profit)", endHour: 13 };
+  } else {
+    session = null;
+  }
+
+  if (!session) return null;
+
+  const endTime = new Date(now);
+  endTime.setUTCHours(session.endHour, 0, 0, 0);
+  const remainingMs = endTime.getTime() - now.getTime();
+  const remainingMin = Math.max(0, Math.floor(remainingMs / 60000));
+  const hh = Math.floor(remainingMin / 60);
+  const mm = remainingMin % 60;
+  const remaining = `${hh}h ${mm}m remaining`;
+
+  return (
+    <div
+      style={{
+        padding: "6px 16px 8px",
+        flexShrink: 0,
+      }}
+    >
+      <div
+        className="flex items-center gap-2 rounded-lg px-3 py-2"
+        style={{
+          background: "var(--bg-surface-hover)",
+        }}
+      >
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: session.color,
+            flexShrink: 0,
+          }}
+        />
+        <div>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: "var(--text-primary)",
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            {session.name}
+          </div>
+          <div
+            style={{
+              fontSize: 9,
+              color: "var(--text-dim)",
+              marginTop: 1,
+            }}
+          >
+            {remaining}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Sidebar({
+  onClose,
+  pinned,
+  onPinToggle,
+}: {
+  onClose?: () => void;
+  pinned: boolean;
+  onPinToggle: () => void;
+}) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [pinned, setPinned] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem("tradezen-sidebar-pinned");
-    if (stored === "true") setPinned(true);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("tradezen-sidebar-pinned", String(pinned));
-  }, [pinned]);
-  const [hovered, setHovered] = useState(false);
-
-  const expanded = pinned || hovered;
+  const expanded = pinned;
   const width = expanded ? 220 : 72;
+
+  const [tooltip, setTooltip] = useState<{
+    label: string;
+    rect: DOMRect;
+  } | null>(null);
+  const logTradeRef = useRef<HTMLAnchorElement>(null);
 
   const initials = user?.username
     ? user.username.slice(0, 2).toUpperCase()
@@ -307,14 +398,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   return (
     <aside
       className="flex flex-col h-full"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       style={{
         width,
         background: "var(--bg-sidebar, #0c0c0f)",
         borderRight: "1px solid var(--border, #23252d)",
-        overflow: "hidden",
-        transition: "width 0.2s ease",
+        overflow: "visible",
         display: "flex",
         flexDirection: "column",
       }}
@@ -358,7 +446,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         )}
         {expanded && (
           <button
-            onClick={() => setPinned((p) => !p)}
+            onClick={() => onPinToggle()}
             style={{
               background: "none",
               border: "none",
@@ -368,9 +456,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 : "var(--text-muted, #9ca3af)",
               padding: 4,
               borderRadius: 4,
-              opacity: hovered ? 1 : pinned ? 1 : 0,
-              transition: "opacity 0.15s, color 0.15s",
+              opacity: 1,
+              transition:
+                "opacity 0.15s var(--ease-out), color 0.15s var(--ease-out), transform 0.3s var(--ease-spring)",
               display: "flex",
+              transform: pinned ? "rotate(180deg)" : "rotate(0deg)",
             }}
             aria-label={pinned ? "Unpin sidebar" : "Pin sidebar"}
           >
@@ -401,7 +491,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           paddingTop: 8,
         }}
       >
-        {/* Group 1 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {GROUP1.map((item) => (
             <NavItemLink
@@ -409,11 +498,12 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               item={item}
               pathname={pathname}
               collapsed={!expanded}
+              onHoverStart={(label, rect) => setTooltip({ label, rect })}
+              onHoverEnd={() => setTooltip(null)}
             />
           ))}
         </div>
 
-        {/* Divider */}
         <div
           style={{
             height: 1,
@@ -422,7 +512,6 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           }}
         />
 
-        {/* Group 2 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {GROUP2.map((item) => (
             <NavItemLink
@@ -430,11 +519,12 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               item={item}
               pathname={pathname}
               collapsed={!expanded}
+              onHoverStart={(label, rect) => setTooltip({ label, rect })}
+              onHoverEnd={() => setTooltip(null)}
             />
           ))}
         </div>
 
-        {/* Divider */}
         <div
           style={{
             height: 1,
@@ -443,16 +533,25 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           }}
         />
 
-        {/* Log Trade CTA */}
         <div style={{ padding: expanded ? "4px 12px 0" : "4px 12px 0" }}>
           <Link
+            ref={logTradeRef}
             href="/add-trade"
             onClick={onClose}
+            onMouseEnter={() => {
+              if (!expanded && logTradeRef.current) {
+                setTooltip({
+                  label: "Log Trade",
+                  rect: logTradeRef.current.getBoundingClientRect(),
+                });
+              }
+            }}
+            onMouseLeave={() => setTooltip(null)}
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: expanded ? "center" : "center",
-              height: 36,
+              justifyContent: "center",
+              height: 40,
               borderRadius: 6,
               textDecoration: "none",
               fontSize: 12,
@@ -460,7 +559,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               letterSpacing: "0.08em",
               background: "var(--accent, #3b82f6)",
               color: "#fff",
-              transition: "background 0.15s",
+              transition:
+                "background 0.15s var(--ease-out), opacity 0.15s var(--ease-out)",
               gap: 8,
             }}
           >
@@ -500,74 +600,111 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
       </nav>
 
+      {/* Session indicator */}
+      {expanded && <SessionIndicator />}
+
       {/* User */}
       <div
-        style={{ borderTop: "1px solid var(--border, #23252d)", flexShrink: 0 }}
+        style={{
+          borderTop: "1px solid var(--border, #23252d)",
+          flexShrink: 0,
+        }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: expanded ? "12px 16px" : "12px 0",
-            justifyContent: expanded ? "flex-start" : "center",
-          }}
-        >
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              background: "var(--border, #23252d)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--text-muted, #9ca3af)",
-              flexShrink: 0,
-            }}
-          >
-            {initials}
-          </div>
-          {expanded && (
-            <div style={{ flex: 1, overflow: "hidden" }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "var(--text-primary, #fafafa)",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {user?.username || "Operator"}
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: "var(--text-muted, #9ca3af)",
-                  marginTop: 1,
-                }}
-              >
-                {user?.email || ""}
-              </div>
-            </div>
-          )}
-          {expanded && (
-            <button
-              onClick={handleLogout}
+        {expanded ? (
+          <>
+            <div
               style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--text-muted, #9ca3af)",
-                padding: 4,
-                borderRadius: 4,
                 display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "12px 16px",
+                justifyContent: "flex-start",
               }}
-              aria-label="Logout"
+            >
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "var(--border, #23252d)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "var(--text-muted, #9ca3af)",
+                  flexShrink: 0,
+                }}
+              >
+                {initials}
+              </div>
+              <div style={{ flex: 1, overflow: "hidden" }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--text-primary, #fafafa)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {user?.username || "Operator"}
+                </div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-muted, #9ca3af)",
+                    marginTop: 1,
+                  }}
+                >
+                  {user?.email || ""}
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted, #9ca3af)",
+                  padding: 4,
+                  borderRadius: 4,
+                  display: "flex",
+                  transition: "color 0.15s var(--ease-out)",
+                }}
+                aria-label="Logout"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
+            </div>
+            <Link
+              href="/settings"
+              onClick={onClose}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 16px 12px",
+                fontSize: 11,
+                fontWeight: 500,
+                color: "var(--text-muted, #9ca3af)",
+                textDecoration: "none",
+                transition: "color 0.15s var(--ease-out)",
+              }}
             >
               <svg
                 width="14"
@@ -575,49 +712,204 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
-            </button>
-          )}
-        </div>
-        {expanded && (
-          <Link
-            href="/settings"
-            onClick={onClose}
+              Settings
+            </Link>
+          </>
+        ) : (
+          <div
             style={{
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              gap: 8,
-              padding: "8px 16px 12px",
-              fontSize: 11,
-              fontWeight: 500,
-              color: "var(--text-muted, #9ca3af)",
-              textDecoration: "none",
+              gap: 4,
+              padding: "8px 0",
             }}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-            Settings
-          </Link>
+            <div className="group relative">
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: "var(--border, #23252d)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "var(--text-muted, #9ca3af)",
+                }}
+              >
+                {initials}
+              </div>
+              <div
+                className="opacity-0 group-hover:opacity-100"
+                style={{
+                  position: "absolute",
+                  left: "100%",
+                  marginLeft: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "var(--bg-surface)",
+                  color: "var(--text-primary)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  padding: "6px 10px",
+                  borderRadius: "var(--radius-sm)",
+                  whiteSpace: "nowrap",
+                  pointerEvents: "none",
+                  zIndex: 60,
+                  boxShadow: "var(--shadow-md)",
+                  transition: "opacity 0.15s var(--ease-out)",
+                }}
+              >
+                {user?.username || "Operator"}
+              </div>
+            </div>
+            <div className="group relative">
+              <Link
+                href="/settings"
+                onClick={onClose}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 6,
+                  color: "var(--text-muted, #9ca3af)",
+                  textDecoration: "none",
+                  transition: "color 0.15s var(--ease-out)",
+                }}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+              </Link>
+              <div
+                className="opacity-0 group-hover:opacity-100"
+                style={{
+                  position: "absolute",
+                  left: "100%",
+                  marginLeft: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "var(--bg-surface)",
+                  color: "var(--text-primary)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  padding: "6px 10px",
+                  borderRadius: "var(--radius-sm)",
+                  whiteSpace: "nowrap",
+                  pointerEvents: "none",
+                  zIndex: 60,
+                  boxShadow: "var(--shadow-md)",
+                  transition: "opacity 0.15s var(--ease-out)",
+                }}
+              >
+                Settings
+              </div>
+            </div>
+            <div className="group relative">
+              <button
+                onClick={handleLogout}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 40,
+                  height: 40,
+                  borderRadius: 6,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted, #9ca3af)",
+                  transition: "color 0.15s var(--ease-out)",
+                }}
+                aria-label="Logout"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
+              <div
+                className="opacity-0 group-hover:opacity-100"
+                style={{
+                  position: "absolute",
+                  left: "100%",
+                  marginLeft: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "var(--bg-surface)",
+                  color: "var(--text-primary)",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  padding: "6px 10px",
+                  borderRadius: "var(--radius-sm)",
+                  whiteSpace: "nowrap",
+                  pointerEvents: "none",
+                  zIndex: 60,
+                  boxShadow: "var(--shadow-md)",
+                  transition: "opacity 0.15s var(--ease-out)",
+                }}
+              >
+                Logout
+              </div>
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Floating tooltip — rendered outside <nav> to avoid overflowX: hidden clipping */}
+      {!expanded && tooltip && (
+        <div
+          style={{
+            position: "fixed",
+            left: width + 12,
+            top: tooltip.rect.top + tooltip.rect.height / 2 - 14,
+            background: "var(--bg-surface)",
+            color: "var(--text-primary)",
+            fontSize: 12,
+            fontWeight: 500,
+            padding: "6px 10px",
+            borderRadius: "var(--radius-sm)",
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+            zIndex: 60,
+            boxShadow: "var(--shadow-md)",
+          }}
+        >
+          {tooltip.label}
+        </div>
+      )}
     </aside>
   );
 }

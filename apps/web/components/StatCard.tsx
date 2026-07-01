@@ -1,6 +1,6 @@
 "use client";
 
-type StatCardVariant = "profit" | "loss" | "blue" | "amber" | "cyan";
+type StatCardVariant = "profit" | "loss" | "blue" | "insight";
 
 type StatCardProps = {
   title: string;
@@ -13,8 +13,7 @@ const variantStyles: Record<StatCardVariant, { bg: string; border: string }> = {
   profit: { bg: "rgba(34,197,94,0.08)", border: "var(--accent-profit)" },
   loss: { bg: "rgba(239,68,68,0.08)", border: "var(--accent-loss)" },
   blue: { bg: "rgba(59,130,246,0.08)", border: "var(--accent)" },
-  amber: { bg: "rgba(245,158,11,0.08)", border: "var(--accent-warn)" },
-  cyan: { bg: "rgba(6,182,212,0.08)", border: "var(--accent-cyan)" },
+  insight: { bg: "rgba(139,92,246,0.08)", border: "var(--accent-insight)" },
 };
 
 export default function StatCard({

@@ -11,54 +11,77 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   consistency: { bg: "rgba(234, 179, 8, 0.12)", text: "rgb(234, 179, 8)" },
 };
 
-function CategoryTag({ category }: { category: string }) {
-  const colors = CATEGORY_COLORS[category] ?? {
-    bg: "rgba(255,255,255,0.06)",
-    text: "var(--text-dim)",
-  };
-  return (
-    <span
-      className="inline-block text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded"
-      style={{ background: colors.bg, color: colors.text }}
-    >
-      {category}
-    </span>
-  );
-}
-
-function InsightCard({ insight }: { insight: AiInsight }) {
-  return (
-    <div
-      className="flex flex-col gap-1.5 p-3 rounded-lg"
-      style={{ background: "var(--glass-bg-alt, rgba(255,255,255,0.03))" }}
-    >
-      <div className="flex items-center gap-2">
-        <CategoryTag category={insight.category} />
-      </div>
-      <p
-        className="text-sm leading-relaxed"
-        style={{ color: "var(--text-primary)" }}
-      >
-        {insight.message}
-      </p>
-    </div>
-  );
-}
-
 export default function AiCoachWidget() {
   const { insights, loading } = useAiInsights();
 
   return (
     <WidgetShell
-      title="AI COACH"
+      title="AI Coach"
       loading={loading}
       isEmpty={!loading && insights.length === 0}
-      emptyMessage="Coaching insights will appear after 5+ trades."
+      emptyMessage="Complete 5 trades to unlock coaching insights."
     >
-      {insights.length === 0 ? null : (
+      {insights.length === 0 ? (
+        <div className="flex flex-col gap-3">
+          <div
+            className="rounded-lg px-3 py-2.5"
+            style={{ background: "var(--bg-primary)" }}
+          >
+            <div
+              className="text-[10px] font-semibold tracking-wider mb-1"
+              style={{ color: "var(--text-dim)" }}
+            >
+              Today&apos;s Observation
+            </div>
+            <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+              No insights yet. Keep journaling your trades.
+            </div>
+          </div>
+          <div
+            className="rounded-lg px-3 py-2.5"
+            style={{ background: "var(--bg-primary)" }}
+          >
+            <div
+              className="text-[10px] font-semibold tracking-wider mb-1"
+              style={{ color: "var(--text-dim)" }}
+            >
+              Recommendation
+            </div>
+            <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Log 5+ trades with notes to receive your first coaching insight.
+            </div>
+          </div>
+        </div>
+      ) : (
         <div className="flex flex-col gap-2">
           {insights.map((insight) => (
-            <InsightCard key={insight.id} insight={insight} />
+            <div
+              key={insight.id}
+              className="flex flex-col gap-1.5 p-3 rounded-lg"
+              style={{ background: "var(--bg-primary)" }}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-block text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded"
+                  style={{
+                    background:
+                      CATEGORY_COLORS[insight.category]?.bg ??
+                      "rgba(255,255,255,0.06)",
+                    color:
+                      CATEGORY_COLORS[insight.category]?.text ??
+                      "var(--text-dim)",
+                  }}
+                >
+                  {insight.category}
+                </span>
+              </div>
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: "var(--text-primary)", margin: 0 }}
+              >
+                {insight.message}
+              </p>
+            </div>
           ))}
         </div>
       )}

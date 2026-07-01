@@ -28,6 +28,17 @@ const TAG_COLORS = [
   "#84cc16",
 ];
 
+const DEFAULT_TAGS: Omit<Tag, "id">[] = [
+  { name: "Breakout", color: "#22c55e", category: "setup" },
+  { name: "Reversal", color: "#3b82f6", category: "setup" },
+  { name: "Trend Following", color: "#a855f7", category: "setup" },
+  { name: "Scalp", color: "#f59e0b", category: "setup" },
+  { name: "FOMO", color: "#ef4444", category: "psychology" },
+  { name: "Revenge", color: "#ec4899", category: "psychology" },
+  { name: "Disciplined", color: "#14b8a6", category: "psychology" },
+  { name: "High Risk", color: "#e8603c", category: "risk" },
+];
+
 export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
   const [tags, setTags] = useState<Tag[]>([]);
   const [showCreate, setShowCreate] = useState(false);
@@ -43,12 +54,29 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
 
   const selectedIds = new Set(selectedTags.map((t) => t.id));
 
+  const existingNames = new Set(tags.map((t) => t.name.toLowerCase()));
+  const suggestions = DEFAULT_TAGS.filter(
+    (d) => !existingNames.has(d.name.toLowerCase()),
+  );
+
   function handleToggle(tag: Tag) {
     if (selectedIds.has(tag.id)) {
       onChange(selectedTags.filter((t) => t.id !== tag.id));
     } else {
       onChange([...selectedTags, tag]);
     }
+  }
+
+  async function handleSelectDefault(defaultTag: Omit<Tag, "id">) {
+    try {
+      const tag = await createTag({
+        name: defaultTag.name,
+        color: defaultTag.color,
+        category: defaultTag.category,
+      });
+      setTags([...tags, tag]);
+      onChange([...selectedTags, tag]);
+    } catch {}
   }
 
   async function handleCreate() {
@@ -69,8 +97,37 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
 
   return (
     <div>
+      {suggestions.length > 0 && (
+        <div className="mb-3">
+          <div
+            className="text-xs tracking-widest mb-2"
+            style={{ color: "var(--text-dim)" }}
+          >
+            SUGGESTED
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((d) => (
+              <button
+                key={d.name}
+                type="button"
+                onClick={() => handleSelectDefault(d)}
+                className="text-xs font-semibold tracking-wide border-none cursor-pointer px-3 py-1.5 rounded transition-all"
+                style={{
+                  backgroundColor: "var(--bg-primary)",
+                  color: d.color,
+                  border: `1px dashed ${d.color}`,
+                  opacity: 0.7,
+                }}
+              >
+                + {d.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2 mb-2">
-        {tags.length === 0 && (
+        {tags.length === 0 && suggestions.length === 0 && (
           <span
             style={{
               color: "var(--text-dim)",

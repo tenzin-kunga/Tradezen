@@ -24,7 +24,7 @@ export default function RiskByWeekChart({
   if (data.length === 0) return null;
 
   return (
-    <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-lg p-4">
+    <div className="surface-1 rounded-xl p-4">
       <h3 className="text-xs font-semibold tracking-widest text-[var(--text-muted)] uppercase mb-3">
         RISK EXPOSURE BY WEEK
       </h3>
@@ -54,6 +54,7 @@ export default function RiskByWeekChart({
                 borderRadius: "6px",
                 fontSize: 12,
               }}
+              cursor={{ fill: "transparent" }}
               formatter={(value: number, name: string) => {
                 const labels: Record<string, string> = {
                   totalRisk: "Total Risk",

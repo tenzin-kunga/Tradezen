@@ -1,5 +1,5 @@
 ﻿import type { DashboardLayout } from "@/lib/layout-types";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -253,7 +253,6 @@ export const uploadTradeImage = async (tradeId: string, file: File) => {
   return handleResponse<{ id: string; url: string; thumbnailUrl: string }>(res);
 };
 
-
 export interface TradeImageDto {
   id: string;
   url: string;
@@ -263,14 +262,16 @@ export interface TradeImageDto {
   displayOrder: number;
 }
 
-export const getTradeImages = async (tradeId: string): Promise<TradeImageDto[]> => {
+export const getTradeImages = async (
+  tradeId: string,
+): Promise<TradeImageDto[]> => {
   const res = await authFetch(`${API}/trades/${tradeId}/images`);
   return handleResponse<TradeImageDto[]>(res);
 };
 
 export const useTradeImages = (tradeId: string, enabled: boolean) => {
   return useQuery({
-    queryKey: ['trade-images', tradeId],
+    queryKey: ["trade-images", tradeId],
     queryFn: () => getTradeImages(tradeId),
     enabled: !!tradeId && enabled,
     staleTime: 5 * 60 * 1000,
@@ -871,6 +872,31 @@ export async function deleteChecklistRun(id: string) {
   });
   return handleResponse<{ deleted: boolean }>(res);
 }
+
+// ─── Market News ─────────────────────────────────────
+
+export type Impact = "high" | "medium" | "low" | "holiday" | "speech";
+
+export interface MarketNewsEvent {
+  id: string;
+  title: string;
+  lookupKey: string;
+  country: string;
+  currency: string;
+  date: string;
+  time: string;
+  timestamp: string;
+  impact: Impact;
+  forecast: string;
+  previous: string;
+  actual: string;
+  released: boolean;
+}
+
+export const getMarketNews = async (signal?: AbortSignal): Promise<MarketNewsEvent[]> => {
+  const res = await authFetch(`${API}/news`, { signal });
+  return handleResponse<MarketNewsEvent[]>(res);
+};
 
 // ─── Reports ────────────────────────────────────────
 

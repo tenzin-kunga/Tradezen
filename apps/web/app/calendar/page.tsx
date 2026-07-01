@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
 import { getDailyPnl, getTrades } from "@/lib/api";
+import DashboardShell from "@/components/DashboardShell";
 
 interface DayData {
   date: string;
@@ -74,7 +75,7 @@ export default function CalendarPage() {
 
     Promise.all([
       getDailyPnl(firstDay, lastDayStr),
-      getTrades({ from: firstDay, to: lastDayStr, limit: 1000 }),
+      getTrades({ from: firstDay, to: `${lastDayStr}T23:59:59`, limit: 1000 }),
     ])
       .then(([dailyRes, tradesRes]) => {
         const dayMap: Record<string, { pnl: number; trades: any[] }> = {};
@@ -95,18 +96,31 @@ export default function CalendarPage() {
             dayMap[date].trades.push(t);
           }
         });
-        setDailyData(
-          dailyRes.map((d: any) => {
-            const rawDate =
-              typeof d.date === "string" ? d.date : d.date.toISOString();
-            const dateStr = rawDate.split("T")[0];
-            return {
+        const merged = new Map<string, DayData>();
+        for (const d of dailyRes) {
+          const rawDate =
+            typeof d.date === "string" ? d.date : d.date.toISOString();
+          const dateStr = rawDate.split("T")[0];
+          merged.set(dateStr, {
+            date: dateStr,
+            pnl: dayMap[dateStr]?.pnl ?? Number(d.totalPnl ?? 0),
+            trades:
+              dayMap[dateStr]?.trades?.length ?? Number(d.tradeCount ?? 0),
+          });
+        }
+        for (const [dateStr, entry] of Object.entries(dayMap)) {
+          if (!merged.has(dateStr)) {
+            merged.set(dateStr, {
               date: dateStr,
-              pnl: dayMap[dateStr]?.pnl ?? Number(d.totalPnl ?? 0),
-              trades:
-                dayMap[dateStr]?.trades?.length ?? Number(d.tradeCount ?? 0),
-            };
-          }),
+              pnl: entry.pnl,
+              trades: entry.trades.length,
+            });
+          }
+        }
+        setDailyData(
+          Array.from(merged.values()).sort((a, b) =>
+            a.date.localeCompare(b.date),
+          ),
         );
       })
       .catch(console.error)
@@ -169,7 +183,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6 text-text-primary">
+    <DashboardShell>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
         <div>
@@ -183,7 +197,8 @@ export default function CalendarPage() {
         <div className="flex gap-2 items-center">
           <button
             onClick={goToPrevMonth}
-            className="bg-transparent border border-border text-text-muted px-3 py-2 cursor-pointer text-xs rounded"
+            className="bg-transparent border text-text-muted px-3 py-2 cursor-pointer text-xs rounded"
+            style={{ borderColor: "var(--border)" }}
           >
             ← PREV
           </button>
@@ -192,7 +207,8 @@ export default function CalendarPage() {
           </span>
           <button
             onClick={goToNextMonth}
-            className="bg-transparent border border-border text-text-muted px-3 py-2 cursor-pointer text-xs rounded"
+            className="bg-transparent border text-text-muted px-3 py-2 cursor-pointer text-xs rounded"
+            style={{ borderColor: "var(--border)" }}
           >
             NEXT →
           </button>
@@ -200,7 +216,10 @@ export default function CalendarPage() {
       </div>
 
       {/* Month Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px mb-6 rounded overflow-hidden bg-border">
+      <div
+        className="grid grid-cols-2 lg:grid-cols-4 gap-px mb-6 rounded overflow-hidden"
+        style={{ background: "var(--border)" }}
+      >
         {[
           {
             label: "MONTH P&L",
@@ -224,7 +243,7 @@ export default function CalendarPage() {
             color: "var(--text-primary)",
           },
         ].map((s) => (
-          <div key={s.label} className="p-4 md:p-5 bg-bg-surface">
+          <div key={s.label} className="p-4 md:p-5 surface-0">
             <div className="text-xs tracking-widest mb-2 text-text-muted">
               {s.label}
             </div>
@@ -239,7 +258,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Grid */}
-      <div className="border border-border rounded-lg p-3 md:p-5 bg-bg-surface">
+      <div className="surface-2 rounded-xl p-3 md:p-5">
         <div className="grid grid-cols-7 gap-1 mb-2">
           {dayNames.map((d) => (
             <div
@@ -314,14 +333,20 @@ export default function CalendarPage() {
             className="fixed inset-0 bg-black/50 z-40 md:hidden"
             onClick={() => setSelectedDay(null)}
           />
-          <div className="fixed inset-x-0 bottom-0 z-50 md:hidden rounded-t-xl max-h-[80vh] overflow-y-auto p-5 bg-bg-surface border-t border-border">
+          <div
+            className="fixed inset-x-0 bottom-0 z-50 md:hidden rounded-t-xl max-h-[80vh] overflow-y-auto p-5 surface-1 border-t"
+            style={{ borderColor: "var(--border)" }}
+          >
             <DayDetailHeader
               selectedDay={selectedDay}
               onClose={() => setSelectedDay(null)}
               dayTrades={dayTrades}
             />
           </div>
-          <div className="hidden md:block fixed top-0 right-0 w-[400px] h-screen border-l border-border p-6 overflow-y-auto z-50 bg-bg-surface">
+          <div
+            className="hidden md:block fixed top-0 right-0 w-[400px] h-screen border-l p-6 overflow-y-auto z-50 surface-1"
+            style={{ borderColor: "var(--border)" }}
+          >
             <DayDetailHeader
               selectedDay={selectedDay}
               onClose={() => setSelectedDay(null)}
@@ -350,7 +375,7 @@ export default function CalendarPage() {
           OPACITY INDICATES P&L MAGNITUDE
         </span>
       </div>
-    </div>
+    </DashboardShell>
   );
 }
 
@@ -384,7 +409,8 @@ function DayDetailHeader({
         </div>
         <button
           onClick={onClose}
-          className="bg-transparent border border-border text-text-muted px-3 py-1.5 cursor-pointer text-xs rounded"
+          className="bg-transparent border text-text-muted px-3 py-1.5 cursor-pointer text-xs rounded"
+          style={{ borderColor: "var(--border)" }}
         >
           CLOSE
         </button>
@@ -415,7 +441,8 @@ function DayDetailHeader({
           return (
             <div
               key={trade.id}
-              className="border border-border rounded p-3 bg-bg-primary"
+              className="border rounded p-3 surface-0"
+              style={{ borderColor: "var(--border)" }}
             >
               <div className="flex justify-between mb-2">
                 <span className="font-bold text-sm">{trade.symbol}</span>

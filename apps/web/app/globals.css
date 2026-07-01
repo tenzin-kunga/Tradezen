@@ -13,6 +13,8 @@
   --bg-surface-hover: #17181c;
   --bg-glass: rgba(17, 18, 20, 0.5);
   --bg-hover: #1e2028;
+  --bg-card: var(--bg-surface);
+  --bg-panel: var(--bg-primary);
 
   --border: #23252d;
   --border-hover: #2a2d36;
@@ -20,7 +22,7 @@
   --surface-card: var(--bg-surface);
 
   --text-primary: #fafafa;
-  --text-muted: #9ca3af;
+  --text-muted: #a1a1aa;
   --text-dim: #6b7280;
 
   --accent-profit: #22c55e;
@@ -29,9 +31,10 @@
   --accent: #3b82f6;
   --accent-primary: #3b82f6;
   --accent-cyan: #06b6d4;
+  --accent-insight: #8b5cf6;
 
   /* ---- Typography Scale ---- */
-  --text-xs: 0.625rem;
+  --text-xs: 0.6875rem;
   --text-xs--line-height: 0.875rem;
   --text-xs--letter-spacing: 0.04em;
   --text-xs--font-weight: 500;
@@ -105,6 +108,48 @@
   --space-24: 6rem;
   --space-28: 7rem;
   --space-32: 8rem;
+
+  /* ---- Semantic Typography ---- */
+  --metric-hero: var(--text-3xl);
+  --metric-hero--line-height: var(--text-3xl--line-height);
+  --metric-hero--letter-spacing: var(--text-3xl--letter-spacing);
+  --metric-hero--font-weight: 800;
+
+  --metric-primary: var(--text-2xl);
+  --metric-primary--line-height: var(--text-2xl--line-height);
+  --metric-primary--letter-spacing: var(--text-2xl--letter-spacing);
+  --metric-primary--font-weight: 700;
+
+  --metric-secondary: var(--text-xl);
+  --metric-secondary--line-height: var(--text-xl--line-height);
+  --metric-secondary--letter-spacing: var(--text-xl--letter-spacing);
+  --metric-secondary--font-weight: 600;
+
+  --section-title: var(--text-lg);
+  --section-title--line-height: var(--text-lg--line-height);
+  --section-title--letter-spacing: var(--text-lg--letter-spacing);
+  --section-title--font-weight: 600;
+
+  --body: var(--text-base);
+  --body--line-height: var(--text-base--line-height);
+  --body--letter-spacing: var(--text-base--letter-spacing);
+  --body--font-weight: 400;
+
+  --label: var(--text-sm);
+  --label--line-height: var(--text-sm--line-height);
+  --label--letter-spacing: var(--text-sm--letter-spacing);
+  --label--font-weight: 500;
+
+  --meta: var(--text-xs);
+  --meta--line-height: var(--text-xs--line-height);
+  --meta--letter-spacing: var(--text-xs--letter-spacing);
+  --meta--font-weight: 500;
+
+  /* ---- Content ---- */
+  --content-width: 1600px;
+  --settings-width: 1000px;
+  --settings-section-width: 800px;
+  --section-gap: var(--space-6);
 
   /* ---- Shadow System ---- */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -191,6 +236,7 @@
   --accent: #2563eb;
   --accent-primary: #2563eb;
   --accent-cyan: #0891b2;
+  --accent-insight: #7c3aed;
 
   /* Typography same — inherited from :root */
   /* Spacing same — inherited from :root */
@@ -262,6 +308,7 @@
   --accent: #6c5ce7;
   --accent-primary: #6c5ce7;
   --accent-cyan: #00cec9;
+  --accent-insight: #a78bfa;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
@@ -308,6 +355,7 @@
   --accent: #2962ff;
   --accent-primary: #2962ff;
   --accent-cyan: #00bcd4;
+  --accent-insight: #7c3aed;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
@@ -350,6 +398,12 @@ html {
 
 * {
   box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 ::selection {
@@ -452,20 +506,34 @@ html {
 }
 
 /* ========================================
+   SURFACE UTILITIES
+   ======================================== */
+.surface-0 {
+  background: var(--bg-primary);
+}
+
+.surface-1 {
+  background: var(--bg-surface);
+}
+
+.surface-2 {
+  background: var(--bg-surface-hover);
+}
+
+/* ========================================
    GLASS / SURFACE UTILITIES
    ======================================== */
 .glass-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   transition:
-    border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out);
+    transform var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
 }
 
 .glass-card:hover {
-  border-color: var(--border-hover);
+  background: var(--bg-surface-hover);
 }
 
 .glass-card-interactive:hover {
@@ -558,6 +626,50 @@ html {
 .btn-glass:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-family: inherit;
+  border: 1px solid var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.btn-secondary:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.btn-ghost:hover {
+  color: var(--text-primary);
 }
 
 /* ========================================
@@ -676,6 +788,34 @@ html {
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* ========================================
+   MICRO-INTERACTIONS
+   ======================================== */
+
+.search-expand {
+  transition: transform 0.2s var(--ease-spring);
+}
+
+.search-expand:focus-within {
+  transform: scale(1.02);
+}
+
+.stagger-fade > * {
+  animation: fadeUp var(--duration-slow) var(--ease-out) forwards;
+  opacity: 0;
+}
+
+.stagger-fade > *:nth-child(1) { animation-delay: 0.03s; }
+.stagger-fade > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger-fade > *:nth-child(3) { animation-delay: 0.09s; }
+.stagger-fade > *:nth-child(4) { animation-delay: 0.12s; }
+.stagger-fade > *:nth-child(5) { animation-delay: 0.15s; }
+.stagger-fade > *:nth-child(6) { animation-delay: 0.18s; }
+.stagger-fade > *:nth-child(7) { animation-delay: 0.21s; }
+.stagger-fade > *:nth-child(8) { animation-delay: 0.24s; }
+.stagger-fade > *:nth-child(9) { animation-delay: 0.27s; }
+.stagger-fade > *:nth-child(10) { animation-delay: 0.30s; }
 
 /* ========================================
    SKELETON LOADING

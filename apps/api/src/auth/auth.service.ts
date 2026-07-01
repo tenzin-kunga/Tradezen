@@ -166,7 +166,14 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string, response: Response) {
+    console.log(
+      '[Auth:refresh] Token present:',
+      !!refreshToken,
+      'length:',
+      refreshToken?.length ?? 0,
+    );
     if (!refreshToken) {
+      console.log('[Auth:refresh] No refresh token provided — rejecting');
       throw new UnauthorizedException('No refresh token');
     }
 
@@ -176,7 +183,9 @@ export class AuthService {
       payload = this.jwt.verify(refreshToken, {
         secret: refreshSecret,
       });
-    } catch {
+      console.log('[Auth:refresh] Token verified, sub:', payload.sub);
+    } catch (err: any) {
+      console.log('[Auth:refresh] Token verification failed:', err?.message);
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -189,8 +198,10 @@ export class AuthService {
       },
     });
     if (!user) {
+      console.log('[Auth:refresh] User not found for sub:', payload.sub);
       throw new UnauthorizedException('User not found');
     }
+    console.log('[Auth:refresh] Refresh successful for user:', user.email);
 
     const rememberMe = payload.remember_me === true;
     const newPayload = {

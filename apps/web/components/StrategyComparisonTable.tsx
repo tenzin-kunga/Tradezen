@@ -63,13 +63,7 @@ export default function StrategyComparisonTable({
   };
 
   return (
-    <div
-      className="rounded p-4 md:p-5"
-      style={{
-        backgroundColor: "var(--bg-surface)",
-        border: "1px solid var(--border)",
-      }}
-    >
+    <div className="surface-1 rounded-xl p-4 md:p-5">
       <div
         className="text-xs tracking-widest mb-4"
         style={{ color: "var(--text-muted)" }}

@@ -1,5 +1,7 @@
 ﻿"use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import DashboardShell from "@/components/DashboardShell";
+import EmptyState from "@/components/EmptyState";
 import {
   getAnalytics,
   getAdvancedAnalytics,
@@ -18,7 +20,6 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
-  Cell,
 } from "recharts";
 import { useRealtime } from "@/hooks/use-realtime";
 import StrategyBarCharts from "@/components/StrategyBarCharts";
@@ -27,14 +28,12 @@ import StrategyComparisonTable from "@/components/StrategyComparisonTable";
 import StrategyDrawer from "@/components/StrategyDrawer";
 import RiskDistributionChart from "@/components/RiskDistributionChart";
 import RiskByWeekChart from "@/components/RiskByWeekChart";
-type Tab = "overview" | "strategy" | "time" | "behavioral" | "risk";
+type Tab = "overview" | "strategy" | "risk";
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "overview", label: "OVERVIEW" },
-  { key: "strategy", label: "STRATEGY" },
-  { key: "time", label: "TIME" },
-  { key: "behavioral", label: "BEHAVIORAL" },
-  { key: "risk", label: "RISK" },
+  { key: "overview", label: "Overview" },
+  { key: "strategy", label: "Strategy" },
+  { key: "risk", label: "Risk" },
 ];
 
 function getSeverity(count: number): { label: string; color: string } {
@@ -42,11 +41,6 @@ function getSeverity(count: number): { label: string; color: string } {
   if (count > 2) return { label: "MODERATE", color: "var(--accent-warn)" };
   return { label: "WARNING", color: "var(--text-muted)" };
 }
-
-const tabBtn = (active: boolean) =>
-  `text-xs tracking-widest px-3 py-2 rounded border-none cursor-pointer transition-all ${
-    active ? "font-bold" : "opacity-50 hover:opacity-80"
-  }`;
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -135,16 +129,72 @@ export default function AnalyticsPage() {
   const equityCurve = advanced?.equityCurve ?? [];
   const hasEquityData = equityCurve.length > 1;
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  const weekDayData = useMemo(() => {
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const result = days.map((day) => ({ day, pnl: 0 }));
+
+    const startOfWeek = new Date(now);
+    const dayOfWeek = (now.getDay() + 6) % 7;
+    startOfWeek.setDate(now.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    dailyPnl.forEach((entry) => {
+      const d = new Date(entry.date);
+      if (d >= startOfWeek && d <= endOfWeek) {
+        const idx = (d.getDay() + 6) % 7;
+        result[idx].pnl += entry.pnl ?? entry.totalPnl ?? 0;
+      }
+    });
+
+    return result;
+  }, [dailyPnl]);
+
+  const yearMonthData = useMemo(() => {
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const result = months.map((month) => ({ month, pnl: 0 }));
+
+    dailyPnl.forEach((entry) => {
+      const d = new Date(entry.date);
+      if (d.getFullYear() === currentYear) {
+        result[d.getMonth()].pnl += entry.pnl ?? entry.totalPnl ?? 0;
+      }
+    });
+
+    return result;
+  }, [dailyPnl, currentYear]);
+
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const weekRangeLabel = `${weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" })} — ${weekEnd.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+
   function renderTabContent() {
     switch (activeTab) {
       case "overview":
         return <OverviewTab />;
       case "strategy":
         return <StrategyTab />;
-      case "time":
-        return <TimeTab />;
-      case "behavioral":
-        return <BehavioralTab />;
       case "risk":
         return <RiskTab />;
     }
@@ -153,105 +203,23 @@ export default function AnalyticsPage() {
   function OverviewTab() {
     return (
       <>
-        {/* Stat cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          {[
-            {
-              label: "EXPECTANCY",
-              value: `$${safeStats.expectancy.toFixed(2)}`,
-              sub: "PER TRADE",
-              valueColor:
-                safeStats.expectancy >= 0
-                  ? "var(--accent-profit)"
-                  : "var(--accent-loss)",
-            },
-            {
-              label: "PROFIT FACTOR",
-              value:
-                safeStats.profitFactor === Infinity
-                  ? "∞"
-                  : safeStats.profitFactor.toFixed(2),
-              sub: `BEST: $${safeStats.bestTrade} / WORST: $${safeStats.worstTrade}`,
-              valueColor:
-                safeStats.profitFactor >= 1.5
-                  ? "var(--accent-profit)"
-                  : "var(--accent-loss)",
-            },
-            {
-              label: "SHARPE RATIO",
-              value: advanced?.sharpeRatio?.toFixed(2) ?? "--",
-              sub: "RISK-ADJUSTED RETURN",
-              valueColor:
-                (advanced?.sharpeRatio ?? 0) >= 1
-                  ? "var(--accent-profit)"
-                  : (advanced?.sharpeRatio ?? 0) >= 0
-                    ? "var(--accent-warn)"
-                    : "var(--accent-loss)",
-            },
-            {
-              label: "SORTINO RATIO",
-              value:
-                advanced?.sortinoRatio >= 99999
-                  ? "∞"
-                  : (advanced?.sortinoRatio?.toFixed(2) ?? "--"),
-              sub: "DOWNSIDE RISK",
-              valueColor:
-                (advanced?.sortinoRatio ?? 0) >= 1.5
-                  ? "var(--accent-profit)"
-                  : (advanced?.sortinoRatio ?? 0) >= 0
-                    ? "var(--accent-warn)"
-                    : "var(--accent-loss)",
-            },
-          ].map((card) => (
-            <div
-              key={card.label}
-              className="rounded p-4 md:p-5"
-              style={{
-                backgroundColor: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <div
-                className="text-xs tracking-widest mb-2"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {card.label}
-              </div>
-              <div
-                className="text-xl md:text-2xl font-bold"
-                style={{ color: card.valueColor ?? "var(--text-primary)" }}
-              >
-                {card.value}
-              </div>
-              <div
-                className="text-xs mt-1"
-                style={{ color: "var(--text-dim)" }}
-              >
-                {card.sub}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Equity curve */}
-        <div
-          className="rounded p-4 md:p-5 mb-4"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
+        {/* Equity curve — dominant */}
+        <div className="surface-1 rounded-xl p-5 md:p-6 mb-4 fade-up">
           <div
-            className="text-xs tracking-widest mb-4"
-            style={{ color: "var(--text-muted)" }}
+            style={{
+              fontSize: "var(--section-title)",
+              fontWeight: 600,
+              color: "var(--text-primary)",
+              marginBottom: "var(--space-4)",
+            }}
           >
-            EQUITY CURVE
+            Equity Curve
           </div>
           {hasEquityData ? (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={320}>
               <AreaChart
                 data={equityCurve}
-                margin={{ top: 4, right: 4, bottom: 4, left: -20 }}
+                margin={{ top: 8, right: 24, bottom: 8, left: 0 }}
               >
                 <defs>
                   <linearGradient id="equityFill" x1="0" y1="0" x2="0" y2="1">
@@ -274,7 +242,7 @@ export default function AnalyticsPage() {
                 />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: "var(--text-muted)", fontSize: 9 }}
+                  tick={{ fill: "var(--text-muted)", fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -304,33 +272,114 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           ) : (
             <div
-              className="text-xs text-center py-10"
+              className="text-sm text-center py-16"
               style={{ color: "var(--text-dim)" }}
             >
-              INSUFFICIENT DATA FOR EQUITY CURVE
+              Insufficient data for equity curve
             </div>
           )}
         </div>
 
-        {/* Daily P&L */}
-        <div
-          className="rounded p-4 md:p-5 mb-4"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div
-            className="text-xs tracking-widest mb-4"
-            style={{ color: "var(--text-muted)" }}
-          >
-            DAILY P&L
+        {/* Compact stat row */}
+        <div className="surface-1 rounded-xl px-6 py-4 mb-4 fade-up">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+            {[
+              {
+                value: `$${safeStats.expectancy.toFixed(2)}`,
+                label: "Expectancy",
+                color:
+                  safeStats.expectancy >= 0
+                    ? "var(--accent-profit)"
+                    : "var(--accent-loss)",
+              },
+              {
+                value:
+                  safeStats.profitFactor === Infinity
+                    ? "∞"
+                    : safeStats.profitFactor.toFixed(2),
+                label: "Profit Factor",
+                color:
+                  safeStats.profitFactor >= 1.5
+                    ? "var(--accent-profit)"
+                    : safeStats.profitFactor < 1
+                      ? "var(--accent-loss)"
+                      : "var(--text-primary)",
+              },
+              {
+                value: advanced?.sharpeRatio?.toFixed(2) ?? "--",
+                label: "Sharpe",
+                color:
+                  (advanced?.sharpeRatio ?? 0) >= 1
+                    ? "var(--accent-profit)"
+                    : "var(--text-primary)",
+              },
+              {
+                value:
+                  advanced?.sortinoRatio >= 99999
+                    ? "∞"
+                    : (advanced?.sortinoRatio?.toFixed(2) ?? "--"),
+                label: "Sortino",
+                color:
+                  (advanced?.sortinoRatio ?? 0) >= 1.5
+                    ? "var(--accent-profit)"
+                    : "var(--text-primary)",
+              },
+            ].map((m, i) => (
+              <div key={m.label} className="flex items-center gap-3">
+                {i > 0 && (
+                  <span
+                    style={{
+                      color: "var(--text-dim)",
+                      fontSize: "var(--meta)",
+                      userSelect: "none",
+                    }}
+                  >
+                    ·
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: "var(--metric-secondary)",
+                    fontWeight: 700,
+                    color: m.color,
+                  }}
+                >
+                  {m.value}
+                </span>
+                <span
+                  style={{
+                    fontSize: "var(--meta)",
+                    color: "var(--text-muted)",
+                    fontWeight: 500,
+                  }}
+                >
+                  {m.label}
+                </span>
+              </div>
+            ))}
           </div>
-          {dailyPnl.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
+        </div>
+
+        {/* Time Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          {/* Day of Week */}
+          <div className="surface-1 rounded-xl p-4 md:p-5">
+            <div
+              className="text-xs tracking-widest mb-1"
+              style={{ color: "var(--text-muted)" }}
+            >
+              THIS WEEK'S PERFORMANCE
+            </div>
+            <div
+              className="text-[10px] mb-4"
+              style={{ color: "var(--text-dim)" }}
+            >
+              {weekRangeLabel}
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart
-                data={dailyPnl}
-                margin={{ top: 4, right: 4, bottom: 4, left: -20 }}
+                data={weekDayData}
+                margin={{ top: 8, right: 24, bottom: 8, left: 0 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -338,8 +387,8 @@ export default function AnalyticsPage() {
                   vertical={false}
                 />
                 <XAxis
-                  dataKey="date"
-                  tick={{ fill: "var(--text-muted)", fontSize: 9 }}
+                  dataKey="day"
+                  tick={{ fill: "var(--text-muted)", fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -358,36 +407,178 @@ export default function AnalyticsPage() {
                     fontSize: "11px",
                   }}
                   cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  formatter={(value: number) => [
-                    value.toLocaleString("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    }),
-                    "P&L",
-                  ]}
                 />
-                <Bar dataKey="pnl" radius={[2, 2, 0, 0]}>
-                  {dailyPnl.map((entry: any, idx: number) => (
-                    <Cell
-                      key={idx}
-                      fill={
-                        entry.pnl >= 0
-                          ? "var(--accent-profit)"
-                          : "var(--accent-loss)"
-                      }
-                    />
-                  ))}
-                </Bar>
+                <Bar
+                  dataKey="pnl"
+                  fill="var(--text-primary)"
+                  radius={[2, 2, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
-          ) : (
+          </div>
+
+          {/* Monthly P&L */}
+          <div className="surface-1 rounded-xl p-4 md:p-5">
             <div
-              className="text-xs text-center py-10"
+              className="text-xs tracking-widest mb-1"
+              style={{ color: "var(--text-muted)" }}
+            >
+              MONTHLY P&L — {currentYear}
+            </div>
+            <div
+              className="text-[10px] mb-4"
               style={{ color: "var(--text-dim)" }}
             >
-              NO DAILY DATA AVAILABLE
+              Jan — Dec {currentYear}
             </div>
-          )}
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={yearMonthData}
+                margin={{ top: 8, right: 24, bottom: 8, left: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: "var(--text-muted)", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "var(--text-muted)", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--bg-surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-sm)",
+                    color: "var(--text-primary)",
+                    fontFamily: "var(--font-display)",
+                    fontSize: "11px",
+                  }}
+                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
+                />
+                <Bar
+                  dataKey="pnl"
+                  fill="var(--text-primary)"
+                  radius={[2, 2, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Behavioral */}
+        <div className="surface-1 rounded-xl p-4 md:p-5 mb-4">
+          <div
+            className="text-xs tracking-widest mb-4"
+            style={{ color: "var(--text-muted)" }}
+          >
+            BEHAVIORAL ERROR ANALYSIS
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              {
+                label: "FOMO ENTRY",
+                count: safeStats.behavioralStats.fomoCount,
+                severity: getSeverity(safeStats.behavioralStats.fomoCount),
+              },
+              {
+                label: "VENGEANCE TRADE",
+                count: safeStats.behavioralStats.vengeanceCount,
+                severity: getSeverity(safeStats.behavioralStats.vengeanceCount),
+              },
+              {
+                label: "TREND ALIGNED",
+                count: safeStats.behavioralStats.trendAlignedCount,
+                severity: { label: "POSITIVE", color: "var(--accent-profit)" },
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded p-4"
+                style={{
+                  backgroundColor: "var(--bg-primary)",
+                  border:
+                    item.label === "TREND ALIGNED"
+                      ? "1px solid var(--accent-profit)22"
+                      : `1px solid ${item.severity.color}22`,
+                }}
+              >
+                <div
+                  className="text-xs tracking-widest mb-2"
+                  style={{ color: item.severity.color }}
+                >
+                  {item.severity.label}
+                </div>
+                <div className="text-sm font-bold mb-1">{item.label}</div>
+                <div
+                  className="text-xl md:text-2xl font-bold"
+                  style={{ color: item.severity.color }}
+                >
+                  {item.count}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="surface-1 rounded-xl p-4 md:p-5 mb-4">
+          <div
+            className="text-xs tracking-widest mb-4"
+            style={{ color: "var(--text-muted)" }}
+          >
+            DIRECTION WIN RATE
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              {
+                dir: "LONG",
+                rate: advanced?.winRateByDirection?.buy?.rate ?? 0,
+                count: advanced?.winRateByDirection?.buy?.count ?? 0,
+              },
+              {
+                dir: "SHORT",
+                rate: advanced?.winRateByDirection?.sell?.rate ?? 0,
+                count: advanced?.winRateByDirection?.sell?.count ?? 0,
+              },
+            ].map((d) => (
+              <div
+                key={d.dir}
+                className="rounded p-4 text-center"
+                style={{ backgroundColor: "var(--bg-primary)" }}
+              >
+                <div
+                  className="text-xs tracking-widest mb-2"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {d.dir}
+                </div>
+                <div
+                  className="text-2xl font-bold"
+                  style={{
+                    color:
+                      d.rate >= 50
+                        ? "var(--accent-profit)"
+                        : "var(--accent-loss)",
+                  }}
+                >
+                  {d.rate}%
+                </div>
+                <div
+                  className="text-xs mt-1"
+                  style={{ color: "var(--text-dim)" }}
+                >
+                  {d.count} TRADES
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </>
     );
@@ -480,13 +671,7 @@ export default function AnalyticsPage() {
 
         {/* Top / Bottom Symbols */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          <div
-            className="rounded p-4 md:p-5"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-            }}
-          >
+          <div className="surface-1 rounded-xl p-4 md:p-5">
             <div
               className="text-xs tracking-widest mb-4"
               style={{ color: "var(--text-muted)" }}
@@ -525,13 +710,7 @@ export default function AnalyticsPage() {
             )}
           </div>
 
-          <div
-            className="rounded p-4 md:p-5"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-            }}
-          >
+          <div className="surface-1 rounded-xl p-4 md:p-5">
             <div
               className="text-xs tracking-widest mb-4"
               style={{ color: "var(--text-muted)" }}
@@ -604,256 +783,6 @@ export default function AnalyticsPage() {
               />
             );
           })()}
-      </>
-    );
-  }
-
-  function TimeTab() {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {/* Day of Week */}
-        <div
-          className="rounded p-4 md:p-5"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div
-            className="text-xs tracking-widest mb-4"
-            style={{ color: "var(--text-muted)" }}
-          >
-            DAY OF WEEK PERFORMANCE
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart
-              data={safeStats.byDayOfWeek}
-              margin={{ top: 4, right: 4, bottom: 4, left: -20 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="var(--border)"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="day"
-                tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "var(--bg-surface)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-sm)",
-                  color: "var(--text-primary)",
-                  fontFamily: "var(--font-display)",
-                  fontSize: "11px",
-                }}
-                cursor={{ fill: "rgba(255,255,255,0.03)" }}
-              />
-              <Bar
-                dataKey="pnl"
-                fill="var(--text-primary)"
-                radius={[2, 2, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* byMonth */}
-        <div
-          className="rounded p-4 md:p-5"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div
-            className="text-xs tracking-widest mb-4"
-            style={{ color: "var(--text-muted)" }}
-          >
-            MONTHLY P&L
-          </div>
-          {safeStats.byMonth?.length ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart
-                data={safeStats.byMonth}
-                margin={{ top: 4, right: 4, bottom: 4, left: -20 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--border)"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "var(--text-muted)", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--bg-surface)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-sm)",
-                    color: "var(--text-primary)",
-                    fontFamily: "var(--font-display)",
-                    fontSize: "11px",
-                  }}
-                  cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                />
-                <Bar
-                  dataKey="pnl"
-                  fill="var(--text-primary)"
-                  radius={[2, 2, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div
-              className="text-xs text-center py-6"
-              style={{ color: "var(--text-dim)" }}
-            >
-              NO MONTHLY DATA
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  function BehavioralTab() {
-    return (
-      <>
-        <div
-          className="rounded p-4 md:p-5 mb-4"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div
-            className="text-xs tracking-widest mb-4"
-            style={{ color: "var(--text-muted)" }}
-          >
-            BEHAVIORAL ERROR ANALYSIS
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                label: "FOMO ENTRY",
-                count: safeStats.behavioralStats.fomoCount,
-                severity: getSeverity(safeStats.behavioralStats.fomoCount),
-              },
-              {
-                label: "VENGEANCE TRADE",
-                count: safeStats.behavioralStats.vengeanceCount,
-                severity: getSeverity(safeStats.behavioralStats.vengeanceCount),
-              },
-              {
-                label: "TREND ALIGNED",
-                count: safeStats.behavioralStats.trendAlignedCount,
-                severity: { label: "POSITIVE", color: "var(--accent-profit)" },
-              },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded p-4"
-                style={{
-                  backgroundColor: "var(--bg-primary)",
-                  border:
-                    item.label === "TREND ALIGNED"
-                      ? "1px solid var(--accent-profit)22"
-                      : `1px solid ${item.severity.color}22`,
-                }}
-              >
-                <div
-                  className="text-xs tracking-widest mb-2"
-                  style={{ color: item.severity.color }}
-                >
-                  {item.severity.label}
-                </div>
-                <div className="text-sm font-bold mb-1">{item.label}</div>
-                <div
-                  className="text-xl md:text-2xl font-bold"
-                  style={{ color: item.severity.color }}
-                >
-                  {item.count}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div
-          className="rounded p-4 md:p-5"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div
-            className="text-xs tracking-widest mb-4"
-            style={{ color: "var(--text-muted)" }}
-          >
-            DIRECTION WIN RATE
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              {
-                dir: "LONG",
-                rate: advanced?.winRateByDirection?.buy?.rate ?? 0,
-                count: advanced?.winRateByDirection?.buy?.count ?? 0,
-              },
-              {
-                dir: "SHORT",
-                rate: advanced?.winRateByDirection?.sell?.rate ?? 0,
-                count: advanced?.winRateByDirection?.sell?.count ?? 0,
-              },
-            ].map((d) => (
-              <div
-                key={d.dir}
-                className="rounded p-4 text-center"
-                style={{ backgroundColor: "var(--bg-primary)" }}
-              >
-                <div
-                  className="text-xs tracking-widest mb-2"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {d.dir}
-                </div>
-                <div
-                  className="text-2xl font-bold"
-                  style={{
-                    color:
-                      d.rate >= 50
-                        ? "var(--accent-profit)"
-                        : "var(--accent-loss)",
-                  }}
-                >
-                  {d.rate}%
-                </div>
-                <div
-                  className="text-xs mt-1"
-                  style={{ color: "var(--text-dim)" }}
-                >
-                  {d.count} TRADES
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </>
     );
   }
@@ -938,14 +867,7 @@ export default function AnalyticsPage() {
       <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
           {riskCards.map((card) => (
-            <div
-              key={card.label}
-              className="rounded p-3 md:p-4"
-              style={{
-                backgroundColor: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-              }}
-            >
+            <div key={card.label} className="surface-1 rounded-xl p-3 md:p-4">
               <div
                 className="text-xs tracking-widest mb-1"
                 style={{ color: "var(--text-muted)" }}
@@ -974,13 +896,7 @@ export default function AnalyticsPage() {
         </div>
 
         {ra.byStrategy?.length > 0 && (
-          <div
-            className="rounded p-4 md:p-5 mb-4"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-            }}
-          >
+          <div className="surface-1 rounded-xl p-4 md:p-5 mb-4">
             <div
               className="text-xs tracking-widest mb-3"
               style={{ color: "var(--text-muted)" }}
@@ -1060,13 +976,7 @@ export default function AnalyticsPage() {
         )}
 
         {ra.riskByDirection && (
-          <div
-            className="rounded p-4 md:p-5 mb-4"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-            }}
-          >
+          <div className="surface-1 rounded-xl p-4 md:p-5 mb-4">
             <div
               className="text-xs tracking-widest mb-3"
               style={{ color: "var(--text-muted)" }}
@@ -1127,13 +1037,7 @@ export default function AnalyticsPage() {
         {(advanced?.sharpeRatio != null ||
           advanced?.sortinoRatio != null ||
           advanced?.calmarRatio != null) && (
-          <div
-            className="rounded p-4 md:p-5"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-            }}
-          >
+          <div className="surface-1 rounded-xl p-4 md:p-5">
             <div
               className="text-xs tracking-widest mb-4"
               style={{ color: "var(--text-muted)" }}
@@ -1209,143 +1113,168 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div
-      className="min-h-screen"
-      style={{
-        color: "var(--text-primary)",
-        fontFamily: "var(--font-display)",
-      }}
-    >
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
-        <div>
-          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
-            PROTOCOL ANALYTICS
-          </h1>
-          <p
-            className="text-xs mt-1 tracking-wide"
-            style={{ color: "var(--text-dim)" }}
-          >
-            SYSTEM_VERSION_5.0 // ADVANCED_ANALYTICS
-          </p>
-        </div>
-        {!error && (
-          <div className="text-right">
-            <div
-              className="text-xs tracking-widest"
-              style={{ color: "var(--text-muted)" }}
+    <DashboardShell>
+      <div
+        className="min-h-screen"
+        style={{
+          color: "var(--text-primary)",
+          fontFamily: "var(--font-display)",
+        }}
+      >
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
+          <div>
+            <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
+              PROTOCOL ANALYTICS
+            </h1>
+            <p
+              className="text-xs mt-1 tracking-wide"
+              style={{ color: "var(--text-dim)" }}
             >
-              NET P/L
+              SYSTEM_VERSION_5.0 // ADVANCED_ANALYTICS
+            </p>
+          </div>
+          {!error && (
+            <div className="text-right">
+              <div
+                className="text-xs tracking-widest"
+                style={{ color: "var(--text-muted)" }}
+              >
+                NET P/L
+              </div>
+              <div
+                className="text-xl md:text-2xl font-bold"
+                style={{
+                  color:
+                    safeStats.totalPnl >= 0
+                      ? "var(--accent-profit)"
+                      : "var(--accent-loss)",
+                }}
+              >
+                {safeStats.totalPnl >= 0 ? "+" : ""}$
+                {safeStats.totalPnl.toFixed(2)}
+              </div>
+              <div
+                className="text-xs mt-1"
+                style={{ color: "var(--text-muted)" }}
+              >
+                WIN RATE:{" "}
+                <span style={{ color: "var(--text-primary)" }}>
+                  {safeStats.winRate}%
+                </span>
+              </div>
             </div>
-            <div
-              className="text-xl md:text-2xl font-bold"
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div
+          className="flex gap-1 mb-6"
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
+            background: "var(--bg-primary)",
+            padding: "8px 0",
+          }}
+        >
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
               style={{
-                color:
-                  safeStats.totalPnl >= 0
-                    ? "var(--accent-profit)"
-                    : "var(--accent-loss)",
+                background:
+                  activeTab === t.key ? "var(--accent)" : "transparent",
+                color: activeTab === t.key ? "#fff" : "var(--text-muted)",
+                border: "none",
+                padding: "6px 16px",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "var(--text-sm)",
+                fontWeight: activeTab === t.key ? 600 : 500,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "all 0.15s var(--ease-out)",
               }}
             >
-              {safeStats.totalPnl >= 0 ? "+" : ""}$
-              {safeStats.totalPnl.toFixed(2)}
-            </div>
-            <div
-              className="text-xs mt-1"
-              style={{ color: "var(--text-muted)" }}
-            >
-              WIN RATE:{" "}
-              <span style={{ color: "var(--text-primary)" }}>
-                {safeStats.winRate}%
-              </span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {loading && (
+          <div className="surface-1 rounded-xl p-6 py-14">
+            <div className="space-y-3">
+              <div
+                className="h-3 rounded"
+                style={{ background: "var(--border-subtle)", width: "35%" }}
+              />
+              <div
+                className="h-3 rounded"
+                style={{ background: "var(--border-subtle)", width: "60%" }}
+              />
+              <div
+                className="h-3 rounded"
+                style={{ background: "var(--border-subtle)", width: "45%" }}
+              />
+              <div
+                className="h-40 rounded-lg mt-4"
+                style={{ background: "var(--border-subtle)" }}
+              />
             </div>
           </div>
         )}
-      </div>
 
-      {/* Tabs */}
-      <div
-        className="flex gap-1 mb-6"
-        style={{ borderBottom: "1px solid var(--border)" }}
-      >
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
-            style={{
-              color:
-                activeTab === t.key
-                  ? "var(--text-primary)"
-                  : "var(--text-muted)",
-              borderBottom:
-                activeTab === t.key
-                  ? "2px solid var(--accent-cyan)"
-                  : "2px solid transparent",
-              marginBottom: -1,
-            }}
-            className={tabBtn(activeTab === t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {loading && (
-        <div
-          className="text-center py-16 tracking-widest"
-          style={{ color: "var(--text-muted)" }}
-        >
-          LOADING PROTOCOL DATA...
-        </div>
-      )}
-
-      {!loading && error && (
-        <div
-          className="text-center py-16 tracking-widest"
-          style={{ color: "var(--accent-warn)" }}
-        >
-          ERROR LOADING ANALYTICS: {error}
-        </div>
-      )}
-
-      {!loading && !error && safeStats.totalTrades === 0 && (
-        <div
-          className="text-center py-16 tracking-widest"
-          style={{ color: "var(--text-dim)" }}
-        >
-          NO TRADE DATA AVAILABLE
-        </div>
-      )}
-
-      {!loading && !error && safeStats.totalTrades > 0 && (
-        <>
-          {renderTabContent()}
-
+        {!loading && error && (
           <div
-            className="rounded px-4 md:px-5 py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-4"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-            }}
+            className="text-center py-16 tracking-widest"
+            style={{ color: "var(--accent-warn)" }}
           >
-            <span
-              className="text-xs tracking-widest"
-              style={{ color: "var(--text-dim)" }}
-            >
-              ANALYTIC INSIGHT // {safeStats.totalTrades} EXECUTION
-              {safeStats.totalTrades !== 1 ? "S" : ""} PROCESSED
-            </span>
-            <div className="flex gap-4 md:gap-6">
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                PROTOCOL INTEGRITY:{" "}
-                <span style={{ color: "var(--accent-profit)" }}>VERIFIED</span>
-              </span>
-              <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                SYSTEM STATUS:{" "}
-                <span style={{ color: "var(--accent-profit)" }}>NOMINAL</span>
-              </span>
-            </div>
+            ERROR LOADING ANALYTICS: {error}
           </div>
-        </>
-      )}
-    </div>
+        )}
+
+        {!loading && !error && safeStats.totalTrades === 0 && (
+          <EmptyState
+            title="NO TRADE DATA AVAILABLE"
+            description="Start journaling your trades to unlock advanced protocol analytics, equity curves, and strategy breakdowns."
+            actionLabel="NEW TRADE"
+            actionHref="/trades/new"
+          />
+        )}
+
+        {!loading && !error && safeStats.totalTrades > 0 && (
+          <>
+            {renderTabContent()}
+
+            <div className="surface-1 rounded-xl px-4 md:px-5 py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-4">
+              <span
+                className="text-xs tracking-widest"
+                style={{ color: "var(--text-dim)" }}
+              >
+                ANALYTIC INSIGHT // {safeStats.totalTrades} EXECUTION
+                {safeStats.totalTrades !== 1 ? "S" : ""} PROCESSED
+              </span>
+              <div className="flex gap-4 md:gap-6">
+                <span
+                  className="text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  PROTOCOL INTEGRITY:{" "}
+                  <span style={{ color: "var(--accent-profit)" }}>
+                    VERIFIED
+                  </span>
+                </span>
+                <span
+                  className="text-xs"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  SYSTEM STATUS:{" "}
+                  <span style={{ color: "var(--accent-profit)" }}>NOMINAL</span>
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </DashboardShell>
   );
 }

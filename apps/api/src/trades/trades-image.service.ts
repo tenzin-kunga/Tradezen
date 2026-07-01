@@ -13,9 +13,7 @@ import { ImageResponseDto } from './dto/image.dto';
 
 @Injectable()
 export class TradeImageService {
-  constructor(
-    private readonly storageProvider: CloudinaryProvider,
-  ) {}
+  constructor(private readonly storageProvider: CloudinaryProvider) {}
 
   async uploadImage(
     userId: string,
@@ -218,9 +216,7 @@ export class TradeImageService {
     return map;
   }
 
-  async getImageCounts(
-    tradeIds: string[],
-  ): Promise<Map<string, number>> {
+  async getImageCounts(tradeIds: string[]): Promise<Map<string, number>> {
     if (tradeIds.length === 0) return new Map();
 
     const results = await db
@@ -273,7 +269,9 @@ export class TradeImageService {
 
   private async getNextDisplayOrder(tradeId: string): Promise<number> {
     const result = await db
-      .select({ maxOrder: sql<number>`COALESCE(MAX(${tradeImages.displayOrder}), -1)` })
+      .select({
+        maxOrder: sql<number>`COALESCE(MAX(${tradeImages.displayOrder}), -1)`,
+      })
       .from(tradeImages)
       .where(eq(tradeImages.tradeId, tradeId));
     return Number(result[0]?.maxOrder ?? -1) + 1;

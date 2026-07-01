@@ -130,9 +130,7 @@ export default function TradeDetailDrawer({
             />
             <Field
               label="TAKE PROFIT"
-              value={
-                trade.takeProfit != null ? String(trade.takeProfit) : "--"
-              }
+              value={trade.takeProfit != null ? String(trade.takeProfit) : "--"}
               mono
             />
           </div>

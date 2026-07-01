@@ -11,7 +11,15 @@ export {
   DialogTitle,
   DialogTrigger,
 } from "./dialog";
-export { Card, CardHeader, CardFooter, CardTitle, CardAction, CardDescription, CardContent } from "./card";
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
+} from "./card";
 export { Badge, badgeVariants } from "./badge";
 export { Separator } from "./separator";
 export {
@@ -24,4 +32,9 @@ export {
   SheetTitle,
   SheetTrigger,
 } from "./sheet";
-export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./tooltip";

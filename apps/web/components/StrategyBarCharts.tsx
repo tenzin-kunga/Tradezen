@@ -83,14 +83,7 @@ export default function StrategyBarCharts({
       {METRICS.map((m) => {
         const data = chartData(m.key);
         return (
-          <div
-            key={m.key}
-            className="rounded p-4"
-            style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-            }}
-          >
+          <div key={m.key} className="surface-1 rounded-xl p-4">
             <div
               className="text-xs tracking-widest mb-3"
               style={{ color: "var(--text-muted)" }}
