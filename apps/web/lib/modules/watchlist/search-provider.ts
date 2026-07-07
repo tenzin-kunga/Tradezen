@@ -1,4 +1,4 @@
-import type { SearchProvider, SearchResult, QuickAction } from "@/lib/workspace/types";
+import type { SearchProvider, SearchResult, QuickAction, WorkspaceResource } from "@/lib/workspace/types";
 import { createWatchlistResource } from "@/lib/workspace/resource";
 
 const STORAGE_KEY = "tradezen_search_watchlist_recents";
@@ -52,6 +52,10 @@ export function createWatchlistSearchProvider(): SearchProvider {
     },
 
     async favorites(): Promise<SearchResult[]> {
+      return [];
+    },
+
+    async related(_resource: WorkspaceResource): Promise<SearchResult[]> {
       return [];
     },
 

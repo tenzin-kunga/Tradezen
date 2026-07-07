@@ -1,4 +1,4 @@
-import type { SearchProvider, SearchResult, QuickAction } from "./types";
+import type { SearchProvider, SearchResult, QuickAction, WorkspaceResource } from "./types";
 
 class SearchRegistryImpl {
   private providers = new Map<string, SearchProvider>();
@@ -28,6 +28,13 @@ class SearchRegistryImpl {
   async favorites(): Promise<SearchResult[]> {
     const results = await Promise.all(
       Array.from(this.providers.values()).map((p) => p.favorites()),
+    );
+    return results.flat();
+  }
+
+  async related(resource: WorkspaceResource): Promise<SearchResult[]> {
+    const results = await Promise.all(
+      Array.from(this.providers.values()).map((p) => p.related(resource)),
     );
     return results.flat();
   }

@@ -1,4 +1,4 @@
-import type { SearchProvider, SearchResult, QuickAction } from "@/lib/workspace/types";
+import type { SearchProvider, SearchResult, QuickAction, WorkspaceResource } from "@/lib/workspace/types";
 import { createJournalResource } from "@/lib/workspace/resource";
 
 export function createJournalSearchProvider(): SearchProvider {
@@ -54,6 +54,10 @@ export function createJournalSearchProvider(): SearchProvider {
     },
 
     async favorites(): Promise<SearchResult[]> {
+      return [];
+    },
+
+    async related(_resource: WorkspaceResource): Promise<SearchResult[]> {
       return [];
     },
 

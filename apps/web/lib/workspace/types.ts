@@ -10,7 +10,9 @@ export type ResourceType =
   | "watchlist"
   | "calendar"
   | "file"
-  | "report";
+  | "report"
+  | "knowledge_folder"
+  | "knowledge_document";
 
 export interface WorkspaceResource {
   id: string;
@@ -271,5 +273,6 @@ export interface SearchProvider {
   search(query: string): Promise<SearchResult[]>;
   recent(): Promise<SearchResult[]>;
   favorites(): Promise<SearchResult[]>;
+  related(resource: WorkspaceResource): Promise<SearchResult[]>;
   quickActions(): QuickAction[];
 }
