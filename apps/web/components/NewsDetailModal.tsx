@@ -1,42 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import type { MarketNewsEvent, Impact } from "@/lib/api";
-import { lookupEventMetadata } from "@/lib/economic-event-metadata";
-import { getEventStatus, type EventStatus } from "@/lib/event-status";
+import {
+  lookupEventMetadata,
+  type EventMetadata,
+} from "@/lib/economic-event-metadata";
+import {
+  IMPACT_COLORS,
+  formatEventTime,
+  isPastEvent,
+  isSpeech,
+  getEventStatus,
+  StatusChip,
+} from "@/lib/news";
 import { CURRENCY_MARKET_INFO } from "@/lib/currency-pairs";
-
-function formatEventTime(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleTimeString(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
-function isPastEvent(dateStr: string, timestamp?: string): boolean {
-  try {
-    const ts = timestamp || dateStr;
-    return new Date(ts).getTime() < Date.now();
-  } catch {
-    return false;
-  }
-}
-
-const IMPACT_COLORS: Record<
-  Impact,
-  { bar: string; bg: string; badge: string }
-> = {
-  high: { bar: "#ef4444", bg: "rgba(239,68,68,0.08)", badge: "#ef4444" },
-  medium: { bar: "#f59e0b", bg: "rgba(245,158,11,0.08)", badge: "#f59e0b" },
-  low: { bar: "#3b82f6", bg: "rgba(59,130,246,0.06)", badge: "#3b82f6" },
-  holiday: { bar: "#6b7280", bg: "transparent", badge: "#6b7280" },
-  speech: { bar: "#8b5cf6", bg: "rgba(139,92,246,0.08)", badge: "#8b5cf6" },
-};
 
 function ImpactBadge({ impact }: { impact: Impact }) {
   const colors = IMPACT_COLORS[impact] ?? IMPACT_COLORS.low;
@@ -59,57 +38,6 @@ function ImpactBadge({ impact }: { impact: Impact }) {
         : impact === "medium"
           ? "Medium Impact"
           : "Low Impact"}
-    </span>
-  );
-}
-
-function StatusChip({ status }: { status: EventStatus }) {
-  const config: Record<
-    EventStatus,
-    { color: string; bg: string; label: string }
-  > = {
-    upcoming: {
-      color: "#60a5fa",
-      bg: "rgba(96,165,250,0.1)",
-      label: "Upcoming",
-    },
-    live: { color: "#22c55e", bg: "rgba(34,197,94,0.15)", label: "Live" },
-    released: {
-      color: "#6b7280",
-      bg: "rgba(107,114,128,0.1)",
-      label: "Released",
-    },
-  };
-  const { color, bg, label } = config[status];
-  return (
-    <span
-      style={{
-        fontSize: 10,
-        fontWeight: 600,
-        padding: "3px 10px",
-        borderRadius: 4,
-        backgroundColor: bg,
-        color,
-        textTransform: "uppercase",
-        letterSpacing: "0.5px",
-        lineHeight: "16px",
-      }}
-    >
-      {status === "live" && (
-        <span
-          className="animate-pulse"
-          style={{
-            display: "inline-block",
-            width: 5,
-            height: 5,
-            borderRadius: "50%",
-            backgroundColor: color,
-            marginRight: 4,
-            verticalAlign: "middle",
-          }}
-        />
-      )}
-      {label}
     </span>
   );
 }
@@ -352,20 +280,32 @@ export default function NewsDetailModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [metadata, setMetadata] = useState<EventMetadata | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    lookupEventMetadata(event.title).then((m) => {
+      if (!cancelled) setMetadata(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [event]);
+
   if (!event) return null;
 
-  const metadata = lookupEventMetadata(event.title);
   const status = getEventStatus(event);
-  const past = isPastEvent(event.date, event.timestamp);
+  const past = isPastEvent(event);
   const showActual = past && event.released ? event.actual : "\u2014";
   const marketInfo =
     CURRENCY_MARKET_INFO[event.currency] ?? CURRENCY_MARKET_INFO[event.country];
   const colors = IMPACT_COLORS[event.impact] ?? IMPACT_COLORS.low;
   const volatility =
     metadata?.tradingImpact.volatility ?? (event.impact === "high" ? 4 : 3);
-  const isSpeech =
-    event.title.toLowerCase().includes("speaks") ||
-    event.title.toLowerCase().includes("speech");
+  const speech = isSpeech(event.title);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -480,7 +420,7 @@ export default function NewsDetailModal({
           </div>
 
           {/* Stats */}
-          {!isSpeech && (
+          {!speech && (
             <div className="flex gap-3">
               <StatCard
                 label="Actual"
@@ -581,7 +521,7 @@ export default function NewsDetailModal({
               padding: "16px 16px 8px",
             }}
           >
-            {isSpeech ? (
+            {speech ? (
               <>
                 <TimelineItem
                   time={formatEventTime(event.date)}

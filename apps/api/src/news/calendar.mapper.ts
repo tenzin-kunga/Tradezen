@@ -13,7 +13,7 @@ function normalizeTitle(title: string): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapEntry(raw: any): EconomicEvent {
+export function mapEntry(raw: any): EconomicEvent {
   const title = raw.title ?? raw.Name ?? raw.name ?? 'Unknown';
   const country = raw.country ?? raw.Currency ?? '';
   const currency = raw.currency ?? '';
@@ -65,9 +65,7 @@ function mapEntry(raw: any): EconomicEvent {
   };
 }
 
-export async function fetchCalendarEvents(
-  dateStr: string,
-): Promise<EconomicEvent[]> {
+export async function fetchCalendarEvents(): Promise<EconomicEvent[]> {
   const logger = new Logger('CalendarFetcher');
 
   try {

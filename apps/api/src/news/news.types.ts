@@ -10,6 +10,6 @@ export interface EconomicEvent {
   date: string;
   time: string;
   timestamp: string;
-  provider: 'finnhub' | 'faireconomy';
+  provider: 'faireconomy';
   released: boolean;
 }
