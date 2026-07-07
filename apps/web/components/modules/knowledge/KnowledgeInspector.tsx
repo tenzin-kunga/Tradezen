@@ -1,6 +1,9 @@
 "use client";
 
 import type { KnowledgeDocument } from "@/lib/api/knowledge";
+import KnowledgeSourcesInspector from "./inspectors/SourcesInspector";
+import KnowledgeTradesInspector from "./inspectors/TradesInspector";
+import KnowledgeInsightsInspector from "./inspectors/InsightsInspector";
 
 interface KnowledgeInspectorProps {
   document: KnowledgeDocument | null;
@@ -140,21 +143,15 @@ export default function KnowledgeInspector({
             </InspectorSection>
 
             <InspectorSection title="Sources">
-              <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", padding: "8px 0" }}>
-                No sources linked yet.
-              </div>
+              <KnowledgeSourcesInspector document={doc} />
             </InspectorSection>
 
             <InspectorSection title="Related Trades">
-              <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", padding: "8px 0" }}>
-                No related trades found.
-              </div>
+              <KnowledgeTradesInspector document={doc} />
             </InspectorSection>
 
             <InspectorSection title="AI Insights">
-              <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", padding: "8px 0" }}>
-                {doc.aiSummary || "No AI summary yet."}
-              </div>
+              <KnowledgeInsightsInspector document={doc} />
             </InspectorSection>
 
             <InspectorSection title="Links">
