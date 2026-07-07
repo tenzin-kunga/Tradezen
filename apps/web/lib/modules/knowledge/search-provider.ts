@@ -7,22 +7,18 @@ export function createKnowledgeSearchProvider(): SearchProvider {
       if (query.length < 1) return [];
 
       try {
-        const { getKnowledgeDocuments } = await import("@/lib/api/knowledge");
-        const docs = await getKnowledgeDocuments();
+        const { semanticSearch } = await import("@/lib/api/retrieval");
+        const results = await semanticSearch(query, "fast");
 
-        const lower = query.toLowerCase();
-        return docs
-          .filter((d) => d.title.toLowerCase().includes(lower))
-          .slice(0, 5)
-          .map((d) => ({
-            resource: createResource("knowledge_document", d.id, d.title, {
-              content: d.content,
-              docType: d.docType,
-            }),
-            score: 0.8,
-            highlights: [d.title, d.docType],
-            actions: [],
-          }));
+        return results.map((r) => ({
+          resource: createResource("knowledge_document" as any, r.id, r.title, {
+            score: r.score,
+            evidence: r.evidence,
+          }),
+          score: r.score,
+          highlights: r.evidence.flatMap((e) => e.highlights),
+          actions: [],
+        }));
       } catch {
         return [];
       }
@@ -34,7 +30,7 @@ export function createKnowledgeSearchProvider(): SearchProvider {
         const docs = await getKnowledgeDocuments();
 
         return docs.slice(0, 5).map((d) => ({
-          resource: createResource("knowledge_document", d.id, d.title, {
+          resource: createResource("knowledge_document" as any, d.id, d.title, {
             content: d.content,
             docType: d.docType,
           }),

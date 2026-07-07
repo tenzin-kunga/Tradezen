@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { db } from "../db/drizzle";
 import {
   knowledgeFolders,
@@ -14,9 +14,13 @@ import {
   UpdateDocumentDto,
   CreateLinkDto,
 } from "./dto";
+import { DocumentEmbedder } from "./indexing/embedder";
 
 @Injectable()
 export class KnowledgeService {
+  private readonly logger = new Logger(KnowledgeService.name);
+
+  constructor(private readonly embedder: DocumentEmbedder) {}
   // ─── Folders ─────────────────────────────────
 
   async listFolders(userId: string, parentId?: string) {
@@ -120,6 +124,13 @@ export class KnowledgeService {
       content: dto.content || "",
     });
 
+    // Trigger background embedding (non-blocking)
+    if (dto.content && dto.content.length > 0) {
+      this.embedder.embedDocument(userId, doc.id, dto.content).catch((e) => {
+        this.logger.error(`Failed to embed document ${doc.id}: ${e}`);
+      });
+    }
+
     return doc;
   }
 
@@ -137,6 +148,11 @@ export class KnowledgeService {
         documentId,
         version: doc.currentVersion + 1,
         content: dto.content,
+      });
+
+      // Trigger background embedding (non-blocking)
+      this.embedder.embedDocument(userId, documentId, dto.content).catch((e) => {
+        this.logger.error(`Failed to embed document ${documentId}: ${e}`);
       });
     }
     if (dto.status !== undefined) updateData.status = dto.status;
