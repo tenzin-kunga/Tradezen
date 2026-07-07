@@ -5,6 +5,7 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -81,6 +82,16 @@ export class ChatController {
     @Param('id') threadId: string,
   ) {
     return this.threadService.deleteThread(userId, threadId);
+  }
+
+  @Patch('threads/:id')
+  @ApiOperation({ summary: 'Update a chat thread title' })
+  async updateThreadTitle(
+    @CurrentUser('id') userId: string,
+    @Param('id') threadId: string,
+    @Body('title') title: string,
+  ) {
+    return this.threadService.updateThreadTitle(userId, threadId, title);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -51,6 +51,23 @@ export class ChatThreadService {
     await db.delete(chatThreads).where(eq(chatThreads.id, threadId));
   }
 
+  async updateThreadTitle(
+    userId: string,
+    threadId: string,
+    title: string,
+  ): Promise<void> {
+    const thread = await db.query.chatThreads.findFirst({
+      where: and(eq(chatThreads.id, threadId), eq(chatThreads.userId, userId)),
+    });
+    if (!thread) {
+      throw new NotFoundException('Thread not found');
+    }
+    await db
+      .update(chatThreads)
+      .set({ title, updatedAt: new Date() })
+      .where(eq(chatThreads.id, threadId));
+  }
+
   async getMessages(
     threadId: string,
     userId: string,
