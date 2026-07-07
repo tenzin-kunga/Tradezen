@@ -36,6 +36,12 @@ class MockProvider:
             "usage": {"prompt_tokens": 10, "completion_tokens": 5},
         }
 
+    async def ensure_model(self, model: str) -> bool:
+        return True
+
+    async def health_check(self) -> bool:
+        return True
+
     async def stream(self, messages, *, model=None, temperature=0.4, max_tokens=None):
         last_msg = messages[-1] if messages else {}
         content = last_msg.get("content", "Mock response")

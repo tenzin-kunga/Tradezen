@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 
 
@@ -9,6 +10,7 @@ class CoachState:
     user_id: str = ""
     request_id: str = ""
     trace_id: str = ""
+    started_at: float = field(default_factory=time.monotonic)
     query: str = ""
     analytics: dict = field(default_factory=dict)
     journals: list = field(default_factory=list)
@@ -23,6 +25,9 @@ class CoachState:
 class JournalState:
     """Typed state for LangGraph journal analysis workflow."""
     user_id: str = ""
+    request_id: str = ""
+    trace_id: str = ""
+    started_at: float = field(default_factory=time.monotonic)
     query: str = ""
     journal_entry: str = ""
     emotion_analysis: str = ""
@@ -35,6 +40,9 @@ class JournalState:
 class ResearchState:
     """Typed state for LangGraph research workflow."""
     user_id: str = ""
+    request_id: str = ""
+    trace_id: str = ""
+    started_at: float = field(default_factory=time.monotonic)
     query: str = ""
     plan: str = ""
     search_results: list = field(default_factory=list)

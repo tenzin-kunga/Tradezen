@@ -252,11 +252,46 @@ class Container:
         except Exception as e:
             logger.warning(f"Coach graph setup failed, falling back to DirectExecutionStrategy: {e}")
 
+        # Build JournalAgent with LangGraph if available
+        journal_graph = None
+        try:
+            from .services.journal_service import JournalAnalysisService
+            from .agents.graphs.journal import build_journal_graph
+
+            journal_svc = JournalAnalysisService(
+                retrieval_pipeline=self.retrieval_pipeline,
+                memory_manager=self.memory_manager,
+            )
+            journal_graph = build_journal_graph(journal_svc)
+            if journal_graph:
+                logger.info("Journal graph compiled successfully")
+            else:
+                logger.warning("Journal graph unavailable, falling back to DirectExecutionStrategy")
+        except Exception as e:
+            logger.warning(f"Journal graph setup failed, falling back to DirectExecutionStrategy: {e}")
+
+        # Build ResearchAgent with LangGraph if available
+        research_graph = None
+        try:
+            from .services.research_service import ResearchService
+            from .agents.graphs.research import build_research_graph
+
+            research_svc = ResearchService(
+                retrieval_pipeline=self.retrieval_pipeline,
+            )
+            research_graph = build_research_graph(research_svc)
+            if research_graph:
+                logger.info("Research graph compiled successfully")
+            else:
+                logger.warning("Research graph unavailable, falling back to DirectExecutionStrategy")
+        except Exception as e:
+            logger.warning(f"Research graph setup failed, falling back to DirectExecutionStrategy: {e}")
+
         self.agent_registry.register("analytics", DirectAgent("analytics", strat, self.analytics_tool))
         self.agent_registry.register("general", DirectAgent("general", strat, None))
-        self.agent_registry.register("journal", DirectAgent("journal", strat, None))
+        self.agent_registry.register("journal", JournalAgent(default_strategy=strat, graph=journal_graph))
         self.agent_registry.register("coach", CoachAgent(default_strategy=strat, graph=coach_graph))
-        self.agent_registry.register("research", ResearchAgent(strat))
+        self.agent_registry.register("research", ResearchAgent(default_strategy=strat, graph=research_graph))
 
     async def initialize(self):
         providers = self.provider_factory.all()
