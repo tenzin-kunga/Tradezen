@@ -6,8 +6,10 @@ import { RouteCapability as RouteCap } from "@/lib/workspace/types";
 import { ContextCapability as ContextCap } from "@/lib/workspace/types";
 import { CommandCapability as CommandCap } from "@/lib/workspace/types";
 import { InspectorCapability as InspectorCap } from "@/lib/workspace/types";
+import { SearchCapability as SearchCap } from "@/lib/workspace/types";
 import KnowledgeWorkspace from "@/components/modules/knowledge/KnowledgeWorkspace";
 import { KnowledgeContextContributor } from "@/components/modules/knowledge/KnowledgeContext";
+import { createKnowledgeSearchProvider } from "./search-provider";
 
 export const KnowledgeModule: WorkspaceModule = {
   metadata: {
@@ -63,5 +65,6 @@ export const KnowledgeModule: WorkspaceModule = {
         priority: 30,
       },
     ]),
+    new SearchCap(createKnowledgeSearchProvider()),
   ],
 };
