@@ -5,6 +5,8 @@ import type {
 } from "./types";
 import { getModuleRegistry } from "./module-registry";
 
+const TOTAL_BUDGET = 2000; // total token budget for all context
+
 class ContextEngineImpl {
   private cache = new Map<string, ContextSlice[]>();
 
@@ -27,25 +29,38 @@ class ContextEngineImpl {
       })
       .filter(Boolean) as ContextContributor[];
 
-    const slices = await Promise.all(
-      contributors.map((c) =>
-        c.getContext(resource).catch((err) => {
-          console.error(
-            `[ContextEngine] Error from contributor:`,
-            err,
-          );
-          return null;
-        }),
-      ),
-    );
+    // Sort by priority (lower = more important)
+    contributors.sort((a, b) => a.priority - b.priority);
 
-    const result = slices.filter(Boolean) as ContextSlice[];
-    this.cache.set(cacheKey, result);
+    // Budget-aware context assembly
+    const slices: ContextSlice[] = [];
+    let remainingBudget = TOTAL_BUDGET;
+
+    for (const contributor of contributors) {
+      if (remainingBudget <= 0) break;
+
+      const estimated = contributor.estimateTokens(resource);
+      if (estimated > remainingBudget && estimated > contributor.budget) {
+        // Skip if estimated tokens exceed both remaining budget and contributor's own budget
+        continue;
+      }
+
+      try {
+        const slice = await contributor.getContext(resource);
+        const actualTokens = Math.min(slice.tokens, remainingBudget);
+        slices.push({ ...slice, tokens: actualTokens });
+        remainingBudget -= actualTokens;
+      } catch (err) {
+        console.error("[ContextEngine] Error from contributor:", err);
+      }
+    }
+
+    this.cache.set(cacheKey, slices);
 
     // Clear cache after 30 seconds
     setTimeout(() => this.cache.delete(cacheKey), 30000);
 
-    return result;
+    return slices;
   }
 
   invalidate(resource?: WorkspaceResource): void {

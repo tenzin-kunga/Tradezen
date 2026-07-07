@@ -5,6 +5,7 @@ import WorkspaceSidebar from "./WorkspaceSidebar";
 import WorkspaceTabs from "./WorkspaceTabs";
 import ContextPanel from "./ContextPanel";
 import Breadcrumbs from "./Breadcrumbs";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 
 function WorkspaceContent() {
@@ -129,8 +130,9 @@ function WorkspaceContent() {
 
               {/* Page content */}
               <div style={{ flex: 1, overflow: "hidden" }}>
-                {/* This is where the routed page content goes */}
-                {/* For now, we render the children prop */}
+                <ErrorBoundary>
+                  <></>
+                </ErrorBoundary>
               </div>
             </div>
           ) : (

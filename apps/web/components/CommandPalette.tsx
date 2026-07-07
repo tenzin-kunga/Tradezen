@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { globalSearch } from "@/lib/api";
+import { getSearchRegistry } from "@/lib/workspace/search-registry";
 
 const RECENT_KEY = "tradezen_recent_searches";
 const MAX_RECENT = 5;
@@ -388,6 +389,7 @@ export default function CommandPalette({
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult | null>(null);
+  const [registryItems, setRegistryItems] = useState<PaletteItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -417,10 +419,32 @@ export default function CommandPalette({
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const data = await globalSearch(query.trim());
-        setResults(data);
+        const [apiData, registryResults] = await Promise.all([
+          globalSearch(query.trim()).catch(() => null),
+          getSearchRegistry().search(query.trim()).catch(() => []),
+        ]);
+
+        setResults(apiData || { trades: [], journals: [], tags: [] });
+
+        // Convert registry results to palette items
+        if (registryResults.length > 0) {
+          setRegistryItems(
+            registryResults.map((result) => ({
+              id: `registry-${result.resource.id}`,
+              label: result.resource.title,
+              description: result.highlights.join(", "),
+              onSelect: () => {
+                close();
+                router.push(result.resource.url);
+              },
+            })),
+          );
+        } else {
+          setRegistryItems([]);
+        }
       } catch {
         setResults(null);
+        setRegistryItems([]);
       } finally {
         setLoading(false);
       }
@@ -634,8 +658,13 @@ export default function CommandPalette({
       });
     }
 
+    // Add registry search results
+    if (registryItems.length > 0) {
+      list.push(...registryItems);
+    }
+
     return list;
-  }, [query, results, recentSearches, router, onOpenChange]);
+  }, [query, results, registryItems, recentSearches, router, onOpenChange]);
 
   // Scroll active item into view
   useEffect(() => {
