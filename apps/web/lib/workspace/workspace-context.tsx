@@ -22,6 +22,11 @@ interface WorkspaceContextValue {
   selection: SelectionManager;
   activeResource: WorkspaceResource | null;
   selectedResource: WorkspaceResource | null;
+  open: (resource: WorkspaceResource) => void;
+  back: () => void;
+  forward: () => void;
+  canGoBack: boolean;
+  canGoForward: boolean;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -67,14 +72,44 @@ export function WorkspaceProvider({
     [resourceManager, selectionManager],
   );
 
+  const back = useCallback(() => {
+    resourceManager.back();
+    const active = resourceManager.getActive();
+    if (active) selectionManager.select(active);
+  }, [resourceManager, selectionManager]);
+
+  const forward = useCallback(() => {
+    resourceManager.forward();
+    const active = resourceManager.getActive();
+    if (active) selectionManager.select(active);
+  }, [resourceManager, selectionManager]);
+
+  const canGoBack = resourceManager.canGoBack?.() ?? false;
+  const canGoForward = resourceManager.canGoForward?.() ?? false;
+
   const value = useMemo<WorkspaceContextValue>(
     () => ({
       resourceManager,
       selection: selectionManager,
       activeResource,
       selectedResource,
+      open,
+      back,
+      forward,
+      canGoBack,
+      canGoForward,
     }),
-    [resourceManager, selectionManager, activeResource, selectedResource],
+    [
+      resourceManager,
+      selectionManager,
+      activeResource,
+      selectedResource,
+      open,
+      back,
+      forward,
+      canGoBack,
+      canGoForward,
+    ],
   );
 
   return (

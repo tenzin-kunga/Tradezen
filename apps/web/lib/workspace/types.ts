@@ -193,7 +193,15 @@ export interface ResourceManager {
   close(id: string): void;
   getActive(): WorkspaceResource | null;
   getAll(): WorkspaceResource[];
+  getTabs(): Tab[];
+  getActiveId(): string | null;
+  setActive(id: string): void;
+  togglePin(id: string): void;
   subscribe(listener: () => void): () => void;
+  back(): void;
+  forward(): void;
+  canGoBack(): boolean;
+  canGoForward(): boolean;
 }
 
 export interface SelectionManager {
