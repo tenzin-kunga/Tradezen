@@ -17,6 +17,8 @@ import { GatewayModule } from './gateway/gateway.module';
 import { QueuesModule } from './queues/queues.module';
 import { ReportModule } from './reports/report.module';
 import { NewsModule } from './news/news.module';
+import { SymbolsModule } from './symbols/symbols.module';
+import { WatchlistModule } from './watchlist/watchlist.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
 import { SnapshotService } from './analytics/snapshot.service';
@@ -81,6 +83,8 @@ import { JournalsService } from './journals/journals.service';
     SearchModule,
     SeedModule,
     NewsModule,
+    SymbolsModule,
+    WatchlistModule,
   ],
   controllers: [AppController, AiController],
   providers: [

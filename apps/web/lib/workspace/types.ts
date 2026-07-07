@@ -77,20 +77,23 @@ export interface SlashCommand {
 }
 
 export interface ContextContributor {
+  priority: number;
+  budget: number; // max tokens to contribute
+  estimateTokens(resource: WorkspaceResource): number;
   getContext(resource: WorkspaceResource): Promise<ContextSlice>;
 }
 
 export interface ContextSlice {
   source: string;
   data: Record<string, unknown>;
+  tokens: number; // actual tokens used
 }
 
 export interface SearchResult {
-  id: string;
-  type: ResourceType;
-  title: string;
-  description?: string;
-  url: string;
+  resource: WorkspaceResource;
+  score: number;
+  highlights: string[];
+  actions: WorkspaceAction[];
 }
 
 export interface QuickAction {
@@ -98,13 +101,6 @@ export interface QuickAction {
   label: string;
   icon?: ReactNode;
   action: () => void;
-}
-
-export interface SearchProvider {
-  search(query: string): Promise<SearchResult[]>;
-  recent(): Promise<SearchResult[]>;
-  suggestions(query: string): Promise<SearchResult[]>;
-  quickActions(): QuickAction[];
 }
 
 export interface WidgetConfig {
@@ -242,4 +238,38 @@ export class ShortcutCapability implements WorkspaceCapability {
 
 export class ActionCapability implements WorkspaceCapability {
   constructor(public actions: ActionConfig[]) {}
+}
+
+// ─── Inspector ───────────────────────────────
+
+export interface InspectorSection {
+  id: string;
+  title: string;
+  component: React.ComponentType<{ resource: WorkspaceResource }>;
+  priority: number;
+}
+
+export class InspectorCapability implements WorkspaceCapability {
+  constructor(public sections: InspectorSection[]) {}
+}
+
+// ─── Collection ──────────────────────────────
+
+export type CollectionType = "watchlist" | "research_folder" | "memory" | "conversation_folder";
+
+export interface WorkspaceCollection {
+  id: string;
+  type: CollectionType;
+  name: string;
+  icon?: ReactNode;
+  metadata?: Record<string, unknown>;
+}
+
+// ─── Search Registry ─────────────────────────
+
+export interface SearchProvider {
+  search(query: string): Promise<SearchResult[]>;
+  recent(): Promise<SearchResult[]>;
+  favorites(): Promise<SearchResult[]>;
+  quickActions(): QuickAction[];
 }

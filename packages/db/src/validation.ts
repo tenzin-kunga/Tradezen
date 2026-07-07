@@ -121,3 +121,38 @@ export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 export type JournalMood = z.infer<typeof journalMoodEnum>;
 export type TagCategory = z.infer<typeof tagCategoryEnum>;
 export type ChatRole = z.infer<typeof chatRoleEnum>;
+
+// Symbol schemas
+export const createSymbolSchema = z.object({
+  ticker: z.string().min(1).max(20),
+  exchange: z.string().max(20).nullish(),
+  asset_type: z.string().max(20).nullish(),
+  currency: z.string().max(10).nullish(),
+  name: z.string().max(200).nullish(),
+});
+
+// Watchlist schemas
+export const createWatchlistSchema = z.object({
+  name: z.string().min(1).max(100),
+  type: z.enum(["manual", "smart"]).optional(),
+  definition: z.record(z.unknown()).nullish(),
+});
+
+export const createWatchlistItemSchema = z.object({
+  ticker: z.string().min(1).max(20),
+  exchange: z.string().max(20).nullish(),
+  priority: z.number().int().min(0).max(2).optional(),
+  notes: z.string().max(1000).nullish(),
+});
+
+export const reorderWatchlistSchema = z.object({
+  type: z.literal("move"),
+  itemId: z.string().uuid(),
+  from: z.number().int().min(0),
+  to: z.number().int().min(0),
+});
+
+export type CreateSymbolInput = z.infer<typeof createSymbolSchema>;
+export type CreateWatchlistInput = z.infer<typeof createWatchlistSchema>;
+export type CreateWatchlistItemInput = z.infer<typeof createWatchlistItemSchema>;
+export type ReorderWatchlistInput = z.infer<typeof reorderWatchlistSchema>;

@@ -1,5 +1,6 @@
 import { AssistantModule } from "./assistant";
 import { JournalModule } from "./journal";
+import { WatchlistModule } from "./watchlist";
 import { ResearchModule } from "./research";
 import { PortfolioModule } from "./portfolio";
 import { MemoryModule } from "./memory";
@@ -12,18 +13,19 @@ export function registerAllModules(): void {
 
   registry.register(AssistantModule);
   registry.register(JournalModule);
+  registry.register(WatchlistModule);
   registry.register(ResearchModule);
   registry.register(PortfolioModule);
   registry.register(MemoryModule);
   registry.register(FilesModule);
   // Future modules:
-  // registry.register(WatchlistModule);
   // registry.register(CalendarModule);
 }
 
 export {
   AssistantModule,
   JournalModule,
+  WatchlistModule,
   ResearchModule,
   PortfolioModule,
   MemoryModule,

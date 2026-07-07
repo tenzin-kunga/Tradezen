@@ -34,3 +34,12 @@ export type ChecklistRunItem = InferSelectModel<
 export type NewChecklistRunItem = InferInsertModel<
   typeof schema.checklistRunItems
 >;
+
+export type Symbol = InferSelectModel<typeof schema.symbols>;
+export type NewSymbol = InferInsertModel<typeof schema.symbols>;
+
+export type Watchlist = InferSelectModel<typeof schema.watchlists>;
+export type NewWatchlist = InferInsertModel<typeof schema.watchlists>;
+
+export type WatchlistItem = InferSelectModel<typeof schema.watchlistItems>;
+export type NewWatchlistItem = InferInsertModel<typeof schema.watchlistItems>;

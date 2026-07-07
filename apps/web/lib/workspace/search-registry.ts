@@ -25,9 +25,9 @@ class SearchRegistryImpl {
     return results.flat();
   }
 
-  async suggestions(query: string): Promise<SearchResult[]> {
+  async favorites(): Promise<SearchResult[]> {
     const results = await Promise.all(
-      Array.from(this.providers.values()).map((p) => p.suggestions(query)),
+      Array.from(this.providers.values()).map((p) => p.favorites()),
     );
     return results.flat();
   }

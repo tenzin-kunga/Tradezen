@@ -479,3 +479,5 @@ export const checklistRunItems = pgTable(
 );
 
 export { tradeImages } from "./trade-images";
+export { symbols } from "./symbols";
+export { watchlists, watchlistItems } from "./watchlist";

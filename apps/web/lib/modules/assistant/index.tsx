@@ -44,6 +44,11 @@ const COMMANDS: CommandCapability["commands"] = [
 ];
 
 const CONTEXT_CONTRIBUTOR: ContextCapability["contributor"] = {
+  priority: 5,
+  budget: 200,
+  estimateTokens(_resource) {
+    return 50;
+  },
   async getContext(resource) {
     return {
       source: "assistant",
@@ -51,6 +56,7 @@ const CONTEXT_CONTRIBUTOR: ContextCapability["contributor"] = {
         conversationId: resource.metadata?.conversationId || resource.id,
         title: resource.title,
       },
+      tokens: 30,
     };
   },
 };
