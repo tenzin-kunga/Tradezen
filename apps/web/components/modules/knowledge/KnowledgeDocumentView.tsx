@@ -7,6 +7,7 @@ import {
   updateKnowledgeDocument,
   type KnowledgeDocument,
 } from "@/lib/api/knowledge";
+import KnowledgeAIChat from "./KnowledgeAIChat";
 
 interface KnowledgeDocumentViewProps {
   document: KnowledgeDocument;
@@ -23,6 +24,7 @@ export default function KnowledgeDocumentView({
   const [title, setTitle] = useState(doc.title);
   const [saving, setSaving] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   // Sync when document changes
   useEffect(() => {
@@ -102,6 +104,20 @@ export default function KnowledgeDocumentView({
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           <button
+            onClick={() => setShowChat(!showChat)}
+            style={{
+              padding: "4px 10px",
+              borderRadius: 6,
+              background: showChat ? "var(--accent, #3b82f6)" : "transparent",
+              color: showChat ? "#fff" : "var(--text-muted, #9ca3af)",
+              border: "1px solid var(--border, #23252d)",
+              fontSize: 11,
+              cursor: "pointer",
+            }}
+          >
+            💬 AI
+          </button>
+          <button
             onClick={() => setIsPreview(!isPreview)}
             style={{
               padding: "4px 10px",
@@ -135,32 +151,48 @@ export default function KnowledgeDocumentView({
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
-        {isPreview ? (
-          <div className="prose prose-invert prose-sm max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-          </div>
-        ) : (
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onBlur={handleBlur}
-            placeholder="Start writing in Markdown..."
+      {/* Content + Chat */}
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {/* Editor */}
+        <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
+          {isPreview ? (
+            <div className="prose prose-invert prose-sm max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            </div>
+          ) : (
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onBlur={handleBlur}
+              placeholder="Start writing in Markdown..."
+              style={{
+                width: "100%",
+                height: "100%",
+                minHeight: 400,
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                color: "var(--text-primary, #fafafa)",
+                fontSize: 14,
+                lineHeight: 1.7,
+                resize: "none",
+                fontFamily: "var(--font-mono, monospace)",
+              }}
+            />
+          )}
+        </div>
+
+        {/* AI Chat panel */}
+        {showChat && (
+          <div
             style={{
-              width: "100%",
-              height: "100%",
-              minHeight: 400,
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              color: "var(--text-primary, #fafafa)",
-              fontSize: 14,
-              lineHeight: 1.7,
-              resize: "none",
-              fontFamily: "var(--font-mono, monospace)",
+              width: 360,
+              borderLeft: "1px solid var(--border, #23252d)",
+              flexShrink: 0,
             }}
-          />
+          >
+            <KnowledgeAIChat document={doc} />
+          </div>
         )}
       </div>
 

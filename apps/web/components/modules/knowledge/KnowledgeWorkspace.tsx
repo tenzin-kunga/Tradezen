@@ -9,7 +9,7 @@ import {
 } from "@/lib/api/knowledge";
 import { KNOWLEDGE_TEMPLATES } from "@/lib/knowledge/templates";
 import KnowledgeFolderTree from "./KnowledgeFolderTree";
-import KnowledgeDocumentView from "./KnowledgeDocument";
+import KnowledgeDocumentView from "./KnowledgeDocumentView";
 import KnowledgeInspector from "./KnowledgeInspector";
 
 export default function KnowledgeWorkspace() {
