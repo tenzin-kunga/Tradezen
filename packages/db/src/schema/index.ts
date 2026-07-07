@@ -220,8 +220,13 @@ export const embeddings = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     sourceType: varchar("source_type", { length: 50 }).notNull(),
     sourceId: uuid("source_id").notNull(),
+    chunkIndex: integer("chunk_index").notNull().default(0),
     content: text("content").notNull(),
+    contentHash: text("content_hash"),
     embedding: vector("embedding", { dimensions: 1536 }),
+    embeddingModel: varchar("embedding_model", { length: 100 }).default("text-embedding-3-small"),
+    embeddingVersion: integer("embedding_version").notNull().default(1),
+    metadata: jsonb("metadata").notNull().default({}),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (table) => ({
@@ -229,6 +234,11 @@ export const embeddings = pgTable(
     sourceIdx: index("idx_embeddings_source").on(
       table.sourceType,
       table.sourceId,
+    ),
+    sourceChunkIdx: index("idx_embeddings_source_chunk").on(
+      table.sourceType,
+      table.sourceId,
+      table.chunkIndex,
     ),
   }),
 );

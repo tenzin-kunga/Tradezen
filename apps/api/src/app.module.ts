@@ -20,6 +20,7 @@ import { NewsModule } from './news/news.module';
 import { SymbolsModule } from './symbols/symbols.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
+import { RetrievalModule } from './knowledge/retrieval/retrieval.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
 import { SnapshotService } from './analytics/snapshot.service';
@@ -87,6 +88,7 @@ import { JournalsService } from './journals/journals.service';
     SymbolsModule,
     WatchlistModule,
     KnowledgeModule,
+    RetrievalModule,
   ],
   controllers: [AppController, AiController],
   providers: [

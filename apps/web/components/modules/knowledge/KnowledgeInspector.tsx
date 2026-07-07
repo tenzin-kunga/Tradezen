@@ -1,8 +1,7 @@
 "use client";
 
 import type { KnowledgeDocument } from "@/lib/api/knowledge";
-import KnowledgeSourcesInspector from "./inspectors/SourcesInspector";
-import KnowledgeTradesInspector from "./inspectors/TradesInspector";
+import KnowledgeRelatedPanel from "./KnowledgeRelatedPanel";
 import KnowledgeInsightsInspector from "./inspectors/InsightsInspector";
 
 interface KnowledgeInspectorProps {
@@ -142,12 +141,8 @@ export default function KnowledgeInspector({
               </div>
             </InspectorSection>
 
-            <InspectorSection title="Sources">
-              <KnowledgeSourcesInspector document={doc} />
-            </InspectorSection>
-
-            <InspectorSection title="Related Trades">
-              <KnowledgeTradesInspector document={doc} />
+            <InspectorSection title="Related">
+              <KnowledgeRelatedPanel documentId={doc.id} />
             </InspectorSection>
 
             <InspectorSection title="AI Insights">
