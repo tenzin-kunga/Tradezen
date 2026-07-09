@@ -135,6 +135,11 @@ apps/api/uploads/
 # OpenCode configuration and plans (local agent artifacts)
 .opencode/
 
+# Lint / debug artifacts (local only)
+lint-errors*.json
+lint-errors*.txt
+graphify-out/
+
 nul
 
 # brainstorm companion cache.superpowers/

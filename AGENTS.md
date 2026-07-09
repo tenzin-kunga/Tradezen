@@ -11,15 +11,15 @@
 
 ## Workspace layout
 
-| Path | Package name | Role |
-| ---- | ------------ | ---- |
-| `apps/api` | `api` | NestJS backend (HTTP + WebSocket + tRPC) |
-| `apps/web` | `web` | Next.js App Router frontend |
-| `packages/db` | `@tradezen/db` | Drizzle schema + connection + types |
-| `packages/types` | `@tradezen/types` | Shared TS types |
-| `packages/ui` | `@tradezen/ui` | Shared UI components |
-| `packages/eslint-config` | `@repo/eslint-config` | ESLint presets |
-| `packages/typescript-config` | `@repo/typescript-config` | TSConfig presets |
+| Path                         | Package name              | Role                                     |
+| ---------------------------- | ------------------------- | ---------------------------------------- |
+| `apps/api`                   | `api`                     | NestJS backend (HTTP + WebSocket + tRPC) |
+| `apps/web`                   | `web`                     | Next.js App Router frontend              |
+| `packages/db`                | `@tradezen/db`            | Drizzle schema + connection + types      |
+| `packages/types`             | `@tradezen/types`         | Shared TS types                          |
+| `packages/ui`                | `@tradezen/ui`            | Shared UI components                     |
+| `packages/eslint-config`     | `@repo/eslint-config`     | ESLint presets                           |
+| `packages/typescript-config` | `@repo/typescript-config` | TSConfig presets                         |
 
 ## Critical commands
 
@@ -47,6 +47,7 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker up -d post
 **`changes → security → lint → test → e2e → build-api/build-web → deploy-staging|deploy-prod`**
 
 `lint` and `check-types` both run before `test`. Path-filtering skips irrelevant jobs:
+
 - `apps/api/**` or `packages/db/**` → runs API unit/e2e
 - `apps/web/**` → runs web lint/typecheck only (no web tests exist)
 
@@ -63,11 +64,11 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker up -d post
 
 ## Environment files
 
-| File | Purpose |
-| ---- | ------- |
-| `.env.docker` | Docker Compose secrets (copy from `.env.docker.example`) |
-| `apps/api/.env` | API dev defaults (DB_HOST=localhost, etc.) |
-| `apps/web/.env` | Web dev defaults (NEXT_PUBLIC_API_URL) |
+| File            | Purpose                                                  |
+| --------------- | -------------------------------------------------------- |
+| `.env.docker`   | Docker Compose secrets (copy from `.env.docker.example`) |
+| `apps/api/.env` | API dev defaults (DB_HOST=localhost, etc.)               |
+| `apps/web/.env` | Web dev defaults (NEXT_PUBLIC_API_URL)                   |
 
 Required Docker secrets: `DB_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET` (all 64+ chars), `OPENROUTER_API_KEY` (if chat used), `WEB_URL`
 

@@ -1,6 +1,11 @@
 @echo off
+setlocal EnableDelayedExpansion
 title TRADEZEN — Startup
 color 0A
+
+:: ── Resolve project root (works from any cwd / double-click) ──
+cd /d "%~dp0..\.."
+set "ROOT=%CD%"
 
 echo.
 echo  ===================================================
@@ -8,183 +13,216 @@ echo   TRADEZEN // CARBON LEDGER — Starting Services
 echo  ===================================================
 echo.
 
-:: ──────────────────────────────────────────────────────
-:: 1. Start Docker Desktop if not running
-:: ──────────────────────────────────────────────────────
-
-echo [1/7] Checking Docker daemon...
+:: ── 1. Docker daemon ───────────────────────────────────────
+echo [1/8] Checking Docker daemon...
 
 docker info >nul 2>&1
-
-if %errorlevel% neq 0 (
-    echo      Docker not running — launching Docker Desktop...
-
-    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-
-    echo      Waiting for Docker daemon to be ready...
-
-    :WAIT_DOCKER
-    timeout /t 5 /nobreak >nul
-
-    docker info >nul 2>&1
-
-    if %errorlevel% neq 0 goto WAIT_DOCKER
-
-    echo      Docker daemon ready.
-) else (
+if %errorlevel% equ 0 (
     echo      Docker daemon already running.
+    goto DOCKER_READY
 )
 
-:: ──────────────────────────────────────────────────────
-:: 2. Clean old containers (prevents stale networks)
-:: ──────────────────────────────────────────────────────
+echo      Docker not running — launching Docker Desktop...
+start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+echo      Waiting for Docker daemon to be ready...
 
+set "DOCKER_TRIES=0"
+:WAIT_DOCKER
+set /a DOCKER_TRIES+=1
+if %DOCKER_TRIES% gtr 60 (
+    echo.
+    echo ========================================
+    echo Timed out waiting for Docker daemon.
+    echo Docker Desktop may have failed to start.
+    echo ========================================
+    pause
+    exit /b 1
+)
+echo      Waiting for Docker daemon... (%DOCKER_TRIES%/60)
+timeout /t 5 /nobreak >nul
+docker info >nul 2>&1
+if %errorlevel% neq 0 goto WAIT_DOCKER
+
+:DOCKER_READY
+echo ✓ Docker daemon ready
+
+:: ── 2. Start PostgreSQL + Redis ─────────────────────────────
 echo.
-echo [2/7] Cleaning old containers...
+echo [2/8] Starting PostgreSQL + Redis...
 
-docker compose --file infra/docker-compose.yml down >nul 2>&1
+docker compose --file "%ROOT%\infra\docker-compose.yml" --env-file "%ROOT%\.env.docker" up -d postgres redis
 
-:: ──────────────────────────────────────────────────────
-:: 3. Start PostgreSQL + Redis
-:: ──────────────────────────────────────────────────────
-
-echo.
-echo [3/7] Starting PostgreSQL + Redis...
-
-docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis
-
-echo      PostgreSQL running on localhost:5432
-echo      Redis running on localhost:6379
-
-:: ──────────────────────────────────────────────────────
-:: 4. Wait for PostgreSQL
-:: ──────────────────────────────────────────────────────
-
-echo.
-echo [4/7] Waiting for PostgreSQL...
-
-:WAIT_PG
-timeout /t 2 /nobreak >nul
-
-docker exec tradezen-db pg_isready -U postgres >nul 2>&1
-
-if %errorlevel% neq 0 goto WAIT_PG
-
-echo      PostgreSQL is ready.
-
-:: ──────────────────────────────────────────────────────
-:: 5. Wait for Redis
-:: ──────────────────────────────────────────────────────
-
-echo.
-echo [5/7] Waiting for Redis...
-
-:WAIT_REDIS
-timeout /t 2 /nobreak >nul
-
-docker exec tradezen-redis redis-cli ping >nul 2>&1
-
-if %errorlevel% neq 0 goto WAIT_REDIS
-
-echo      Redis is ready.
-
-:: ──────────────────────────────────────────────────────
-:: 6. Run database migrations
-:: ──────────────────────────────────────────────────────
-
-echo.
-echo [6/7] Running database migrations...
-
-cd /d "%~dp0..\..\apps\api" && bun run migrate
-
-if %errorlevel% neq 0 (
-    cd /d %~dp0
-    echo      Migration failed — please check the output above.
+if errorlevel 1 (
+    echo.
+    echo ========================================
+    echo Failed to start Docker services.
+    echo Check Docker Desktop and the compose configuration.
+    echo ========================================
     pause
     exit /b 1
 )
 
-cd /d "%~dp0..\.."
-echo      Migrations applied.
+echo      PostgreSQL on localhost:5432
+echo      Redis on localhost:6379
+echo ✓ Docker services started
 
-:: ──────────────────────────────────────────────────────
-:: 7. Kill existing processes on ports 3000 and 3001
-:: ──────────────────────────────────────────────────────
-
+:: ── 3. Wait for PostgreSQL (bounded) ────────────────────────
 echo.
-echo      Checking for existing processes on ports 3000, 3001...
+echo [3/8] Waiting for PostgreSQL...
 
-for %%p in (3000 3001) do (
+docker inspect tradezen-db >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo ========================================
+    echo PostgreSQL container was never created.
+    echo Check the Docker Compose configuration.
+    echo ========================================
+    pause
+    exit /b 1
+)
+
+set "PG_TRIES=0"
+:WAIT_PG
+set /a PG_TRIES+=1
+if %PG_TRIES% gtr 60 (
+    echo.
+    echo ========================================
+    echo Timed out waiting for PostgreSQL.
+    echo Docker may have failed to start the database.
+    echo ========================================
+    pause
+    exit /b 1
+)
+echo      Waiting for PostgreSQL... (%PG_TRIES%/60)
+timeout /t 2 /nobreak >nul
+docker exec tradezen-db pg_isready -U postgres >nul 2>&1
+if %errorlevel% neq 0 goto WAIT_PG
+echo ✓ PostgreSQL ready
+
+:: ── 4. Wait for Redis (bounded) ─────────────────────────────
+echo.
+echo [4/8] Waiting for Redis...
+
+docker inspect tradezen-redis >nul 2>&1
+if errorlevel 1 (
+    echo.
+    echo ========================================
+    echo Redis container was never created.
+    echo Check the Docker Compose configuration.
+    echo ========================================
+    pause
+    exit /b 1
+)
+
+set "REDIS_TRIES=0"
+:WAIT_REDIS
+set /a REDIS_TRIES+=1
+if %REDIS_TRIES% gtr 60 (
+    echo.
+    echo ========================================
+    echo Timed out waiting for Redis.
+    echo Docker may have failed to start Redis.
+    echo ========================================
+    pause
+    exit /b 1
+)
+echo      Waiting for Redis... (%REDIS_TRIES%/60)
+timeout /t 2 /nobreak >nul
+docker exec tradezen-redis redis-cli ping >nul 2>&1
+if %errorlevel% neq 0 goto WAIT_REDIS
+echo ✓ Redis ready
+
+:: ── 5. Ollama (lightweight, no auto-pull) ──────────────────
+echo.
+echo [5/8] Checking Ollama...
+
+tasklist /FI "IMAGENAME eq ollama.exe" 2>nul | findstr /I "ollama.exe" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo      Ollama not running — starting...
+    :: Default per-user install location; override with OLLAMA_EXE if different.
+    if not defined OLLAMA_EXE set "OLLAMA_EXE=%LOCALAPPDATA%\Programs\Ollama\ollama.exe"
+    start "" "%OLLAMA_EXE%"
+    timeout /t 3 /nobreak >nul
+    echo      Ollama started.
+) else (
+    echo      Ollama already running.
+)
+
+curl -sf http://localhost:11434/api/tags > "%TEMP%\tz_ollama_tags.txt" 2>nul
+if %errorlevel% neq 0 (
+    echo      Warning: Ollama not responding on localhost:11434
+    goto SKIP_MODELS
+)
+echo ✓ Ollama is ready.
+echo      Checking required models...
+set "MISSED="
+findstr /I /C:"qwen3:latest" "%TEMP%\tz_ollama_tags.txt" >nul 2>&1
+if errorlevel 1 set "MISSED=1"
+findstr /I /C:"nomic-embed-text" "%TEMP%\tz_ollama_tags.txt" >nul 2>&1
+if errorlevel 1 set "MISSED=1"
+if defined MISSED call :PRINT_MODELS
+if exist "%TEMP%\tz_ollama_tags.txt" del "%TEMP%\tz_ollama_tags.txt" >nul 2>&1
+goto SKIP_MODELS
+:PRINT_MODELS
+echo.
+echo      AI model(s) not installed.
+echo.
+echo      Run:
+echo          ollama pull qwen3:latest
+echo          ollama pull nomic-embed-text
+echo.
+echo      AI features will remain unavailable until the models are installed.
+goto :eof
+:SKIP_MODELS
+
+:: ── 6. Run database migrations (fail-fast) ──────────────────
+echo.
+echo [6/8] Running database migrations...
+
+pushd "%ROOT%\apps\api" || exit /b 1
+bun run migrate
+set "MIGRATE_ERR=%errorlevel%"
+popd
+
+if %MIGRATE_ERR% neq 0 (
+    echo.
+    echo ========================================
+    echo Migration failed — please check the output above.
+    echo ========================================
+    pause
+    exit /b 1
+)
+echo ✓ Database migrated
+
+:: ── 7. Kill existing processes on ports 3000/3001/8000 ──────
+echo.
+echo [7/8] Stopping existing processes...
+
+for %%p in (3000 3001 8000) do (
     for /f "tokens=5" %%i in ('netstat -ano ^| findstr ":%%p " ^| findstr LISTENING') do (
         taskkill /PID %%i /F >nul 2>&1 && echo      Killed process on port %%p
     )
 )
+echo ✓ Ports cleared
 
-:: ──────────────────────────────────────────────────────
-:: Start NestJS API
-:: ──────────────────────────────────────────────────────
-
+:: ── 8. Launch all services as tabs in one terminal ──────────
 echo.
-echo      Launching API  → http://localhost:3001
-
-start "TRADEZEN API" cmd /k ^
-"cd /d "%~dp0..\..\apps\api" && ^
-set NODE_ENV=development && ^
-bun run dev"
-
-:: Wait for API to be ready
-echo      Waiting for API to be ready...
-
-:WAIT_API
-timeout /t 2 /nobreak >nul
-curl -sf http://localhost:3001/api/docs >nul 2>&1
-if %errorlevel% neq 0 goto WAIT_API
-
-echo      API is ready.
-
-:: ──────────────────────────────────────────────────────
-:: Clear stale Next.js cache
-:: ──────────────────────────────────────────────────────
-
-echo.
-echo      Clearing stale Next.js cache...
-
-if exist "%~dp0..\..\apps\web\.next" (
-    rmdir /s /q "%~dp0..\..\apps\web\.next"
-    echo      Next.js cache cleared.
-) else (
-    echo      No stale cache found.
-)
-
-:: ──────────────────────────────────────────────────────
-:: Start Next.js Web
-:: ──────────────────────────────────────────────────────
-
-echo.
-echo      Launching Web  → http://localhost:3000
-
-start "TRADEZEN WEB" cmd /k ^
-"cd /d "%~dp0..\..\apps\web" && ^
-set NODE_ENV=development && ^
-bun run dev"
-
-:: Wait for Web to be ready
-echo      Waiting for Web to be ready...
-
-:WAIT_WEB
-timeout /t 2 /nobreak >nul
-curl -sf http://localhost:3000 >nul 2>&1
-if %errorlevel% neq 0 goto WAIT_WEB
-
-echo      Web is ready.
-
+echo [8/8] Launching all services in one terminal window (one tab each)...
 echo.
 echo  ===================================================
-echo   TradeZen development environment is ready.
+echo   TRADEZEN — Ready
 echo  ===================================================
 echo.
-echo   Frontend : http://localhost:3000
-echo   Backend  : http://localhost:3001
-echo   Swagger  : http://localhost:3001/api/docs
+echo   Frontend   : http://localhost:3000
+echo   Backend    : http://localhost:3001
+echo   AI Service : http://localhost:8000
+echo   Ollama     : http://localhost:11434
+echo   Swagger    : http://localhost:3001/api/docs
 echo.
-pause
+echo   Tabs: API | Web | AI Service
+echo   Close all:   Ctrl+Shift+W
+echo.
+
+wt new-tab --title "API" cmd /k "cd /d %ROOT%\apps\api && set NODE_ENV=development && bun run dev" ^
+    ; new-tab --title "Web" cmd /k "cd /d %ROOT%\apps\web && set NODE_ENV=development && bun run dev" ^
+    ; new-tab --title "AI Service" cmd /k "cd /d %ROOT%\apps\ai-service && .venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"

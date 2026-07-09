@@ -26,6 +26,7 @@ A professional trading journal web app with a Glass Depth design system. Track t
 - **Tags** — Color-coded tags with categories, attach to trades for filtering
 - **CSV Export** — Export trades to CSV
 - **AI Chat** — OpenRouter integration for trade analysis assistance
+- **AI Insights** — Deterministic coaching cards across Performance / Discipline / Risk / Consistency, plus an AI-generated portfolio narrative and proactive coaching delivery via real-time notifications
 - **Glass Depth UI** — Modern glass morphism design with cyan/emerald accents
 - **Swagger Docs** — Interactive API docs at `/api/docs` (dev only)
 
@@ -146,29 +147,30 @@ See [SECURITY.md](docs/SECURITY.md) for full hardening guide.
 
 ## API Endpoints
 
-| Method   | Endpoint               | Description                 |
-| -------- | ---------------------- | --------------------------- |
-| `POST`   | `/auth/register`       | Register new user           |
-| `POST`   | `/auth/login`          | Login                       |
-| `POST`   | `/auth/refresh`        | Refresh access token        |
-| `POST`   | `/auth/logout`         | Logout                      |
-| `GET`    | `/auth/me`             | Get current user            |
-| `POST`   | `/trades`              | Create trade                |
-| `GET`    | `/trades`              | List trades (paginated)     |
-| `GET`    | `/trades/analytics`    | Trade analytics             |
-| `GET`    | `/trades/export/csv`   | Export CSV                  |
-| `GET`    | `/trades/:id`          | Get trade                   |
-| `PUT`    | `/trades/:id`          | Update trade                |
-| `DELETE` | `/trades/:id`          | Delete trade                |
-| `POST`   | `/journals`            | Create/upsert journal entry |
-| `GET`    | `/journals`            | List journal entries        |
-| `GET`    | `/journals/streak`     | Get journal streak stats    |
-| `GET`    | `/journals/date/:date` | Get entry by date           |
-| `POST`   | `/tags`                | Create tag                  |
-| `GET`    | `/tags`                | List tags                   |
-| `PUT`    | `/tags/:id`            | Update tag                  |
-| `DELETE` | `/tags/:id`            | Delete tag                  |
-| `POST`   | `/chat`                | AI chat message             |
+| Method   | Endpoint               | Description                                        |
+| -------- | ---------------------- | -------------------------------------------------- |
+| `POST`   | `/auth/register`       | Register new user                                  |
+| `POST`   | `/auth/login`          | Login                                              |
+| `POST`   | `/auth/refresh`        | Refresh access token                               |
+| `POST`   | `/auth/logout`         | Logout                                             |
+| `GET`    | `/auth/me`             | Get current user                                   |
+| `POST`   | `/trades`              | Create trade                                       |
+| `GET`    | `/trades`              | List trades (paginated)                            |
+| `GET`    | `/trades/analytics`    | Trade analytics                                    |
+| `GET`    | `/trades/export/csv`   | Export CSV                                         |
+| `GET`    | `/trades/:id`          | Get trade                                          |
+| `PUT`    | `/trades/:id`          | Update trade                                       |
+| `DELETE` | `/trades/:id`          | Delete trade                                       |
+| `POST`   | `/journals`            | Create/upsert journal entry                        |
+| `GET`    | `/journals`            | List journal entries                               |
+| `GET`    | `/journals/streak`     | Get journal streak stats                           |
+| `GET`    | `/journals/date/:date` | Get entry by date                                  |
+| `POST`   | `/tags`                | Create tag                                         |
+| `GET`    | `/tags`                | List tags                                          |
+| `PUT`    | `/tags/:id`            | Update tag                                         |
+| `DELETE` | `/tags/:id`            | Delete tag                                         |
+| `POST`   | `/chat`                | AI chat message                                    |
+| `GET`    | `/ai/insights`         | Trading insights + portfolio narrative (cached 6h) |
 
 Full interactive docs at `/api/docs` (development only).
 
