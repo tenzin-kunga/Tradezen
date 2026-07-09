@@ -42,7 +42,7 @@ class MockProvider:
     async def health_check(self) -> bool:
         return True
 
-    async def stream(self, messages, *, model=None, temperature=0.4, max_tokens=None):
+    async def stream(self, messages, *, model=None, temperature=0.4, max_tokens=None, api_key=None):
         last_msg = messages[-1] if messages else {}
         content = last_msg.get("content", "Mock response")
         for word in f"Mock: {content}".split():
@@ -50,6 +50,23 @@ class MockProvider:
 
     async def health_check(self):
         return True
+
+    async def list_models(self) -> list[dict]:
+        return [
+            {
+                "id": "mock-model",
+                "provider": "mock",
+                "contextWindow": 32768,
+            }
+        ]
+
+    async def health(self) -> dict:
+        return {
+            "status": "healthy",
+            "latency": 0,
+            "lastChecked": None,
+            "reason": None,
+        }
 
 
 @pytest.fixture(scope="session")

@@ -11,7 +11,9 @@ from .features.registry import FeatureRegistry
 from .providers.budget import CostProtector
 from .providers.factory import ProviderFactory
 from .providers.health import ProviderHealthManager
+from .providers.discovery import DiscoveryCache
 from .routing.model_router import ModelRouter
+from .routing.model_registry import ModelRegistry
 from .security.auth import AuthService
 from .security.concurrency import ConcurrencyLimiter
 from .security.circuit_breaker import CircuitBreaker
@@ -77,9 +79,13 @@ class Container:
 
         self.provider_factory = ProviderFactory(config)
         self.provider_health = ProviderHealthManager()
+        self.discovery = DiscoveryCache(ttl_seconds=config.model_discovery_ttl)
+        self.model_registry = ModelRegistry()
         self.cost_protector = CostProtector(config.daily_cost_budget)
 
-        self.model_router = ModelRouter(self.provider_factory, self.provider_health, config)
+        self.model_router = ModelRouter(
+            self.provider_factory, self.provider_health, config, self.model_registry
+        )
 
         self.auth = AuthService(secret=config.auth_secret, nestjs_key=config.nestjs_internal_api_key)
         self.rate_limiter = MemoryRateLimiter()
@@ -115,7 +121,7 @@ class Container:
         self._setup_rag()
 
         # Services
-        self.completion_service = CompletionService(config, retry_policy=self.retry)
+        self.completion_service = CompletionService(config, retry_policy=self.retry, circuit_breaker=self.circuit_breaker)
         self.intent_router = IntentRouter()
         self.prompt_builder = PromptBuilder()
         self.retrieval_policy = RetrievalPolicy()
@@ -297,6 +303,13 @@ class Container:
         providers = self.provider_factory.all()
         await self.provider_health.check_all(providers)
 
+        # Initial model/health discovery (concurrent) + start background refresh.
+        discovered = await self.discovery.discover_all(providers)
+        for name, models in discovered.items():
+            self.model_registry.update_discovered(name, models)
+        await self.discovery.health_all(providers)
+        await self.discovery.start_background_refresh(providers, interval=self.config.model_discovery_ttl)
+
         # Start background health checks (every 30s)
         self._health_task = asyncio.create_task(
             self.provider_health.start_background_checks(providers, interval=30)
@@ -324,6 +337,7 @@ class Container:
     async def close(self):
         # Stop background health checks
         self.provider_health.stop()
+        self.discovery.stop()
         if self._health_task:
             self._health_task.cancel()
             try:

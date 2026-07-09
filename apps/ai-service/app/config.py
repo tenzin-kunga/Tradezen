@@ -24,6 +24,9 @@ class Config(BaseSettings):
     coaching_rate_limit: str = "20/hour"
     embedding_rate_limit: str = "100/min"
 
+    # Model discovery
+    model_discovery_ttl: int = 600
+
     # Concurrency
     max_concurrent_ollama: int = 4
     max_concurrent_openrouter: int = 20

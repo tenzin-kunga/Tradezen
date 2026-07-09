@@ -166,18 +166,19 @@ class ChatService:
         try:
             from ..prompts.builder import PromptBuilder
             # Use plan template if available, fallback to intent-based
-            template_name = "chat.md"
+            # ponytail: template_loader appends .md, so names here omit it
+            template_name = "chat"
             if plan_result and plan_result.plan.template:
-                template_name = f"{plan_result.plan.template}.md"
+                template_name = plan_result.plan.template
             else:
                 intent_name = intent_result.intent
                 template_map = {
-                    "analytics": "analytics.md",
-                    "coach": "coaching.md",
-                    "journal": "journal.md",
-                    "research": "research.md",
+                    "analytics": "analytics",
+                    "coach": "coaching",
+                    "journal": "journal",
+                    "research": "research",
                 }
-                template_name = template_map.get(intent_name, "chat.md")
+                template_name = template_map.get(intent_name, "chat")
 
             if not hasattr(self, "_prompt_builder"):
                 self._prompt_builder = PromptBuilder()
@@ -211,7 +212,7 @@ class ChatService:
             completed_steps=completed_steps,
         )
 
-    async def handle(self, request: ChatRequest, session: AISession) -> ChatResponse:
+    async def handle(self, request: ChatRequest, session: AISession, api_key: str | None = None) -> ChatResponse:
         # Request-scoped tracer
         tracer = Tracer()
         tracer.start_request()
@@ -285,7 +286,7 @@ class ChatService:
             },
         )
 
-    async def handle_stream(self, request: ChatRequest, session: AISession):
+    async def handle_stream(self, request: ChatRequest, session: AISession, api_key: str | None = None):
         """Streaming variant. Same pipeline as handle(), yields tokens."""
         tracer = Tracer()
         tracer.start_request()
@@ -294,7 +295,7 @@ class ChatService:
         session.stream = True
 
         h_llm = tracer.begin(Stage.LLM)
-        async for token in self.completion.stream(session, ctx.messages):
+        async for token in self.completion.stream(session, ctx.messages, api_key=api_key):
             yield token
         tracer.finish(h_llm, {"model": session.model, "streaming": True})
 

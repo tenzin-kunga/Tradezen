@@ -66,6 +66,8 @@ class OpenAIRequest(BaseModel):
     temperature: float | None = None
     stream: bool = False
     max_tokens: int | None = None
+    tools: list[dict] | None = None
+    tool_choice: object | None = None
 
 
 class OpenAIChoice(BaseModel):

@@ -3,10 +3,10 @@ from __future__ import annotations
 import logging
 
 from ..config import Config
-from ..models import IntentType, ModelProfile
+from ..models import IntentType
 from ..providers.factory import ProviderFactory
 from ..providers.health import ProviderHealthManager
-from ..providers.profiles import get_profile, MODEL_PROFILES
+from .model_registry import ModelRegistry
 from .policy import get_policy
 
 logger = logging.getLogger("ai_service.routing")
@@ -20,56 +20,71 @@ class ModelRouter:
         factory: ProviderFactory,
         health: ProviderHealthManager,
         config: Config,
+        registry: ModelRegistry,
     ):
         self.factory = factory
         self.health = health
         self.config = config
+        self.registry = registry
 
     def select(
         self,
         intent: IntentType | None = None,
         requested_model: str | None = None,
     ) -> tuple[str, str]:
-        """Returns (provider_name, model_name)."""
+        """Returns (provider_name, model_id)."""
 
-        # If user requested a specific model, use it
-        if requested_model:
-            profile = get_profile(requested_model)
-            if profile:
-                provider_name = profile.provider
-                if self.health.is_healthy(provider_name):
-                    return provider_name, requested_model
+        # If user requested a specific model, resolve + use it when healthy.
+        # Try full ID first (e.g. "anthropic/claude-sonnet-4"), then split.
+        entry = self.registry.get(requested_model) if requested_model else None
+        if entry:
+            provider_name = entry["provider"]
+            if provider_name and self.health.is_healthy(provider_name):
+                return provider_name, requested_model
 
-        # Use intent-based policy
+        provider_req, model_id = ModelRegistry.split_provider_model(requested_model)
+        if model_id:
+            entry = self.registry.get(model_id)
+            provider_name = provider_req or (entry["provider"] if entry else None)
+            if provider_name and entry and self.health.is_healthy(provider_name):
+                return provider_name, model_id
+
+        # Fallback: if the model looks like an OpenRouter ID (contains slash,
+        # not a local model), try OpenRouter even if discovery hasn't loaded it.
+        if requested_model and "/" in requested_model and self.health.is_healthy("openrouter"):
+            return "openrouter", requested_model
+
+        # Use intent-based policy.
         intent_name = intent.value if intent else "simple_chat"
         policy = get_policy(intent or IntentType.GENERAL)
         prefer = policy["prefer"]
 
-        # Check if preferred provider is healthy
         if prefer == "local" and self.health.is_healthy("ollama"):
             return "ollama", self.config.default_model
-        if prefer == "cloud" and self.health.is_healthy("openrouter"):
-            return "openrouter", self._openrouter_model()
+        if prefer == "cloud" and self._has_cloud():
+            return "openrouter", self._cloud_model()
 
         # Fallback
         fallback = policy.get("fallback")
-        if fallback == "cloud" and self.health.is_healthy("openrouter"):
-            return "openrouter", self._openrouter_model()
+        if fallback == "cloud" and self._has_cloud():
+            return "openrouter", self._cloud_model()
         if fallback == "local" and self.health.is_healthy("ollama"):
             return "ollama", self.config.default_model
 
-        # Last resort: try anything healthy
+        # Last resort: anything healthy
         if self.health.is_healthy("ollama"):
             return "ollama", self.config.default_model
-        if self.health.is_healthy("openrouter"):
-            return "openrouter", self._openrouter_model()
+        if self._has_cloud():
+            return "openrouter", self._cloud_model()
 
-        # Default even if unhealthy (will fail with error)
+        # Default even if unhealthy (will fail with a clear error)
         return self.config.ai_provider, self.config.default_model
 
-    def _openrouter_model(self) -> str:
-        """Find an OpenRouter model profile, fall back to config."""
-        for name, profile in MODEL_PROFILES.items():
-            if profile.provider == "openrouter":
-                return name
+    def _has_cloud(self) -> bool:
+        return self.health.is_healthy("openrouter")
+
+    def _cloud_model(self) -> str:
+        cloud = self.registry.cloud()
+        if cloud:
+            return cloud[0]["id"]
         return self.config.default_model

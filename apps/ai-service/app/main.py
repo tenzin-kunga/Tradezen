@@ -15,6 +15,7 @@ from .routes.health import router as health_router
 from .routes.openai import router as openai_router
 from .routes.tradezen import router as tradezen_router
 from .routes.ingestion import router as ingestion_router
+from .routes.models import router as models_router
 from .routes import traces as traces_route
 
 logging.basicConfig(
@@ -117,6 +118,15 @@ def create_app() -> FastAPI:
         )
         request.state.session = session
 
+        # Store provider context from headers (forwarded by NestJS)
+        provider = request.headers.get("x-ai-provider")
+        provider_key = request.headers.get("x-ai-provider-key")
+        if provider or provider_key:
+            request.state.provider_context = {
+                "provider": provider,
+                "api_key": provider_key,
+            }
+
         try:
             response = await call_next(request)
             return response
@@ -131,6 +141,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(tradezen_router)
     app.include_router(openai_router)
+    app.include_router(models_router)
     app.include_router(ingestion_router)
     traces_route.init(container.traces_store)
     app.include_router(traces_route.router)

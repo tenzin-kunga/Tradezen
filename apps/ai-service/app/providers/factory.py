@@ -39,6 +39,6 @@ class ProviderFactory:
         providers = {}
         if self._config.ollama_host:
             providers["ollama"] = self.get("ollama")
-        if self._config.openrouter_api_key:
-            providers["openrouter"] = self.get("openrouter")
+        # Always register OpenRouter (empty key = per-request keys only)
+        providers["openrouter"] = self.get("openrouter")
         return providers

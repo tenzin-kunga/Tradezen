@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
+from datetime import datetime, timezone
 from typing import Any, AsyncIterator
 
 import httpx
@@ -10,6 +12,10 @@ import httpx
 from ..models.provider import ProviderCapabilities
 
 logger = logging.getLogger("ai_service.providers")
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 class OllamaProvider:
@@ -38,6 +44,7 @@ class OllamaProvider:
         temperature: float = 0.4,
         max_tokens: int | None = None,
         stream: bool = False,
+        **kwargs,
     ) -> dict[str, Any]:
         model = model or "qwen3:latest"
         prompt = self._messages_to_prompt(messages)
@@ -69,6 +76,7 @@ class OllamaProvider:
         model: str | None = None,
         temperature: float = 0.4,
         max_tokens: int | None = None,
+        **kwargs,
     ) -> AsyncIterator[str]:
         model = model or "qwen3:latest"
         prompt = self._messages_to_prompt(messages)
@@ -105,6 +113,49 @@ class OllamaProvider:
                 return resp.status_code == 200
         except Exception:
             return False
+
+    async def list_models(self) -> list[dict]:
+        """Raw discovery — providers return only what they know.
+
+        Ollama's /api/tags does not expose context length, so we leave it as
+        None and let the ModelRegistry enrich known models.
+        """
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                resp = await client.get(f"{self.host}/api/tags")
+                resp.raise_for_status()
+                models = resp.json().get("models", [])
+                return [
+                    {
+                        "id": m["name"],
+                        "provider": "ollama",
+                        "contextWindow": None,
+                    }
+                    for m in models
+                ]
+        except Exception as e:
+            logger.warning(f"Ollama model discovery failed: {e}")
+            return []
+
+    async def health(self) -> dict:
+        start = time.time()
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                resp = await client.get(f"{self.host}/api/tags")
+                latency = int((time.time() - start) * 1000)
+                return {
+                    "status": "healthy" if resp.status_code == 200 else "degraded",
+                    "latency": latency,
+                    "lastChecked": _now_iso(),
+                    "reason": None,
+                }
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "latency": None,
+                "lastChecked": _now_iso(),
+                "reason": str(e),
+            }
 
     async def ensure_model(self, model: str) -> bool:
         """Check if model exists, pull if not. Returns True if ready."""
