@@ -1,6 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { KnowledgeService } from "../knowledge.service";
-import { DocumentEmbedder } from "./embedder";
+import { Injectable, Logger } from '@nestjs/common';
+import { KnowledgeService } from '../knowledge.service';
+import { DocumentEmbedder } from './embedder';
 
 export interface IndexingJob {
   documentId: string;
@@ -30,13 +30,19 @@ export class KnowledgeIndexingWorker {
       }
 
       // Stage 2: Chunk and embed
-      const content = doc.content || "";
+      const content = doc.content || '';
       if (content.length === 0) {
-        this.logger.debug(`Document ${documentId} has no content, skipping embed`);
+        this.logger.debug(
+          `Document ${documentId} has no content, skipping embed`,
+        );
         return;
       }
 
-      const result = await this.embedder.embedDocument(userId, documentId, content);
+      const result = await this.embedder.embedDocument(
+        userId,
+        documentId,
+        content,
+      );
 
       // Stage 3: Log results
       this.logger.log(

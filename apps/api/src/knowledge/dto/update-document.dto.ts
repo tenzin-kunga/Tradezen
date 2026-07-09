@@ -1,5 +1,5 @@
-import { IsString, IsOptional, IsEnum, MaxLength } from "class-validator";
-import { ApiPropertyOptional } from "@nestjs/swagger";
+import { IsString, IsOptional, IsEnum, MaxLength } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateDocumentDto {
   @ApiPropertyOptional()
@@ -13,9 +13,9 @@ export class UpdateDocumentDto {
   @IsString()
   content?: string;
 
-  @ApiPropertyOptional({ enum: ["draft", "active", "archived"] })
+  @ApiPropertyOptional({ enum: ['draft', 'active', 'archived'] })
   @IsOptional()
-  @IsEnum(["draft", "active", "archived"])
+  @IsEnum(['draft', 'active', 'archived'])
   status?: string;
 
   @ApiPropertyOptional()

@@ -1,9 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { db } from "../../db/drizzle";
-import { embeddings } from "@tradezen/db";
-import { eq, and } from "drizzle-orm";
-import { EmbeddingService } from "../../ai/embedding.service";
-import { chunkText, computeContentHash, type ChunkingConfig } from "./chunker";
+import { Injectable, Logger } from '@nestjs/common';
+import { db } from '../../db/drizzle';
+import { embeddings } from '@tradezen/db';
+import { eq, and } from 'drizzle-orm';
+import { EmbeddingService } from '../../ai/embedding.service';
+import { chunkText, computeContentHash, type ChunkingConfig } from './chunker';
 
 @Injectable()
 export class DocumentEmbedder {
@@ -26,7 +26,7 @@ export class DocumentEmbedder {
       .where(
         and(
           eq(embeddings.userId, userId),
-          eq(embeddings.sourceType, "knowledge_document"),
+          eq(embeddings.sourceType, 'knowledge_document'),
           eq(embeddings.sourceId, documentId),
         ),
       )
@@ -43,7 +43,7 @@ export class DocumentEmbedder {
       .where(
         and(
           eq(embeddings.userId, userId),
-          eq(embeddings.sourceType, "knowledge_document"),
+          eq(embeddings.sourceType, 'knowledge_document'),
           eq(embeddings.sourceId, documentId),
         ),
       );
@@ -59,16 +59,18 @@ export class DocumentEmbedder {
     let embedded = 0;
     for (const chunk of chunks) {
       try {
-        const vector = await this.embeddingService.generateEmbedding(chunk.content);
+        const vector = await this.embeddingService.generateEmbedding(
+          chunk.content,
+        );
         await db.insert(embeddings).values({
           userId,
-          sourceType: "knowledge_document",
+          sourceType: 'knowledge_document',
           sourceId: documentId,
           chunkIndex: chunk.index,
           content: chunk.content,
           contentHash,
           embedding: vector,
-          embeddingModel: "text-embedding-3-small",
+          embeddingModel: 'text-embedding-3-small',
           embeddingVersion: 1,
           metadata: {
             startOffset: chunk.startOffset,
@@ -77,11 +79,15 @@ export class DocumentEmbedder {
         });
         embedded++;
       } catch (e) {
-        this.logger.error(`Failed to embed chunk ${chunk.index} for document ${documentId}: ${e}`);
+        this.logger.error(
+          `Failed to embed chunk ${chunk.index} for document ${documentId}: ${e}`,
+        );
       }
     }
 
-    this.logger.log(`Embedded document ${documentId}: ${embedded}/${chunks.length} chunks`);
+    this.logger.log(
+      `Embedded document ${documentId}: ${embedded}/${chunks.length} chunks`,
+    );
     return { chunksEmbedded: embedded, skipped: 0 };
   }
 
@@ -90,7 +96,7 @@ export class DocumentEmbedder {
       .delete(embeddings)
       .where(
         and(
-          eq(embeddings.sourceType, "knowledge_document"),
+          eq(embeddings.sourceType, 'knowledge_document'),
           eq(embeddings.sourceId, documentId),
         ),
       );

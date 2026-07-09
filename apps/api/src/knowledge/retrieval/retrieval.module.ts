@@ -1,13 +1,13 @@
-import { Module } from "@nestjs/common";
-import { RetrievalController } from "./retrieval.controller";
-import { KnowledgeRetrievalService } from "./retrieval.service";
-import { DocumentEmbedder } from "../indexing/embedder";
-import { KnowledgeIndexingWorker } from "../indexing/worker";
-import { EmbeddingService } from "../../ai/embedding.service";
-import { KnowledgeModule } from "../knowledge.module";
+import { Module, forwardRef } from '@nestjs/common';
+import { RetrievalController } from './retrieval.controller';
+import { KnowledgeRetrievalService } from './retrieval.service';
+import { DocumentEmbedder } from '../indexing/embedder';
+import { KnowledgeIndexingWorker } from '../indexing/worker';
+import { EmbeddingService } from '../../ai/embedding.service';
+import { KnowledgeModule } from '../knowledge.module';
 
 @Module({
-  imports: [KnowledgeModule],
+  imports: [forwardRef(() => KnowledgeModule)],
   controllers: [RetrievalController],
   providers: [
     KnowledgeRetrievalService,
@@ -15,6 +15,10 @@ import { KnowledgeModule } from "../knowledge.module";
     KnowledgeIndexingWorker,
     EmbeddingService,
   ],
-  exports: [KnowledgeRetrievalService, DocumentEmbedder, KnowledgeIndexingWorker],
+  exports: [
+    KnowledgeRetrievalService,
+    DocumentEmbedder,
+    KnowledgeIndexingWorker,
+  ],
 })
 export class RetrievalModule {}

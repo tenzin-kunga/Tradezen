@@ -16,7 +16,7 @@ export interface TextChunk {
 const DEFAULT_CONFIG: ChunkingConfig = {
   chunkSize: 512,
   overlap: 50,
-  separatorPriority: ["\n\n", "\n", ". ", " "],
+  separatorPriority: ['\n\n', '\n', '. ', ' '],
   minimumChunk: 100,
   maximumChunk: 1024,
 };

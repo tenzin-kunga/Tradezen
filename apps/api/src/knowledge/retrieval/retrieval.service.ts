@@ -1,8 +1,12 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { db } from "../../db/drizzle";
-import { embeddings, knowledgeDocumentLinks, knowledgeDocuments } from "@tradezen/db";
-import { eq, and, desc, sql } from "drizzle-orm";
-import { EmbeddingService } from "../../ai/embedding.service";
+import { Injectable, Logger } from '@nestjs/common';
+import { db } from '../../db/drizzle';
+import {
+  embeddings,
+  knowledgeDocumentLinks,
+  knowledgeDocuments,
+} from '@tradezen/db';
+import { eq, sql } from 'drizzle-orm';
+import { EmbeddingService } from '../../ai/embedding.service';
 
 // ─── Retrieval Profiles ──────────────────────
 
@@ -19,7 +23,7 @@ export interface RetrievalProfile {
 
 export const RETRIEVAL_PROFILES: Record<string, RetrievalProfile> = {
   fast: {
-    name: "fast",
+    name: 'fast',
     maxResults: 5,
     similarityThreshold: 0.6,
     includeSemantic: true,
@@ -29,7 +33,7 @@ export const RETRIEVAL_PROFILES: Record<string, RetrievalProfile> = {
     maxContextTokens: 500,
   },
   inspector: {
-    name: "inspector",
+    name: 'inspector',
     maxResults: 10,
     similarityThreshold: 0.7,
     includeSemantic: true,
@@ -39,7 +43,7 @@ export const RETRIEVAL_PROFILES: Record<string, RetrievalProfile> = {
     maxContextTokens: 1500,
   },
   chat: {
-    name: "chat",
+    name: 'chat',
     maxResults: 15,
     similarityThreshold: 0.7,
     includeSemantic: true,
@@ -49,7 +53,7 @@ export const RETRIEVAL_PROFILES: Record<string, RetrievalProfile> = {
     maxContextTokens: 3000,
   },
   report: {
-    name: "report",
+    name: 'report',
     maxResults: 20,
     similarityThreshold: 0.6,
     includeSemantic: true,
@@ -109,7 +113,7 @@ export class KnowledgeRetrievalService {
   async semanticSearch(
     userId: string,
     query: string,
-    profileName: string = "fast",
+    profileName: string = 'fast',
   ): Promise<RelatedResult[]> {
     const profile = RETRIEVAL_PROFILES[profileName] || RETRIEVAL_PROFILES.fast;
 
@@ -137,7 +141,7 @@ export class KnowledgeRetrievalService {
           score: r.similarity,
           evidence: [
             {
-              source: "semantic",
+              source: 'semantic',
               score: r.similarity,
               reason: `Matched: "${r.content.slice(0, 50)}..."`,
               matchedChunks: [r.content],
@@ -154,9 +158,11 @@ export class KnowledgeRetrievalService {
   async findRelated(
     resourceType: string,
     resourceId: string,
-    profileName: string = "inspector",
+    profileName: string = 'inspector',
+    userId?: string,
   ): Promise<RelatedResult[]> {
-    const profile = RETRIEVAL_PROFILES[profileName] || RETRIEVAL_PROFILES.inspector;
+    const profile =
+      RETRIEVAL_PROFILES[profileName] || RETRIEVAL_PROFILES.inspector;
     const results: RelatedResult[] = [];
 
     // 1. Explicit links
@@ -168,7 +174,10 @@ export class KnowledgeRetrievalService {
 
       for (const link of links) {
         const doc = await db
-          .select({ id: knowledgeDocuments.id, title: knowledgeDocuments.title })
+          .select({
+            id: knowledgeDocuments.id,
+            title: knowledgeDocuments.title,
+          })
           .from(knowledgeDocuments)
           .where(eq(knowledgeDocuments.id, link.targetDocumentId))
           .limit(1);
@@ -176,12 +185,12 @@ export class KnowledgeRetrievalService {
         if (doc.length > 0) {
           results.push({
             id: doc[0].id,
-            type: "knowledge_document",
+            type: 'knowledge_document',
             title: doc[0].title,
             score: 0.9,
             evidence: [
               {
-                source: "explicit",
+                source: 'explicit',
                 score: 0.9,
                 reason: `Linked: ${link.relationshipType}`,
                 matchedChunks: [],
@@ -203,9 +212,9 @@ export class KnowledgeRetrievalService {
 
       if (doc.length > 0 && doc[0].content) {
         const semanticResults = await this.semanticSearch(
-          "system", // We need userId — simplified for now
+          userId ?? 'system',
           doc[0].content.slice(0, 500),
-          "fast",
+          'fast',
         );
 
         for (const sr of semanticResults) {
@@ -225,7 +234,7 @@ export class KnowledgeRetrievalService {
   async getDocumentContext(
     documentId: string,
     userId: string,
-    profileName: string = "inspector",
+    profileName: string = 'inspector',
   ): Promise<DocumentContext | null> {
     const doc = await db
       .select()
@@ -236,26 +245,31 @@ export class KnowledgeRetrievalService {
     if (doc.length === 0) return null;
 
     const document = doc[0];
-    const related = await this.findRelated("knowledge_document", documentId, profileName);
+    const related = await this.findRelated(
+      'knowledge_document',
+      documentId,
+      profileName,
+      userId,
+    );
 
     return {
       document: {
         id: document.id,
         title: document.title,
-        content: document.content || "",
-        summary: document.aiSummary || "",
+        content: document.content || '',
+        summary: document.aiSummary || '',
       },
       related: {
-        documents: related.filter((r) => r.type === "knowledge_document"),
-        trades: related.filter((r) => r.type === "trade"),
-        journals: related.filter((r) => r.type === "journal"),
+        documents: related.filter((r) => r.type === 'knowledge_document'),
+        trades: related.filter((r) => r.type === 'trade'),
+        journals: related.filter((r) => r.type === 'journal'),
       },
       semantic: {
         chunks: [], // Populated by semantic search if needed
       },
       citations: {
         sources: related
-          .filter((r) => r.type === "knowledge_document")
+          .filter((r) => r.type === 'knowledge_document')
           .map((r) => r.title),
       },
     };
@@ -274,10 +288,14 @@ export class KnowledgeRetrievalService {
     return results.sort((a, b) => {
       const scoreA =
         a.score * weights.semantic +
-        (a.evidence.some((e) => e.source === "explicit") ? weights.explicit : 0);
+        (a.evidence.some((e) => e.source === 'explicit')
+          ? weights.explicit
+          : 0);
       const scoreB =
         b.score * weights.semantic +
-        (b.evidence.some((e) => e.source === "explicit") ? weights.explicit : 0);
+        (b.evidence.some((e) => e.source === 'explicit')
+          ? weights.explicit
+          : 0);
       return scoreB - scoreA;
     });
   }

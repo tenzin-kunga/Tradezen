@@ -1,8 +1,14 @@
-import { IsString, IsOptional, IsUUID, IsEnum, MaxLength } from "class-validator";
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  IsString,
+  IsOptional,
+  IsUUID,
+  IsEnum,
+  MaxLength,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateDocumentDto {
-  @ApiProperty({ example: "BEL Research" })
+  @ApiProperty({ example: 'BEL Research' })
   @IsString()
   @MaxLength(500)
   title: string;
@@ -17,9 +23,27 @@ export class CreateDocumentDto {
   @IsString()
   content?: string;
 
-  @ApiPropertyOptional({ enum: ["thesis", "analysis", "playbook", "macro", "note", "snapshot", "postmortem"] })
+  @ApiPropertyOptional({
+    enum: [
+      'thesis',
+      'analysis',
+      'playbook',
+      'macro',
+      'note',
+      'snapshot',
+      'postmortem',
+    ],
+  })
   @IsOptional()
-  @IsEnum(["thesis", "analysis", "playbook", "macro", "note", "snapshot", "postmortem"])
+  @IsEnum([
+    'thesis',
+    'analysis',
+    'playbook',
+    'macro',
+    'note',
+    'snapshot',
+    'postmortem',
+  ])
   doc_type?: string;
 
   @ApiPropertyOptional()

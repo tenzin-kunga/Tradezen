@@ -1,20 +1,20 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { db } from "../db/drizzle";
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { db } from '../db/drizzle';
 import {
   knowledgeFolders,
   knowledgeDocuments,
   knowledgeDocumentVersions,
   knowledgeAssets,
   knowledgeDocumentLinks,
-} from "@tradezen/db";
-import { eq, and, asc, desc } from "drizzle-orm";
+} from '@tradezen/db';
+import { eq, and, asc, desc } from 'drizzle-orm';
 import {
   CreateFolderDto,
   CreateDocumentDto,
   UpdateDocumentDto,
   CreateLinkDto,
-} from "./dto";
-import { DocumentEmbedder } from "./indexing/embedder";
+} from './dto';
+import { DocumentEmbedder } from './indexing/embedder';
 
 @Injectable()
 export class KnowledgeService {
@@ -52,9 +52,13 @@ export class KnowledgeService {
     return folder;
   }
 
-  async updateFolder(userId: string, folderId: string, data: { name?: string; icon?: string; parent_id?: string }) {
+  async updateFolder(
+    userId: string,
+    folderId: string,
+    data: { name?: string; icon?: string; parent_id?: string },
+  ) {
     const folder = await this.getFolder(userId, folderId);
-    if (!folder) throw new NotFoundException("Folder not found");
+    if (!folder) throw new NotFoundException('Folder not found');
 
     const [updated] = await db
       .update(knowledgeFolders)
@@ -66,7 +70,7 @@ export class KnowledgeService {
 
   async deleteFolder(userId: string, folderId: string) {
     const folder = await this.getFolder(userId, folderId);
-    if (!folder) throw new NotFoundException("Folder not found");
+    if (!folder) throw new NotFoundException('Folder not found');
     await db.delete(knowledgeFolders).where(eq(knowledgeFolders.id, folderId));
   }
 
@@ -74,7 +78,12 @@ export class KnowledgeService {
     const result = await db
       .select()
       .from(knowledgeFolders)
-      .where(and(eq(knowledgeFolders.id, folderId), eq(knowledgeFolders.userId, userId)))
+      .where(
+        and(
+          eq(knowledgeFolders.id, folderId),
+          eq(knowledgeFolders.userId, userId),
+        ),
+      )
       .limit(1);
     return result[0] || null;
   }
@@ -98,7 +107,12 @@ export class KnowledgeService {
     const result = await db
       .select()
       .from(knowledgeDocuments)
-      .where(and(eq(knowledgeDocuments.id, documentId), eq(knowledgeDocuments.userId, userId)))
+      .where(
+        and(
+          eq(knowledgeDocuments.id, documentId),
+          eq(knowledgeDocuments.userId, userId),
+        ),
+      )
       .limit(1);
     return result[0] || null;
   }
@@ -110,8 +124,8 @@ export class KnowledgeService {
         userId,
         title: dto.title,
         folderId: dto.folder_id || null,
-        content: dto.content || "",
-        docType: dto.doc_type || "note",
+        content: dto.content || '',
+        docType: dto.doc_type || 'note',
         templateId: dto.template_id || null,
         frontmatter: dto.frontmatter || {},
       })
@@ -121,7 +135,7 @@ export class KnowledgeService {
     await db.insert(knowledgeDocumentVersions).values({
       documentId: doc.id,
       version: 1,
-      content: dto.content || "",
+      content: dto.content || '',
     });
 
     // Trigger background embedding (non-blocking)
@@ -134,9 +148,13 @@ export class KnowledgeService {
     return doc;
   }
 
-  async updateDocument(userId: string, documentId: string, dto: UpdateDocumentDto) {
+  async updateDocument(
+    userId: string,
+    documentId: string,
+    dto: UpdateDocumentDto,
+  ) {
     const doc = await this.getDocument(userId, documentId);
-    if (!doc) throw new NotFoundException("Document not found");
+    if (!doc) throw new NotFoundException('Document not found');
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (dto.title !== undefined) updateData.title = dto.title;
@@ -151,9 +169,11 @@ export class KnowledgeService {
       });
 
       // Trigger background embedding (non-blocking)
-      this.embedder.embedDocument(userId, documentId, dto.content).catch((e) => {
-        this.logger.error(`Failed to embed document ${documentId}: ${e}`);
-      });
+      this.embedder
+        .embedDocument(userId, documentId, dto.content)
+        .catch((e) => {
+          this.logger.error(`Failed to embed document ${documentId}: ${e}`);
+        });
     }
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.frontmatter !== undefined) updateData.frontmatter = dto.frontmatter;
@@ -168,15 +188,17 @@ export class KnowledgeService {
 
   async deleteDocument(userId: string, documentId: string) {
     const doc = await this.getDocument(userId, documentId);
-    if (!doc) throw new NotFoundException("Document not found");
-    await db.delete(knowledgeDocuments).where(eq(knowledgeDocuments.id, documentId));
+    if (!doc) throw new NotFoundException('Document not found');
+    await db
+      .delete(knowledgeDocuments)
+      .where(eq(knowledgeDocuments.id, documentId));
   }
 
   // ─── Versions ─────────────────────────────────
 
   async listVersions(userId: string, documentId: string) {
     const doc = await this.getDocument(userId, documentId);
-    if (!doc) throw new NotFoundException("Document not found");
+    if (!doc) throw new NotFoundException('Document not found');
 
     return db
       .select()
@@ -189,7 +211,7 @@ export class KnowledgeService {
 
   async listAssets(userId: string, documentId: string) {
     const doc = await this.getDocument(userId, documentId);
-    if (!doc) throw new NotFoundException("Document not found");
+    if (!doc) throw new NotFoundException('Document not found');
 
     return db
       .select()
@@ -206,7 +228,7 @@ export class KnowledgeService {
 
   async listLinks(userId: string, documentId: string) {
     const doc = await this.getDocument(userId, documentId);
-    if (!doc) throw new NotFoundException("Document not found");
+    if (!doc) throw new NotFoundException('Document not found');
 
     return db
       .select()
@@ -217,7 +239,7 @@ export class KnowledgeService {
 
   async createLink(userId: string, documentId: string, dto: CreateLinkDto) {
     const doc = await this.getDocument(userId, documentId);
-    if (!doc) throw new NotFoundException("Document not found");
+    if (!doc) throw new NotFoundException('Document not found');
 
     const [link] = await db
       .insert(knowledgeDocumentLinks)
@@ -231,7 +253,9 @@ export class KnowledgeService {
   }
 
   async deleteLink(userId: string, linkId: string) {
-    await db.delete(knowledgeDocumentLinks).where(eq(knowledgeDocumentLinks.id, linkId));
+    await db
+      .delete(knowledgeDocumentLinks)
+      .where(eq(knowledgeDocumentLinks.id, linkId));
   }
 
   // ─── Search ───────────────────────────────────
