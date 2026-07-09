@@ -133,6 +133,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build shared packages
+        run: bun run build --filter=@tradezen/db
+
       - name: Run ESLint
         run: bun run lint
 
