@@ -3,12 +3,26 @@ import type {
   ContextSlice,
   ContextContributor,
 } from "./types";
+import { ContextCapability } from "./types";
 import { getModuleRegistry } from "./module-registry";
+import { eventBus } from "./event-bus";
 
 const TOTAL_BUDGET = 2000; // total token budget for all context
 
 class ContextEngineImpl {
   private cache = new Map<string, ContextSlice[]>();
+
+  constructor() {
+    // Invalidate cache on data-mutation events
+    eventBus.subscribe("trade.created", () => this.cache.clear());
+    eventBus.subscribe("trade.updated", () => this.cache.clear());
+    eventBus.subscribe("trade.deleted", () => this.cache.clear());
+    eventBus.subscribe("journal.saved", () => this.cache.clear());
+    eventBus.subscribe("watchlist.created", () => this.cache.clear());
+    eventBus.subscribe("watchlist.updated", () => this.cache.clear());
+    eventBus.subscribe("watchlist.deleted", () => this.cache.clear());
+    eventBus.subscribe("context.changed", () => this.cache.clear());
+  }
 
   async getContext(resource: WorkspaceResource): Promise<ContextSlice[]> {
     const cacheKey = `${resource.type}:${resource.id}`;
@@ -22,9 +36,9 @@ class ContextEngineImpl {
     const contributors = registry
       .getAll()
       .map((mod) => {
-        const cap = mod.capabilities.find(
-          (c) => c.constructor.name === "ContextCapability",
-        ) as { contributor: ContextContributor } | undefined;
+        const cap = mod.capabilities.find((c) => c.kind === "context") as
+          | ContextCapability
+          | undefined;
         return cap?.contributor;
       })
       .filter(Boolean) as ContextContributor[];

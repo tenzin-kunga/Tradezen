@@ -35,23 +35,23 @@ function TabItem({
       onClick={onSelect}
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
+      className="tz-focus"
       style={{
         display: "flex",
         alignItems: "center",
         gap: 6,
         height: 32,
-        padding: "0 10px",
-        borderRadius: 6,
+        padding: "0 6px 0 10px",
+        borderRadius: 8,
         cursor: "pointer",
-        background: isActive
-          ? "var(--bg-surface-hover, #1a1b23)"
-          : "transparent",
+        background: isActive ? "var(--surface-raised)" : "transparent",
         border: isActive
-          ? "1px solid var(--border, #23252d)"
+          ? "1px solid var(--border-strong)"
           : "1px solid transparent",
-        transition: "background 0.1s, border-color 0.1s",
+        boxShadow: isActive ? "var(--shadow-soft)" : "none",
+        transition: "background 0.12s var(--ease-out), border-color 0.12s",
         flexShrink: 0,
-        maxWidth: 160,
+        maxWidth: 180,
       }}
     >
       <span
@@ -90,14 +90,31 @@ function TabItem({
             padding: 0,
           }}
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       )}
       {tab.pinned && (
-        <span style={{ fontSize: 8, color: "var(--accent, #3b82f6)" }}>●</span>
+        <span
+          title="Pinned"
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 9999,
+            background: "var(--accent)",
+            flexShrink: 0,
+            boxShadow: "0 0 8px rgba(59, 130, 246, 0.6)",
+          }}
+        />
       )}
     </div>
   );

@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import type { WorkspaceResource, InspectorSection } from "@/lib/workspace/types";
+import type {
+  WorkspaceResource,
+  InspectorSection,
+} from "@/lib/workspace/types";
 import { InspectorCapability } from "@/lib/workspace/types";
 import { getModuleRegistry } from "@/lib/workspace/module-registry";
 
@@ -62,7 +65,14 @@ export default function InspectorPanel({
           }}
           title="Show inspector"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <line x1="12" y1="3" x2="12" y2="21" />
           </svg>
@@ -120,7 +130,14 @@ export default function InspectorPanel({
           }}
           title="Hide inspector"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>

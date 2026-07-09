@@ -1,4 +1,9 @@
-import type { SearchProvider, SearchResult, QuickAction, WorkspaceResource } from "@/lib/workspace/types";
+import type {
+  SearchProvider,
+  SearchResult,
+  QuickAction,
+  WorkspaceResource,
+} from "@/lib/workspace/types";
 import { createWatchlistResource } from "@/lib/workspace/resource";
 
 const STORAGE_KEY = "tradezen_search_watchlist_recents";
@@ -18,7 +23,10 @@ function addRecent(query: string) {
   if (typeof window === "undefined") return;
   const recents = getRecents().filter((r) => r !== query);
   recents.unshift(query);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(recents.slice(0, MAX_RECENTS)));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(recents.slice(0, MAX_RECENTS)),
+  );
 }
 
 export function createWatchlistSearchProvider(): SearchProvider {

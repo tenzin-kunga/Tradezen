@@ -2,13 +2,18 @@
 
 import { useEffect, useRef } from "react";
 import type { ChatMessage } from "@/hooks/useChat";
+import type { WorkspaceAction } from "@/lib/api/assistant";
 import MessageBubble from "./MessageBubble";
 
 interface MessageViewportProps {
   messages: ChatMessage[];
+  onAction?: (action: WorkspaceAction) => void;
 }
 
-export default function MessageViewport({ messages }: MessageViewportProps) {
+export default function MessageViewport({
+  messages,
+  onAction,
+}: MessageViewportProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll on new messages or content changes
@@ -27,7 +32,7 @@ export default function MessageViewport({ messages }: MessageViewportProps) {
       }}
     >
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} />
+        <MessageBubble key={msg.id} message={msg} onAction={onAction} />
       ))}
       <div ref={endRef} />
     </div>

@@ -21,7 +21,13 @@ export default function KnowledgeSourcesInspector({
 
   if (loading) {
     return (
-      <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", padding: "8px 0" }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--text-muted, #9ca3af)",
+          padding: "8px 0",
+        }}
+      >
         Loading...
       </div>
     );

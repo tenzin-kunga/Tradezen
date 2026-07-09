@@ -1,6 +1,9 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-async function authFetch(url: string, opts: RequestInit = {}): Promise<Response> {
+async function authFetch(
+  url: string,
+  opts: RequestInit = {},
+): Promise<Response> {
   const { getAccessToken } = await import("@/lib/api");
   const token = getAccessToken();
 

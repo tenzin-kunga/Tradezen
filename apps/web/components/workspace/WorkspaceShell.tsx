@@ -6,9 +6,10 @@ import WorkspaceTabs from "./WorkspaceTabs";
 import ContextPanel from "./ContextPanel";
 import Breadcrumbs from "./Breadcrumbs";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { IconButton } from "@/components/primitives/IconButton";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 
-function WorkspaceContent() {
+function WorkspaceContent({ children }: { children?: React.ReactNode }) {
   const {
     resourceManager,
     activeResource,
@@ -73,66 +74,53 @@ function WorkspaceContent() {
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
-                  padding: "4px 12px",
+                  padding: "8px 12px",
                   borderBottom: "1px solid var(--border, #23252d)",
                   flexShrink: 0,
                 }}
               >
-                <button
+                <IconButton
+                  size={26}
                   onClick={back}
                   disabled={!canGoBack}
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 4,
-                    background: "transparent",
-                    border: "none",
-                    cursor: canGoBack ? "pointer" : "default",
-                    color: canGoBack
-                      ? "var(--text-muted, #9ca3af)"
-                      : "var(--text-dim, #6b7280)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: canGoBack ? 1 : 0.5,
-                  }}
                   title="Back"
+                  style={{ opacity: canGoBack ? 1 : 0.4 }}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <polyline points="15 18 9 12 15 6" />
                   </svg>
-                </button>
-                <button
+                </IconButton>
+                <IconButton
+                  size={26}
                   onClick={forward}
                   disabled={!canGoForward}
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 4,
-                    background: "transparent",
-                    border: "none",
-                    cursor: canGoForward ? "pointer" : "default",
-                    color: canGoForward
-                      ? "var(--text-muted, #9ca3af)"
-                      : "var(--text-dim, #6b7280)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: canGoForward ? 1 : 0.5,
-                  }}
                   title="Forward"
+                  style={{ opacity: canGoForward ? 1 : 0.4 }}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
 
               {/* Page content */}
               <div style={{ flex: 1, overflow: "hidden" }}>
-                <ErrorBoundary>
-                  <></>
-                </ErrorBoundary>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <ErrorBoundary>{children as any}</ErrorBoundary>
               </div>
             </div>
           ) : (
@@ -169,6 +157,7 @@ export default function WorkspaceShell({
 }) {
   return (
     <div
+      className="tz-backdrop"
       style={{
         display: "flex",
         height: "100vh",
@@ -176,7 +165,7 @@ export default function WorkspaceShell({
         background: "var(--bg-primary, #0a0a0f)",
       }}
     >
-      <WorkspaceContent />
+      <WorkspaceContent>{children}</WorkspaceContent>
     </div>
   );
 }

@@ -42,7 +42,13 @@ export default function KnowledgeRelatedPanel({
 
   if (loading) {
     return (
-      <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", padding: "8px 0" }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--text-muted, #9ca3af)",
+          padding: "8px 0",
+        }}
+      >
         Loading related items...
       </div>
     );
@@ -50,7 +56,13 @@ export default function KnowledgeRelatedPanel({
 
   if (related.length === 0) {
     return (
-      <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", padding: "8px 0" }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--text-muted, #9ca3af)",
+          padding: "8px 0",
+        }}
+      >
         No related items found.
       </div>
     );
@@ -133,7 +145,10 @@ function RelatedItem({ item }: { item: RelatedResult }) {
           style={{
             fontSize: 10,
             fontWeight: 600,
-            color: item.score >= 0.8 ? "var(--accent-profit, #22c55e)" : "var(--text-dim, #6b7280)",
+            color:
+              item.score >= 0.8
+                ? "var(--accent-profit, #22c55e)"
+                : "var(--text-dim, #6b7280)",
             marginLeft: 8,
             flexShrink: 0,
           }}

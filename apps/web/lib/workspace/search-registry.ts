@@ -1,4 +1,9 @@
-import type { SearchProvider, SearchResult, QuickAction, WorkspaceResource } from "./types";
+import type {
+  SearchProvider,
+  SearchResult,
+  QuickAction,
+  WorkspaceResource,
+} from "./types";
 
 class SearchRegistryImpl {
   private providers = new Map<string, SearchProvider>();

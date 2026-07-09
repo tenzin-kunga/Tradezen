@@ -46,7 +46,10 @@ export default function KnowledgeFolderTree({
     loadFolders().finally(() => setLoading(false));
   }, [loadFolders, refreshTrigger]);
 
-  function buildTree(all: KnowledgeFolder[], parentId: string | null): FolderNode[] {
+  function buildTree(
+    all: KnowledgeFolder[],
+    parentId: string | null,
+  ): FolderNode[] {
     return all
       .filter((f) => f.parentId === parentId)
       .map((f) => ({
@@ -124,7 +127,10 @@ export default function KnowledgeFolderTree({
           borderBottom: "1px solid var(--border, #23252d)",
         }}
       >
-        <span className="label-caps" style={{ color: "var(--text-dim, #6b7280)" }}>
+        <span
+          className="label-caps"
+          style={{ color: "var(--text-dim, #6b7280)" }}
+        >
           Knowledge
         </span>
         <button
@@ -143,7 +149,14 @@ export default function KnowledgeFolderTree({
           }}
           title="New folder"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
@@ -191,12 +204,18 @@ export default function KnowledgeFolderTree({
           gap: 8,
           padding: "8px 12px",
           cursor: "pointer",
-          background: activeFolderId === null ? "var(--bg-surface-hover, #1a1b23)" : "transparent",
+          background:
+            activeFolderId === null
+              ? "var(--bg-surface-hover, #1a1b23)"
+              : "transparent",
           borderRadius: 6,
           margin: "4px 8px",
           fontSize: 12,
           fontWeight: activeFolderId === null ? 600 : 400,
-          color: activeFolderId === null ? "var(--text-primary, #fafafa)" : "var(--text-muted, #9ca3af)",
+          color:
+            activeFolderId === null
+              ? "var(--text-primary, #fafafa)"
+              : "var(--text-muted, #9ca3af)",
         }}
       >
         <span>📄</span>
@@ -256,7 +275,9 @@ function FolderNode({
           paddingLeft: 12 + depth * 16,
           borderRadius: 6,
           cursor: "pointer",
-          background: isActive ? "var(--bg-surface-hover, #1a1b23)" : "transparent",
+          background: isActive
+            ? "var(--bg-surface-hover, #1a1b23)"
+            : "transparent",
           transition: "background 0.15s",
           marginBottom: 1,
         }}
@@ -267,7 +288,9 @@ function FolderNode({
             style={{
               fontSize: 12,
               fontWeight: isActive ? 600 : 400,
-              color: isActive ? "var(--text-primary, #fafafa)" : "var(--text-secondary, #d1d5db)",
+              color: isActive
+                ? "var(--text-primary, #fafafa)"
+                : "var(--text-secondary, #d1d5db)",
             }}
           >
             {folder.name}
@@ -293,7 +316,14 @@ function FolderNode({
             }}
             title="Delete folder"
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>

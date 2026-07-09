@@ -11,6 +11,8 @@ import { KNOWLEDGE_TEMPLATES } from "@/lib/knowledge/templates";
 import KnowledgeFolderTree from "./KnowledgeFolderTree";
 import KnowledgeDocumentView from "./KnowledgeDocumentView";
 import KnowledgeInspector from "./KnowledgeInspector";
+import { EmptyState } from "@/components/primitives/EmptyState";
+import { Skeleton } from "@/components/primitives/Skeleton";
 
 export default function KnowledgeWorkspace() {
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
@@ -37,7 +39,9 @@ export default function KnowledgeWorkspace() {
   const handleCreateDocument = useCallback(
     async (title: string, templateId?: string) => {
       try {
-        const template = templateId ? KNOWLEDGE_TEMPLATES.find((t) => t.id === templateId) : null;
+        const template = templateId
+          ? KNOWLEDGE_TEMPLATES.find((t) => t.id === templateId)
+          : null;
         const doc = await createKnowledgeDocument({
           title,
           folder_id: activeFolderId || undefined,
@@ -68,22 +72,15 @@ export default function KnowledgeWorkspace() {
     [activeDocumentId],
   );
 
-  const activeDocument = documents.find((d) => d.id === activeDocumentId) || null;
+  const activeDocument =
+    documents.find((d) => d.id === activeDocumentId) || null;
 
   if (loading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          color: "var(--text-muted, #9ca3af)",
-          fontSize: 12,
-          letterSpacing: "0.1em",
-        }}
-      >
-        LOADING KNOWLEDGE...
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, flex: 1 }}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} height={56} radius={8} />
+        ))}
       </div>
     );
   }
@@ -102,7 +99,14 @@ export default function KnowledgeWorkspace() {
       />
 
       {/* Center: Document list or document view */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minWidth: 0,
+        }}
+      >
         {activeDocument ? (
           <KnowledgeDocumentView
             document={activeDocument}
@@ -161,7 +165,14 @@ function DocumentList({
   };
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -174,7 +185,13 @@ function DocumentList({
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary, #fafafa)" }}>
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--text-primary, #fafafa)",
+          }}
+        >
           Documents
         </span>
         <button
@@ -197,16 +214,10 @@ function DocumentList({
       {/* Document list */}
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px" }}>
         {documents.length === 0 ? (
-          <div
-            style={{
-              padding: "48px 16px",
-              textAlign: "center",
-              color: "var(--text-muted, #9ca3af)",
-              fontSize: 13,
-            }}
-          >
-            No documents yet. Click "+ New" to create one.
-          </div>
+          <EmptyState
+            title="No documents yet"
+            description='Click "+ New" to create your first knowledge document.'
+          />
         ) : (
           documents.map((doc) => (
             <div
@@ -234,7 +245,9 @@ function DocumentList({
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 16 }}>{DOC_TYPE_ICONS[doc.docType] || "📝"}</span>
+                <span style={{ fontSize: 16 }}>
+                  {DOC_TYPE_ICONS[doc.docType] || "📝"}
+                </span>
                 <div>
                   <div
                     style={{
@@ -245,7 +258,13 @@ function DocumentList({
                   >
                     {doc.title}
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--text-dim, #6b7280)", marginTop: 2 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--text-dim, #6b7280)",
+                      marginTop: 2,
+                    }}
+                  >
                     {doc.docType} · {doc.status} · v{doc.currentVersion}
                   </div>
                 </div>
@@ -270,7 +289,14 @@ function DocumentList({
                   }}
                   title="Delete"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                   </svg>
@@ -333,7 +359,11 @@ function NewDocumentModal({
         <div style={{ marginBottom: 16 }}>
           <label
             className="label-caps"
-            style={{ display: "block", marginBottom: 6, color: "var(--text-dim, #6b7280)" }}
+            style={{
+              display: "block",
+              marginBottom: 6,
+              color: "var(--text-dim, #6b7280)",
+            }}
           >
             TITLE
           </label>
@@ -359,15 +389,23 @@ function NewDocumentModal({
         <div style={{ marginBottom: 20 }}>
           <label
             className="label-caps"
-            style={{ display: "block", marginBottom: 8, color: "var(--text-dim, #6b7280)" }}
+            style={{
+              display: "block",
+              marginBottom: 8,
+              color: "var(--text-dim, #6b7280)",
+            }}
           >
             TEMPLATE (OPTIONAL)
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          <div
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}
+          >
             {KNOWLEDGE_TEMPLATES.map((t) => (
               <button
                 key={t.id}
-                onClick={() => setSelectedTemplate(selectedTemplate === t.id ? null : t.id)}
+                onClick={() =>
+                  setSelectedTemplate(selectedTemplate === t.id ? null : t.id)
+                }
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -425,7 +463,9 @@ function NewDocumentModal({
             style={{
               padding: "6px 14px",
               borderRadius: 6,
-              background: title.trim() ? "var(--accent, #3b82f6)" : "var(--bg-surface-hover, #1a1b23)",
+              background: title.trim()
+                ? "var(--accent, #3b82f6)"
+                : "var(--bg-surface-hover, #1a1b23)",
               color: title.trim() ? "#fff" : "var(--text-muted, #9ca3af)",
               border: "none",
               fontSize: 12,

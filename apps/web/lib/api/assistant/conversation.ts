@@ -1,9 +1,12 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-async function authFetch(url: string, opts: RequestInit = {}): Promise<Response> {
+async function authFetch(
+  url: string,
+  opts: RequestInit = {},
+): Promise<Response> {
   // Import dynamically to avoid circular deps
-  const { getAccessToken } = await import("@/lib/api");
-  const token = getAccessToken();
+  const { getAccessToken, refreshToken } = await import("@/lib/api");
+  let token = getAccessToken();
 
   const headers: Record<string, string> = {
     ...((opts.headers as Record<string, string>) || {}),
@@ -17,11 +20,28 @@ async function authFetch(url: string, opts: RequestInit = {}): Promise<Response>
     headers["Content-Type"] = "application/json";
   }
 
-  return fetch(url, {
-    ...opts,
-    headers,
-    credentials: "include",
-  });
+  const makeRequest = () =>
+    fetch(url, {
+      ...opts,
+      headers,
+      credentials: "include",
+    });
+
+  let res = await makeRequest();
+
+  // Token expired — try refresh
+  if (res.status === 401 && !url.includes("/auth/refresh")) {
+    const refreshed = await refreshToken();
+    if (refreshed) {
+      token = getAccessToken();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      res = await makeRequest();
+    }
+  }
+
+  return res;
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -32,9 +52,22 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json();
 }
 
+export type ConversationType =
+  | "daily_review"
+  | "journal"
+  | "research"
+  | "portfolio"
+  | "risk"
+  | "coaching"
+  | "general";
+
 export interface Thread {
   id: string;
   title: string | null;
+  summary: string | null;
+  primaryType: ConversationType | null;
+  tags: string[] | null;
+  pinned: boolean | null;
   updatedAt: string;
 }
 
@@ -47,6 +80,11 @@ export interface ThreadMessage {
 
 export async function getThreads(): Promise<Thread[]> {
   const res = await authFetch(`${API}/chat/threads`);
+  return handleResponse<Thread[]>(res);
+}
+
+export async function searchThreads(query: string): Promise<Thread[]> {
+  const res = await authFetch(`${API}/chat/threads/search?q=${encodeURIComponent(query)}`);
   return handleResponse<Thread[]>(res);
 }
 
@@ -75,6 +113,13 @@ export async function updateThreadTitle(
     method: "PATCH",
     body: JSON.stringify({ title }),
   });
+}
+
+export async function togglePinThread(id: string): Promise<{ pinned: boolean }> {
+  const res = await authFetch(`${API}/chat/threads/${id}/pin`, {
+    method: "PATCH",
+  });
+  return handleResponse<{ pinned: boolean }>(res);
 }
 
 export async function getThreadMessages(

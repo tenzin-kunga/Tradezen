@@ -51,7 +51,14 @@ export default function KnowledgeDocumentView({
   }, [content, title, doc.content, doc.title, handleSave]);
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -93,7 +100,10 @@ export default function KnowledgeDocumentView({
           <span
             style={{
               fontSize: 10,
-              color: doc.status === "active" ? "var(--accent-profit, #22c55e)" : "var(--text-dim, #6b7280)",
+              color:
+                doc.status === "active"
+                  ? "var(--accent-profit, #22c55e)"
+                  : "var(--text-dim, #6b7280)",
               padding: "2px 6px",
               borderRadius: 4,
               background: "var(--bg-surface-hover, #1a1b23)",
@@ -157,7 +167,9 @@ export default function KnowledgeDocumentView({
         <div style={{ flex: 1, overflow: "auto", padding: "20px 24px" }}>
           {isPreview ? (
             <div className="prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {content}
+              </ReactMarkdown>
             </div>
           ) : (
             <textarea
@@ -210,7 +222,10 @@ export default function KnowledgeDocumentView({
           flexShrink: 0,
         }}
       >
-        <span>v{doc.currentVersion} · {content.split(/\s+/).filter(Boolean).length} words</span>
+        <span>
+          v{doc.currentVersion} · {content.split(/\s+/).filter(Boolean).length}{" "}
+          words
+        </span>
         <span>{content.length} chars</span>
       </div>
     </div>

@@ -6,7 +6,36 @@ import { RouteCapability as RouteCap } from "@/lib/workspace/types";
 import { ContextCapability as ContextCap } from "@/lib/workspace/types";
 import { CommandCapability as CommandCap } from "@/lib/workspace/types";
 import { InspectorCapability as InspectorCap } from "@/lib/workspace/types";
+import { ToolCapability as ToolCap } from "@/lib/workspace/types";
+import type { ToolDefinition } from "@/lib/workspace/types";
 import WatchlistWorkspace from "@/components/modules/watchlist/WatchlistWorkspace";
+import { WatchlistContextContributor } from "./WatchlistContext";
+import { getResourceManager } from "@/lib/workspace/resource-manager";
+import { createWatchlistResource } from "@/lib/workspace/resource";
+
+const WATCHLIST_TOOLS: ToolDefinition[] = [
+  {
+    name: "open_watchlist",
+    description: "Open the watchlist workspace",
+    parameters: {},
+    async execute() {
+      getResourceManager().open(createWatchlistResource());
+      return { content: "Opened watchlist" };
+    },
+  },
+  {
+    name: "add_symbol",
+    description: "Add a symbol to the watchlist",
+    parameters: {
+      symbol: { type: "string", description: "Ticker symbol", required: true },
+    },
+    async execute(args) {
+      const { symbol } = args as { symbol: string };
+      getResourceManager().open(createWatchlistResource());
+      return { content: `Opened watchlist — add ${symbol} from the UI` };
+    },
+  },
+];
 
 export const WatchlistModule: WorkspaceModule = {
   metadata: {
@@ -25,37 +54,25 @@ export const WatchlistModule: WorkspaceModule = {
         title: "Watchlist",
       },
     ]),
-    new ContextCap({
-      priority: 8,
-      budget: 300,
-      estimateTokens(_resource) {
-        return 80;
-      },
-      async getContext(resource) {
-        return {
-          source: "watchlist",
-          data: {
-            activeList: resource.metadata?.listId || "default",
-            symbolCount: resource.metadata?.symbolCount || 0,
-          },
-          tokens: 40,
-        };
-      },
-    }),
+    new ContextCap(WatchlistContextContributor),
     new CommandCap([
       {
         namespace: "module",
         command: "watchlist",
         label: "Open Watchlist",
         description: "Open your watchlist",
-        handler: () => {},
+        handler: () => {
+          getResourceManager().open(createWatchlistResource());
+        },
       },
       {
         namespace: "module",
         command: "add-symbol",
         label: "Add Symbol",
         description: "Add a symbol to your watchlist",
-        handler: () => {},
+        handler: () => {
+          getResourceManager().open(createWatchlistResource());
+        },
       },
     ]),
     new InspectorCap([
@@ -78,5 +95,6 @@ export const WatchlistModule: WorkspaceModule = {
         priority: 30,
       },
     ]),
+    new ToolCap(WATCHLIST_TOOLS),
   ],
 };

@@ -31,9 +31,7 @@ function normalizeKey(title: string): string {
 let lookupPromise: Promise<Map<string, EventMetadata>> | null = null;
 
 async function loadLookupMap(): Promise<Map<string, EventMetadata>> {
-  const { default: registry } = await import(
-    "../data/economic-events.json"
-  );
+  const { default: registry } = await import("../data/economic-events.json");
   const map = new Map<string, EventMetadata>();
   for (const entry of registry as RegistryEntry[]) {
     for (const alias of entry.aliases) {

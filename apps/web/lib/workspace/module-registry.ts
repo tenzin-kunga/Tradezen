@@ -65,9 +65,9 @@ class ModuleRegistryImpl {
   // Route lookup: find which module handles a path
   findModuleByPath(path: string): WorkspaceModule | undefined {
     for (const mod of this.modules.values()) {
-      const routeCap = mod.capabilities.find(
-        (c) => c.constructor.name === "RouteCapability",
-      ) as RouteCapability | undefined;
+      const routeCap = mod.capabilities.find((c) => c.kind === "route") as
+        | RouteCapability
+        | undefined;
       if (routeCap?.routes.some((r) => path.startsWith(r.path))) {
         return mod;
       }

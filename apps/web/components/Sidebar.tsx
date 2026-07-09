@@ -16,16 +16,7 @@ const GROUP1: NavItem[] = [
     label: "Dashboard",
     href: "/",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1" />
         <rect x="14" y="3" width="7" height="7" rx="1" />
         <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -37,16 +28,7 @@ const GROUP1: NavItem[] = [
     label: "Trades",
     href: "/trades",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 6h18" />
         <path d="M3 12h18" />
         <path d="M3 18h18" />
@@ -60,16 +42,7 @@ const GROUP1: NavItem[] = [
     label: "Analytics",
     href: "/analytics",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 3v18h18" />
         <path d="M7 16l4-8 4 4 4-6" />
       </svg>
@@ -79,16 +52,7 @@ const GROUP1: NavItem[] = [
     label: "Journal",
     href: "/journal",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
         <path d="M8 7h8" />
@@ -100,16 +64,7 @@ const GROUP1: NavItem[] = [
     label: "Reports",
     href: "/reports",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
         <polyline points="14 2 14 8 20 8" />
         <line x1="16" y1="13" x2="8" y2="13" />
@@ -122,19 +77,23 @@ const GROUP1: NavItem[] = [
 
 const GROUP2: NavItem[] = [
   {
+    label: "Workspace",
+    href: "/workspace/assistant",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <line x1="12" y1="3" x2="12" y2="21" />
+      </svg>
+    ),
+  },
+];
+
+const GROUP3: NavItem[] = [
+  {
     label: "Calendar",
     href: "/calendar",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
         <line x1="16" y1="2" x2="16" y2="6" />
         <line x1="8" y1="2" x2="8" y2="6" />
@@ -146,16 +105,7 @@ const GROUP2: NavItem[] = [
     label: "Checklists",
     href: "/checklists",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 11 12 14 22 4" />
         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
       </svg>
@@ -165,16 +115,7 @@ const GROUP2: NavItem[] = [
     label: "Calculator",
     href: "/calculator",
     icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="4" y="2" width="16" height="20" rx="2" />
         <line x1="8" y1="6" x2="16" y2="6" />
         <line x1="8" y1="10" x2="8" y2="10.01" />
@@ -512,8 +453,59 @@ export default function Sidebar({
           }}
         />
 
+        {expanded && (
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: "var(--text-dim, #6b7280)",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              padding: "4px 16px",
+            }}
+          >
+            Intelligence
+          </div>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
           {GROUP2.map((item) => (
+            <NavItemLink
+              key={item.href}
+              item={item}
+              pathname={pathname}
+              collapsed={!expanded}
+              onHoverStart={(label, rect) => setTooltip({ label, rect })}
+              onHoverEnd={() => setTooltip(null)}
+            />
+          ))}
+        </div>
+
+        <div
+          style={{
+            height: 1,
+            background: "var(--border, #23252d)",
+            margin: "12px 16px",
+          }}
+        />
+
+        {expanded && (
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: "var(--text-dim, #6b7280)",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              padding: "4px 16px",
+            }}
+          >
+            Utilities
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {GROUP3.map((item) => (
             <NavItemLink
               key={item.href}
               item={item}

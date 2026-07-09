@@ -1,6 +1,9 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-async function authFetch(url: string, opts: RequestInit = {}): Promise<Response> {
+async function authFetch(
+  url: string,
+  opts: RequestInit = {},
+): Promise<Response> {
   const { getAccessToken } = await import("@/lib/api");
   const token = getAccessToken();
 
@@ -72,7 +75,9 @@ export async function deleteWatchlist(id: string): Promise<void> {
   await authFetch(`${API}/watchlists/${id}`, { method: "DELETE" });
 }
 
-export async function getWatchlistItems(watchlistId: string): Promise<WatchlistItem[]> {
+export async function getWatchlistItems(
+  watchlistId: string,
+): Promise<WatchlistItem[]> {
   const res = await authFetch(`${API}/watchlists/${watchlistId}/items`);
   return handleResponse<WatchlistItem[]>(res);
 }
@@ -132,6 +137,8 @@ export interface Symbol {
 }
 
 export async function searchSymbols(query: string): Promise<Symbol[]> {
-  const res = await authFetch(`${API}/symbols/search?q=${encodeURIComponent(query)}`);
+  const res = await authFetch(
+    `${API}/symbols/search?q=${encodeURIComponent(query)}`,
+  );
   return handleResponse<Symbol[]>(res);
 }

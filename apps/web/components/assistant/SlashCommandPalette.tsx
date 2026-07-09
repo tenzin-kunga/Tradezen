@@ -61,20 +61,19 @@ export default function SlashCommandPalette({
   if (!isOpen || commands.length === 0) return null;
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: "100%",
-        left: 16,
-        right: 16,
-        marginBottom: 8,
-        background: "var(--bg-surface, #12131a)",
-        border: "1px solid var(--border, #23252d)",
-        borderRadius: 12,
-        boxShadow: "var(--shadow-lg, 0 8px 32px rgba(0,0,0,0.4))",
-        overflow: "hidden",
-        zIndex: 50,
-      }}
+      <div
+        className="tz-panel"
+        style={{
+          position: "absolute",
+          bottom: "100%",
+          left: 16,
+          right: 16,
+          marginBottom: 8,
+          borderRadius: 12,
+          boxShadow: "var(--shadow-pop)",
+          overflow: "hidden",
+          zIndex: 50,
+        }}
       onKeyDown={handleKeyDown}
     >
       <div

@@ -13,7 +13,20 @@ export default function MemoryPlaceholder() {
         padding: 32,
       }}
     >
-      <div style={{ fontSize: 32 }}>🧠</div>
+      <svg
+        width="40"
+        height="40"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        style={{ color: "var(--accent)" }}
+      >
+        <path d="M12 2a4 4 0 0 0-4 4 4 4 0 0 0-2 7 4 4 0 0 0 2 7 4 4 0 0 0 8 0 4 4 0 0 0 2-7 4 4 0 0 0-2-7 4 4 0 0 0-4-4z" />
+        <circle cx="12" cy="8" r="1.5" />
+        <circle cx="9" cy="13" r="1.5" />
+        <circle cx="15" cy="13" r="1.5" />
+      </svg>
       <h2
         style={{
           fontSize: 18,

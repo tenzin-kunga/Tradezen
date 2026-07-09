@@ -5,6 +5,7 @@ import {
   getWatchlistItems,
   addWatchlistItem,
   deleteWatchlistItem,
+  updateWatchlistItem,
   reorderWatchlist,
   type Watchlist,
   type WatchlistItem,
@@ -12,6 +13,7 @@ import {
 
 interface WatchlistTableProps {
   watchlist: Watchlist;
+  onSelectItem?: (item: WatchlistItem | null) => void;
 }
 
 const PRIORITY_LABELS = ["Low", "Medium", "High"];
@@ -21,7 +23,10 @@ const PRIORITY_COLORS = [
   "var(--accent-loss, #ef4444)",
 ];
 
-export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
+export default function WatchlistTable({
+  watchlist,
+  onSelectItem,
+}: WatchlistTableProps) {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [newSymbol, setNewSymbol] = useState("");
@@ -90,7 +95,12 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
     // Persist reorder
     if (dragIdx !== null) {
       try {
-        await reorderWatchlist(watchlist.id, items[dragIdx].id, dragIdx, items.findIndex((i) => i.id === items[dragIdx].id));
+        await reorderWatchlist(
+          watchlist.id,
+          items[dragIdx].id,
+          dragIdx,
+          items.findIndex((i) => i.id === items[dragIdx].id),
+        );
       } catch (e) {
         console.error("Failed to reorder:", e);
         await loadItems();
@@ -116,7 +126,14 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
   }
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       {/* Header */}
       <div
         style={{
@@ -261,6 +278,7 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
                   onDragStart={() => handleDragStart(idx)}
                   onDragOver={(e) => handleDragOver(e, idx)}
                   onDragEnd={handleDragEnd}
+                  onClick={() => onSelectItem?.(item)}
                   style={{
                     borderBottom: "1px solid var(--border, #23252d)",
                     cursor: "grab",
@@ -298,7 +316,8 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
                       style={{
                         fontSize: 11,
                         fontWeight: 600,
-                        color: PRIORITY_COLORS[item.priority] || PRIORITY_COLORS[0],
+                        color:
+                          PRIORITY_COLORS[item.priority] || PRIORITY_COLORS[0],
                       }}
                     >
                       {PRIORITY_LABELS[item.priority] || "Low"}
@@ -310,7 +329,21 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
                         autoFocus
                         value={notesValue}
                         onChange={(e) => setNotesValue(e.target.value)}
-                        onBlur={() => setEditingNotes(null)}
+                        onBlur={() => {
+                          if (notesValue !== (item.notes || "")) {
+                            updateWatchlistItem(watchlist.id, item.id, {
+                              notes: notesValue,
+                            }).catch(() => {});
+                            setItems((prev) =>
+                              prev.map((i) =>
+                                i.id === item.id
+                                  ? { ...i, notes: notesValue }
+                                  : i,
+                              ),
+                            );
+                          }
+                          setEditingNotes(null);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") setEditingNotes(null);
                         }}
@@ -359,7 +392,14 @@ export default function WatchlistTable({ watchlist }: WatchlistTableProps) {
                       }}
                       title="Remove"
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
                       </svg>

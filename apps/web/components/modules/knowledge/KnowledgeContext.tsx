@@ -1,4 +1,8 @@
-import type { WorkspaceResource, ContextSlice, ContextContributor } from "@/lib/workspace/types";
+import type {
+  WorkspaceResource,
+  ContextSlice,
+  ContextContributor,
+} from "@/lib/workspace/types";
 
 export const KnowledgeContextContributor: ContextContributor = {
   priority: 7,
@@ -15,9 +19,10 @@ export const KnowledgeContextContributor: ContextContributor = {
 
     // Truncate content if too long
     const maxContentLength = 2000;
-    const truncatedContent = content.length > maxContentLength
-      ? content.slice(0, maxContentLength) + "\n\n[...truncated]"
-      : content;
+    const truncatedContent =
+      content.length > maxContentLength
+        ? content.slice(0, maxContentLength) + "\n\n[...truncated]"
+        : content;
 
     return {
       source: "knowledge",

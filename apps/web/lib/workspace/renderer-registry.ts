@@ -1,3 +1,8 @@
+// RendererRegistry — reserved for resource rendering (search results,
+// cross-module navigation, dynamic resource opening). Not yet wired —
+// kept for Week 3+ when search/cross-module flows need to resolve
+// components outside the module route system.
+
 import type { ResourceType, WorkspaceResource } from "./types";
 import type { ComponentType } from "react";
 

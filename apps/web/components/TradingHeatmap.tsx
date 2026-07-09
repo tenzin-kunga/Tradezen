@@ -227,7 +227,7 @@ export default function TradingHeatmap({ data, loading }: Props) {
                         <TooltipContent side="bottom" sideOffset={6}>
                           <div className="font-medium">
                             {dateFormatter.format(
-                              new Date(day.date + "T00:00:00")
+                              new Date(day.date + "T00:00:00"),
                             )}
                           </div>
                           <div
@@ -246,7 +246,7 @@ export default function TradingHeatmap({ data, loading }: Props) {
                       )}
                     </Tooltip>
                   );
-                })
+                }),
               )}
             </div>
           </TooltipProvider>
@@ -431,5 +431,3 @@ export default function TradingHeatmap({ data, loading }: Props) {
     </WidgetShell>
   );
 }
-
-

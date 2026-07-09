@@ -44,7 +44,14 @@ export default function KnowledgeInspector({
           }}
           title="Show inspector"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <line x1="12" y1="3" x2="12" y2="21" />
           </svg>
@@ -77,7 +84,13 @@ export default function KnowledgeInspector({
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary, #d1d5db)" }}>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--text-secondary, #d1d5db)",
+          }}
+        >
           Inspector
         </span>
         <button
@@ -96,7 +109,14 @@ export default function KnowledgeInspector({
           }}
           title="Hide inspector"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -120,20 +140,58 @@ export default function KnowledgeInspector({
           <>
             <InspectorSection title="Metadata">
               <div style={{ fontSize: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
-                  <span style={{ color: "var(--text-muted, #9ca3af)" }}>Type</span>
-                  <span style={{ color: "var(--text-primary, #fafafa)" }}>{doc.docType}</span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "3px 0",
+                  }}
+                >
+                  <span style={{ color: "var(--text-muted, #9ca3af)" }}>
+                    Type
+                  </span>
+                  <span style={{ color: "var(--text-primary, #fafafa)" }}>
+                    {doc.docType}
+                  </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
-                  <span style={{ color: "var(--text-muted, #9ca3af)" }}>Status</span>
-                  <span style={{ color: "var(--text-primary, #fafafa)" }}>{doc.status}</span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "3px 0",
+                  }}
+                >
+                  <span style={{ color: "var(--text-muted, #9ca3af)" }}>
+                    Status
+                  </span>
+                  <span style={{ color: "var(--text-primary, #fafafa)" }}>
+                    {doc.status}
+                  </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
-                  <span style={{ color: "var(--text-muted, #9ca3af)" }}>Version</span>
-                  <span style={{ color: "var(--text-primary, #fafafa)" }}>v{doc.currentVersion}</span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "3px 0",
+                  }}
+                >
+                  <span style={{ color: "var(--text-muted, #9ca3af)" }}>
+                    Version
+                  </span>
+                  <span style={{ color: "var(--text-primary, #fafafa)" }}>
+                    v{doc.currentVersion}
+                  </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0" }}>
-                  <span style={{ color: "var(--text-muted, #9ca3af)" }}>Created</span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "3px 0",
+                  }}
+                >
+                  <span style={{ color: "var(--text-muted, #9ca3af)" }}>
+                    Created
+                  </span>
                   <span style={{ color: "var(--text-primary, #fafafa)" }}>
                     {new Date(doc.createdAt).toLocaleDateString()}
                   </span>
@@ -150,7 +208,13 @@ export default function KnowledgeInspector({
             </InspectorSection>
 
             <InspectorSection title="Links">
-              <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", padding: "8px 0" }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--text-muted, #9ca3af)",
+                  padding: "8px 0",
+                }}
+              >
                 No links yet.
               </div>
             </InspectorSection>
@@ -170,7 +234,10 @@ function InspectorSection({
 }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <div className="label-caps" style={{ color: "var(--text-dim, #6b7280)", marginBottom: 6 }}>
+      <div
+        className="label-caps"
+        style={{ color: "var(--text-dim, #6b7280)", marginBottom: 6 }}
+      >
         {title}
       </div>
       {children}

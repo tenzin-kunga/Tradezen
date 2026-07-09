@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import type { WorkspaceResource, ContextSlice } from "@/lib/workspace/types";
 import { getContextEngine } from "@/lib/workspace/context-engine";
+import { EmptyState } from "@/components/primitives/EmptyState";
+import { Skeleton } from "@/components/primitives/Skeleton";
 
 interface ContextPanelProps {
   resource: WorkspaceResource | null;
@@ -74,7 +76,14 @@ export default function ContextPanel({
           }}
           title="Show context panel"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <line x1="12" y1="3" x2="12" y2="21" />
           </svg>
@@ -132,7 +141,14 @@ export default function ContextPanel({
           }}
           title="Hide context panel"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -140,40 +156,24 @@ export default function ContextPanel({
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+      <div className="tz-scroll" style={{ flex: 1, overflowY: "auto", padding: 12 }}>
         {!resource ? (
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--text-muted, #9ca3af)",
-              textAlign: "center",
-              padding: "24px 0",
-            }}
-          >
-            Select a resource to see context
-          </div>
+          <EmptyState
+            title="No resource selected"
+            description="Open a resource from the sidebar to see its context."
+          />
         ) : loading ? (
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--text-muted, #9ca3af)",
-              textAlign: "center",
-              padding: "24px 0",
-            }}
-          >
-            Loading...
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 4 }}>
+            <Skeleton height={14} width="60%" />
+            <Skeleton height={10} />
+            <Skeleton height={10} width="85%" />
+            <Skeleton height={10} width="70%" />
           </div>
         ) : slices.length === 0 ? (
-          <div
-            style={{
-              fontSize: 12,
-              color: "var(--text-muted, #9ca3af)",
-              textAlign: "center",
-              padding: "24px 0",
-            }}
-          >
-            No context available
-          </div>
+          <EmptyState
+            title="No context available"
+            description="This resource doesn't expose any context slices yet."
+          />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {slices.map((slice, i) => (

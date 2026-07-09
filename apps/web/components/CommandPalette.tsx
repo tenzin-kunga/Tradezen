@@ -421,7 +421,9 @@ export default function CommandPalette({
       try {
         const [apiData, registryResults] = await Promise.all([
           globalSearch(query.trim()).catch(() => null),
-          getSearchRegistry().search(query.trim()).catch(() => []),
+          getSearchRegistry()
+            .search(query.trim())
+            .catch(() => []),
         ]);
 
         setResults(apiData || { trades: [], journals: [], tags: [] });

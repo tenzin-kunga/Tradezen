@@ -41,7 +41,13 @@ export default function KnowledgeSemanticResults({
 
   if (loading) {
     return (
-      <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", padding: "8px 0" }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--text-muted, #9ca3af)",
+          padding: "8px 0",
+        }}
+      >
         Searching...
       </div>
     );
@@ -49,7 +55,13 @@ export default function KnowledgeSemanticResults({
 
   if (results.length === 0 && query.length >= 2) {
     return (
-      <div style={{ fontSize: 12, color: "var(--text-muted, #9ca3af)", padding: "8px 0" }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--text-muted, #9ca3af)",
+          padding: "8px 0",
+        }}
+      >
         No results found.
       </div>
     );
@@ -72,7 +84,8 @@ export default function KnowledgeSemanticResults({
             transition: "background 0.15s",
           }}
           onMouseOver={(e) => {
-            e.currentTarget.style.background = "var(--bg-surface-hover, #1a1b23)";
+            e.currentTarget.style.background =
+              "var(--bg-surface-hover, #1a1b23)";
           }}
           onMouseOut={(e) => {
             e.currentTarget.style.background = "transparent";
@@ -109,7 +122,10 @@ export default function KnowledgeSemanticResults({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: result.score >= 0.8 ? "var(--accent-profit, #22c55e)" : "var(--text-dim, #6b7280)",
+              color:
+                result.score >= 0.8
+                  ? "var(--accent-profit, #22c55e)"
+                  : "var(--text-dim, #6b7280)",
               flexShrink: 0,
             }}
           >

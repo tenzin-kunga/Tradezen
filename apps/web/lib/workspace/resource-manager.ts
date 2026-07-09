@@ -80,10 +80,7 @@ class ResourceManagerImpl implements ResourceManager {
 
     // Remove from history
     this.history = this.history.filter((h) => h !== id);
-    this.historyIndex = Math.min(
-      this.historyIndex,
-      this.history.length - 1,
-    );
+    this.historyIndex = Math.min(this.historyIndex, this.history.length - 1);
 
     this.persist();
     this.notify();

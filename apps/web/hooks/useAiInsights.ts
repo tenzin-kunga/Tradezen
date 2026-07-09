@@ -19,6 +19,7 @@ export function useAiInsights() {
 
   return {
     insights: data?.insights ?? [],
+    narrative: data?.narrative ?? null,
     generatedAt: data?.generatedAt ?? null,
     loading,
   };

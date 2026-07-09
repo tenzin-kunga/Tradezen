@@ -31,7 +31,9 @@ If the document is a thesis, help analyze risks and catalysts.
 If it's a playbook, help refine the strategy.
 If it's a macro note, help identify implications for trading.`;
 
-export default function KnowledgeAIChat({ document: doc }: KnowledgeAIChatProps) {
+export default function KnowledgeAIChat({
+  document: doc,
+}: KnowledgeAIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -43,70 +45,73 @@ export default function KnowledgeAIChat({ document: doc }: KnowledgeAIChatProps)
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, messages[messages.length - 1]?.content]);
 
-  const send = useCallback(async (content: string) => {
-    if (!content.trim() || isStreaming) return;
+  const send = useCallback(
+    async (content: string) => {
+      if (!content.trim() || isStreaming) return;
 
-    const userMsg: Message = {
-      id: nextId(),
-      role: "user",
-      content: content.trim(),
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
+      const userMsg: Message = {
+        id: nextId(),
+        role: "user",
+        content: content.trim(),
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
 
-    // Build message history with document context
-    const apiMessages: ChatMessageDto[] = [
-      {
-        role: "system",
-        content: `${SYSTEM_PROMPT}\n\n---\n\nDocument: "${doc.title}"\nType: ${doc.docType}\n\nContent:\n${(doc.content || "").slice(0, 3000)}`,
-      },
-      ...messages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
-      { role: "user" as const, content: content.trim() },
-    ];
-
-    // Add assistant placeholder
-    const assistantMsg: Message = {
-      id: nextId(),
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, assistantMsg]);
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    try {
-      setIsStreaming(true);
-      await streamChat({
-        messages: apiMessages,
-        signal: controller.signal,
-        onToken: (token) => {
-          setMessages((prev) => {
-            const updated = [...prev];
-            const last = updated[updated.length - 1];
-            if (last.role === "assistant") {
-              updated[updated.length - 1] = {
-                ...last,
-                content: last.content + token,
-              };
-            }
-            return updated;
-          });
+      // Build message history with document context
+      const apiMessages: ChatMessageDto[] = [
+        {
+          role: "system",
+          content: `${SYSTEM_PROMPT}\n\n---\n\nDocument: "${doc.title}"\nType: ${doc.docType}\n\nContent:\n${(doc.content || "").slice(0, 3000)}`,
         },
-      });
-    } catch (e) {
-      if (controller.signal.aborted) return;
-      console.error("Stream error:", e);
-    } finally {
-      setIsStreaming(false);
-      abortRef.current = null;
-    }
-  }, [doc, messages, isStreaming]);
+        ...messages.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+        { role: "user" as const, content: content.trim() },
+      ];
+
+      // Add assistant placeholder
+      const assistantMsg: Message = {
+        id: nextId(),
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        setIsStreaming(true);
+        await streamChat({
+          messages: apiMessages,
+          signal: controller.signal,
+          onToken: (token) => {
+            setMessages((prev) => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last.role === "assistant") {
+                updated[updated.length - 1] = {
+                  ...last,
+                  content: last.content + token,
+                };
+              }
+              return updated;
+            });
+          },
+        });
+      } catch (e) {
+        if (controller.signal.aborted) return;
+        console.error("Stream error:", e);
+      } finally {
+        setIsStreaming(false);
+        abortRef.current = null;
+      }
+    },
+    [doc, messages, isStreaming],
+  );
 
   return (
     <div
@@ -178,7 +183,8 @@ export default function KnowledgeAIChat({ document: doc }: KnowledgeAIChatProps)
                 maxWidth: 300,
               }}
             >
-              Ask questions about this document. The AI has access to the full content.
+              Ask questions about this document. The AI has access to the full
+              content.
             </div>
           </div>
         ) : (
@@ -195,7 +201,10 @@ export default function KnowledgeAIChat({ document: doc }: KnowledgeAIChatProps)
                 style={{
                   fontSize: 10,
                   fontWeight: 600,
-                  color: msg.role === "user" ? "var(--accent, #3b82f6)" : "var(--text-dim, #6b7280)",
+                  color:
+                    msg.role === "user"
+                      ? "var(--accent, #3b82f6)"
+                      : "var(--text-dim, #6b7280)",
                   marginBottom: 4,
                 }}
               >
@@ -227,7 +236,9 @@ export default function KnowledgeAIChat({ document: doc }: KnowledgeAIChatProps)
                   className="prose prose-invert prose-sm max-w-none"
                   style={{ fontSize: 13, lineHeight: 1.6 }}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
               )}
             </div>
@@ -257,7 +268,9 @@ export default function KnowledgeAIChat({ document: doc }: KnowledgeAIChatProps)
                 send(input);
               }
             }}
-            placeholder={isStreaming ? "AI is responding..." : "Ask about this document..."}
+            placeholder={
+              isStreaming ? "AI is responding..." : "Ask about this document..."
+            }
             rows={1}
             style={{
               flex: 1,
@@ -300,7 +313,9 @@ export default function KnowledgeAIChat({ document: doc }: KnowledgeAIChatProps)
                 width: 28,
                 height: 28,
                 borderRadius: 6,
-                background: input.trim() ? "var(--accent, #3b82f6)" : "var(--bg-surface-hover, #1a1b23)",
+                background: input.trim()
+                  ? "var(--accent, #3b82f6)"
+                  : "var(--bg-surface-hover, #1a1b23)",
                 border: "none",
                 cursor: input.trim() ? "pointer" : "default",
                 display: "flex",
@@ -310,7 +325,14 @@ export default function KnowledgeAIChat({ document: doc }: KnowledgeAIChatProps)
                 opacity: input.trim() ? 1 : 0.5,
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+              >
                 <line x1="22" y1="2" x2="11" y2="13" />
                 <polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>

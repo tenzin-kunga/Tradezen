@@ -3,13 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getThreads,
+  searchThreads,
   createThread as apiCreateThread,
   deleteThread as apiDeleteThread,
   getThreadMessages,
   streamChat,
   updateThreadTitle,
+  togglePinThread,
   type Thread,
   type ChatMessageDto,
+  type WorkspaceAction,
 } from "@/lib/api/assistant";
 import {
   loadChatModel,
@@ -18,13 +21,24 @@ import {
   saveLastThread,
 } from "@/lib/workspace/persistence";
 
-export type ChatStatus = "idle" | "pending" | "streaming" | "complete" | "error";
+export type ChatStatus =
+  | "idle"
+  | "pending"
+  | "streaming"
+  | "complete"
+  | "error";
 
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
-  type: "text" | "markdown" | "citation" | "tool_call" | "tool_result" | "error";
+  type:
+    | "text"
+    | "markdown"
+    | "citation"
+    | "tool_call"
+    | "tool_result"
+    | "error";
   timestamp: Date;
   metadata?: {
     citations?: unknown[];
@@ -32,6 +46,7 @@ export interface ChatMessage {
     model?: string;
     latency?: number;
   };
+  actions?: WorkspaceAction[];
 }
 
 interface UseChatOptions {
@@ -45,10 +60,18 @@ interface UseChatReturn {
   status: ChatStatus;
   selectedModel: string;
   error: string | null;
+  lastContextRequest: Record<string, any> | null;
   selectThread: (id: string) => Promise<void>;
   createThread: (title?: string) => Promise<string>;
   deleteThread: (id: string) => Promise<void>;
-  send: (content: string, context?: Record<string, unknown>) => Promise<void>;
+  togglePin: (id: string) => Promise<void>;
+  searchThreads: (query: string) => Promise<void>;
+  send: (
+    content: string,
+    contextRequest?: Record<string, any>,
+    intent?: string,
+    model?: string,
+  ) => Promise<void>;
   abort: () => void;
   setModel: (model: string) => void;
   refreshThreads: () => Promise<void>;
@@ -57,6 +80,33 @@ interface UseChatReturn {
 let messageCounter = 0;
 function nextMessageId(): string {
   return `msg_${Date.now()}_${++messageCounter}`;
+}
+
+// Local mirror of each thread's messages so a conversation survives
+// module remounts / page reloads even if the server doesn't return them.
+const MSG_CACHE_PREFIX = "tz_chat_msgs_";
+function loadCachedMessages(threadId: string): ChatMessage[] | null {
+  try {
+    const raw = localStorage.getItem(MSG_CACHE_PREFIX + threadId);
+    return raw ? (JSON.parse(raw) as ChatMessage[]) : null;
+  } catch {
+    return null;
+  }
+}
+function saveCachedMessages(threadId: string, msgs: ChatMessage[]) {
+  if (msgs.length === 0) return;
+  try {
+    localStorage.setItem(MSG_CACHE_PREFIX + threadId, JSON.stringify(msgs));
+  } catch {
+    /* ignore quota / private-mode errors */
+  }
+}
+function clearCachedMessages(threadId: string) {
+  try {
+    localStorage.removeItem(MSG_CACHE_PREFIX + threadId);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function useChat(options?: UseChatOptions): UseChatReturn {
@@ -68,8 +118,10 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
+  const sendingRef = useRef(false);
   const initialContextRef = useRef(options?.initialContext);
   initialContextRef.current = options?.initialContext;
+  const lastContextRequestRef = useRef<Record<string, any> | null>(null);
 
   // Load threads on mount
   const refreshThreads = useCallback(async () => {
@@ -87,6 +139,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
 
   // Restore last thread
   useEffect(() => {
+    if (sendingRef.current) return; // Skip while sending to avoid race condition
     const lastId = loadLastThread();
     if (lastId && threads.length > 0) {
       const found = threads.find((t) => t.id === lastId);
@@ -95,6 +148,19 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       }
     }
   }, [threads]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mirror the active conversation to localStorage so it persists across
+  // navigation / reload (saved once streaming settles).
+  useEffect(() => {
+    if (
+      thread?.id &&
+      messages.length > 0 &&
+      status !== "pending" &&
+      status !== "streaming"
+    ) {
+      saveCachedMessages(thread.id, messages);
+    }
+  }, [thread?.id, messages, status]);
 
   const selectThread = useCallback(
     async (id: string) => {
@@ -106,40 +172,61 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
 
       try {
         const msgs = await getThreadMessages(id);
-        setMessages(
-          msgs.map((m) => ({
+        let mapped: ChatMessage[] = msgs.map((m) => {
+          const meta = m.metadata as
+            | {
+                type?: string;
+                toolName?: string;
+                toolStatus?: string;
+                toolSuccess?: boolean;
+                toolLatencyMs?: number;
+              }
+            | undefined;
+          const type = (
+            meta?.type === "tool_call" || meta?.type === "tool_result"
+              ? meta.type
+              : "markdown"
+          ) as ChatMessage["type"];
+          return {
             id: nextMessageId(),
             role: m.role as ChatMessage["role"],
             content: m.content,
-            type: "markdown" as const,
+            type,
             timestamp: new Date(m.createdAt),
-            metadata: (m.metadata as ChatMessage["metadata"]) || undefined,
-          })),
-        );
+            metadata: meta as ChatMessage["metadata"],
+          };
+        });
+        if (mapped.length === 0) {
+          const cached = loadCachedMessages(id);
+          if (cached) mapped = cached;
+        }
+        setMessages(mapped);
       } catch (e) {
         console.error("Failed to load messages:", e);
-        setMessages([]);
+        const cached = loadCachedMessages(id);
+        setMessages(cached ?? []);
       }
     },
     [threads],
   );
 
-  const createThread = useCallback(
-    async (title?: string): Promise<string> => {
-      const { id } = await apiCreateThread(title);
-      const newThread: Thread = {
-        id,
-        title: title || "New Conversation",
-        updatedAt: new Date().toISOString(),
-      };
-      setThreads((prev) => [newThread, ...prev]);
-      setThread(newThread);
-      setMessages([]);
-      saveLastThread(id);
-      return id;
-    },
-    [],
-  );
+  const createThread = useCallback(async (title?: string): Promise<string> => {
+    const { id } = await apiCreateThread(title);
+    const newThread: Thread = {
+      id,
+      title: title || "New Conversation",
+      summary: null,
+      primaryType: null,
+      tags: null,
+      pinned: false,
+      updatedAt: new Date().toISOString(),
+    };
+    setThreads((prev) => [newThread, ...prev]);
+    setThread(newThread);
+    setMessages([]);
+    saveLastThread(id);
+    return id;
+  }, []);
 
   const deleteThread = useCallback(
     async (id: string) => {
@@ -150,6 +237,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         setMessages([]);
         saveLastThread(null);
       }
+      clearCachedMessages(id);
     },
     [thread],
   );
@@ -166,12 +254,29 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   }, []);
 
   const send = useCallback(
-    async (content: string, context?: Record<string, unknown>) => {
+    async (
+      content: string,
+      contextRequest?: Record<string, any>,
+      intent?: string,
+      model?: string,
+    ) => {
+      // Store for ContextExplorer
+      if (contextRequest) lastContextRequestRef.current = contextRequest;
+      sendingRef.current = true;
+
       // Create thread if none active
       let activeThread = thread;
       if (!activeThread) {
         const id = await createThread();
-        activeThread = { id, title: content.slice(0, 50), updatedAt: new Date().toISOString() };
+        activeThread = {
+          id,
+          title: content.slice(0, 50),
+          summary: null,
+          primaryType: null,
+          tags: null,
+          pinned: false,
+          updatedAt: new Date().toISOString(),
+        };
         setThread(activeThread);
       }
 
@@ -195,14 +300,6 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         { role: "user" as const, content },
       ];
 
-      // Add context if provided
-      if (context) {
-        const contextStr = Object.entries(context)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(", ");
-        apiMessages[apiMessages.length - 1].context = contextStr;
-      }
-
       // Add initial context prompt
       const ic = initialContextRef.current;
       if (ic?.prompt && messages.length === 0) {
@@ -222,17 +319,47 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
+      // Track tool messages by tool call id so we can update them in place.
+      const toolMsgIds = new Map<string, string>();
+
+      const upsertToolMessage = (id: string, partial: Partial<ChatMessage>) => {
+        setMessages((prev) => {
+          const existingId = toolMsgIds.get(id);
+          const updated = [...prev];
+          const idx = existingId
+            ? updated.findIndex((m) => m.id === existingId)
+            : -1;
+          if (idx >= 0) {
+            updated[idx] = { ...updated[idx], ...partial, id: existingId! };
+          } else {
+            const newId = nextMessageId();
+            toolMsgIds.set(id, newId);
+            updated.splice(updated.length - 1, 0, {
+              id: newId,
+              role: "assistant",
+              content: "",
+              type: "tool_call",
+              timestamp: new Date(),
+              ...partial,
+            } as ChatMessage);
+          }
+          return updated;
+        });
+      };
+
       // Stream
       const controller = new AbortController();
       abortRef.current = controller;
 
-      const start = Date.now();
       try {
         setStatus("streaming");
         await streamChat({
           messages: apiMessages,
-          model: selectedModel || undefined,
+          model: model || selectedModel || undefined,
           signal: controller.signal,
+          contextRequest,
+          intent,
+          threadId: activeThread?.id,
           onToken: (token) => {
             setMessages((prev) => {
               const updated = [...prev];
@@ -246,11 +373,49 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
               return updated;
             });
           },
+          onToolStatus: (event) => {
+            if (event.status === "started") {
+              upsertToolMessage(event.id, {
+                type: "tool_call",
+                content: JSON.stringify(event.args ?? {}),
+                metadata: {
+                  toolName: event.name,
+                  toolStatus: "started",
+                } as any,
+              });
+            } else {
+              upsertToolMessage(event.id, {
+                type: "tool_result",
+                content: event.result ?? "",
+                metadata: {
+                  toolName: event.name,
+                  toolStatus: event.status,
+                  toolSuccess: event.success,
+                  toolLatencyMs: event.latencyMs,
+                } as any,
+              });
+            }
+          },
+          onActions: (actions) => {
+            setMessages((prev) => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last.role === "assistant") {
+                updated[updated.length - 1] = {
+                  ...last,
+                  actions: [...(last.actions ?? []), ...actions],
+                };
+              }
+              return updated;
+            });
+          },
           onDone: () => {
+            if (controller.signal.aborted) return;
             setStatus("complete");
             // Generate title after first exchange
             if (messages.length === 0 && activeThread) {
-              const title = content.length > 50 ? content.slice(0, 50) + "..." : content;
+              const title =
+                content.length > 50 ? content.slice(0, 50) + "..." : content;
               updateThreadTitle(activeThread.id, title).catch(() => {});
               setThreads((prev) =>
                 prev.map((t) =>
@@ -266,10 +431,36 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         setStatus("error");
       } finally {
         abortRef.current = null;
+        sendingRef.current = false;
       }
     },
     [thread, messages, selectedModel, createThread],
   );
+
+  const searchThreadsList = useCallback(async (query: string) => {
+    try {
+      if (!query.trim()) {
+        const list = await getThreads();
+        setThreads(list);
+        return;
+      }
+      const results = await searchThreads(query);
+      setThreads(results);
+    } catch (e) {
+      console.error("Failed to search threads:", e);
+    }
+  }, []);
+
+  const togglePin = useCallback(async (id: string) => {
+    try {
+      const { pinned } = await togglePinThread(id);
+      setThreads((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, pinned } : t)),
+      );
+    } catch (e) {
+      console.error("Failed to toggle pin:", e);
+    }
+  }, []);
 
   return {
     thread,
@@ -278,9 +469,12 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     status,
     selectedModel,
     error,
+    lastContextRequest: lastContextRequestRef.current,
     selectThread,
     createThread,
     deleteThread,
+    togglePin,
+    searchThreads: searchThreadsList,
     send,
     abort,
     setModel,

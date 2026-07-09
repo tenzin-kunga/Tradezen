@@ -151,12 +151,11 @@ export default function DashboardSettings({
               {sortedSections.map((s) => {
                 const def = getSection(s.id);
                 const isFirstInCol =
-                  sortedSections
-                    .filter((x) => x.column === s.column)[0]?.id === s.id;
+                  sortedSections.filter((x) => x.column === s.column)[0]?.id ===
+                  s.id;
                 const isLastInCol =
-                  sortedSections
-                    .filter((x) => x.column === s.column)
-                    .at(-1)?.id === s.id;
+                  sortedSections.filter((x) => x.column === s.column).at(-1)
+                    ?.id === s.id;
 
                 return (
                   <div

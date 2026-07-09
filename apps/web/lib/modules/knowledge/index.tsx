@@ -7,9 +7,25 @@ import { ContextCapability as ContextCap } from "@/lib/workspace/types";
 import { CommandCapability as CommandCap } from "@/lib/workspace/types";
 import { InspectorCapability as InspectorCap } from "@/lib/workspace/types";
 import { SearchCapability as SearchCap } from "@/lib/workspace/types";
+import { ToolCapability as ToolCap } from "@/lib/workspace/types";
+import type { ToolDefinition } from "@/lib/workspace/types";
 import KnowledgeWorkspace from "@/components/modules/knowledge/KnowledgeWorkspace";
 import { KnowledgeContextContributor } from "@/components/modules/knowledge/KnowledgeContext";
 import { createKnowledgeSearchProvider } from "./search-provider";
+import { getResourceManager } from "@/lib/workspace/resource-manager";
+import { createKnowledgeResource } from "@/lib/workspace/resource";
+
+const KNOWLEDGE_TOOLS: ToolDefinition[] = [
+  {
+    name: "open_knowledge",
+    description: "Open the knowledge workspace",
+    parameters: {},
+    async execute() {
+      getResourceManager().open(createKnowledgeResource());
+      return { content: "Opened knowledge base" };
+    },
+  },
+];
 
 export const KnowledgeModule: WorkspaceModule = {
   metadata: {
@@ -18,7 +34,7 @@ export const KnowledgeModule: WorkspaceModule = {
     icon: <BookOpen size={18} />,
     description: "Research documents, playbooks, and analysis",
     navGroup: "primary",
-    navOrder: 4,
+    navOrder: 5,
   },
   capabilities: [
     new RouteCap([
@@ -66,5 +82,6 @@ export const KnowledgeModule: WorkspaceModule = {
       },
     ]),
     new SearchCap(createKnowledgeSearchProvider()),
+    new ToolCap(KNOWLEDGE_TOOLS),
   ],
 };

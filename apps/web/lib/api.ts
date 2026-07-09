@@ -757,6 +757,7 @@ export interface AiInsight {
 
 export interface AiInsightsResponse {
   insights: AiInsight[];
+  narrative?: string;
   generatedAt: string;
 }
 
@@ -893,7 +894,9 @@ export interface MarketNewsEvent {
   released: boolean;
 }
 
-export const getMarketNews = async (signal?: AbortSignal): Promise<MarketNewsEvent[]> => {
+export const getMarketNews = async (
+  signal?: AbortSignal,
+): Promise<MarketNewsEvent[]> => {
   const res = await authFetch(`${API}/news`, { signal });
   return handleResponse<MarketNewsEvent[]>(res);
 };

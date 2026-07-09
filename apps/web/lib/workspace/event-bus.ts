@@ -1,8 +1,4 @@
-import type {
-  WorkspaceEvent,
-  WorkspaceEventType,
-  EventHandler,
-} from "./types";
+import type { WorkspaceEvent, WorkspaceEventType, EventHandler } from "./types";
 
 class WorkspaceEventBus {
   private listeners = new Map<WorkspaceEventType, Set<EventHandler>>();

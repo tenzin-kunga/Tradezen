@@ -1,7 +1,4 @@
-import type {
-  WorkspaceResource,
-  ResourceType,
-} from "./types";
+import type { WorkspaceResource, ResourceType } from "./types";
 
 function resourceUrl(type: ResourceType, id: string): string {
   switch (type) {
@@ -21,6 +18,10 @@ function resourceUrl(type: ResourceType, id: string): string {
       return `/workspace/files?file=${id}`;
     case "report":
       return `/reports?report=${id}`;
+    case "knowledge_folder":
+      return `/workspace/knowledge`;
+    case "knowledge_document":
+      return `/workspace/knowledge?doc=${id}`;
     default:
       return `/workspace`;
   }
@@ -41,7 +42,10 @@ export function createResource(
   };
 }
 
-export function createTradeResource(tradeId: string, symbol?: string): WorkspaceResource {
+export function createTradeResource(
+  tradeId: string,
+  symbol?: string,
+): WorkspaceResource {
   return createResource("trade", tradeId, symbol || "Trade", { tradeId });
 }
 
@@ -53,15 +57,39 @@ export function createConversationResource(
   conversationId: string,
   title?: string,
 ): WorkspaceResource {
-  return createResource("conversation", conversationId, title || "New Conversation", {
+  return createResource(
+    "conversation",
     conversationId,
-  });
+    title || "New Conversation",
+    {
+      conversationId,
+    },
+  );
 }
 
 export function createWatchlistResource(): WorkspaceResource {
   return createResource("watchlist", "default", "Watchlist");
 }
 
-export function createResearchResource(topicId: string, title?: string): WorkspaceResource {
+export function createResearchResource(
+  topicId: string,
+  title?: string,
+): WorkspaceResource {
   return createResource("research", topicId, title || "Research");
+}
+
+export function createPortfolioResource(): WorkspaceResource {
+  return createResource("report", "default", "Portfolio");
+}
+
+export function createKnowledgeResource(
+  docId?: string,
+  title?: string,
+): WorkspaceResource {
+  return createResource(
+    docId ? "knowledge_document" : "knowledge_folder",
+    docId || "default",
+    title || "Knowledge",
+    docId ? { docId } : undefined,
+  );
 }

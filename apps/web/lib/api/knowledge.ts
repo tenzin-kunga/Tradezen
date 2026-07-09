@@ -1,6 +1,9 @@
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-async function authFetch(url: string, opts: RequestInit = {}): Promise<Response> {
+async function authFetch(
+  url: string,
+  opts: RequestInit = {},
+): Promise<Response> {
   const { getAccessToken } = await import("@/lib/api");
   const token = getAccessToken();
 
@@ -39,7 +42,9 @@ export interface KnowledgeFolder {
   updatedAt: string;
 }
 
-export async function getKnowledgeFolders(parentId?: string): Promise<KnowledgeFolder[]> {
+export async function getKnowledgeFolders(
+  parentId?: string,
+): Promise<KnowledgeFolder[]> {
   const params = parentId ? `?parent_id=${parentId}` : "";
   const res = await authFetch(`${API}/knowledge/folders${params}`);
   return handleResponse<KnowledgeFolder[]>(res);
@@ -88,13 +93,17 @@ export interface KnowledgeDocument {
   updatedAt: string;
 }
 
-export async function getKnowledgeDocuments(folderId?: string): Promise<KnowledgeDocument[]> {
+export async function getKnowledgeDocuments(
+  folderId?: string,
+): Promise<KnowledgeDocument[]> {
   const params = folderId ? `?folder_id=${folderId}` : "";
   const res = await authFetch(`${API}/knowledge/documents${params}`);
   return handleResponse<KnowledgeDocument[]>(res);
 }
 
-export async function getKnowledgeDocument(id: string): Promise<KnowledgeDocument> {
+export async function getKnowledgeDocument(
+  id: string,
+): Promise<KnowledgeDocument> {
   const res = await authFetch(`${API}/knowledge/documents/${id}`);
   return handleResponse<KnowledgeDocument>(res);
 }
@@ -116,7 +125,12 @@ export async function createKnowledgeDocument(data: {
 
 export async function updateKnowledgeDocument(
   id: string,
-  data: { title?: string; content?: string; status?: string; frontmatter?: Record<string, unknown> },
+  data: {
+    title?: string;
+    content?: string;
+    status?: string;
+    frontmatter?: Record<string, unknown>;
+  },
 ): Promise<KnowledgeDocument> {
   const res = await authFetch(`${API}/knowledge/documents/${id}`, {
     method: "PUT",
@@ -139,8 +153,12 @@ export interface KnowledgeVersion {
   createdAt: string;
 }
 
-export async function getKnowledgeVersions(documentId: string): Promise<KnowledgeVersion[]> {
-  const res = await authFetch(`${API}/knowledge/documents/${documentId}/versions`);
+export async function getKnowledgeVersions(
+  documentId: string,
+): Promise<KnowledgeVersion[]> {
+  const res = await authFetch(
+    `${API}/knowledge/documents/${documentId}/versions`,
+  );
   return handleResponse<KnowledgeVersion[]>(res);
 }
 
@@ -154,7 +172,9 @@ export interface KnowledgeLink {
   createdAt: string;
 }
 
-export async function getKnowledgeLinks(documentId: string): Promise<KnowledgeLink[]> {
+export async function getKnowledgeLinks(
+  documentId: string,
+): Promise<KnowledgeLink[]> {
   const res = await authFetch(`${API}/knowledge/documents/${documentId}/links`);
   return handleResponse<KnowledgeLink[]>(res);
 }
@@ -164,10 +184,16 @@ export async function createKnowledgeLink(
   targetDocumentId: string,
   relationshipType: string,
 ): Promise<KnowledgeLink> {
-  const res = await authFetch(`${API}/knowledge/documents/${documentId}/links`, {
-    method: "POST",
-    body: JSON.stringify({ target_document_id: targetDocumentId, relationship_type: relationshipType }),
-  });
+  const res = await authFetch(
+    `${API}/knowledge/documents/${documentId}/links`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        target_document_id: targetDocumentId,
+        relationship_type: relationshipType,
+      }),
+    },
+  );
   return handleResponse<KnowledgeLink>(res);
 }
 

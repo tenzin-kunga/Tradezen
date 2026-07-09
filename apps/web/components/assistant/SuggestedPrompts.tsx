@@ -80,7 +80,8 @@ export default function SuggestedPrompts({ onSelect }: SuggestedPromptsProps) {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "var(--border, #23252d)";
-              e.currentTarget.style.background = "var(--bg-surface-hover, #1a1b23)";
+              e.currentTarget.style.background =
+                "var(--bg-surface-hover, #1a1b23)";
             }}
           >
             <span style={{ fontSize: 18, flexShrink: 0 }}>{p.icon}</span>

@@ -1,98 +1,92 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import {
-  createJournal,
-  getJournalByDate,
-  updateJournal,
-  deleteJournal,
-  getJournalStreak,
-} from "@/lib/api";
+import { useEffect, useState } from "react";
 import type { WorkspaceResource } from "@/lib/workspace/types";
+import { useJournalEntry } from "@/hooks/useJournalEntry";
+import { Skeleton } from "@/components/primitives/Skeleton";
 
 const moods = [
-  { value: "great", label: "GREAT", emoji: "🟢", color: "var(--accent-profit)" },
+  {
+    value: "great",
+    label: "GREAT",
+    emoji: "🟢",
+    color: "var(--accent-profit)",
+  },
   { value: "good", label: "GOOD", emoji: "🔵", color: "var(--accent)" },
   { value: "neutral", label: "NEUTRAL", emoji: "⚪", color: "var(--text-dim)" },
   { value: "bad", label: "BAD", emoji: "🟠", color: "var(--accent-warn)" },
-  { value: "terrible", label: "TERRIBLE", emoji: "🔴", color: "var(--accent-loss)" },
+  {
+    value: "terrible",
+    label: "TERRIBLE",
+    emoji: "🔴",
+    color: "var(--accent-loss)",
+  },
 ];
-
-function toDateStr(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
 
 export default function JournalWorkspace({
   resource,
 }: {
   resource: WorkspaceResource;
 }) {
-  const date = (resource.metadata?.date as string) || toDateStr(new Date());
-  const [entry, setEntry] = useState<any>(null);
+  const initialDate = (resource.metadata?.date as string) || undefined;
+  const {
+    date,
+    entry,
+    streak,
+    loading,
+    save,
+    remove,
+    goToday,
+    goPrev,
+    goNext,
+    loadEntry,
+    loadStreak,
+  } = useJournalEntry(initialDate);
+
   const [preMarket, setPreMarket] = useState("");
   const [postMarket, setPostMarket] = useState("");
   const [mood, setMood] = useState("");
   const [marketConditions, setMarketConditions] = useState("");
   const [lessons, setLessons] = useState("");
   const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  const loadEntry = useCallback(async () => {
-    try {
-      const e = await getJournalByDate(date);
-      setEntry(e);
-      if (e) {
-        setPreMarket(e.pre_market_notes || "");
-        setPostMarket(e.post_market_notes || "");
-        setMood(e.mood || "");
-        setMarketConditions(e.market_conditions || "");
-        setLessons(e.lessons || "");
-      } else {
-        setPreMarket("");
-        setPostMarket("");
-        setMood("");
-        setMarketConditions("");
-        setLessons("");
-      }
-    } catch {
+  useEffect(() => {
+    loadEntry(date);
+    loadStreak();
+  }, [date, loadEntry, loadStreak]);
+
+  useEffect(() => {
+    if (entry) {
+      setPreMarket(entry.pre_market_notes || "");
+      setPostMarket(entry.post_market_notes || "");
+      setMood(entry.mood || "");
+      setMarketConditions(entry.market_conditions || "");
+      setLessons(entry.lessons || "");
+    } else {
       setPreMarket("");
       setPostMarket("");
       setMood("");
       setMarketConditions("");
       setLessons("");
     }
-  }, [date]);
-
-  useEffect(() => {
-    loadEntry().finally(() => setLoading(false));
-  }, [loadEntry]);
+  }, [entry]);
 
   async function handleSave() {
     setSaving(true);
     try {
-      const data = {
-        date,
+      await save({
         pre_market_notes: preMarket || undefined,
         post_market_notes: postMarket || undefined,
         mood: mood || undefined,
         market_conditions: marketConditions || undefined,
         lessons: lessons || undefined,
-      };
-      if (entry?.id) {
-        const updated = await updateJournal(entry.id, data);
-        setEntry(updated);
-      } else {
-        const created = await createJournal(data);
-        setEntry(created);
-      }
+      });
     } catch {}
     setSaving(false);
   }
 
   async function handleDelete() {
-    if (!entry?.id) return;
-    await deleteJournal(entry.id);
-    setEntry(null);
+    await remove();
     setPreMarket("");
     setPostMarket("");
     setMood("");
@@ -104,16 +98,19 @@ export default function JournalWorkspace({
     return (
       <div
         style={{
+          padding: "20px 24px",
+          maxWidth: 720,
+          margin: "0 auto",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          color: "var(--text-muted, #9ca3af)",
-          fontSize: 12,
-          letterSpacing: "0.1em",
+          flexDirection: "column",
+          gap: 16,
         }}
       >
-        LOADING JOURNAL...
+        <Skeleton height={28} width={260} />
+        <Skeleton height={44} radius={8} />
+        <Skeleton height={120} radius={8} />
+        <Skeleton height={120} radius={8} />
+        <Skeleton height={80} radius={8} />
       </div>
     );
   }
@@ -128,7 +125,7 @@ export default function JournalWorkspace({
         height: "100%",
       }}
     >
-      {/* Date header */}
+      {/* Date header + navigation */}
       <div
         style={{
           display: "flex",
@@ -137,6 +134,58 @@ export default function JournalWorkspace({
           marginBottom: 20,
         }}
       >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={goPrev}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 6,
+              background: "transparent",
+              border: "1px solid var(--border, #23252d)",
+              cursor: "pointer",
+              color: "var(--text-muted, #9ca3af)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ←
+          </button>
+          <button
+            onClick={goToday}
+            style={{
+              padding: "4px 10px",
+              borderRadius: 6,
+              background: "transparent",
+              border: "1px solid var(--border, #23252d)",
+              cursor: "pointer",
+              color: "var(--text-muted, #9ca3af)",
+              fontSize: 11,
+              fontWeight: 500,
+            }}
+          >
+            Today
+          </button>
+          <button
+            onClick={goNext}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 6,
+              background: "transparent",
+              border: "1px solid var(--border, #23252d)",
+              cursor: "pointer",
+              color: "var(--text-muted, #9ca3af)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            →
+          </button>
+        </div>
+
         <h1
           style={{
             fontSize: 18,
@@ -151,6 +200,7 @@ export default function JournalWorkspace({
             year: "numeric",
           })}
         </h1>
+
         <div style={{ display: "flex", gap: 8 }}>
           <button
             onClick={handleSave}
@@ -188,6 +238,24 @@ export default function JournalWorkspace({
           )}
         </div>
       </div>
+
+      {/* Streak */}
+      {streak && streak.currentStreak > 0 && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: "8px 12px",
+            borderRadius: 8,
+            background: "var(--bg-surface-hover, #1a1b23)",
+            border: "1px solid var(--border, #23252d)",
+            fontSize: 12,
+            color: "var(--text-muted, #9ca3af)",
+          }}
+        >
+          🔥 {streak.currentStreak} day streak · {streak.longestStreak} longest
+          · {streak.totalEntries} total
+        </div>
+      )}
 
       {/* Mood */}
       <div style={{ marginBottom: 20 }}>

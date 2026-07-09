@@ -1,8 +1,12 @@
 "use client";
 
+import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ChatMessage } from "@/hooks/useChat";
+import type { WorkspaceAction } from "@/lib/api/assistant";
+import ToolCallBlock from "./ToolCallBlock";
+import { IconSparkle } from "./icons";
 
 function UserAvatar() {
   return (
@@ -42,7 +46,48 @@ function AssistantAvatar() {
         flexShrink: 0,
       }}
     >
-      ✦
+      <IconSparkle size={14} />
+    </div>
+  );
+}
+
+function CodeBlock({ children }: { children?: React.ReactNode }) {
+  const preRef = useRef<HTMLPreElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    const text = preRef.current?.innerText ?? "";
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={copy}
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          fontSize: 11,
+          padding: "2px 8px",
+          borderRadius: 6,
+          border: "1px solid var(--border, #23252d)",
+          background: "var(--bg-surface, #12131a)",
+          color: "var(--text-muted, #9ca3af)",
+          cursor: "pointer",
+          opacity: 0.85,
+        }}
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
+      <pre ref={preRef}>{children}</pre>
     </div>
   );
 }
@@ -72,12 +117,22 @@ function TypingIndicator() {
   );
 }
 
-export default function MessageBubble({ message }: { message: ChatMessage }) {
+export default function MessageBubble({
+  message,
+  onAction,
+}: {
+  message: ChatMessage;
+  onAction?: (action: WorkspaceAction) => void;
+}) {
   const isUser = message.role === "user";
   const isSystem = message.role === "system";
   const isStreaming = message.content === "" && message.role === "assistant";
 
   if (isSystem) return null;
+
+  if (message.type === "tool_call" || message.type === "tool_result") {
+    return <ToolCallBlock message={message} />;
+  }
 
   return (
     <div
@@ -124,7 +179,12 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
             <TypingIndicator />
           ) : message.type === "markdown" || message.type === "text" ? (
             <div className="prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
+                }}
+              >
                 {message.content}
               </ReactMarkdown>
             </div>
@@ -136,6 +196,30 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
             <span style={{ whiteSpace: "pre-wrap" }}>{message.content}</span>
           )}
         </div>
+        {message.actions && message.actions.length > 0 && onAction && (
+          <div
+            style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}
+          >
+            {message.actions.map((action, i) => (
+              <button
+                key={i}
+                onClick={() => onAction(action)}
+                style={{
+                  fontSize: 12,
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  border: "1px solid var(--border, #23252d)",
+                  background: "var(--bg-surface, #12131a)",
+                  color: "var(--text-primary, #fafafa)",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

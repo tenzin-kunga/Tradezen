@@ -1,4 +1,9 @@
-import type { SearchProvider, SearchResult, QuickAction, WorkspaceResource } from "@/lib/workspace/types";
+import type {
+  SearchProvider,
+  SearchResult,
+  QuickAction,
+  WorkspaceResource,
+} from "@/lib/workspace/types";
 import { createJournalResource } from "@/lib/workspace/resource";
 
 export function createJournalSearchProvider(): SearchProvider {

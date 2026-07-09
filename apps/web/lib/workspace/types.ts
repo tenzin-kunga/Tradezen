@@ -61,7 +61,9 @@ export interface Tab {
 
 // ─── Capabilities ────────────────────────────
 
-export interface WorkspaceCapability {}
+export interface WorkspaceCapability {
+  readonly kind: string;
+}
 
 export interface RouteConfig {
   path: string;
@@ -211,34 +213,42 @@ export interface SelectionManager {
 // ─── Capability Classes ──────────────────────
 
 export class RouteCapability implements WorkspaceCapability {
+  readonly kind = "route" as const;
   constructor(public routes: RouteConfig[]) {}
 }
 
 export class SearchCapability implements WorkspaceCapability {
+  readonly kind = "search" as const;
   constructor(public provider: SearchProvider) {}
 }
 
 export class ContextCapability implements WorkspaceCapability {
+  readonly kind = "context" as const;
   constructor(public contributor: ContextContributor) {}
 }
 
 export class ToolCapability implements WorkspaceCapability {
+  readonly kind = "tool" as const;
   constructor(public tools: ToolDefinition[]) {}
 }
 
 export class WidgetCapability implements WorkspaceCapability {
+  readonly kind = "widget" as const;
   constructor(public widgets: WidgetConfig[]) {}
 }
 
 export class CommandCapability implements WorkspaceCapability {
+  readonly kind = "command" as const;
   constructor(public commands: SlashCommand[]) {}
 }
 
 export class ShortcutCapability implements WorkspaceCapability {
+  readonly kind = "shortcut" as const;
   constructor(public shortcuts: ShortcutConfig[]) {}
 }
 
 export class ActionCapability implements WorkspaceCapability {
+  readonly kind = "action" as const;
   constructor(public actions: ActionConfig[]) {}
 }
 
@@ -252,12 +262,17 @@ export interface InspectorSection {
 }
 
 export class InspectorCapability implements WorkspaceCapability {
+  readonly kind = "inspector" as const;
   constructor(public sections: InspectorSection[]) {}
 }
 
 // ─── Collection ──────────────────────────────
 
-export type CollectionType = "watchlist" | "research_folder" | "memory" | "conversation_folder";
+export type CollectionType =
+  | "watchlist"
+  | "research_folder"
+  | "memory"
+  | "conversation_folder";
 
 export interface WorkspaceCollection {
   id: string;

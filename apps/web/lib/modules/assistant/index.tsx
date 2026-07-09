@@ -10,7 +10,25 @@ import type {
 import { RouteCapability as RouteCap } from "@/lib/workspace/types";
 import { ContextCapability as ContextCap } from "@/lib/workspace/types";
 import { CommandCapability as CommandCap } from "@/lib/workspace/types";
+import { ToolCapability as ToolCap } from "@/lib/workspace/types";
+import type { ToolDefinition } from "@/lib/workspace/types";
 import AssistantWorkspace from "@/components/assistant/AssistantWorkspace";
+import { getResourceManager } from "@/lib/workspace/resource-manager";
+import { createConversationResource } from "@/lib/workspace/resource";
+
+const ASSISTANT_TOOLS: ToolDefinition[] = [
+  {
+    name: "open_assistant",
+    description: "Open the AI trading assistant",
+    parameters: {},
+    async execute() {
+      getResourceManager().open(
+        createConversationResource("new", "New Conversation"),
+      );
+      return { content: "Opened assistant" };
+    },
+  },
+];
 
 const COMMANDS: CommandCapability["commands"] = [
   {
@@ -65,8 +83,7 @@ export const AssistantModule: WorkspaceModule = {
   metadata: {
     id: "assistant",
     name: "Assistant",
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    icon: <Sparkles size={18} /> as any,
+    icon: <Sparkles size={18} />,
     description: "AI trading assistant",
     navGroup: "primary",
     navOrder: 1,
@@ -81,5 +98,6 @@ export const AssistantModule: WorkspaceModule = {
     ]),
     new ContextCap(CONTEXT_CONTRIBUTOR),
     new CommandCap(COMMANDS),
+    new ToolCap(ASSISTANT_TOOLS),
   ],
 };
