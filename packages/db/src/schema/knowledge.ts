@@ -67,9 +67,7 @@ export const knowledgeDocumentVersions = pgTable(
     content: text("content").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [
-    index("idx_knowledge_versions_document").on(table.documentId),
-  ],
+  (table) => [index("idx_knowledge_versions_document").on(table.documentId)],
 );
 
 export const knowledgeAssets = pgTable(
@@ -87,9 +85,7 @@ export const knowledgeAssets = pgTable(
     metadata: jsonb("metadata").notNull().default({}),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [
-    index("idx_knowledge_assets_document").on(table.documentId),
-  ],
+  (table) => [index("idx_knowledge_assets_document").on(table.documentId)],
 );
 
 export const knowledgeDocumentLinks = pgTable(

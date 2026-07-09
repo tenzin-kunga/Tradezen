@@ -17,18 +17,13 @@ export const symbols = pgTable(
     assetType: text("asset_type"),
     currency: text("currency"),
     name: text("name"),
-    symbolKey: text("symbol_key")
-      .notNull()
-      .unique(),
+    symbolKey: text("symbol_key").notNull().unique(),
     providerMetadata: jsonb("provider_metadata").notNull().default({}),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (table) => [
-    uniqueIndex("idx_symbols_ticker_exchange").on(
-      table.ticker,
-      table.exchange,
-    ),
+    uniqueIndex("idx_symbols_ticker_exchange").on(table.ticker, table.exchange),
     index("idx_symbols_symbol_key").on(table.symbolKey),
   ],
 );

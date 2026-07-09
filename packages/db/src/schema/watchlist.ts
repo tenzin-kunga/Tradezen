@@ -24,9 +24,7 @@ export const watchlists = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (table) => [
-    index("idx_watchlists_user").on(table.userId),
-  ],
+  (table) => [index("idx_watchlists_user").on(table.userId)],
 );
 
 export const watchlistItems = pgTable(

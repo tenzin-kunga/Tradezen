@@ -45,16 +45,30 @@ export type WatchlistItem = InferSelectModel<typeof schema.watchlistItems>;
 export type NewWatchlistItem = InferInsertModel<typeof schema.watchlistItems>;
 
 export type KnowledgeFolder = InferSelectModel<typeof schema.knowledgeFolders>;
-export type NewKnowledgeFolder = InferInsertModel<typeof schema.knowledgeFolders>;
+export type NewKnowledgeFolder = InferInsertModel<
+  typeof schema.knowledgeFolders
+>;
 
-export type KnowledgeDocument = InferSelectModel<typeof schema.knowledgeDocuments>;
-export type NewKnowledgeDocument = InferInsertModel<typeof schema.knowledgeDocuments>;
+export type KnowledgeDocument = InferSelectModel<
+  typeof schema.knowledgeDocuments
+>;
+export type NewKnowledgeDocument = InferInsertModel<
+  typeof schema.knowledgeDocuments
+>;
 
-export type KnowledgeDocumentVersion = InferSelectModel<typeof schema.knowledgeDocumentVersions>;
-export type NewKnowledgeDocumentVersion = InferInsertModel<typeof schema.knowledgeDocumentVersions>;
+export type KnowledgeDocumentVersion = InferSelectModel<
+  typeof schema.knowledgeDocumentVersions
+>;
+export type NewKnowledgeDocumentVersion = InferInsertModel<
+  typeof schema.knowledgeDocumentVersions
+>;
 
 export type KnowledgeAsset = InferSelectModel<typeof schema.knowledgeAssets>;
 export type NewKnowledgeAsset = InferInsertModel<typeof schema.knowledgeAssets>;
 
-export type KnowledgeDocumentLink = InferSelectModel<typeof schema.knowledgeDocumentLinks>;
-export type NewKnowledgeDocumentLink = InferInsertModel<typeof schema.knowledgeDocumentLinks>;
+export type KnowledgeDocumentLink = InferSelectModel<
+  typeof schema.knowledgeDocumentLinks
+>;
+export type NewKnowledgeDocumentLink = InferInsertModel<
+  typeof schema.knowledgeDocumentLinks
+>;

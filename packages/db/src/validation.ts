@@ -154,7 +154,9 @@ export const reorderWatchlistSchema = z.object({
 
 export type CreateSymbolInput = z.infer<typeof createSymbolSchema>;
 export type CreateWatchlistInput = z.infer<typeof createWatchlistSchema>;
-export type CreateWatchlistItemInput = z.infer<typeof createWatchlistItemSchema>;
+export type CreateWatchlistItemInput = z.infer<
+  typeof createWatchlistItemSchema
+>;
 export type ReorderWatchlistInput = z.infer<typeof reorderWatchlistSchema>;
 
 // Knowledge schemas
@@ -168,7 +170,17 @@ export const createKnowledgeDocumentSchema = z.object({
   title: z.string().min(1).max(500),
   folder_id: z.string().uuid().nullish(),
   content: z.string().max(1000000).nullish(),
-  doc_type: z.enum(["thesis", "analysis", "playbook", "macro", "note", "snapshot", "postmortem"]).optional(),
+  doc_type: z
+    .enum([
+      "thesis",
+      "analysis",
+      "playbook",
+      "macro",
+      "note",
+      "snapshot",
+      "postmortem",
+    ])
+    .optional(),
   template_id: z.string().max(50).nullish(),
   frontmatter: z.record(z.unknown()).nullish(),
 });
@@ -182,10 +194,24 @@ export const updateKnowledgeDocumentSchema = z.object({
 
 export const createKnowledgeLinkSchema = z.object({
   target_document_id: z.string().uuid(),
-  relationship_type: z.enum(["references", "cites", "related", "contradicts", "supports"]),
+  relationship_type: z.enum([
+    "references",
+    "cites",
+    "related",
+    "contradicts",
+    "supports",
+  ]),
 });
 
-export type CreateKnowledgeFolderInput = z.infer<typeof createKnowledgeFolderSchema>;
-export type CreateKnowledgeDocumentInput = z.infer<typeof createKnowledgeDocumentSchema>;
-export type UpdateKnowledgeDocumentInput = z.infer<typeof updateKnowledgeDocumentSchema>;
-export type CreateKnowledgeLinkInput = z.infer<typeof createKnowledgeLinkSchema>;
+export type CreateKnowledgeFolderInput = z.infer<
+  typeof createKnowledgeFolderSchema
+>;
+export type CreateKnowledgeDocumentInput = z.infer<
+  typeof createKnowledgeDocumentSchema
+>;
+export type UpdateKnowledgeDocumentInput = z.infer<
+  typeof updateKnowledgeDocumentSchema
+>;
+export type CreateKnowledgeLinkInput = z.infer<
+  typeof createKnowledgeLinkSchema
+>;

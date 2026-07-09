@@ -55,6 +55,60 @@ export const users = pgTable(
   ],
 );
 
+export interface EncryptedPayload {
+  iv: string;
+  ciphertext: string;
+  tag: string;
+}
+
+export interface ProviderStatus {
+  validated: boolean;
+  validatedAt: string | null;
+  lastError: string | null;
+}
+
+export interface CloudProviderConfig {
+  provider: string; // "openrouter", "openai", "anthropic", etc.
+  encryptedKey: EncryptedPayload;
+  status: ProviderStatus;
+}
+
+export interface AiProvidersConfig {
+  cloud?: CloudProviderConfig;
+  ollama?: {
+    endpoint: string;
+  };
+}
+
+export interface AssistantSettings {
+  activeModels?: string[];
+  defaultModel?: string;
+  temperature?: number;
+  reasoningMode?: "auto" | "on" | "off";
+  aiProviders?: AiProvidersConfig;
+}
+
+export const userSettings = pgTable(
+  "user_settings",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    assistantSettings: jsonb("assistant_settings")
+      .$type<AssistantSettings>()
+      .default({}),
+    workspaceSettings: jsonb("workspace_settings")
+      .$type<Record<string, unknown>>()
+      .default({}),
+    notificationSettings: jsonb("notification_settings")
+      .$type<Record<string, unknown>>()
+      .default({}),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [uniqueIndex("idx_user_settings_user_id").on(table.userId)],
+);
+
 export const trades = pgTable(
   "trades",
   {
@@ -224,7 +278,9 @@ export const embeddings = pgTable(
     content: text("content").notNull(),
     contentHash: text("content_hash"),
     embedding: vector("embedding", { dimensions: 1536 }),
-    embeddingModel: varchar("embedding_model", { length: 100 }).default("text-embedding-3-small"),
+    embeddingModel: varchar("embedding_model", { length: 100 }).default(
+      "text-embedding-3-small",
+    ),
     embeddingVersion: integer("embedding_version").notNull().default(1),
     metadata: jsonb("metadata").notNull().default({}),
     createdAt: timestamp("created_at").defaultNow(),
@@ -251,6 +307,10 @@ export const chatThreads = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     title: text("title"),
+    summary: text("summary"),
+    primaryType: varchar("primary_type", { length: 50 }),
+    tags: jsonb("tags").$type<string[]>().default([]),
+    pinned: boolean("pinned").default(false),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
@@ -498,3 +558,19 @@ export {
   knowledgeAssets,
   knowledgeDocumentLinks,
 } from "./knowledge";
+export {
+  researchProjects,
+  researchNotes,
+  researchChecklists,
+  researchTags,
+  researchActivity,
+  researchStatus,
+  researchConviction,
+} from "./research";
+export {
+  assets,
+  researchAssets,
+  assetStatus,
+  processingStatus,
+  documentCategory,
+} from "./assets";
