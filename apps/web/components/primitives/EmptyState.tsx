@@ -40,7 +40,9 @@ export function EmptyState({
           {icon}
         </div>
       )}
-      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+      <div
+        style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}
+      >
         {title}
       </div>
       {description && (

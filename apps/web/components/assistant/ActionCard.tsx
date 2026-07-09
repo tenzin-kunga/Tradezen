@@ -1,6 +1,15 @@
 "use client";
 
-import { IconChart, IconJournal, IconResearch, IconPortfolio, IconWatchlist, IconKnowledge, IconSparkle, IconCheck } from "./icons";
+import {
+  IconChart,
+  IconJournal,
+  IconResearch,
+  IconPortfolio,
+  IconWatchlist,
+  IconKnowledge,
+  IconSparkle,
+  IconCheck,
+} from "./icons";
 
 interface ActionCardProps {
   icon: string;
@@ -28,7 +37,7 @@ export default function ActionCard({
   onClick,
 }: ActionCardProps) {
   const isOpened = state === "opened";
-  const IconComp = isOpened ? IconCheck : (ICON_MAP[icon] || IconSparkle);
+  const IconComp = isOpened ? IconCheck : ICON_MAP[icon] || IconSparkle;
 
   return (
     <button
@@ -65,7 +74,14 @@ export default function ActionCard({
         }
       }}
     >
-      <span style={{ flexShrink: 0, color: isOpened ? "var(--accent-profit, #22c55e)" : "var(--text-muted, #9ca3af)" }}>
+      <span
+        style={{
+          flexShrink: 0,
+          color: isOpened
+            ? "var(--accent-profit, #22c55e)"
+            : "var(--text-muted, #9ca3af)",
+        }}
+      >
         <IconComp size={16} />
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>

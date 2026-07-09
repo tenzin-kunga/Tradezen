@@ -10,7 +10,12 @@ import {
   type ModelInfo,
   type ProviderHealth,
 } from "@/lib/api/assistant";
-import { getApiKeyStatus, getUserSettings, updateUserSettings, type ApiKeyStatus } from "@/lib/api/user-settings";
+import {
+  getApiKeyStatus,
+  getUserSettings,
+  updateUserSettings,
+  type ApiKeyStatus,
+} from "@/lib/api/user-settings";
 
 interface ModelBrowserProps {
   onClose: () => void;
@@ -74,9 +79,7 @@ function ModelRow({
           width: 18,
           height: 18,
           borderRadius: 5,
-          border: installed
-            ? "none"
-            : "1px solid var(--border, #23252d)",
+          border: installed ? "none" : "1px solid var(--border, #23252d)",
           background: installed ? "var(--accent, #3b82f6)" : "transparent",
           cursor: "pointer",
           display: "flex",
@@ -124,7 +127,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function ModelBrowser({ onClose, onChanged }: ModelBrowserProps) {
+export default function ModelBrowser({
+  onClose,
+  onChanged,
+}: ModelBrowserProps) {
   const [catalog, setCatalog] = useState<ChatModels | null>(null);
   const [activeModels, setActiveModels] = useState<string[]>([]);
   const [health, setHealth] = useState<ProviderHealth[]>([]);
@@ -195,8 +201,11 @@ export default function ModelBrowser({ onClose, onChanged }: ModelBrowserProps) 
   const apiKeyConfigured = apiKeyStatus?.configured ?? false;
 
   // Build a flat list of all discovered models with their provider name.
-  const allModels: Array<{ model: ModelInfo; providerName: string; providerId: string }> =
-    [];
+  const allModels: Array<{
+    model: ModelInfo;
+    providerName: string;
+    providerId: string;
+  }> = [];
   for (const p of catalog?.providers ?? []) {
     // Skip OpenRouter models if no API key configured
     if (p.id === "openrouter" && !apiKeyConfigured) continue;
@@ -213,14 +222,25 @@ export default function ModelBrowser({ onClose, onChanged }: ModelBrowserProps) 
   const q = search.toLowerCase();
   const matchesSearch = (m: ModelInfo, providerName: string) => {
     if (!q) return true;
-    const label = (m.displayName ?? m.id.split("/").pop() ?? m.id).toLowerCase();
+    const label = (
+      m.displayName ??
+      m.id.split("/").pop() ??
+      m.id
+    ).toLowerCase();
     return label.includes(q) || providerName.toLowerCase().includes(q);
   };
 
   const recommended = allModels.filter(
-    (x) => x.model.recommended && !activeModels.includes(x.model.id) && matchesSearch(x.model, x.providerName),
+    (x) =>
+      x.model.recommended &&
+      !activeModels.includes(x.model.id) &&
+      matchesSearch(x.model, x.providerName),
   );
-  const installed = allModels.filter((x) => activeModels.includes(x.model.id) && matchesSearch(x.model, x.providerName));
+  const installed = allModels.filter(
+    (x) =>
+      activeModels.includes(x.model.id) &&
+      matchesSearch(x.model, x.providerName),
+  );
   const available = allModels.filter(
     (x) =>
       !activeModels.includes(x.model.id) &&
@@ -228,7 +248,10 @@ export default function ModelBrowser({ onClose, onChanged }: ModelBrowserProps) 
       !unhealthy.has(x.providerId) &&
       matchesSearch(x.model, x.providerName),
   );
-  const unavailable = allModels.filter((x) => unhealthy.has(x.providerId) && matchesSearch(x.model, x.providerName));
+  const unavailable = allModels.filter(
+    (x) =>
+      unhealthy.has(x.providerId) && matchesSearch(x.model, x.providerName),
+  );
 
   return (
     <div
@@ -265,7 +288,13 @@ export default function ModelBrowser({ onClose, onChanged }: ModelBrowserProps) 
             borderBottom: "1px solid var(--border, #23252d)",
           }}
         >
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary, #fafafa)" }}>
+          <h3
+            style={{
+              fontSize: 16,
+              fontWeight: 600,
+              color: "var(--text-primary, #fafafa)",
+            }}
+          >
             Models
           </h3>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -330,32 +359,61 @@ export default function ModelBrowser({ onClose, onChanged }: ModelBrowserProps) 
             gap: 8,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 12, color: "var(--text-dim, #6b7280)" }}>Cloud API</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span style={{ fontSize: 12, color: "var(--text-dim, #6b7280)" }}>
+              Cloud API
+            </span>
             {apiKeyConfigured ? (
-              <span style={{ fontSize: 11, color: "#22c55e" }}>✓ Connected</span>
+              <span style={{ fontSize: 11, color: "#22c55e" }}>
+                ✓ Connected
+              </span>
             ) : (
               <Link
                 href="/settings"
                 onClick={onClose}
-                style={{ fontSize: 11, color: "var(--accent, #3b82f6)", textDecoration: "none" }}
+                style={{
+                  fontSize: 11,
+                  color: "var(--accent, #3b82f6)",
+                  textDecoration: "none",
+                }}
               >
                 ⚠ Configure API key in Settings
               </Link>
             )}
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 12, color: "var(--text-dim, #6b7280)" }}>Ollama</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span style={{ fontSize: 12, color: "var(--text-dim, #6b7280)" }}>
+              Ollama
+            </span>
             {health.find((h) => h.id === "ollama")?.status === "healthy" ? (
               <span style={{ fontSize: 11, color: "#22c55e" }}>✓ Running</span>
             ) : (
-              <span style={{ fontSize: 11, color: "var(--text-dim, #6b7280)" }}>○ Not running</span>
+              <span style={{ fontSize: 11, color: "var(--text-dim, #6b7280)" }}>
+                ○ Not running
+              </span>
             )}
           </div>
         </div>
 
         {/* Search bar */}
-        <div style={{ padding: "8px 20px", borderBottom: "1px solid var(--border, #23252d)" }}>
+        <div
+          style={{
+            padding: "8px 20px",
+            borderBottom: "1px solid var(--border, #23252d)",
+          }}
+        >
           <input
             type="text"
             placeholder="Search models…"
@@ -381,16 +439,33 @@ export default function ModelBrowser({ onClose, onChanged }: ModelBrowserProps) 
             </div>
           )}
           {error && (
-            <div style={{ padding: "12px 20px", color: "var(--accent-loss, #ef4444)" }}>
+            <div
+              style={{
+                padding: "12px 20px",
+                color: "var(--accent-loss, #ef4444)",
+              }}
+            >
               {error}
             </div>
           )}
 
-          {!loading && recommended.length === 0 && installed.length === 0 && available.length === 0 && unavailable.length === 0 && (
-            <div style={{ padding: 20, color: "var(--text-dim, #6b7280)", textAlign: "center" }}>
-              {search ? "No models match your search." : "No models available."}
-            </div>
-          )}
+          {!loading &&
+            recommended.length === 0 &&
+            installed.length === 0 &&
+            available.length === 0 &&
+            unavailable.length === 0 && (
+              <div
+                style={{
+                  padding: 20,
+                  color: "var(--text-dim, #6b7280)",
+                  textAlign: "center",
+                }}
+              >
+                {search
+                  ? "No models match your search."
+                  : "No models available."}
+              </div>
+            )}
 
           {!loading && recommended.length > 0 && (
             <>
@@ -452,14 +527,26 @@ export default function ModelBrowser({ onClose, onChanged }: ModelBrowserProps) 
                   }}
                 >
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, color: "var(--text-primary, #fafafa)" }}>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "var(--text-primary, #fafafa)",
+                      }}
+                    >
                       {model.displayName ?? model.id.split("/").pop()}{" "}
-                      <span style={{ fontSize: 10, color: "var(--text-dim, #6b7280)" }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: "var(--text-dim, #6b7280)",
+                        }}
+                      >
                         {providerName}
                       </span>
                     </div>
                   </div>
-                  <span style={{ fontSize: 10, color: "var(--text-dim, #6b7280)" }}>
+                  <span
+                    style={{ fontSize: 10, color: "var(--text-dim, #6b7280)" }}
+                  >
                     offline
                   </span>
                 </div>

@@ -64,7 +64,9 @@ export default function ToolCard({ message }: { message: ChatMessage }) {
             textAlign: "left",
           }}
         >
-          <span style={{ color: accentColor, flexShrink: 0 }}><IconGear size={12} /></span>
+          <span style={{ color: accentColor, flexShrink: 0 }}>
+            <IconGear size={12} />
+          </span>
           <span
             style={{
               fontWeight: 500,

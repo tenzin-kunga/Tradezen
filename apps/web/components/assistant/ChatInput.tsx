@@ -9,7 +9,11 @@ import {
   type ChatModels,
   type ModelInfo,
 } from "@/lib/api/assistant";
-import { getApiKeyStatus, getUserSettings, type ApiKeyStatus } from "@/lib/api/user-settings";
+import {
+  getApiKeyStatus,
+  getUserSettings,
+  type ApiKeyStatus,
+} from "@/lib/api/user-settings";
 import ModelBrowser from "./ModelBrowser";
 
 interface ChatInputProps {
@@ -33,7 +37,9 @@ export default function ChatInput({
   const [modelOpen, setModelOpen] = useState(false);
   const [addProviderOpen, setAddProviderOpen] = useState(false);
   const [modelBrowserOpen, setModelBrowserOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>(
+    { top: 0, left: 0 },
+  );
   const [dropdownBottom, setDropdownBottom] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modelMenuRef = useRef<HTMLDivElement>(null);
@@ -62,7 +68,8 @@ export default function ChatInput({
       ]);
       setCatalog(data);
       setApiKeyStatus(keyStatus);
-      const active = settings?.assistantSettings?.activeModels ?? data.models ?? [];
+      const active =
+        settings?.assistantSettings?.activeModels ?? data.models ?? [];
       // Filter out OpenRouter models if no API key configured
       const orConfigured = keyStatus?.configured ?? false;
       const filtered = orConfigured
@@ -71,7 +78,9 @@ export default function ChatInput({
       setActiveModels(filtered);
       const fallback = data.defaultModel;
       if (!selectedModel || !filtered.includes(selectedModel)) {
-        setSelectedModel(filtered.includes(fallback) ? fallback : filtered[0] ?? fallback);
+        setSelectedModel(
+          filtered.includes(fallback) ? fallback : (filtered[0] ?? fallback),
+        );
       }
     } catch (e) {
       console.warn("Failed to fetch models:", e);
@@ -88,8 +97,10 @@ export default function ChatInput({
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
       if (
-        modelMenuRef.current && !modelMenuRef.current.contains(target) &&
-        buttonRef.current && !buttonRef.current.contains(target)
+        modelMenuRef.current &&
+        !modelMenuRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
       ) {
         setModelOpen(false);
       }
@@ -130,9 +141,9 @@ export default function ChatInput({
   }, []);
 
   const modelShort = selectedModel
-    ? modelIndex.get(selectedModel)?.info.displayName ??
+    ? (modelIndex.get(selectedModel)?.info.displayName ??
       selectedModel.split("/").pop()?.split(":")[0] ??
-      selectedModel
+      selectedModel)
     : "Select model";
 
   return (
@@ -143,15 +154,15 @@ export default function ChatInput({
         flexShrink: 0,
       }}
     >
-        <div
-          className="tz-panel"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 0,
-            borderRadius: 12,
-          }}
-        >
+      <div
+        className="tz-panel"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 0,
+          borderRadius: 12,
+        }}
+      >
         {/* Model selector row */}
         <div
           style={{
@@ -195,12 +206,26 @@ export default function ChatInput({
                 e.currentTarget.style.borderColor = "var(--border, #23252d)";
               }}
             >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <circle cx="12" cy="12" r="3" />
                 <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
               </svg>
               {modelShort}
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="8"
+                height="8"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
@@ -280,7 +305,9 @@ export default function ChatInput({
                           {provider}
                         </span>
                         {isSelected && (
-                          <span style={{ color: "var(--accent, #3b82f6)" }}>✓</span>
+                          <span style={{ color: "var(--accent, #3b82f6)" }}>
+                            ✓
+                          </span>
                         )}
                       </button>
                     );
@@ -288,7 +315,9 @@ export default function ChatInput({
                 </div>
 
                 {/* Divider */}
-                <div style={{ height: 1, background: "var(--border, #23252d)" }} />
+                <div
+                  style={{ height: 1, background: "var(--border, #23252d)" }}
+                />
 
                 {/* Add provider button */}
                 <button

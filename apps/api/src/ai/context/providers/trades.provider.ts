@@ -92,7 +92,10 @@ export class TradesProvider implements ContextProvider {
         .select()
         .from(trades)
         .where(
-          and(eq(trades.userId, userId), sql`${trades.id} = ANY(${request.tradeIds})`),
+          and(
+            eq(trades.userId, userId),
+            sql`${trades.id} = ANY(${request.tradeIds})`,
+          ),
         )
         .orderBy(desc(trades.createdAt));
     } else {

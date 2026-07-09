@@ -7,9 +7,24 @@ import { SectionHeader } from "../components/SectionHeader";
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 const PROVIDERS = [
-  { id: "openrouter", name: "OpenRouter", placeholder: "sk-or-v1-...", description: "Access 200+ models from OpenAI, Anthropic, Google, and more" },
-  { id: "openai", name: "OpenAI", placeholder: "sk-...", description: "Direct access to GPT-4, GPT-4o, and other OpenAI models" },
-  { id: "anthropic", name: "Anthropic", placeholder: "sk-ant-...", description: "Direct access to Claude models" },
+  {
+    id: "openrouter",
+    name: "OpenRouter",
+    placeholder: "sk-or-v1-...",
+    description: "Access 200+ models from OpenAI, Anthropic, Google, and more",
+  },
+  {
+    id: "openai",
+    name: "OpenAI",
+    placeholder: "sk-...",
+    description: "Direct access to GPT-4, GPT-4o, and other OpenAI models",
+  },
+  {
+    id: "anthropic",
+    name: "Anthropic",
+    placeholder: "sk-ant-...",
+    description: "Direct access to Claude models",
+  },
 ] as const;
 
 interface ApiKeyStatus {
@@ -50,7 +65,9 @@ export function AIProviderSection() {
   const [providers, setProviders] = useState<ProviderStatus[]>([]);
   const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [validateResult, setValidateResult] = useState<ValidateResponse | null>(null);
+  const [validateResult, setValidateResult] = useState<ValidateResponse | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -85,7 +102,10 @@ export function AIProviderSection() {
     try {
       const res = await authFetch("/user-settings/api-key/validate", {
         method: "POST",
-        body: JSON.stringify({ apiKey: apiKey.trim(), provider: selectedProvider }),
+        body: JSON.stringify({
+          apiKey: apiKey.trim(),
+          provider: selectedProvider,
+        }),
       });
       if (res.ok) {
         setValidateResult(await res.json());
@@ -111,7 +131,10 @@ export function AIProviderSection() {
     try {
       const res = await authFetch("/user-settings/api-key", {
         method: "PATCH",
-        body: JSON.stringify({ apiKey: apiKey.trim(), provider: selectedProvider }),
+        body: JSON.stringify({
+          apiKey: apiKey.trim(),
+          provider: selectedProvider,
+        }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -185,7 +208,13 @@ export function AIProviderSection() {
             API
           </div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary, #e4e4e7)" }}>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: "var(--text-primary, #e4e4e7)",
+              }}
+            >
               Cloud API
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted, #71717a)" }}>
@@ -233,21 +262,50 @@ export function AIProviderSection() {
               borderRadius: 8,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-              <span style={{ color: "var(--text-muted, #71717a)" }}>Provider</span>
-              <span style={{ color: "var(--text-primary, #e4e4e7)", textTransform: "capitalize" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 12,
+              }}
+            >
+              <span style={{ color: "var(--text-muted, #71717a)" }}>
+                Provider
+              </span>
+              <span
+                style={{
+                  color: "var(--text-primary, #e4e4e7)",
+                  textTransform: "capitalize",
+                }}
+              >
                 {status.provider ?? "Unknown"}
               </span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-              <span style={{ color: "var(--text-muted, #71717a)" }}>Status</span>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 12,
+              }}
+            >
+              <span style={{ color: "var(--text-muted, #71717a)" }}>
+                Status
+              </span>
               <span style={{ color: status.validated ? "#22c55e" : "#eab308" }}>
                 {status.validated ? "Verified" : "Unverified"}
               </span>
             </div>
             {status.validatedAt && (
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                <span style={{ color: "var(--text-muted, #71717a)" }}>Last verified</span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 12,
+                }}
+              >
+                <span style={{ color: "var(--text-muted, #71717a)" }}>
+                  Last verified
+                </span>
                 <span style={{ color: "var(--text-primary, #e4e4e7)" }}>
                   {new Date(status.validatedAt).toLocaleString()}
                 </span>
@@ -294,13 +352,18 @@ export function AIProviderSection() {
               }}
             >
               {PROVIDERS.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </select>
 
             <input
               type="password"
-              placeholder={PROVIDERS.find((p) => p.id === selectedProvider)?.placeholder ?? "API key..."}
+              placeholder={
+                PROVIDERS.find((p) => p.id === selectedProvider)?.placeholder ??
+                "API key..."
+              }
               value={apiKey}
               onChange={(e) => {
                 setApiKey(e.target.value);
@@ -370,7 +433,8 @@ export function AIProviderSection() {
                   gap: 6,
                 }}
               >
-                <span>✓</span> Valid — {validateResult.modelCount} models available
+                <span>✓</span> Valid — {validateResult.modelCount} models
+                available
               </div>
             )}
 
@@ -421,7 +485,13 @@ export function AIProviderSection() {
             OL
           </div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary, #e4e4e7)" }}>
+            <div
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: "var(--text-primary, #e4e4e7)",
+              }}
+            >
               Ollama (Local)
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted, #71717a)" }}>

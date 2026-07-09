@@ -16,7 +16,10 @@ export function Surface({
   as: Tag = "div",
 }: SurfaceProps) {
   return (
-    <Tag className={`tz-panel ${lift ? "tz-lift" : ""} ${className}`} style={style}>
+    <Tag
+      className={`tz-panel ${lift ? "tz-lift" : ""} ${className}`}
+      style={style}
+    >
       {children}
     </Tag>
   );

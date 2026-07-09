@@ -7,7 +7,10 @@ export class ValidateApiKeyDto {
   @MinLength(10)
   apiKey!: string;
 
-  @ApiProperty({ example: 'openrouter', enum: ['openrouter', 'openai', 'anthropic'] })
+  @ApiProperty({
+    example: 'openrouter',
+    enum: ['openrouter', 'openai', 'anthropic'],
+  })
   @IsString()
   @IsIn(['openrouter', 'openai', 'anthropic'])
   provider!: string;

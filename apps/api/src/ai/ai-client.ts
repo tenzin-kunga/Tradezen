@@ -113,8 +113,12 @@ export class AIClient {
           headers: {
             'Content-Type': 'application/json',
             'x-internal-api-key': this.apiKey,
-            ...(options?.providerContext?.provider && { 'X-AI-Provider': options.providerContext.provider }),
-            ...(options?.providerContext?.apiKey && { 'X-AI-Provider-Key': options.providerContext.apiKey }),
+            ...(options?.providerContext?.provider && {
+              'X-AI-Provider': options.providerContext.provider,
+            }),
+            ...(options?.providerContext?.apiKey && {
+              'X-AI-Provider-Key': options.providerContext.apiKey,
+            }),
           },
           signal,
           body: JSON.stringify(body),
@@ -202,8 +206,12 @@ export class AIClient {
           headers: {
             'Content-Type': 'application/json',
             'x-internal-api-key': this.apiKey,
-            ...(options?.providerContext?.provider && { 'X-AI-Provider': options.providerContext.provider }),
-            ...(options?.providerContext?.apiKey && { 'X-AI-Provider-Key': options.providerContext.apiKey }),
+            ...(options?.providerContext?.provider && {
+              'X-AI-Provider': options.providerContext.provider,
+            }),
+            ...(options?.providerContext?.apiKey && {
+              'X-AI-Provider-Key': options.providerContext.apiKey,
+            }),
           },
           signal: controller.signal,
           body: JSON.stringify({

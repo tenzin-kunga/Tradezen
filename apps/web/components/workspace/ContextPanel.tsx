@@ -156,14 +156,24 @@ export default function ContextPanel({
       </div>
 
       {/* Content */}
-      <div className="tz-scroll" style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+      <div
+        className="tz-scroll"
+        style={{ flex: 1, overflowY: "auto", padding: 12 }}
+      >
         {!resource ? (
           <EmptyState
             title="No resource selected"
             description="Open a resource from the sidebar to see its context."
           />
         ) : loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 4 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              padding: 4,
+            }}
+          >
             <Skeleton height={14} width="60%" />
             <Skeleton height={10} />
             <Skeleton height={10} width="85%" />

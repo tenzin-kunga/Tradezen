@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AIClient, ChatMessage, ToolDefinition, ProviderContext } from '../ai-client';
+import {
+  AIClient,
+  ChatMessage,
+  ToolDefinition,
+  ProviderContext,
+} from '../ai-client';
 import { Planner } from './planner';
 import { ToolExecutor } from './tool-executor';
 import { ConversationState } from './conversation-state';

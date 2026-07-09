@@ -1,4 +1,14 @@
-import { Controller, Get, Patch, Delete, Post, Body, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Post,
+  Body,
+  UseGuards,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -27,7 +37,10 @@ export class UserSettingsController {
 
   @Patch()
   @ApiOperation({ summary: 'Update current user settings (merged)' })
-  update(@CurrentUser('id') userId: string, @Body() dto: UpdateUserSettingsDto) {
+  update(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateUserSettingsDto,
+  ) {
     return this.service.update(userId, dto);
   }
 
@@ -41,14 +54,22 @@ export class UserSettingsController {
 
   @Post('api-key/validate')
   @ApiOperation({ summary: 'Validate an API key (test only, does not save)' })
-  async validateApiKey(@CurrentUser('id') userId: string, @Body() dto: ValidateApiKeyDto) {
+  async validateApiKey(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ValidateApiKeyDto,
+  ) {
     const endpoint = VALIDATION_ENDPOINTS[dto.provider];
     if (!endpoint) {
-      throw new HttpException(`Unsupported provider: ${dto.provider}`, HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        `Unsupported provider: ${dto.provider}`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     try {
-      const headers: Record<string, string> = { Authorization: `Bearer ${dto.apiKey}` };
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${dto.apiKey}`,
+      };
       // Anthropic uses x-api-key header instead
       if (dto.provider === 'anthropic') {
         headers['x-api-key'] = dto.apiKey;
@@ -62,26 +83,39 @@ export class UserSettingsController {
       if (!res.ok) {
         throw new HttpException('Invalid API key', HttpStatus.BAD_REQUEST);
       }
-      const data = await res.json() as { data?: unknown[] };
+      const data = (await res.json()) as { data?: unknown[] };
       return { valid: true, modelCount: data.data?.length ?? 0 };
     } catch (e) {
       if (e instanceof HttpException) throw e;
-      throw new HttpException('Failed to validate API key', HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        'Failed to validate API key',
+        HttpStatus.BAD_GATEWAY,
+      );
     }
   }
 
   @Patch('api-key')
-  @ApiOperation({ summary: 'Save API key (validates first, then encrypts and stores)' })
-  async setApiKey(@CurrentUser('id') userId: string, @Body() dto: ValidateApiKeyDto) {
+  @ApiOperation({
+    summary: 'Save API key (validates first, then encrypts and stores)',
+  })
+  async setApiKey(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ValidateApiKeyDto,
+  ) {
     const endpoint = VALIDATION_ENDPOINTS[dto.provider];
     if (!endpoint) {
-      throw new HttpException(`Unsupported provider: ${dto.provider}`, HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        `Unsupported provider: ${dto.provider}`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     // Validate first
     let modelCount = 0;
     try {
-      const headers: Record<string, string> = { Authorization: `Bearer ${dto.apiKey}` };
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${dto.apiKey}`,
+      };
       if (dto.provider === 'anthropic') {
         headers['x-api-key'] = dto.apiKey;
         delete headers['Authorization'];
@@ -94,15 +128,23 @@ export class UserSettingsController {
       if (!res.ok) {
         throw new HttpException('Invalid API key', HttpStatus.BAD_REQUEST);
       }
-      const data = await res.json() as { data?: unknown[] };
+      const data = (await res.json()) as { data?: unknown[] };
       modelCount = data.data?.length ?? 0;
     } catch (e) {
       if (e instanceof HttpException) throw e;
-      throw new HttpException('Failed to validate API key', HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        'Failed to validate API key',
+        HttpStatus.BAD_GATEWAY,
+      );
     }
 
     // Encrypt and store
-    const status = await this.service.setApiKey(userId, dto.apiKey, dto.provider, true);
+    const status = await this.service.setApiKey(
+      userId,
+      dto.apiKey,
+      dto.provider,
+      true,
+    );
     return { ...status, modelCount };
   }
 

@@ -92,7 +92,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col md:flex-row" style={{ height: "100vh", overflow: "hidden" }}>
+    <div
+      className="flex flex-col md:flex-row"
+      style={{ height: "100vh", overflow: "hidden" }}
+    >
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div

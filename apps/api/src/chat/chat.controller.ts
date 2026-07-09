@@ -50,14 +50,18 @@ export class ChatController {
 
   @Public()
   @Get('models')
-  @ApiOperation({ summary: 'Get configured chat models (proxied from AI service)' })
+  @ApiOperation({
+    summary: 'Get configured chat models (proxied from AI service)',
+  })
   async models() {
     return this.chatService.getModelsV2();
   }
 
   @Public()
   @Get('models/providers')
-  @ApiOperation({ summary: 'Get provider health status (proxied from AI service)' })
+  @ApiOperation({
+    summary: 'Get provider health status (proxied from AI service)',
+  })
   async modelProviders() {
     return this.chatService.getProviderHealth();
   }
@@ -73,7 +77,13 @@ export class ChatController {
   @Post('models/providers')
   @ApiOperation({ summary: 'Add a custom model provider' })
   addProvider(
-    @Body() body: { name: string; baseUrl: string; apiKey?: string; models: string[] },
+    @Body()
+    body: {
+      name: string;
+      baseUrl: string;
+      apiKey?: string;
+      models: string[];
+    },
   ) {
     return this.chatService.addProvider(body);
   }

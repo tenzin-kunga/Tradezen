@@ -2,11 +2,22 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { Thread, ConversationType } from "@/lib/api/assistant";
-import { IconChart, IconJournal, IconResearch, IconPortfolio, IconRisk, IconCoaching, IconChat } from "./icons";
+import {
+  IconChart,
+  IconJournal,
+  IconResearch,
+  IconPortfolio,
+  IconRisk,
+  IconCoaching,
+  IconChat,
+} from "./icons";
 import { IconButton } from "@/components/primitives/IconButton";
 import { Badge } from "@/components/primitives/Badge";
 
-const TYPE_ICONS: Record<ConversationType, React.ComponentType<{ size?: number }>> = {
+const TYPE_ICONS: Record<
+  ConversationType,
+  React.ComponentType<{ size?: number }>
+> = {
   daily_review: IconChart,
   journal: IconJournal,
   research: IconResearch,
@@ -66,9 +77,7 @@ function groupByDate(threads: Thread[]): Map<string, Thread[]> {
     if (dateStr === today) key = "Today";
     else if (dateStr === yesterday) key = "Yesterday";
     else {
-      const daysAgo = Math.floor(
-        (now.getTime() - d.getTime()) / 86400000,
-      );
+      const daysAgo = Math.floor((now.getTime() - d.getTime()) / 86400000);
       if (daysAgo < 7) key = "This Week";
       else key = "Earlier";
     }
@@ -426,7 +435,14 @@ function ConversationCard({
         position: "relative",
       }}
     >
-      <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1, color: "var(--text-muted, #9ca3af)" }}>
+      <span
+        style={{
+          fontSize: 16,
+          flexShrink: 0,
+          marginTop: 1,
+          color: "var(--text-muted, #9ca3af)",
+        }}
+      >
         <IconComponent size={16} />
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>

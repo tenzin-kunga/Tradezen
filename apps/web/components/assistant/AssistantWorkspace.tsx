@@ -151,21 +151,41 @@ export default function AssistantWorkspace() {
             overflowY: "auto",
           }}
         >
-        {messages.length === 0 && status === "idle" ? (
-          <WorkflowSuggestions
-            greeting="What would you like to know?"
-            contextSummary=""
-            suggestions={[
-              { icon: "chart", title: "Review today's trades", description: "Analyze performance", onClick: () => handleSend("Review today's trades") },
-              { icon: "journal", title: "Write journal entry", description: "End-of-day reflection", onClick: () => handleSend("Write my journal entry for today") },
-              { icon: "research", title: "Find trading mistakes", description: "Identify patterns", onClick: () => handleSend("What mistakes did I make today?") },
-              { icon: "portfolio", title: "Portfolio snapshot", description: "Current holdings", onClick: handleSend.bind(null, "Show my portfolio") },
-            ]}
-            onSelect={handleSend}
-          />
-        ) : (
-          <ConversationCanvas messages={messages} onAction={handleAction} />
-        )}
+          {messages.length === 0 && status === "idle" ? (
+            <WorkflowSuggestions
+              greeting="What would you like to know?"
+              contextSummary=""
+              suggestions={[
+                {
+                  icon: "chart",
+                  title: "Review today's trades",
+                  description: "Analyze performance",
+                  onClick: () => handleSend("Review today's trades"),
+                },
+                {
+                  icon: "journal",
+                  title: "Write journal entry",
+                  description: "End-of-day reflection",
+                  onClick: () => handleSend("Write my journal entry for today"),
+                },
+                {
+                  icon: "research",
+                  title: "Find trading mistakes",
+                  description: "Identify patterns",
+                  onClick: () => handleSend("What mistakes did I make today?"),
+                },
+                {
+                  icon: "portfolio",
+                  title: "Portfolio snapshot",
+                  description: "Current holdings",
+                  onClick: handleSend.bind(null, "Show my portfolio"),
+                },
+              ]}
+              onSelect={handleSend}
+            />
+          ) : (
+            <ConversationCanvas messages={messages} onAction={handleAction} />
+          )}
         </div>
 
         <SlashCommandPalette

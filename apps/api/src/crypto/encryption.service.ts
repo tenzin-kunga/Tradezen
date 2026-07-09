@@ -36,7 +36,9 @@ export class EncryptionService implements OnModuleInit {
 
   encrypt(plaintext: string): EncryptedPayload {
     if (!this.key) {
-      throw new Error('Encryption not configured — KEY_ENCRYPTION_SECRET missing');
+      throw new Error(
+        'Encryption not configured — KEY_ENCRYPTION_SECRET missing',
+      );
     }
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv('aes-256-gcm', this.key, iv);
@@ -56,7 +58,9 @@ export class EncryptionService implements OnModuleInit {
 
   decrypt(payload: EncryptedPayload): string {
     if (!this.key) {
-      throw new Error('Encryption not configured — KEY_ENCRYPTION_SECRET missing');
+      throw new Error(
+        'Encryption not configured — KEY_ENCRYPTION_SECRET missing',
+      );
     }
     const iv = Buffer.from(payload.iv, 'base64');
     const ciphertext = Buffer.from(payload.ciphertext, 'base64');

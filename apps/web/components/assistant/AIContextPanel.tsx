@@ -17,7 +17,10 @@ async function authFetch(url: string): Promise<Response> {
   return fetch(url, { headers, credentials: "include" });
 }
 
-function formatFreshness(block: { freshness?: string; source: string }): string {
+function formatFreshness(block: {
+  freshness?: string;
+  source: string;
+}): string {
   if (!block.freshness) return "";
   const d = new Date(block.freshness);
   const now = new Date();
@@ -101,9 +104,19 @@ export default function AIContextPanel({
       </div>
 
       {/* Content */}
-      <div className="tz-scroll" style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+      <div
+        className="tz-scroll"
+        style={{ flex: 1, overflowY: "auto", padding: 12 }}
+      >
         {loading && !context ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 4 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              padding: 4,
+            }}
+          >
             <Skeleton height={14} width="55%" />
             <Skeleton height={10} />
             <Skeleton height={10} width="80%" />
@@ -293,13 +306,7 @@ function SourceRow({
   );
 }
 
-function RetrievalRow({
-  name,
-  matched,
-}: {
-  name: string;
-  matched: string;
-}) {
+function RetrievalRow({ name, matched }: { name: string; matched: string }) {
   return (
     <div
       style={{
@@ -321,13 +328,7 @@ function RetrievalRow({
   );
 }
 
-function SkippedRow({
-  name,
-  reason,
-}: {
-  name: string;
-  reason: string;
-}) {
+function SkippedRow({ name, reason }: { name: string; reason: string }) {
   return (
     <div
       style={{

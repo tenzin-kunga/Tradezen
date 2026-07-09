@@ -80,7 +80,15 @@ export default function ResearchWorkspace() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 16, width: 260 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          padding: 16,
+          width: 260,
+        }}
+      >
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton key={i} height={56} radius={8} />
         ))}

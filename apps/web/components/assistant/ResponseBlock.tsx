@@ -95,12 +95,8 @@ export default function ResponseBlock({
             padding: isUser ? "10px 14px" : "12px 14px",
             borderRadius: 14,
             width: isUser ? "auto" : "100%",
-            background: isUser
-              ? "rgba(59, 130, 246, 0.12)"
-              : undefined,
-            border: isUser
-              ? "1px solid rgba(59, 130, 246, 0.28)"
-              : undefined,
+            background: isUser ? "rgba(59, 130, 246, 0.12)" : undefined,
+            border: isUser ? "1px solid rgba(59, 130, 246, 0.28)" : undefined,
             maxWidth: "100%",
           }}
         >
@@ -114,7 +110,9 @@ export default function ResponseBlock({
               </ReactMarkdown>
             </div>
           ) : message.type === "error" ? (
-            <span style={{ color: "var(--accent-loss, #ef4444)", fontSize: 14 }}>
+            <span
+              style={{ color: "var(--accent-loss, #ef4444)", fontSize: 14 }}
+            >
               {message.content}
             </span>
           ) : (
@@ -129,29 +127,32 @@ export default function ResponseBlock({
           )}
 
           {/* Action cards */}
-          {!isStreaming && message.actions && message.actions.length > 0 && onAction && (
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                marginTop: 12,
-                overflowX: "auto",
-                paddingBottom: 4,
-              }}
-            >
-              {message.actions.map((action, i) => (
-                <ActionCard
-                  key={i}
-                  icon={getActionIcon(action)}
-                  title={action.label}
-                  onClick={() => {
-                    onAction(action);
-                    onActionStateChange?.(action, "opened");
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          {!isStreaming &&
+            message.actions &&
+            message.actions.length > 0 &&
+            onAction && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  marginTop: 12,
+                  overflowX: "auto",
+                  paddingBottom: 4,
+                }}
+              >
+                {message.actions.map((action, i) => (
+                  <ActionCard
+                    key={i}
+                    icon={getActionIcon(action)}
+                    title={action.label}
+                    onClick={() => {
+                      onAction(action);
+                      onActionStateChange?.(action, "opened");
+                    }}
+                  />
+                ))}
+              </div>
+            )}
         </div>
       </div>
     </div>

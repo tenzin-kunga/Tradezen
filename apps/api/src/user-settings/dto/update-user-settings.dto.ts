@@ -1,4 +1,4 @@
-import { IsOptional, IsArray, IsString, IsNumber, IsIn } from 'class-validator';
+import { IsOptional } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateUserSettingsDto {

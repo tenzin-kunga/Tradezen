@@ -1,6 +1,12 @@
 "use client";
 
-import { IconChart, IconJournal, IconResearch, IconPortfolio, IconSparkle } from "./icons";
+import {
+  IconChart,
+  IconJournal,
+  IconResearch,
+  IconPortfolio,
+  IconSparkle,
+} from "./icons";
 
 interface WorkflowSuggestion {
   icon: string;
@@ -81,28 +87,30 @@ export default function WorkflowSuggestions({
         {suggestions.map((s, i) => {
           const IconComp = ICON_MAP[s.icon] || IconSparkle;
           return (
-              <button
-                key={i}
-                onClick={() => onSelect(s.title)}
-                className="tz-panel tz-lift"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  cursor: "pointer",
-                  textAlign: "left",
-                  background: "var(--bg-surface-hover, #1a1b23)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "var(--accent, #3b82f6)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border-soft)";
-                }}
+            <button
+              key={i}
+              onClick={() => onSelect(s.title)}
+              className="tz-panel tz-lift"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 14px",
+                borderRadius: 12,
+                cursor: "pointer",
+                textAlign: "left",
+                background: "var(--bg-surface-hover, #1a1b23)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--accent, #3b82f6)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-soft)";
+              }}
+            >
+              <span
+                style={{ flexShrink: 0, color: "var(--text-muted, #9ca3af)" }}
               >
-              <span style={{ flexShrink: 0, color: "var(--text-muted, #9ca3af)" }}>
                 <IconComp size={18} />
               </span>
               <div>

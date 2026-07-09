@@ -56,9 +56,7 @@ export default function PortfolioWorkspace() {
   }
 
   if (error) {
-    return (
-      <EmptyState title="Couldn't load portfolio" description={error} />
-    );
+    return <EmptyState title="Couldn't load portfolio" description={error} />;
   }
 
   if (!data || data.summary.totalTrades === 0) {
@@ -73,7 +71,10 @@ export default function PortfolioWorkspace() {
   const { summary, symbols, strategies, byDirection } = data;
 
   return (
-    <div className="tz-scroll" style={{ height: "100%", overflowY: "auto", padding: 20 }}>
+    <div
+      className="tz-scroll"
+      style={{ height: "100%", overflowY: "auto", padding: 20 }}
+    >
       {/* Summary cards */}
       <div
         style={{
