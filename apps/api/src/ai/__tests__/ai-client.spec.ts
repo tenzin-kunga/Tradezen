@@ -20,7 +20,9 @@ describe('AIClient circuit breaker', () => {
   it('opens after 5 consecutive failed calls', async () => {
     const client = new AIClient(metrics);
     // Each call retries 3 times before failing, so 5 calls = 20 fetch failures
-    mockFetch.mockRejectedValue(Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' }));
+    mockFetch.mockRejectedValue(
+      Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+    );
 
     for (let i = 0; i < 5; i++) {
       try {
@@ -41,7 +43,9 @@ describe('AIClient circuit breaker', () => {
   it('resets failure count on success', async () => {
     const client = new AIClient(metrics);
     // 4 failures
-    mockFetch.mockRejectedValue(Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' }));
+    mockFetch.mockRejectedValue(
+      Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+    );
 
     for (let i = 0; i < 4; i++) {
       try {
@@ -54,12 +58,19 @@ describe('AIClient circuit breaker', () => {
     // 1 success resets counter
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ choices: [{ message: { content: 'ok' } }], model: 'm', usage: {} }),
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: 'ok' } }],
+          model: 'm',
+          usage: {},
+        }),
     });
     await client.complete([{ role: 'user', content: 'test' }]);
 
     // Circuit should NOT be open — next call goes through (and fails/retries)
-    mockFetch.mockRejectedValue(Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' }));
+    mockFetch.mockRejectedValue(
+      Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+    );
     const beforeFetch = mockFetch.mock.calls.length;
     try {
       await client.complete([{ role: 'user', content: 'test' }]);
@@ -71,7 +82,9 @@ describe('AIClient circuit breaker', () => {
 
   it('tracks metrics', async () => {
     const client = new AIClient(metrics);
-    mockFetch.mockRejectedValue(Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' }));
+    mockFetch.mockRejectedValue(
+      Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' }),
+    );
 
     for (let i = 0; i < 5; i++) {
       try {

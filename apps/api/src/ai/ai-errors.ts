@@ -1,5 +1,8 @@
 export class AIServiceError extends Error {
-  constructor(message: string, public readonly cause?: Error) {
+  constructor(
+    message: string,
+    public readonly cause?: Error,
+  ) {
     super(message);
     this.name = 'AIServiceError';
   }
@@ -36,7 +39,13 @@ export class AIProtocolError extends AIServiceError {
   }
 }
 
-const RETRYABLE_CODES = ['ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', 'EPIPE', 'EAI_AGAIN'];
+const RETRYABLE_CODES = [
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ENOTFOUND',
+  'EPIPE',
+  'EAI_AGAIN',
+];
 
 export function classifyError(
   error: unknown,
@@ -48,11 +57,14 @@ export function classifyError(
   const cause = error instanceof Error ? error : new Error(String(error));
   const msg = cause.message ?? '';
 
-  if (cause.name === 'AbortError' || msg.includes('abort') || msg.includes('timeout')) {
+  if (
+    cause.name === 'AbortError' ||
+    msg.includes('abort') ||
+    msg.includes('timeout')
+  ) {
     return new AITimeoutError(timeoutMs, cause);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const code = (cause as any).code ?? '';
   if (RETRYABLE_CODES.includes(code)) {
     return new AIServiceUnavailableError(baseUrl, cause);

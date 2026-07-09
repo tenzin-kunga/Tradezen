@@ -1,42 +1,113 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '../db/drizzle';
-import { aiInsights, trades } from '@tradezen/db';
-import { eq, desc } from 'drizzle-orm';
+import { aiInsights } from '@tradezen/db';
+import { desc, eq } from 'drizzle-orm';
 import { TradesService } from '../trades/trades.service';
 import { BehavioralService } from '../analytics/behavioral.service';
+import { PortfolioService } from '../portfolio/portfolio.service';
+import { AIClient } from './ai-client';
+import {
+  buildInsightContext,
+  InsightContext,
+} from './insights/insight-context';
+import { InsightCard, InsightCandidate } from './insights/insight-source';
+import { RULES } from './insights/rules';
+import { CoachingPushPolicy, PushCandidate } from './insights/push-policy';
+import {
+  CACHE_TTL_MS,
+  MIN_TOTAL_TRADES,
+  MAX_INSIGHTS,
+  MAX_RISK_CARDS,
+} from './insights/thresholds';
 
-export interface InsightCard {
-  id: string;
-  category: 'performance' | 'discipline' | 'risk' | 'consistency';
-  title: string;
-  message: string;
-  metrics: Record<string, unknown>;
-  createdAt: string;
-}
+const NARRATIVE_TYPE = 'portfolio_narrative';
+
+const NARRATIVE_SYSTEM_PROMPT = `You are a trading journal coach. Write a concise portfolio summary of at most 2 short paragraphs (max 80 words). No greetings, no financial advice, no questions. Mention only observations supported by the supplied data. Do not repeat the insight cards verbatim.`;
 
 export interface InsightsResponse {
   insights: InsightCard[];
+  narrative?: string;
   generatedAt: string;
 }
 
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+interface CandidateCacheEntry {
+  ctx: InsightContext;
+  candidates: InsightCandidate[];
+  expiresAt: number;
+}
 
 @Injectable()
 export class AiInsightsService {
   private readonly logger = new Logger('AiInsightsService');
 
+  // In-memory candidate cache (TTL 6h). Shared by getInsights and
+  // getCoachingPush so a trade event never triggers a full analytics rebuild.
+  // ponytail: single instance only; multi-instance deployments need Redis.
+  private readonly candidateCache = new Map<string, CandidateCacheEntry>();
+
   constructor(
     private readonly tradesService: TradesService,
     private readonly behavioralService: BehavioralService,
+    private readonly portfolioService: PortfolioService,
+    private readonly aiClient: AIClient,
+    private readonly pushPolicy: CoachingPushPolicy,
   ) {}
 
   async getInsights(userId: string): Promise<InsightsResponse> {
     const cached = await this.getCached(userId);
     if (cached) return cached;
 
-    const cards = await this.generateInsights(userId);
-    await this.storeInsights(userId, cards);
-    return { insights: cards, generatedAt: new Date().toISOString() };
+    const { ctx, candidates } = await this.buildCandidates(userId);
+
+    const totalTrades = (ctx.analytics as any).totalTrades ?? 0;
+    if (totalTrades < MIN_TOTAL_TRADES) {
+      return {
+        insights: [],
+        narrative: undefined,
+        generatedAt: new Date().toISOString(),
+      };
+    }
+
+    const selected = selectTopInsights(candidates);
+    const cards = selected.map((c) => c.card);
+
+    const narrative = await this.generateNarrative(ctx, cards);
+
+    await this.storeInsights(userId, selected, narrative);
+    return {
+      insights: cards,
+      narrative: narrative ?? undefined,
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  // Proactive coaching entry point. Reuses the cached candidates so it costs
+  // no extra analytics queries, and lets the PushPolicy decide whether the
+  // highest-priority pushable insight deserves to interrupt the user.
+  async getCoachingPush(userId: string): Promise<PushCandidate | null> {
+    const { candidates } = await this.buildCandidates(userId);
+    return this.pushPolicy.evaluate(userId, candidates);
+  }
+
+  private async buildCandidates(userId: string): Promise<CandidateCacheEntry> {
+    this.evictExpiredCache();
+    const hit = this.candidateCache.get(userId);
+    if (hit && hit.expiresAt > Date.now()) return hit;
+
+    const ctx = await buildInsightContext(userId, {
+      tradesService: this.tradesService,
+      behavioralService: this.behavioralService,
+      portfolioService: this.portfolioService,
+    });
+
+    const candidates = RULES.flatMap((rule) => rule.generate(ctx));
+    const entry: CandidateCacheEntry = {
+      ctx,
+      candidates,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    };
+    this.candidateCache.set(userId, entry);
+    return entry;
   }
 
   private async getCached(userId: string): Promise<InsightsResponse | null> {
@@ -44,290 +115,149 @@ export class AiInsightsService {
       .select()
       .from(aiInsights)
       .where(eq(aiInsights.userId, userId))
-      .orderBy(desc(aiInsights.createdAt))
-      .limit(3);
+      .orderBy(desc(aiInsights.createdAt));
 
-    if (rows.length === 0) return null;
+    const cardRows = rows.filter((r) => r.insightType !== NARRATIVE_TYPE);
+    const narrativeRow = rows.find((r) => r.insightType === NARRATIVE_TYPE);
 
-    const newest = new Date(rows[0].createdAt ?? 0).getTime();
-    if (Date.now() - newest < CACHE_TTL_MS) {
-      const insightTypeCounts: Record<string, number> = {};
-      for (const r of rows) {
-        insightTypeCounts[r.insightType] =
-          (insightTypeCounts[r.insightType] ?? 0) + 1;
-      }
-      const topType = Object.entries(insightTypeCounts).sort(
-        (a, b) => b[1] - a[1],
-      )[0]?.[0];
-      const metrics = (rows[0].metadata ?? {}) as Record<string, unknown>;
+    if (cardRows.length === 0) return null;
 
-      const cards: InsightCard[] = rows.map((r) => ({
-        id: r.id,
-        category: (r.insightType as InsightCard['category']) || 'performance',
-        title: '',
-        message: r.content,
-        metrics: (r.metadata ?? {}) as Record<string, unknown>,
-        createdAt: (r.createdAt ?? new Date()).toISOString(),
-      }));
+    const newest = new Date(cardRows[0].createdAt ?? 0).getTime();
+    if (Date.now() - newest >= CACHE_TTL_MS) return null;
 
-      const generatedAt = rows.reduce(
-        (latest, r) => Math.max(latest, new Date(r.createdAt ?? 0).getTime()),
-        0,
-      );
+    const cards: InsightCard[] = cardRows.slice(0, MAX_INSIGHTS).map((r) => ({
+      id: r.id,
+      ruleId: (r.metadata as any)?.ruleId ?? '',
+      category: (r.insightType as InsightCard['category']) || 'performance',
+      title: (r.metadata as any)?.title ?? '',
+      message: r.content,
+      metrics: (r.metadata ?? {}) as Record<string, unknown>,
+      pushable: (r.metadata as any)?.pushable ?? false,
+      source: (r.metadata as any)?.source ?? 'analytics',
+      createdAt: (r.createdAt ?? new Date()).toISOString(),
+    }));
 
-      return {
-        insights: cards,
-        generatedAt: new Date(generatedAt).toISOString(),
-      };
-    }
+    const generatedAt = cardRows.reduce(
+      (latest, r) => Math.max(latest, new Date(r.createdAt ?? 0).getTime()),
+      0,
+    );
 
-    return null;
+    return {
+      insights: cards,
+      narrative: narrativeRow?.content ?? undefined,
+      generatedAt: new Date(generatedAt).toISOString(),
+    };
   }
 
-  private async generateInsights(userId: string): Promise<InsightCard[]> {
-    const [analytics, advanced, behavioral] = await Promise.all([
-      this.tradesService.getAnalytics(userId),
-      this.tradesService.getAdvancedAnalytics(userId),
-      this.behavioralService.analyzeBehavior(userId),
-    ]);
-
-    const totalTrades = (analytics as any).totalTrades ?? 0;
-    if (totalTrades < 5) return [];
-
-    const candidates: Array<{ card: InsightCard; priority: number }> = [];
-
-    // ── Risk priority (highest) ──
-    const avgRR = (analytics as any).avgRR ?? 0;
-    if (avgRR > 0 && avgRR < 1.5) {
-      candidates.push({
-        priority: 1,
-        card: {
-          id: '',
-          category: 'risk',
-          title: 'Reward-to-Risk',
-          message: `Your average risk-to-reward ratio is ${avgRR.toFixed(1)}R. Improving reward targets to at least 1.5R could significantly increase profitability.`,
-          metrics: { avgRR, threshold: 1.5 },
-          createdAt: '',
-        },
-      });
+  private async generateNarrative(
+    ctx: InsightContext,
+    cards: InsightCard[],
+  ): Promise<string | null> {
+    try {
+      const response = await this.aiClient.complete(
+        [
+          { role: 'system', content: NARRATIVE_SYSTEM_PROMPT },
+          { role: 'user', content: buildNarrativeContext(ctx, cards) },
+        ],
+        { temperature: 0.3, timeoutMs: 15000 },
+      );
+      const text = response.content?.trim();
+      return text ? text : null;
+    } catch (err) {
+      this.logger.warn(`Portfolio narrative generation failed: ${String(err)}`);
+      return null;
     }
-
-    const worstTrade = Math.abs((analytics as any).worstTrade ?? 0);
-    const bestTrade = (analytics as any).bestTrade ?? 0;
-    if (worstTrade > 0 && bestTrade > 0 && worstTrade > bestTrade) {
-      candidates.push({
-        priority: 2,
-        card: {
-          id: '',
-          category: 'risk',
-          title: 'Risk Asymmetry',
-          message: `Your largest loss (-$${worstTrade}) exceeds your largest win (+$${bestTrade}). Consider tightening stop losses to improve risk symmetry.`,
-          metrics: { largestLoss: worstTrade, largestWin: bestTrade },
-          createdAt: '',
-        },
-      });
-    }
-
-    // ── Discipline priority ──
-    const fomoRate = (analytics as any).behavioralStats?.fomoCount
-      ? (analytics as any).behavioralStats.fomoCount / totalTrades
-      : 0;
-    const vengeanceRate = (analytics as any).behavioralStats?.vengeanceCount
-      ? (analytics as any).behavioralStats.vengeanceCount / totalTrades
-      : 0;
-
-    if (fomoRate > 0.2) {
-      candidates.push({
-        priority: 3,
-        card: {
-          id: '',
-          category: 'discipline',
-          title: 'FOMO Entries',
-          message: `${(fomoRate * 100).toFixed(0)}% of your trades are flagged as FOMO entries. Emotional entries typically have lower win rates — try using your pre-trade checklist before every entry.`,
-          metrics: { fomoRate: Math.round(fomoRate * 100), totalTrades },
-          createdAt: '',
-        },
-      });
-    }
-
-    if (vengeanceRate > 0.1) {
-      candidates.push({
-        priority: 4,
-        card: {
-          id: '',
-          category: 'discipline',
-          title: 'Revenge Trading',
-          message: `${(vengeanceRate * 100).toFixed(0)}% of your trades are revenge trades after a loss. Taking a 15-minute break after a loss can reduce revenge trading by up to 60%.`,
-          metrics: {
-            vengeanceRate: Math.round(vengeanceRate * 100),
-            totalTrades,
-          },
-          createdAt: '',
-        },
-      });
-    }
-
-    const trendAlignedCount =
-      (analytics as any).behavioralStats?.trendAlignedCount ?? 0;
-    const trendRate = totalTrades > 0 ? trendAlignedCount / totalTrades : 0;
-    if (trendAlignedCount >= 5) {
-      candidates.push({
-        priority: 5,
-        card: {
-          id: '',
-          category: 'discipline',
-          title: 'Trend Alignment',
-          message: `${(trendRate * 100).toFixed(0)}% of your trades are trend-aligned. Traders with >70% trend alignment typically see 15-20% higher win rates.`,
-          metrics: {
-            trendAlignmentRate: Math.round(trendRate * 100),
-            trendAlignedCount,
-          },
-          createdAt: '',
-        },
-      });
-    }
-
-    // ── Performance priority ──
-    const byStrategy = (analytics as any).byStrategy ?? [];
-    const validStrategies = byStrategy.filter((s: any) => s.trades >= 5);
-    if (validStrategies.length > 0) {
-      const best = validStrategies[0];
-      const wr =
-        best.wins && best.trades
-          ? Math.round((best.wins / best.trades) * 100)
-          : 0;
-      candidates.push({
-        priority: 6,
-        card: {
-          id: '',
-          category: 'performance',
-          title: 'Best Strategy',
-          message: `${best.name} is your best-performing strategy with ${best.trades} trades and a ${wr}% win rate (${best.pnl > 0 ? '+' : ''}$${Number(best.pnl).toFixed(0)} P&L).`,
-          metrics: {
-            strategy: best.name,
-            trades: best.trades,
-            winRate: wr,
-            pnl: Number(best.pnl),
-          },
-          createdAt: '',
-        },
-      });
-    }
-
-    const sessions = behavioral.timePatterns?.bySession ?? [];
-    if (sessions.length >= 2) {
-      sessions.sort((a: any, b: any) => b.trades - a.trades);
-      const top = sessions[0];
-      const bottom = sessions[sessions.length - 1];
-      if (top.trades >= 5 && bottom.trades >= 3) {
-        const topWr = top.winRate ?? 0;
-        const bottomWr = bottom.winRate ?? 0;
-        const gap = topWr - bottomWr;
-        if (gap > 15) {
-          candidates.push({
-            priority: 7,
-            card: {
-              id: '',
-              category: 'performance',
-              title: 'Session Performance',
-              message: `Your ${top.session} sessions (${top.trades} trades, ${(topWr * 100).toFixed(0)}% WR) significantly outperform ${bottom.session} (${bottom.trades} trades, ${(bottomWr * 100).toFixed(0)}% WR). Consider focusing on your best session times.`,
-              metrics: {
-                bestSession: top.session,
-                bestWR: Math.round(topWr * 100),
-                bestTrades: top.trades,
-                worstSession: bottom.session,
-                worstWR: Math.round(bottomWr * 100),
-              },
-              createdAt: '',
-            },
-          });
-        }
-      }
-    }
-
-    // ── Consistency priority ──
-    const streak = (advanced as any).currentStreak;
-    if (streak && streak.type === 'win' && streak.count >= 5) {
-      candidates.push({
-        priority: 8,
-        card: {
-          id: '',
-          category: 'consistency',
-          title: 'Winning Streak',
-          message: `You're on a ${streak.count}-trade winning streak. Momentum is real, but maintain discipline — avoid increasing position sizes during streaks.`,
-          metrics: { streakCount: streak.count, streakType: streak.type },
-          createdAt: '',
-        },
-      });
-    }
-
-    if (streak && streak.type === 'loss' && streak.count >= 4) {
-      candidates.push({
-        priority: 1,
-        card: {
-          id: '',
-          category: 'consistency',
-          title: 'Losing Streak',
-          message: `You're on a ${streak.count}-trade losing streak. Consider taking a break and reviewing your last ${streak.count} trades for common patterns before entering another position.`,
-          metrics: { streakCount: streak.count, streakType: streak.type },
-          createdAt: '',
-        },
-      });
-    }
-
-    const bestDay = (analytics as any).byDayOfWeek
-      ?.slice()
-      ?.sort((a: any, b: any) => b.pnl - a.pnl)[0];
-    if (bestDay && bestDay.trades >= 5) {
-      const worstDay = (analytics as any).byDayOfWeek
-        ?.slice()
-        ?.sort((a: any, b: any) => a.pnl - b.pnl)[0];
-      candidates.push({
-        priority: 9,
-        card: {
-          id: '',
-          category: 'consistency',
-          title: 'Best Trading Day',
-          message: `${bestDay.day} is your most profitable day (${bestDay.trades} trades, ${(bestDay.winRate * 100).toFixed(0)}% WR, +$${Number(bestDay.pnl).toFixed(0)}).${worstDay && worstDay.day !== bestDay.day ? ` ${worstDay.day} is your weakest (${worstDay.trades} trades, ${(worstDay.winRate * 100).toFixed(0)}% WR).` : ''}`,
-          metrics: {
-            bestDay: bestDay.day,
-            bestDayWR: Math.round(bestDay.winRate * 100),
-            bestDayPnl: Number(bestDay.pnl),
-            bestDayTrades: bestDay.trades,
-          },
-          createdAt: '',
-        },
-      });
-    }
-
-    // Pick top 3 by priority (lower number = higher priority)
-    candidates.sort((a, b) => a.priority - b.priority);
-    const selected = candidates.slice(0, 3);
-
-    // Deduplicate by category — don't show 2 discipline cards
-    const seenCategories = new Set<string>();
-    const deduped: typeof selected = [];
-    for (const c of selected) {
-      const cat = c.card.category;
-      if (seenCategories.has(cat) && cat !== 'risk') continue;
-      seenCategories.add(cat);
-      deduped.push(c);
-    }
-
-    return deduped.slice(0, 3).map((c) => c.card);
   }
 
   private async storeInsights(
     userId: string,
-    cards: InsightCard[],
+    selected: InsightCandidate[],
+    narrative: string | null,
   ): Promise<void> {
-    for (const card of cards) {
+    for (const c of selected) {
       await db.insert(aiInsights).values({
         userId,
-        insightType: card.category,
-        content: card.message,
-        metadata: card.metrics,
+        insightType: c.card.category,
+        content: c.card.message,
+        metadata: {
+          ...c.card.metrics,
+          ruleId: c.card.ruleId,
+          title: c.card.title,
+          priority: c.priority,
+          pushable: c.card.pushable,
+          source: c.card.source,
+        },
+      });
+    }
+
+    if (narrative) {
+      await db.insert(aiInsights).values({
+        userId,
+        insightType: NARRATIVE_TYPE,
+        content: narrative,
+        metadata: {},
       });
     }
   }
+
+  private evictExpiredCache(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.candidateCache) {
+      if (entry.expiresAt <= now) {
+        this.candidateCache.delete(key);
+      }
+    }
+  }
+}
+
+function selectTopInsights(candidates: InsightCandidate[]): InsightCandidate[] {
+  const sorted = [...candidates].sort((a, b) => a.priority - b.priority);
+
+  const seen = new Set<string>();
+  let riskCount = 0;
+  const out: InsightCandidate[] = [];
+
+  for (const c of sorted) {
+    const cat = c.card.category;
+    if (cat === 'risk') {
+      if (riskCount >= MAX_RISK_CARDS) continue;
+      riskCount++;
+    } else if (seen.has(cat)) {
+      continue;
+    }
+    seen.add(cat);
+    out.push(c);
+    if (out.length >= MAX_INSIGHTS) break;
+  }
+
+  return out;
+}
+
+function buildNarrativeContext(
+  ctx: InsightContext,
+  cards: InsightCard[],
+): string {
+  const p = ctx.portfolio.summary;
+  const topSymbol = ctx.portfolio.symbols[0];
+  const topStrategy = ctx.portfolio.strategies[0];
+
+  const lines = [
+    `Total trades: ${p.totalTrades ?? 0}`,
+    `Realized P&L: ${fmt(p.realizedPnl)}`,
+    `Win rate: ${typeof p.winRate === 'number' ? p.winRate.toFixed(1) : 0}%`,
+    `Profit factor: ${typeof p.profitFactor === 'number' ? p.profitFactor : 0}`,
+    `Symbols traded: ${ctx.portfolio.symbols.length}`,
+    `Strategies: ${ctx.portfolio.strategies.length}`,
+    `Top symbol by P&L: ${topSymbol?.symbol ?? 'n/a'} (${topSymbol?.allocationPct?.toFixed?.(0) ?? 0}% allocation)`,
+    `Top strategy by P&L: ${topStrategy?.strategy ?? 'n/a'}`,
+    `Long/short trades: ${ctx.portfolio.byDirection.long}/${ctx.portfolio.byDirection.short}`,
+    `Insight cards: ${cards.map((c) => `${c.category}: ${c.message}`).join(' | ')}`,
+  ];
+
+  return lines.join('\n');
+}
+
+function fmt(n: number): string {
+  const sign = n < 0 ? '-' : '+';
+  return `${sign}$${Math.abs(Number(n)).toFixed(0)}`;
 }

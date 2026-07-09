@@ -8,14 +8,45 @@ import {
 } from './ai-errors';
 import { AiMetricsService } from './ai-metrics.service';
 
+export interface ToolCall {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+}
+
+export interface ToolChoice {
+  type: 'function';
+  function: { name: string };
+}
+
+export type ChatRole = 'system' | 'user' | 'assistant' | 'tool';
+
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: ChatRole;
   content: string;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
+  name?: string;
+}
+
+export interface ToolDefinition {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+}
+
+export interface ProviderContext {
+  provider?: string;
+  apiKey?: string;
 }
 
 export interface ChatResponse {
   content: string;
   model: string;
+  tool_calls?: ToolCall[];
   usage: { prompt_tokens: number; completion_tokens: number };
 }
 
@@ -43,7 +74,8 @@ export class AIClient {
   private readonly circuitCooldownMs = 30_000;
 
   constructor(private readonly metrics: AiMetricsService) {
-    this.baseUrl = (process.env.AI_SERVICE_URL ?? 'http://localhost:8000') + '/v1';
+    this.baseUrl =
+      (process.env.AI_SERVICE_URL ?? 'http://localhost:8000') + '/v1';
     this.apiKey = process.env.AI_SERVICE_API_KEY ?? 'tradezen-internal';
     this.maxRetries = 3;
     this.defaultTimeoutMs = 30_000;
@@ -51,46 +83,92 @@ export class AIClient {
 
   async complete(
     messages: ChatMessage[],
-    options?: { model?: string; temperature?: number; timeoutMs?: number },
+    options?: {
+      model?: string;
+      temperature?: number;
+      timeoutMs?: number;
+      tools?: ToolDefinition[];
+      toolChoice?: ToolChoice | 'auto' | 'none';
+      signal?: AbortSignal;
+      providerContext?: ProviderContext;
+    },
   ): Promise<ChatResponse> {
     const timeoutMs = options?.timeoutMs ?? this.defaultTimeoutMs;
 
-    return this.executeWithRetry(async (signal) => {
-      const resp = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-internal-api-key': this.apiKey,
-        },
-        signal,
-        body: JSON.stringify({
+    return this.executeWithRetry(
+      async (signal) => {
+        const body: Record<string, unknown> = {
           model: options?.model,
           temperature: options?.temperature ?? 0.4,
           stream: false,
           messages,
-        }),
-      });
+        };
+        if (options?.tools?.length) {
+          body.tools = options.tools;
+          body.tool_choice = options.toolChoice ?? 'auto';
+        }
 
-      if (!resp.ok) {
-        const body = await resp.text().catch(() => '');
-        throw new AIServiceResponseError(resp.status, body);
-      }
+        const resp = await fetch(`${this.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-api-key': this.apiKey,
+            ...(options?.providerContext?.provider && { 'X-AI-Provider': options.providerContext.provider }),
+            ...(options?.providerContext?.apiKey && { 'X-AI-Provider-Key': options.providerContext.apiKey }),
+          },
+          signal,
+          body: JSON.stringify(body),
+        });
 
-      const data = await resp.json();
-      return {
-        content: data.choices?.[0]?.message?.content ?? '',
-        model: data.model ?? options?.model ?? 'unknown',
-        usage: {
-          prompt_tokens: data.usage?.prompt_tokens ?? 0,
-          completion_tokens: data.usage?.completion_tokens ?? 0,
-        },
-      };
-    }, timeoutMs);
+        if (!resp.ok) {
+          const body = await resp.text().catch(() => '');
+          throw new AIServiceResponseError(resp.status, body);
+        }
+
+        const data = await resp.json();
+        const msg = data.choices?.[0]?.message;
+        if (!msg) {
+          throw new AIServiceResponseError(
+            502,
+            `Empty response from AI service (choices: ${JSON.stringify(data.choices ?? [])})`,
+          );
+        }
+        const toolCalls: ToolCall[] | undefined =
+          msg.tool_calls
+            ?.filter((tc: any) => tc.id && tc.function?.name)
+            .map((tc: any) => ({
+              id: tc.id as string,
+              type: 'function' as const,
+              function: {
+                name: tc.function.name as string,
+                arguments: tc.function?.arguments ?? '{}',
+              },
+            })) ?? undefined;
+
+        return {
+          content: msg.content ?? '',
+          model: data.model ?? options?.model ?? 'unknown',
+          tool_calls: toolCalls,
+          usage: {
+            prompt_tokens: data.usage?.prompt_tokens ?? 0,
+            completion_tokens: data.usage?.completion_tokens ?? 0,
+          },
+        };
+      },
+      timeoutMs,
+      options?.signal,
+    );
   }
 
   async *stream(
     messages: ChatMessage[],
-    options?: { model?: string; temperature?: number; signal?: AbortSignal; timeoutMs?: number },
+    options?: {
+      model?: string;
+      temperature?: number;
+      signal?: AbortSignal;
+      timeoutMs?: number;
+      providerContext?: ProviderContext;
+    },
   ): AsyncGenerator<string> {
     const timeoutMs = options?.timeoutMs ?? this.defaultTimeoutMs;
     let lastError: AIServiceError | undefined;
@@ -109,10 +187,14 @@ export class AIClient {
             clearTimeout(timeoutId);
             return;
           }
-          options.signal.addEventListener('abort', () => {
-            clearTimeout(timeoutId);
-            controller.abort();
-          }, { once: true });
+          options.signal.addEventListener(
+            'abort',
+            () => {
+              clearTimeout(timeoutId);
+              controller.abort();
+            },
+            { once: true },
+          );
         }
 
         const resp = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -120,6 +202,8 @@ export class AIClient {
           headers: {
             'Content-Type': 'application/json',
             'x-internal-api-key': this.apiKey,
+            ...(options?.providerContext?.provider && { 'X-AI-Provider': options.providerContext.provider }),
+            ...(options?.providerContext?.apiKey && { 'X-AI-Provider-Key': options.providerContext.apiKey }),
           },
           signal: controller.signal,
           body: JSON.stringify({
@@ -177,6 +261,7 @@ export class AIClient {
   private async executeWithRetry<T>(
     fn: (signal: AbortSignal) => Promise<T>,
     timeoutMs: number,
+    externalSignal?: AbortSignal,
   ): Promise<T> {
     let lastError: AIServiceError | undefined;
 
@@ -184,8 +269,12 @@ export class AIClient {
       try {
         this.checkCircuitBreaker();
 
+        if (externalSignal?.aborted) {
+          throw new AIServiceUnavailableError(this.baseUrl);
+        }
+
         this.metrics.incRequest();
-        const signal = AbortSignal.timeout(timeoutMs);
+        const signal = externalSignal ?? AbortSignal.timeout(timeoutMs);
         const result = await fn(signal);
         this.onSuccess();
         return result;
