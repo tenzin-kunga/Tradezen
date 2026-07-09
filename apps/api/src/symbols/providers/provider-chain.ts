@@ -1,4 +1,4 @@
-import { SymbolProvider, SymbolData } from "./symbol-provider.interface";
+import { SymbolProvider, SymbolData } from './symbol-provider.interface';
 
 export class SymbolProviderChain {
   private providers: SymbolProvider[] = [];
@@ -32,7 +32,10 @@ export class SymbolProviderChain {
     return [];
   }
 
-  async enrich(ticker: string, exchange?: string): Promise<Partial<SymbolData> | null> {
+  async enrich(
+    ticker: string,
+    exchange?: string,
+  ): Promise<Partial<SymbolData> | null> {
     for (const provider of this.providers) {
       if (provider.enrich) {
         try {

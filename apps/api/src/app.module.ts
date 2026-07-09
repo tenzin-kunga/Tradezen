@@ -21,6 +21,10 @@ import { SymbolsModule } from './symbols/symbols.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
 import { RetrievalModule } from './knowledge/retrieval/retrieval.module';
+import { ResearchModule } from './research/research.module';
+import { PortfolioModule } from './portfolio/portfolio.module';
+import { SemanticModule } from './ai/context/semantic/semantic.module';
+import { UserSettingsModule } from './user-settings/user-settings.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
 import { SnapshotService } from './analytics/snapshot.service';
@@ -33,6 +37,7 @@ import { JournalAnalysisWorkflow } from './ai/workflows/journal-analysis.workflo
 import { CoachingWorkflow } from './ai/workflows/coaching.workflow';
 import { CoachingEngineService } from './ai/coaching-engine.service';
 import { AiInsightsService } from './ai/ai-insights.service';
+import { CoachingPushPolicy } from './ai/insights/push-policy';
 import { AiController } from './ai/ai.controller';
 import { NotificationService } from './common/services/notification.service';
 import { NotificationTriggersService } from './common/services/notification-triggers.service';
@@ -89,6 +94,10 @@ import { JournalsService } from './journals/journals.service';
     WatchlistModule,
     KnowledgeModule,
     RetrievalModule,
+    ResearchModule,
+    PortfolioModule,
+    SemanticModule,
+    UserSettingsModule,
   ],
   controllers: [AppController, AiController],
   providers: [
@@ -108,6 +117,7 @@ import { JournalsService } from './journals/journals.service';
     NotificationService,
     NotificationTriggersService,
     JournalsService,
+    CoachingPushPolicy,
   ],
   exports: [
     SnapshotService,
@@ -123,6 +133,7 @@ import { JournalsService } from './journals/journals.service';
     NotificationService,
     NotificationTriggersService,
     JournalsService,
+    CoachingPushPolicy,
   ],
 })
 export class AppModule implements NestModule {

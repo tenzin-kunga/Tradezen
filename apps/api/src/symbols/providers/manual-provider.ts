@@ -1,7 +1,7 @@
-import { SymbolProvider, SymbolData } from "./symbol-provider.interface";
+import { SymbolProvider, SymbolData } from './symbol-provider.interface';
 
 export class ManualProvider implements SymbolProvider {
-  name = "manual";
+  name = 'manual';
   priority = 100; // lowest priority — fallback only
 
   async lookup(ticker: string, exchange?: string): Promise<SymbolData | null> {
@@ -12,7 +12,7 @@ export class ManualProvider implements SymbolProvider {
     };
   }
 
-  async search(query: string): Promise<SymbolData[]> {
+  async search(_query: string): Promise<SymbolData[]> {
     // Manual provider can't search — returns empty
     return [];
   }

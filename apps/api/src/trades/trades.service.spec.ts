@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TradesService } from './trades.service';
 import { EventPublisherService } from '../common/services/event-publisher.service';
+import { SeedService } from '../seed/seed.service';
+import { TradeImageService } from './trades-image.service';
 
 jest.mock('../db/drizzle', () => ({
   db: {
@@ -39,6 +41,8 @@ describe('TradesService', () => {
           provide: EventPublisherService,
           useValue: { publish: jest.fn() },
         },
+        { provide: SeedService, useValue: {} },
+        { provide: TradeImageService, useValue: {} },
       ],
     }).compile();
 

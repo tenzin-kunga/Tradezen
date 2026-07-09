@@ -12,17 +12,24 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JournalsService } from './journals.service';
 import { CreateJournalDto, QueryJournalsDto, UpdateJournalDto } from './dto';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { NotificationTriggersService } from '../common/services/notification-triggers.service';
 
 @ApiTags('journals')
 @ApiBearerAuth()
 @Controller('journals')
 export class JournalsController {
-  constructor(private readonly journalsService: JournalsService) {}
+  constructor(
+    private readonly journalsService: JournalsService,
+    private readonly notificationTriggers: NotificationTriggersService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create or upsert journal entry for a date' })
   create(@CurrentUser('id') userId: string, @Body() dto: CreateJournalDto) {
-    return this.journalsService.create(userId, dto);
+    const result = this.journalsService.create(userId, dto);
+    // Fire-and-forget proactive coaching; must never break journal creation.
+    this.notificationTriggers.checkAndNotify(userId).catch(() => {});
+    return result;
   }
 
   @Get()

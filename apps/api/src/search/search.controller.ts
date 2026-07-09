@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ilike, or, and, eq, count, asc, desc } from 'drizzle-orm';
+import { ilike, or, and, eq, asc, desc } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { trades, journals, tags } from '@tradezen/db';
 import { CurrentUser } from '../auth/current-user.decorator';

@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import {
   eq,
   and,
@@ -23,8 +23,7 @@ import { EventPublisherService } from '../common/services/event-publisher.servic
 import { calculateRiskReward } from '../common/trading/risk-reward';
 import { SeedService } from '../seed/seed.service';
 import { TradeImageService } from './trades-image.service';
-import * as fs from 'fs';
-import * as path from 'path';
+import { MemoryService } from '../ai/memory.service';
 import type { Response } from 'express';
 
 const CSV_EXPORT_CHUNK = 500;
@@ -180,6 +179,7 @@ export class TradesService {
     private readonly eventPublisher: EventPublisherService,
     private readonly seedService: SeedService,
     private readonly imageService: TradeImageService,
+    @Optional() private readonly memoryService?: MemoryService,
   ) {}
 
   async findAllCursor(userId: string, cursor?: string, limit = 20) {
@@ -261,6 +261,16 @@ export class TradesService {
       'trade:created',
       trade,
     ]);
+
+    // Embed trade for semantic retrieval (fire-and-forget)
+    if (this.memoryService) {
+      const tradeContent =
+        `${trade.symbol} ${trade.direction} entry=${trade.entryPrice} exit=${trade.exitPrice} pnl=${trade.pnl} strategy=${trade.strategy ?? 'none'} notes=${trade.notes ?? ''}`.trim();
+      this.memoryService
+        .embedNewTrade(userId, trade.id, tradeContent)
+        .catch(() => {});
+    }
+
     return trade;
   }
 
@@ -522,7 +532,6 @@ export class TradesService {
       .from(trades)
       .where(and(eq(trades.id, id), eq(trades.userId, userId)));
     if (!tradeRes[0]) throw new NotFoundException(`Trade ${id} not found`);
-    const trade = tradeRes[0];
 
     // Delete all images from Cloudinary before deleting the trade
     const images = await this.imageService.getImages(id);

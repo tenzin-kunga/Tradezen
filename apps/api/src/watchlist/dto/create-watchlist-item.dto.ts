@@ -1,13 +1,20 @@
-import { IsString, IsOptional, IsNumber, MaxLength, Min, Max } from "class-validator";
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  MaxLength,
+  Min,
+  Max,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateWatchlistItemDto {
-  @ApiProperty({ example: "BEL" })
+  @ApiProperty({ example: 'BEL' })
   @IsString()
   @MaxLength(20)
   ticker: string;
 
-  @ApiPropertyOptional({ example: "NSE" })
+  @ApiPropertyOptional({ example: 'NSE' })
   @IsOptional()
   @IsString()
   @MaxLength(20)

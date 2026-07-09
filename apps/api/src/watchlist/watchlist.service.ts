@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { db } from "../db/drizzle";
-import { watchlists, watchlistItems, symbols } from "@tradezen/db";
-import { eq, and, asc } from "drizzle-orm";
-import { SymbolsService } from "../symbols/symbols.service";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { db } from '../db/drizzle';
+import { watchlists, watchlistItems, symbols } from '@tradezen/db';
+import { eq, and, asc } from 'drizzle-orm';
+import { SymbolsService } from '../symbols/symbols.service';
 import {
   CreateWatchlistDto,
   CreateWatchlistItemDto,
   UpdateWatchlistItemDto,
   ReorderWatchlistDto,
-} from "./dto";
+} from './dto';
 
 @Injectable()
 export class WatchlistService {
@@ -28,7 +28,7 @@ export class WatchlistService {
       .values({
         userId,
         name: dto.name,
-        type: dto.type || "manual",
+        type: dto.type || 'manual',
         definition: dto.definition || null,
       })
       .returning();
@@ -40,16 +40,11 @@ export class WatchlistService {
     const watchlist = await db
       .select()
       .from(watchlists)
-      .where(
-        and(
-          eq(watchlists.id, watchlistId),
-          eq(watchlists.userId, userId),
-        ),
-      )
+      .where(and(eq(watchlists.id, watchlistId), eq(watchlists.userId, userId)))
       .limit(1);
 
     if (watchlist.length === 0) {
-      throw new NotFoundException("Watchlist not found");
+      throw new NotFoundException('Watchlist not found');
     }
 
     await db.delete(watchlists).where(eq(watchlists.id, watchlistId));
@@ -60,16 +55,11 @@ export class WatchlistService {
     const watchlist = await db
       .select()
       .from(watchlists)
-      .where(
-        and(
-          eq(watchlists.id, watchlistId),
-          eq(watchlists.userId, userId),
-        ),
-      )
+      .where(and(eq(watchlists.id, watchlistId), eq(watchlists.userId, userId)))
       .limit(1);
 
     if (watchlist.length === 0) {
-      throw new NotFoundException("Watchlist not found");
+      throw new NotFoundException('Watchlist not found');
     }
 
     // Get items with joined symbol data
@@ -97,21 +87,20 @@ export class WatchlistService {
     return items;
   }
 
-  async addItem(userId: string, watchlistId: string, dto: CreateWatchlistItemDto) {
+  async addItem(
+    userId: string,
+    watchlistId: string,
+    dto: CreateWatchlistItemDto,
+  ) {
     // Verify ownership
     const watchlist = await db
       .select()
       .from(watchlists)
-      .where(
-        and(
-          eq(watchlists.id, watchlistId),
-          eq(watchlists.userId, userId),
-        ),
-      )
+      .where(and(eq(watchlists.id, watchlistId), eq(watchlists.userId, userId)))
       .limit(1);
 
     if (watchlist.length === 0) {
-      throw new NotFoundException("Watchlist not found");
+      throw new NotFoundException('Watchlist not found');
     }
 
     // Lookup or create symbol
@@ -151,16 +140,11 @@ export class WatchlistService {
     const watchlist = await db
       .select()
       .from(watchlists)
-      .where(
-        and(
-          eq(watchlists.id, watchlistId),
-          eq(watchlists.userId, userId),
-        ),
-      )
+      .where(and(eq(watchlists.id, watchlistId), eq(watchlists.userId, userId)))
       .limit(1);
 
     if (watchlist.length === 0) {
-      throw new NotFoundException("Watchlist not found");
+      throw new NotFoundException('Watchlist not found');
     }
 
     const [updated] = await db
@@ -181,16 +165,11 @@ export class WatchlistService {
     const watchlist = await db
       .select()
       .from(watchlists)
-      .where(
-        and(
-          eq(watchlists.id, watchlistId),
-          eq(watchlists.userId, userId),
-        ),
-      )
+      .where(and(eq(watchlists.id, watchlistId), eq(watchlists.userId, userId)))
       .limit(1);
 
     if (watchlist.length === 0) {
-      throw new NotFoundException("Watchlist not found");
+      throw new NotFoundException('Watchlist not found');
     }
 
     await db.delete(watchlistItems).where(eq(watchlistItems.id, itemId));
@@ -201,23 +180,18 @@ export class WatchlistService {
     const watchlist = await db
       .select()
       .from(watchlists)
-      .where(
-        and(
-          eq(watchlists.id, watchlistId),
-          eq(watchlists.userId, userId),
-        ),
-      )
+      .where(and(eq(watchlists.id, watchlistId), eq(watchlists.userId, userId)))
       .limit(1);
 
     if (watchlist.length === 0) {
-      throw new NotFoundException("Watchlist not found");
+      throw new NotFoundException('Watchlist not found');
     }
 
     // Get current items
     const items = await this.getItems(watchlistId, userId);
     const item = items.find((i) => i.id === dto.itemId);
     if (!item) {
-      throw new NotFoundException("Item not found");
+      throw new NotFoundException('Item not found');
     }
 
     // Compute new sort order

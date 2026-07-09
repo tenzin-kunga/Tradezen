@@ -1,10 +1,9 @@
-import { Injectable } from "@nestjs/common";
-import { db } from "../db/drizzle";
-import { symbols } from "@tradezen/db";
-import { eq, ilike, or, and } from "drizzle-orm";
-import { SymbolProviderChain } from "./providers/provider-chain";
-import { ManualProvider } from "./providers/manual-provider";
-import { CreateSymbolDto } from "./dto";
+import { Injectable } from '@nestjs/common';
+import { db } from '../db/drizzle';
+import { symbols } from '@tradezen/db';
+import { eq, ilike, or } from 'drizzle-orm';
+import { SymbolProviderChain } from './providers/provider-chain';
+import { ManualProvider } from './providers/manual-provider';
 
 @Injectable()
 export class SymbolsService {
@@ -16,7 +15,7 @@ export class SymbolsService {
   }
 
   getSymbolKey(ticker: string, exchange?: string): string {
-    return `${exchange || "UNKNOWN"}:${ticker.toUpperCase()}`;
+    return `${exchange || 'UNKNOWN'}:${ticker.toUpperCase()}`;
   }
 
   async lookupOrCreate(
@@ -59,7 +58,14 @@ export class SymbolsService {
     return { id: created.id, symbolKey: created.symbolKey };
   }
 
-  async search(query: string): Promise<Array<{ id: string; ticker: string; exchange: string | null; name: string | null }>> {
+  async search(query: string): Promise<
+    Array<{
+      id: string;
+      ticker: string;
+      exchange: string | null;
+      name: string | null;
+    }>
+  > {
     if (query.length < 1) return [];
 
     const results = await db
