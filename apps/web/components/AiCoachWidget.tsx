@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { WidgetShell } from "@/components/design-system";
 import { useAiInsights } from "@/hooks/useAiInsights";
 import type { AiInsight } from "@/lib/api";
@@ -107,15 +106,6 @@ export default function AiCoachWidget() {
         </div>
       )}
 
-      {insights.length > 0 && (
-        <Link
-          href="/portfolio"
-          className="text-xs no-underline mt-1"
-          style={{ color: "var(--accent, #38bdf8)" }}
-        >
-          View Portfolio →
-        </Link>
-      )}
     </WidgetShell>
   );
 }

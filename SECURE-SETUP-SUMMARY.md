@@ -87,7 +87,7 @@ DOCKERHUB_TOKEN           # Docker Hub access token
 CODECOV_TOKEN             # Optional, for coverage
 JWT_SECRET                # 64+ random chars
 JWT_REFRESH_SECRET        # 64+ random chars
-OPENROUTER_API_KEY        # OpenRouter account key
+# AI keys are per-user (set in Settings UI, encrypted in DB) — no server-side key
 RENDER_API_KEY            # Render.com API key
 RENDER_SERVICE_ID         # Render service ID
 ```

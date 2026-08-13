@@ -65,14 +65,22 @@ export const ResearchModule: WorkspaceModule = {
         command: "research",
         label: "Open Research",
         description: "Open the research workspace",
-        handler: () => {},
+        handler: () => {
+          getResourceManager().open(
+            createResearchResource("default", "Research"),
+          );
+        },
       },
       {
         namespace: "module",
         command: "new-research",
         label: "New Research Project",
         description: "Create a new research project",
-        handler: () => {},
+        handler: () => {
+          getResourceManager().open(
+            createResearchResource("default", "Research"),
+          );
+        },
       },
     ]),
     new SearchCap(createResearchSearchProvider()),

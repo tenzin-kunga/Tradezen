@@ -1,5 +1,20 @@
-import { IsString, MinLength, IsIn } from 'class-validator';
+import { IsString, MinLength, IsIn, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+
+const PROVIDERS = [
+  'cloud',
+  'openrouter',
+  'openai',
+  'anthropic',
+  'google',
+  'mistral',
+  'groq',
+  'together',
+  'perplexity',
+  'fireworks',
+  'deepseek',
+  'xai',
+] as const;
 
 export class ValidateApiKeyDto {
   @ApiProperty({ example: 'sk-or-v1-...' })
@@ -9,9 +24,14 @@ export class ValidateApiKeyDto {
 
   @ApiProperty({
     example: 'openrouter',
-    enum: ['openrouter', 'openai', 'anthropic'],
+    enum: PROVIDERS,
   })
   @IsString()
-  @IsIn(['openrouter', 'openai', 'anthropic'])
+  @IsIn(PROVIDERS)
   provider!: string;
+
+  @ApiProperty({ example: 'https://api.groq.com/openai/v1', required: false })
+  @IsOptional()
+  @IsString()
+  baseUrl?: string;
 }

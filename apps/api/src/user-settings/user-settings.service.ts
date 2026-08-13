@@ -119,6 +119,7 @@ export class UserSettingsService {
     provider: string,
     validated: boolean,
     error?: string,
+    baseUrl?: string,
   ): Promise<ApiKeyStatus> {
     if (!this.encryption.isConfigured) {
       throw new Error('Encryption not configured — cannot store API keys');
@@ -136,7 +137,7 @@ export class UserSettingsService {
       assistantSettings: {
         aiProviders: {
           ...existingProviders,
-          cloud: { provider, encryptedKey, status },
+          cloud: { provider, encryptedKey, status, baseUrl },
         },
       },
     });
@@ -161,13 +162,17 @@ export class UserSettingsService {
 
   async getDecryptedApiKey(
     userId: string,
-  ): Promise<{ key: string; provider: string } | null> {
+  ): Promise<{ key: string; provider: string; baseUrl?: string } | null> {
     const settings = await this.get(userId);
     const cloudConfig = settings.assistantSettings?.aiProviders?.cloud;
     if (!cloudConfig?.encryptedKey) return null;
     try {
       const key = this.encryption.decrypt(cloudConfig.encryptedKey);
-      return { key, provider: cloudConfig.provider ?? 'openrouter' };
+      return {
+        key,
+        provider: cloudConfig.provider ?? 'cloud',
+        baseUrl: cloudConfig.baseUrl,
+      };
     } catch {
       this.logger.warn(`Failed to decrypt API key for user ${userId}`);
       return null;

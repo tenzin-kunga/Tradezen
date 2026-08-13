@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ChatMessage } from "@/hooks/useChat";
 import type { WorkspaceAction } from "@/lib/api/assistant";
+import { normalizeAssistantMarkdown } from "@/lib/assistant/normalizeMarkdown";
 import ToolCallBlock from "./ToolCallBlock";
 import { IconSparkle } from "./icons";
 
@@ -185,7 +186,7 @@ export default function MessageBubble({
                   pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
                 }}
               >
-                {message.content}
+                {normalizeAssistantMarkdown(message.content)}
               </ReactMarkdown>
             </div>
           ) : message.type === "error" ? (

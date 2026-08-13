@@ -1,108 +1,175 @@
 ﻿"use client";
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/components/Toast";
-import { createTrade, uploadTradeImage, tagTrade } from "@/lib/api";
-import TagPicker from "@/components/TagPicker";
-import type { Tag } from "@/components/TagPicker";
 
-function RRDisplay({
-  entry,
-  stopLoss,
-  takeProfit,
-}: {
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import {
+  createTrade,
+  tagTrade,
+  createJournal,
+  getJournalByDate,
+  updateJournal,
+  getJournalStreak,
+  uploadTradeImage,
+} from "@/lib/api";
+import { searchSymbols, type Symbol as TickerSymbol } from "@/lib/api/watchlist";
+import { Button } from "@/components/primitives/Button";
+import { IconButton } from "@/components/primitives/IconButton";
+import { NumberInput } from "@/components/primitives/NumberInput";
+import { Badge } from "@/components/primitives/Badge";
+import TagPicker, { type Tag } from "@/components/TagPicker";
+import { useToast } from "@/components/Toast";
+
+const MOODS = [
+  { value: "euphoric", emoji: "🤩", color: "#22c55e" },
+  { value: "confident", emoji: "😎", color: "#84cc16" },
+  { value: "neutral", emoji: "😐", color: "#a1a1aa" },
+  { value: "anxious", emoji: "😰", color: "#f59e0b" },
+  { value: "frustrated", emoji: "😡", color: "#ef4444" },
+] as const;
+
+const INSTRUMENTS: { ticker: string; label: string }[] = [
+  { ticker: "EURUSD", label: "Forex" },
+  { ticker: "GBPUSD", label: "Forex" },
+  { ticker: "GBPJPY", label: "Forex" },
+  { ticker: "USDJPY", label: "Forex" },
+  { ticker: "AUDUSD", label: "Forex" },
+  { ticker: "BTCUSD", label: "Crypto" },
+  { ticker: "XAUUSD", label: "Gold" },
+  { ticker: "XAGUSD", label: "Silver" },
+  { ticker: "US30", label: "Index" },
+  { ticker: "NAS100", label: "Index" },
+];
+
+const CONTRACT_SIZES: Record<string, number> = {
+  EURUSD: 10000,
+  GBPUSD: 10000,
+  GBPJPY: 10000,
+  USDJPY: 10000,
+  AUDUSD: 10000,
+  BTCUSD: 1000,
+  XAUUSD: 1000,
+  XAGUSD: 1000,
+  US30: 1000,
+  ETHUSD: 1000,
+  NAS100: 1000,
+};
+
+const KNOWN_TICKERS = new Set(INSTRUMENTS.map((i) => i.ticker));
+const CUSTOM_SENTINEL = "__custom__";
+
+type Direction = "LONG" | "SHORT";
+
+const DRAFT_KEY = "tradezen-trade-draft";
+
+interface TradeDraft {
+  symbol: string;
+  direction: Direction;
   entry: string;
+  exit: string;
+  quantity: string;
   stopLoss: string;
   takeProfit: string;
-}) {
-  const e = parseFloat(entry);
-  const sl = parseFloat(stopLoss);
-  const tp = parseFloat(takeProfit);
-  if (!e || !sl || !tp || Math.abs(e - sl) === 0)
-    return <span style={{ color: "var(--text-dim)" }}>--</span>;
-  const risk = Math.abs(e - sl);
-  const reward = Math.abs(tp - e);
-  const rr = reward / risk;
-  const riskAmt = risk;
-  const maxReward = reward;
+  commission: string;
+  strategy: string;
+  tradeDate: string;
+  notes: string;
+  fomoCheck: boolean;
+  trendAlignment: boolean;
+  vengeanceTrade: boolean;
+  symbolContractSize: number | null;
+  mood: string;
+  preMarket: string;
+  postMarket: string;
+  lessons: string;
+  chartPreview?: string;
+  chartFileName?: string;
+}
+
+function isDraftEmpty(d: TradeDraft): boolean {
   return (
-    <div>
-      <div
-        className="text-3xl md:text-4xl font-bold"
+    !d.symbol &&
+    !d.entry &&
+    !d.exit &&
+    !d.quantity &&
+    !d.stopLoss &&
+    !d.takeProfit &&
+    !d.commission &&
+    !d.strategy &&
+    !d.notes &&
+    !d.mood &&
+    !d.preMarket &&
+    !d.postMarket &&
+    !d.lessons &&
+    !d.chartPreview
+  );
+}
+
+function dataURLToFile(dataUrl: string, fileName: string): File {
+  const [meta, data] = dataUrl.split(",");
+  const mime = /data:(.*?);/.exec(meta)?.[1] ?? "image/png";
+  const bin = atob(data);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new File([bytes], fileName, { type: mime });
+}
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: 11,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--text-dim)",
+  fontFamily: "var(--font-display)",
+  marginBottom: 7,
+  fontWeight: 600,
+};
+
+const panelStyle: React.CSSProperties = {
+  background: "var(--bg-surface)",
+  border: "1px solid var(--border-soft)",
+  borderRadius: 16,
+  padding: 22,
+};
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 16,
+      }}
+    >
+      <span
         style={{
-          color:
-            rr >= 2
-              ? "var(--accent-profit)"
-              : rr >= 1
-                ? "var(--accent-warn)"
-                : "var(--accent-loss)",
+          width: 3,
+          height: 13,
+          borderRadius: 2,
+          background: "var(--accent)",
+        }}
+      />
+      <span
+        style={{
+          fontSize: 12,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "var(--text-muted)",
+          fontFamily: "var(--font-display)",
+          fontWeight: 700,
         }}
       >
-        1:{rr.toFixed(2)}
-      </div>
-      <div
-        className="text-xs mt-2 flex flex-col gap-1"
-        style={{ color: "var(--text-muted)" }}
-      >
-        <span>
-          RISK AMT:{" "}
-          <span style={{ color: "var(--text-primary)" }}>
-            {riskAmt.toFixed(4)}
-          </span>
-        </span>
-        <span>
-          MAX REWARD:{" "}
-          <span style={{ color: "var(--accent-profit)" }}>
-            {maxReward.toFixed(4)}
-          </span>
-        </span>
-      </div>
+        {children}
+      </span>
     </div>
   );
 }
 
-function TogglePill({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) {
+function RequiredMark() {
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!value)}
-      className="flex items-center gap-2.5 bg-transparent border-none cursor-pointer py-1.5"
-    >
-      <div
-        className="w-8 h-4.5 rounded-full relative transition-colors flex-shrink-0"
-        style={{
-          width: 32,
-          height: 18,
-          borderRadius: 9,
-          backgroundColor: value ? "var(--text-primary)" : "var(--border)",
-        }}
-      >
-        <div
-          className="absolute top-[3px] w-3 h-3 rounded-full transition-all"
-          style={{
-            left: value ? 17 : 3,
-            width: 12,
-            height: 12,
-            borderRadius: 6,
-            backgroundColor: value ? "var(--bg-primary)" : "var(--text-muted)",
-          }}
-        />
-      </div>
-      <span
-        className="text-xs tracking-widest"
-        style={{ color: value ? "var(--text-primary)" : "var(--text-muted)" }}
-      >
-        {label}
-      </span>
-    </button>
+    <span style={{ color: "var(--accent-loss)", marginLeft: 3, fontWeight: 700 }}>
+      *
+    </span>
   );
 }
 
@@ -110,656 +177,1042 @@ export default function AddTradePage() {
   const router = useRouter();
   const { addToast } = useToast();
 
+  // ── Trade fields ──
   const [symbol, setSymbol] = useState("");
-  const [direction, setDirection] = useState<"LONG" | "SHORT">("LONG");
+  const [direction, setDirection] = useState<Direction>("LONG");
   const [entry, setEntry] = useState("");
   const [exit, setExit] = useState("");
   const [quantity, setQuantity] = useState("");
   const [stopLoss, setStopLoss] = useState("");
   const [takeProfit, setTakeProfit] = useState("");
+  const [commission, setCommission] = useState("");
   const [strategy, setStrategy] = useState("");
+  const [tradeDate, setTradeDate] = useState(
+    () => new Date().toISOString().slice(0, 10),
+  );
   const [notes, setNotes] = useState("");
   const [fomoCheck, setFomoCheck] = useState(false);
   const [trendAlignment, setTrendAlignment] = useState(false);
   const [vengeanceTrade, setVengeanceTrade] = useState(false);
-  const [commission, setCommission] = useState("");
-  const [contractSize, setContractSize] = useState("100000");
-  const [applyRiskShield, setApplyRiskShield] = useState(false);
+
+  // ── Journal fields ──
+  const [mood, setMood] = useState("");
+  const [preMarket, setPreMarket] = useState("");
+  const [postMarket, setPostMarket] = useState("");
+  const [lessons, setLessons] = useState("");
+  const [streak, setStreak] = useState<number | null>(null);
+
+  // ── UI state ──
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
-  const [utcTime, setUtcTime] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [chartImage, setChartImage] = useState<string | null>(null);
+  const [attempted, setAttempted] = useState(false);
   const [chartFile, setChartFile] = useState<File | null>(null);
-  const [tradeDate, setTradeDate] = useState(() => {
-    const now = new Date();
-    return now.toISOString().slice(0, 10);
-  });
-  const [tradeTime, setTradeTime] = useState(() => {
-    const now = new Date();
-    return now.toISOString().slice(11, 16);
-  });
-  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [chartPreview, setChartPreview] = useState<string | null>(null);
+  const [symbolContractSize, setSymbolContractSize] = useState<number | null>(null);
+  const [customMode, setCustomMode] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+  // ── Draft (auto-save) state ──
+  const [draftRestored, setDraftRestored] = useState(false);
+  const saveReadyRef = useRef(false);
+  const hydratingRef = useRef(false);
+
+  // ── Symbol autocomplete ──
+  const [symbolQuery, setSymbolQuery] = useState("");
+  const [symbolResults, setSymbolResults] = useState<TickerSymbol[]>([]);
+  const [symbolOpen, setSymbolOpen] = useState(false);
+  const symbolBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getJournalStreak()
+      .then((s) => setStreak(s.currentStreak))
+      .catch(() => {});
+  }, []);
+
+  // Prefill journal for the selected date
+  useEffect(() => {
+    let cancelled = false;
+    getJournalByDate(tradeDate)
+      .then((j) => {
+        if (cancelled) return;
+        // ponytail: one-shot guard so a restored draft's journal isn't clobbered
+        if (hydratingRef.current) {
+          hydratingRef.current = false;
+          return;
+        }
+        if (!j) return;
+        setMood(j.mood ?? "");
+        setPreMarket(j.preMarket ?? "");
+        setPostMarket(j.postMarket ?? "");
+        setLessons(j.lessons ?? "");
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [tradeDate]);
+
+  // Debounced symbol search
+  useEffect(() => {
+    if (!symbolQuery.trim()) {
+      setSymbolResults([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      searchSymbols(symbolQuery.trim())
+        .then((res) => setSymbolResults(res.slice(0, 6)))
+        .catch(() => setSymbolResults([]));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [symbolQuery]);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (symbolBoxRef.current && !symbolBoxRef.current.contains(e.target as Node)) {
+        setSymbolOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  // ── Auto-save draft (declared BEFORE restore so the mount-time save is gated) ──
+  useEffect(() => {
+    if (!saveReadyRef.current) return;
+    const draft: TradeDraft = {
+      symbol,
+      direction,
+      entry,
+      exit,
+      quantity,
+      stopLoss,
+      takeProfit,
+      commission,
+      strategy,
+      tradeDate,
+      notes,
+      fomoCheck,
+      trendAlignment,
+      vengeanceTrade,
+      symbolContractSize,
+      mood,
+      preMarket,
+      postMarket,
+      lessons,
+      chartPreview: chartPreview ?? undefined,
+      chartFileName: chartFile?.name,
+    };
+    const t = setTimeout(() => {
+      try {
+        if (isDraftEmpty(draft)) {
+          localStorage.removeItem(DRAFT_KEY);
+        } else {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        }
+      } catch {
+        // ponytail: quota exceeded (oversized image) — save text draft without the chart
+        try {
+          localStorage.setItem(
+            DRAFT_KEY,
+            JSON.stringify({ ...draft, chartPreview: undefined, chartFileName: undefined }),
+          );
+        } catch {}
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [
+    symbol, direction, entry, exit, quantity, stopLoss, takeProfit, commission,
+    strategy, tradeDate, notes, fomoCheck, trendAlignment, vengeanceTrade,
+    symbolContractSize, mood, preMarket, postMarket, lessons, chartPreview,
+    chartFile,
+  ]);
+
+  // ── Restore draft on mount ──
+  useEffect(() => {
+    let draft: TradeDraft | null = null;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      draft = raw ? (JSON.parse(raw) as TradeDraft) : null;
+    } catch {
+      draft = null;
+    }
+    if (draft) {
+      setSymbol(draft.symbol ?? "");
+      setCustomMode(draft.symbol ? !KNOWN_TICKERS.has(draft.symbol) : false);
+      setDirection(draft.direction === "SHORT" ? "SHORT" : "LONG");
+      setEntry(draft.entry ?? "");
+      setExit(draft.exit ?? "");
+      setQuantity(draft.quantity ?? "");
+      setStopLoss(draft.stopLoss ?? "");
+      setTakeProfit(draft.takeProfit ?? "");
+      setCommission(draft.commission ?? "");
+      setStrategy(draft.strategy ?? "");
+      setTradeDate(draft.tradeDate ?? new Date().toISOString().slice(0, 10));
+      setNotes(draft.notes ?? "");
+      setFomoCheck(draft.fomoCheck ?? false);
+      setTrendAlignment(draft.trendAlignment ?? false);
+      setVengeanceTrade(draft.vengeanceTrade ?? false);
+      setSymbolContractSize(draft.symbolContractSize ?? null);
+      setMood(draft.mood ?? "");
+      setPreMarket(draft.preMarket ?? "");
+      setPostMarket(draft.postMarket ?? "");
+      setLessons(draft.lessons ?? "");
+      if (draft.chartPreview) {
+        setChartPreview(draft.chartPreview);
+        setChartFile(
+          dataURLToFile(draft.chartPreview, draft.chartFileName ?? "trade-chart.png"),
+        );
+      }
+      setDraftRestored(true);
+      hydratingRef.current = true;
+    }
+    saveReadyRef.current = true;
+  }, []);
+
+  // ── Live P&L math ──
+  const pnl = useMemo(() => {
+    const e = parseFloat(entry);
+    const x = parseFloat(exit);
+    const q = parseFloat(quantity);
+    const comm = parseFloat(commission) || 0;
+    const cs = symbolContractSize ?? 100000;
+    const sl = parseFloat(stopLoss);
+    const tp = parseFloat(takeProfit);
+    const dir = direction === "LONG" ? 1 : -1;
+    const valid = e > 0 && x > 0 && q > 0;
+    const gross = valid ? (x - e) * q * cs * dir : 0;
+    const net = gross - comm;
+    const notional = valid ? e * q * cs : 0;
+    const retPct = notional > 0 ? (net / notional) * 100 : 0;
+    const riskPerUnit = sl > 0 ? Math.abs(e - sl) : 0;
+    const rewardPerUnit = tp > 0 ? Math.abs(tp - e) : 0;
+    const initialRisk = riskPerUnit * q * cs;
+    const reward = rewardPerUnit * q * cs;
+    const rMult = initialRisk > 0 ? net / initialRisk : 0;
+    const rr = riskPerUnit > 0 && rewardPerUnit > 0 ? rewardPerUnit / riskPerUnit : 0;
+    return {
+      valid,
+      gross,
+      net,
+      notional,
+      retPct,
+      rMult,
+      rr,
+      initialRisk,
+      reward,
+      hasSL: sl > 0,
+      hasTP: tp > 0,
+      cs,
+    };
+  }, [entry, exit, quantity, commission, stopLoss, takeProfit, direction, symbolContractSize]);
+
+  const errors = useMemo(() => {
+    const e: Record<string, string> = {};
+    if (!symbol.trim()) e.symbol = "Instrument ticker is required.";
+    if (!entry) e.entry = "Entry price is required.";
+    if (!exit) e.exit = "Exit price is required.";
+    if (!quantity) e.quantity = "Quantity is required.";
+    return e;
+  }, [symbol, entry, exit, quantity]);
+
+  function handleChartChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setChartFile(file);
     const reader = new FileReader();
-    reader.onload = (ev) => setChartImage(ev.target?.result as string);
+    reader.onload = (ev) => setChartPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
   }
 
-  useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      const h = now.getUTCHours().toString().padStart(2, "0");
-      const m = now.getUTCMinutes().toString().padStart(2, "0");
-      const s = now.getUTCSeconds().toString().padStart(2, "0");
-      setUtcTime(`${h}:${m}:${s} UTC`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
+  function removeChart() {
+    setChartFile(null);
+    setChartPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function resetTradeFields() {
+    setSymbol("");
+    setCustomMode(false);
+    setSymbolQuery("");
+    setSymbolResults([]);
+    setDirection("LONG");
+    setEntry("");
+    setExit("");
+    setQuantity("");
+    setStopLoss("");
+    setTakeProfit("");
+    setCommission("");
+    setStrategy("");
+    setNotes("");
+    setFomoCheck(false);
+    setTrendAlignment(false);
+    setVengeanceTrade(false);
+    setSymbolContractSize(null);
+    setMood("");
+    setPreMarket("");
+    setPostMarket("");
+    setLessons("");
+    setSelectedTags([]);
+    removeChart();
+  }
+
+  function clearDraft() {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {}
+    setDraftRestored(false);
+    resetTradeFields();
+  }
+
+  async function submitTrade(addAnother: boolean) {
     setError("");
-
-    if (!symbol.trim()) {
-      setError("INSTRUMENT TICKER is required.");
+    if (Object.keys(errors).length > 0) {
+      setAttempted(true);
+      setError(Object.values(errors)[0]);
       return;
     }
-    if (!entry || !exit || !quantity) {
-      setError("Entry price, exit price, and quantity are required.");
-      return;
-    }
-
     setSubmitting(true);
     try {
-      const trade = await createTrade({
+      const created = await createTrade({
         symbol: symbol.trim().toUpperCase(),
         direction: direction === "LONG" ? "buy" : "sell",
         entry: parseFloat(entry),
         exit: parseFloat(exit),
         lot: parseFloat(quantity),
-        contract_size: parseFloat(contractSize) || 100000,
         stop_loss: stopLoss ? parseFloat(stopLoss) : undefined,
         take_profit: takeProfit ? parseFloat(takeProfit) : undefined,
+        commission: commission ? parseFloat(commission) : undefined,
         strategy: strategy.trim() || undefined,
         notes: notes.trim() || undefined,
         fomo_check: fomoCheck,
         trend_alignment: trendAlignment,
         vengeance_trade: vengeanceTrade,
-        trade_date:
-          tradeDate && tradeTime ? `${tradeDate}T${tradeTime}:00Z` : undefined,
-        commission: commission ? parseFloat(commission) : undefined,
+        trade_date: tradeDate,
+        contract_size: symbolContractSize,
       });
-      if (chartFile && trade?.id) {
-        await uploadTradeImage(trade.id, chartFile);
+      const tradeId = (created as any)?.id;
+      if (tradeId) {
+        await Promise.all(selectedTags.map((t) => tagTrade(t.id, tradeId)));
+        if (chartFile) await uploadTradeImage(tradeId, chartFile);
       }
-      if (trade?.id && selectedTags.length > 0) {
-        await Promise.all(selectedTags.map((t) => tagTrade(t.id, trade.id)));
+
+      const hasJournal =
+        mood || preMarket.trim() || postMarket.trim() || lessons.trim();
+      if (hasJournal) {
+        const journalData = {
+          date: tradeDate,
+          mood: mood || undefined,
+          preMarket: preMarket.trim() || undefined,
+          postMarket: postMarket.trim() || undefined,
+          lessons: lessons.trim() || undefined,
+        };
+        await createJournal(journalData as any).catch((err: any) => {
+          // ponytail: backend enforces one journal per date — upsert on 409
+          if (String(err?.message ?? "").includes("409")) {
+            return getJournalByDate(tradeDate).then((ex: any) =>
+              updateJournal(ex.id, journalData as any),
+            );
+          }
+        });
       }
-      addToast("success", `Trade ${trade?.id?.slice(0, 8) || ""} created`);
-      router.push("/trades");
+
+      addToast("success", "Trade committed");
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {}
+      setDraftRestored(false);
+      if (addAnother) {
+        resetTradeFields();
+        setSubmitting(false);
+      } else {
+        router.push("/trades");
+      }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Submission failed.");
+      setError(err instanceof Error ? err.message : "Failed to save trade.");
       setSubmitting(false);
     }
   }
 
-  const inputCls =
-    "w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded px-3 py-2.5 text-sm outline-none box-border focus:border-[var(--accent-cyan)]";
-  const labelCls = "block text-xs tracking-widest mb-1.5";
-  const sectionCls =
-    "bg-[var(--bg-surface)] border border-[var(--border)] rounded p-4 md:p-5 mb-4";
+  function handleFormKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      submitTrade(false);
+      return;
+    }
+    if (e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT") {
+      e.preventDefault();
+    }
+  }
+
+  const pnlTone = pnl.net > 0 ? "profit" : pnl.net < 0 ? "loss" : "neutral";
 
   return (
-    <div className="min-h-screen" style={{ color: "var(--text-primary)" }}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 md:mb-8">
-        <div>
-          <h1 className="text-lg md:text-xl font-bold tracking-widest m-0">
-            LOG NEW EXECUTION
-          </h1>
-          <p
-            className="text-xs mt-1 tracking-wide"
-            style={{ color: "var(--text-muted)" }}
-          >
-            ENTRY_PROTOCOL // COMMIT TO LEDGER
-          </p>
-        </div>
-        <div
-          className="text-right text-xs"
-          style={{ color: "var(--text-muted)" }}
+    <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
+      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "28px 24px 120px" }}>
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            paddingBottom: 18,
+            borderBottom: "1px solid var(--border-soft)",
+            marginBottom: 28,
+          }}
         >
-          <div className="tracking-widest">SYSTEM CLOCK</div>
-          <div
-            className="text-lg font-bold mt-1 tracking-wide"
-            style={{ color: "var(--text-primary)" }}
-          >
-            {utcTime}
-          </div>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        {/* Main grid: single col mobile, 2 col desktop */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-          {/* Left column */}
           <div>
-            {/* Section 01: Instrument */}
-            <div className={sectionCls}>
-              <div
-                className="text-xs tracking-widest mb-4"
-                style={{ color: "var(--text-muted)" }}
-              >
-                01 // INSTRUMENT PARAMETERS
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                <div>
-                  <label className={labelCls}>INSTRUMENT TICKER</label>
-                  <input
-                    className={inputCls}
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value)}
-                    placeholder="e.g. BTCUSD"
-                    autoComplete="off"
-                  />
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                margin: 0,
+              }}
+            >
+              NEW TRADE
+            </h1>
+            <p style={{ color: "var(--text-dim)", fontSize: 13, margin: "4px 0 0" }}>
+              Log the execution and capture the mindset behind it.
+            </p>
+          </div>
+          {streak !== null && (
+            <Badge
+              tone="accent"
+              style={{
+                fontSize: 12,
+                padding: "5px 12px",
+                background: "transparent",
+                border: "none",
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 9999,
+                  background: "var(--accent)",
+                  boxShadow: "0 0 6px var(--accent)",
+                }}
+              />
+              {streak}-DAY STREAK
+            </Badge>
+          )}
+        </header>
+
+        <form onSubmit={(e) => e.preventDefault()} onKeyDown={handleFormKeyDown}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) 380px",
+              gap: 24,
+              alignItems: "start",
+            }}
+          >
+            {/* ── LEFT: TRADE ENTRY ── */}
+            <div style={panelStyle}>
+              <SectionTitle>Trade Entry</SectionTitle>
+
+              {draftRestored && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    marginBottom: 16,
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    background: "var(--bg-primary)",
+                    fontSize: 12,
+                  }}
+                >
+                  <span style={{ color: "var(--text-dim)" }}>
+                    Restored unsaved draft
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearDraft}
+                    style={{
+                      color: "var(--accent)",
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      fontFamily: "var(--font-display)",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    CLEAR
+                  </button>
                 </div>
-                <div>
-                  <label className={labelCls}>DIRECTION</label>
-                  <div className="flex">
-                    {(["LONG", "SHORT"] as const).map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => setDirection(d)}
-                        className="flex-1 py-2.5 font-mono text-xs font-bold tracking-widest border cursor-pointer"
-                        style={{
-                          borderColor: "var(--border)",
-                          backgroundColor:
-                            direction === d
-                              ? d === "LONG"
-                                ? "var(--text-primary)"
-                                : "var(--accent-loss)"
-                              : "var(--bg-primary)",
-                          color:
-                            direction === d
-                              ? d === "LONG"
-                                ? "var(--bg-primary)"
-                                : "var(--text-primary)"
-                              : "var(--text-muted)",
-                          borderRadius:
-                            d === "LONG"
-                              ? "var(--radius-sm) 0 0 var(--radius-sm)"
-                              : "0 var(--radius-sm) var(--radius-sm) 0",
-                        }}
-                      >
-                        {d}
-                      </button>
+              )}
+
+              {/* Symbol + direction */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 160px", gap: 12, marginBottom: 16 }}>
+                <div ref={symbolBoxRef} style={{ position: "relative" }}>
+                  <label style={labelStyle}>
+                    Instrument<RequiredMark />
+                  </label>
+                                    <select
+                    className="tz-input"
+                    value={customMode ? CUSTOM_SENTINEL : symbol}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === CUSTOM_SENTINEL) {
+                        setCustomMode(true);
+                        setSymbol("");
+                        return;
+                      }
+                      setCustomMode(false);
+                      setSymbol(val);
+                      setSymbolContractSize(CONTRACT_SIZES[val] ?? 100000);
+                    }}
+                    style={{
+                      appearance: "none",
+                      backgroundImage: "url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D24%20height%3D24%20viewBox%3D0%200%2024%2024%20fill%3Dnone%20stroke%3D%23666%20strokeWidth%3D2%20strokeLinecap%3Dround%3E%3Cpath%20d%3D%22M6%209l6%206%20-6%206%22%20/%3E%3C/svg%3E')",
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 12px center",
+                      paddingRight: 30,
+                    }}
+                  >
+                    <option value="">Select instrument</option>
+                    {INSTRUMENTS.map((i) => (
+                      <option key={i.ticker} value={i.ticker}>
+                        {i.ticker} ({i.label})
+                      </option>
                     ))}
+                    <option value={CUSTOM_SENTINEL}>Other / custom…</option>
+                  </select>
+                  {customMode && (
+                    <input
+                      className="tz-input"
+                      style={{ marginTop: 8 }}
+                      value={symbol}
+                      placeholder="Type ticker (e.g. AAPL)"
+                      autoComplete="off"
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        setSymbol(val);
+                        if (CONTRACT_SIZES[val]) setSymbolContractSize(CONTRACT_SIZES[val]);
+                      }}
+                    />
+                  )}
+{attempted && errors.symbol && (
+                    <span style={{ color: "var(--accent-loss)", fontSize: 11, marginTop: 4, display: "block" }}>
+                      {errors.symbol}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Direction</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {(["LONG", "SHORT"] as const).map((d) => {
+                      const active = direction === d;
+                      const color =
+                        d === "LONG" ? "var(--accent-profit)" : "var(--accent-loss)";
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => setDirection(d)}
+                          style={{
+                            flex: 1,
+                            padding: "9px",
+                            borderRadius: 8,
+                            border: `1px solid ${active ? color : "var(--border)"}`,
+                            background: active ? color : "var(--bg-primary)",
+                            color: active ? "#000" : "var(--text-muted)",
+                            fontWeight: 700,
+                            letterSpacing: "0.04em",
+                            cursor: "pointer",
+                            fontFamily: "var(--font-display)",
+                          }}
+                        >
+                          {d}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+
+              {/* Prices */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
                 <div>
-                  <label className={labelCls}>ENTRY PRICE</label>
-                  <input
-                    className={inputCls}
-                    type="number"
+                  <label style={labelStyle}>
+                    Entry<RequiredMark />
+                  </label>
+                  <NumberInput
                     step="any"
                     value={entry}
+                    placeholder="0.00"
                     onChange={(e) => setEntry(e.target.value)}
-                    placeholder="0.00000"
                   />
+                  {attempted && errors.entry && (
+                    <span style={{ color: "var(--accent-loss)", fontSize: 11 }}>{errors.entry}</span>
+                  )}
                 </div>
                 <div>
-                  <label className={labelCls}>EXIT PRICE</label>
-                  <input
-                    className={inputCls}
-                    type="number"
+                  <label style={labelStyle}>
+                    Exit<RequiredMark />
+                  </label>
+                  <NumberInput
                     step="any"
                     value={exit}
+                    placeholder="0.00"
                     onChange={(e) => setExit(e.target.value)}
-                    placeholder="0.00000"
                   />
+                  {attempted && errors.exit && (
+                    <span style={{ color: "var(--accent-loss)", fontSize: 11 }}>{errors.exit}</span>
+                  )}
                 </div>
                 <div>
-                  <label className={labelCls}>QUANTITY / LOT SIZE</label>
-                  <input
-                    className={inputCls}
-                    type="number"
+                  <label style={labelStyle}>
+                    Quantity<RequiredMark />
+                  </label>
+                  <NumberInput
                     step="any"
                     value={quantity}
+                    placeholder="0"
                     onChange={(e) => setQuantity(e.target.value)}
-                    placeholder="0.01"
+                  />
+                  {attempted && errors.quantity && (
+                    <span style={{ color: "var(--accent-loss)", fontSize: 11 }}>{errors.quantity}</span>
+                  )}
+                </div>
+                <div>
+                  <label style={labelStyle}>Contract Size</label>
+                  <NumberInput
+                    step="any"
+                    value={symbolContractSize?.toString() || ""}
+                    onChange={(e) => setSymbolContractSize(e.target.value ? parseFloat(e.target.value) : null)}
+                    placeholder="auto (from symbol)"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+
+              {/* SL / TP / Commission */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
                 <div>
-                  <label className={labelCls}>CONTRACT SIZE</label>
-                  <select
-                    className={`${inputCls} cursor-pointer`}
-                    value={contractSize}
-                    onChange={(e) => setContractSize(e.target.value)}
-                  >
-                    <option value="100000">100,000 (Standard Lot)</option>
-                    <option value="10000">10,000 (Mini Lot)</option>
-                    <option value="1000">1,000 (Micro Lot)</option>
-                    <option value="1">1 (Stocks / Crypto)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>STOP LOSS</label>
-                  <input
-                    className={inputCls}
-                    type="number"
+                  <label style={labelStyle}>Stop Loss</label>
+                  <NumberInput
                     step="any"
                     value={stopLoss}
+                    placeholder="optional"
                     onChange={(e) => setStopLoss(e.target.value)}
-                    placeholder="0.00000"
                   />
                 </div>
                 <div>
-                  <label className={labelCls}>TAKE PROFIT</label>
-                  <input
-                    className={inputCls}
-                    type="number"
+                  <label style={labelStyle}>Take Profit</label>
+                  <NumberInput
                     step="any"
                     value={takeProfit}
+                    placeholder="optional"
                     onChange={(e) => setTakeProfit(e.target.value)}
-                    placeholder="0.00000"
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Commission</label>
+                  <NumberInput
+                    step="any"
+                    value={commission}
+                    placeholder="0.00"
+                    onChange={(e) => setCommission(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+              {/* Strategy + date */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 180px", gap: 12, marginBottom: 16 }}>
                 <div>
-                  <label className={labelCls}>COMMISSION / FEES</label>
+                  <label style={labelStyle}>Strategy</label>
                   <input
-                    className={inputCls}
-                    type="number"
-                    step="any"
-                    min="0"
-                    value={commission}
-                    onChange={(e) => setCommission(e.target.value)}
-                    placeholder="0.00"
+                    className="tz-input"
+                    value={strategy}
+                    placeholder="e.g. Breakout / Mean Reversion"
+                    onChange={(e) => setStrategy(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className={labelCls}>TRADE DATE</label>
+                  <label style={labelStyle}>Trade Date</label>
                   <input
-                    className={`${inputCls} dark:[color-scheme:dark]`}
+                    className="tz-input"
                     type="date"
                     value={tradeDate}
                     onChange={(e) => setTradeDate(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Psychology toggles */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Discipline Check</label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {[
+                    { key: "fomo", label: "FOMO", on: fomoCheck, set: setFomoCheck, color: "var(--accent-loss)" },
+                    { key: "revenge", label: "REVENGE", on: vengeanceTrade, set: setVengeanceTrade, color: "var(--accent-loss)" },
+                    { key: "trend", label: "TREND ALIGNED", on: trendAlignment, set: setTrendAlignment, color: "var(--accent-profit)" },
+                  ].map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => p.set(!p.on)}
+                      style={{
+                        padding: "7px 12px",
+                        borderRadius: 9999,
+                        border: `1px solid ${p.on ? p.color : "var(--border)"}`,
+                        background: p.on ? p.color : "var(--bg-surface-hover)",
+                        color: p.on ? "#000" : "var(--text-muted)",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: "0.06em",
+                        cursor: "pointer",
+                        fontFamily: "var(--font-display)",
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Notes</label>
+                <textarea
+                  className="tz-input"
+                  rows={3}
+                  value={notes}
+                  placeholder="Execution notes, context, what you saw…"
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+
+              {/* Chart upload */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Chart Snapshot</label>
+                {chartPreview ? (
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      maxWidth: 280,
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={chartPreview}
+                      alt="chart preview"
+                      style={{ width: "100%", display: "block" }}
+                    />
+                    <IconButton
+                      size={26}
+                      onClick={removeChart}
+                      style={{
+                        position: "absolute",
+                        top: 6,
+                        right: 6,
+                        background: "rgba(0,0,0,0.6)",
+                        color: "#fff",
+                      }}
+                      aria-label="Remove chart"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                      </svg>
+                    </IconButton>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      width: "100%",
+                      maxWidth: 280,
+                      padding: "18px",
+                      borderRadius: 10,
+                      border: "1px dashed var(--border)",
+                      background: "var(--bg-primary)",
+                      color: "var(--text-muted)",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontFamily: "var(--font-display)",
+                    }}
+                  >
+                    + Attach chart screenshot
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={handleChartChange}
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label style={labelStyle}>Tags</label>
+                <TagPicker selectedTags={selectedTags} onChange={setSelectedTags} />
+              </div>
+            </div>
+
+            {/* ── RIGHT: SUMMARY + JOURNAL ── */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 16 }}>
+              {/* Live P&L */}
+              <div style={panelStyle}>
+                <SectionTitle>Live Outcome</SectionTitle>
+                {pnl.valid ? (
+                  <>
+                    <div style={{ marginBottom: 12 }}>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          color: "var(--text-dim)",
+                          marginBottom: 4,
+                        }}
+                      >
+                        Net P&amp;L
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: 30,
+                          fontWeight: 700,
+                          color:
+                            pnlTone === "profit"
+                              ? "var(--accent-profit)"
+                              : pnlTone === "loss"
+                                ? "var(--accent-loss)"
+                                : "var(--text-primary)",
+                        }}
+                      >
+                        {pnl.net >= 0 ? "+" : ""}
+                        {fmtMoney(pnl.net)}
+                      </div>
+                      {symbol && (
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "var(--text-dim)",
+                            marginTop: 4,
+                            letterSpacing: "0.03em",
+                          }}
+                        >
+                          {symbol} · {direction} ·{" "}
+                          {parseFloat(quantity).toLocaleString("en-US", {
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          lots × {pnl.cs.toLocaleString("en-US")} contract
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                      <Badge tone={pnlTone}>
+                        {pnl.retPct >= 0 ? "+" : ""}
+                        {pnl.retPct.toFixed(2)}% return
+                      </Badge>
+                      <Badge tone={pnlTone}>R {pnl.rMult.toFixed(2)}</Badge>
+                      {pnl.hasSL && pnl.hasTP && (
+                        <Badge tone="accent">R:R {pnl.rr.toFixed(2)}</Badge>
+                      )}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <Metric label="Gross" value={fmtMoney(pnl.gross)} />
+                      <Metric label="Commission" value={fmtMoney(parseFloat(commission) || 0)} />
+                      <Metric label="Notional" value={fmtMoney(pnl.notional)} />
+                      <Metric label="Contract Size" value={pnl.cs.toLocaleString("en-US")} />
+                      {pnl.hasSL && (
+                        <Metric label="Initial Risk" value={fmtMoney(pnl.initialRisk)} />
+                      )}
+                      {pnl.hasTP && (
+                        <Metric label="Reward" value={fmtMoney(pnl.reward)} />
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center",
+                      padding: "30px 16px",
+                      border: "1px dashed var(--border)",
+                      borderRadius: 12,
+                      background: "var(--bg-primary)",
+                    }}
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="var(--text-dim)"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 3v18h18" />
+                      <path d="m7 14 3-4 3 3 4-6" />
+                    </svg>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "var(--text-dim)",
+                        marginTop: 10,
+                        maxWidth: 220,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      Enter entry, exit and quantity to preview your P&amp;L, R-multiple
+                      and risk:reward.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Journal */}
+              <div style={panelStyle}>
+                <SectionTitle>Journal · {tradeDate}</SectionTitle>
+
+                <label style={labelStyle}>Mood</label>
+                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                  {MOODS.map((m) => {
+                    const active = mood === m.value;
+                    return (
+                      <button
+                        key={m.value}
+                        type="button"
+                        title={m.value}
+                        onClick={() => setMood(m.value)}
+                        style={{
+                          flex: 1,
+                          padding: "8px 0",
+                          borderRadius: 8,
+                          border: `1px solid ${active ? m.color : "var(--border)"}`,
+                          background: active ? m.color : "var(--bg-primary)",
+                          fontSize: 18,
+                          cursor: "pointer",
+                          filter: active ? "none" : "grayscale(0.5)",
+                        }}
+                      >
+                        {m.emoji}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={labelStyle}>Pre-Market</label>
+                  <textarea
+                    className="tz-input"
+                    rows={2}
+                    value={preMarket}
+                    placeholder="Plan, bias, levels…"
+                    onChange={(e) => setPreMarket(e.target.value)}
+                  />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={labelStyle}>Post-Market</label>
+                  <textarea
+                    className="tz-input"
+                    rows={2}
+                    value={postMarket}
+                    placeholder="What happened vs plan…"
+                    onChange={(e) => setPostMarket(e.target.value)}
+                  />
+                </div>
                 <div>
-                  <label className={labelCls}>TRADE TIME (UTC)</label>
-                  <input
-                    className={`${inputCls} dark:[color-scheme:dark]`}
-                    type="time"
-                    value={tradeTime}
-                    onChange={(e) => setTradeTime(e.target.value)}
+                  <label style={labelStyle}>Lessons</label>
+                  <textarea
+                    className="tz-input"
+                    rows={2}
+                    value={lessons}
+                    placeholder="What to repeat / avoid…"
+                    onChange={(e) => setLessons(e.target.value)}
                   />
                 </div>
               </div>
             </div>
-
-            {/* Section 02: Strategy + Notes */}
-            <div className={sectionCls}>
-              <div
-                className="text-xs tracking-widest mb-4"
-                style={{ color: "var(--text-muted)" }}
-              >
-                02 // EXECUTION METADATA
-              </div>
-              <div className="mb-3">
-                <label className={labelCls}>STRATEGY TAG</label>
-                <input
-                  className={inputCls}
-                  value={strategy}
-                  onChange={(e) => setStrategy(e.target.value)}
-                  placeholder="e.g. BREAKOUT, REVERSAL, SMC..."
-                />
-              </div>
-              <div className="mb-3">
-                <label className={labelCls}>TAGS</label>
-                <TagPicker
-                  selectedTags={selectedTags}
-                  onChange={setSelectedTags}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>TRADE NOTES</label>
-                <textarea
-                  className={`${inputCls} min-h-[100px] resize-y`}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Describe your rationale, setup context, market conditions..."
-                />
-              </div>
-
-              {/* Chart Image */}
-              <div className="mt-3">
-                <label className={labelCls}>CHART SCREENSHOT</label>
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-                <button
-                  type="button"
-                  onClick={() => imageInputRef.current?.click()}
-                  className="bg-transparent border border-dashed rounded cursor-pointer font-mono text-xs font-bold tracking-widest px-5 py-2.5 transition-colors"
-                  style={{
-                    borderColor: "var(--border)",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  + ADD IMAGE
-                </button>
-                {chartImage && (
-                  <div className="mt-3 relative inline-block">
-                    <img
-                      src={chartImage}
-                      alt="Chart screenshot"
-                      className="max-w-full max-h-[200px] md:max-h-[300px] rounded block"
-                      style={{ border: "1px solid var(--border)" }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChartImage(null);
-                        setChartFile(null);
-                        if (imageInputRef.current)
-                          imageInputRef.current.value = "";
-                      }}
-                      className="absolute top-1.5 right-1.5 bg-black/70 rounded font-mono text-xs font-bold tracking-wide px-2 py-1"
-                      style={{
-                        border: "1px solid var(--border)",
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      REMOVE
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Section 03: Behavioral flags */}
-            <div className={sectionCls}>
-              <div
-                className="text-xs tracking-widest mb-4"
-                style={{ color: "var(--text-muted)" }}
-              >
-                03 // BEHAVIORAL FLAGS
-              </div>
-              <div className="flex flex-col gap-1">
-                <TogglePill
-                  label="FOMO ENTRY — entered without valid setup confirmation"
-                  value={fomoCheck}
-                  onChange={setFomoCheck}
-                />
-                <TogglePill
-                  label="TREND ALIGNMENT — trade aligns with higher-timeframe bias"
-                  value={trendAlignment}
-                  onChange={setTrendAlignment}
-                />
-                <TogglePill
-                  label="VENGEANCE TRADE — entered to recover from previous loss"
-                  value={vengeanceTrade}
-                  onChange={setVengeanceTrade}
-                />
-              </div>
-            </div>
           </div>
 
-          {/* Right column: RR panel - below on mobile, sticky sidebar on desktop */}
-          <div>
-            <div className={`${sectionCls} lg:sticky lg:top-10`}>
-              <div
-                className="text-xs tracking-widest mb-4"
-                style={{ color: "var(--text-muted)" }}
-              >
-                LIVE R:R CALCULATOR
-              </div>
-              <div className="mb-5">
-                <div
-                  className="text-xs tracking-widest mb-2"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  RISK/REWARD RATIO
-                </div>
-                <RRDisplay
-                  entry={entry}
-                  stopLoss={stopLoss}
-                  takeProfit={takeProfit}
-                />
-              </div>
-
-              {/* Profit & Loss */}
-              <div
-                className="border-t pt-4 mb-5"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <div
-                  className="text-xs tracking-widest mb-2"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  ESTIMATED P&L
-                </div>
-                {(() => {
-                  const e = parseFloat(entry);
-                  const x = parseFloat(exit);
-                  const q = parseFloat(quantity);
-                  const cs = parseFloat(contractSize) || 1;
-                  if (!e || !x || !q)
-                    return (
-                      <span
-                        className="text-3xl md:text-4xl font-bold"
-                        style={{ color: "var(--text-dim)" }}
-                      >
-                        --
-                      </span>
-                    );
-                  const rawPnl =
-                    direction === "LONG" ? (x - e) * q * cs : (e - x) * q * cs;
-                  const comm = parseFloat(commission) || 0;
-                  const pnl = rawPnl - comm;
-                  const isProfit = pnl >= 0;
-                  const absPnl = Math.abs(pnl);
-                  const decimals =
-                    absPnl > 0 && absPnl < 0.01 ? 5 : absPnl < 1 ? 4 : 2;
-                  return (
-                    <div>
-                      <div
-                        className="text-3xl md:text-4xl font-bold"
-                        style={{
-                          color: isProfit
-                            ? "var(--accent-profit)"
-                            : "var(--accent-loss)",
-                        }}
-                      >
-                        {isProfit ? "+" : ""}
-                        {pnl.toFixed(decimals)}
-                      </div>
-                      <div
-                        className="text-xs mt-1"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        {isProfit ? "PROFIT" : "LOSS"}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              <div
-                className="border-t pt-4 mb-5"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <div
-                    onClick={() => setApplyRiskShield(!applyRiskShield)}
-                    className="w-8 h-4.5 rounded-full relative transition-colors cursor-pointer flex-shrink-0"
-                    style={{
-                      width: 32,
-                      height: 18,
-                      borderRadius: 9,
-                      backgroundColor: applyRiskShield
-                        ? "var(--text-primary)"
-                        : "var(--border)",
-                    }}
-                  >
-                    <div
-                      className="absolute top-[3px] w-3 h-3 rounded-full transition-all"
-                      style={{
-                        left: applyRiskShield ? 17 : 3,
-                        width: 12,
-                        height: 12,
-                        borderRadius: 6,
-                        backgroundColor: applyRiskShield
-                          ? "var(--bg-primary)"
-                          : "var(--text-muted)",
-                      }}
-                    />
-                  </div>
-                  <span
-                    className="text-xs tracking-wide"
-                    style={{
-                      color: applyRiskShield
-                        ? "var(--text-primary)"
-                        : "var(--text-muted)",
-                    }}
-                  >
-                    APPLY RISK LIMIT SHIELD
-                  </span>
-                </label>
-              </div>
-
-              {/* Confidence bars */}
-              <div
-                className="border-t pt-4"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <div
-                  className="text-xs tracking-widest mb-3"
-                  style={{ color: "var(--text-dim)" }}
-                >
-                  CONFIDENCE METRICS
-                </div>
-                {[
-                  { label: "SETUP QUALITY", pct: trendAlignment ? 80 : 40 },
-                  {
-                    label: "RISK DISCIPLINE",
-                    pct: fomoCheck || vengeanceTrade ? 20 : stopLoss ? 85 : 50,
-                  },
-                  {
-                    label: "PROTOCOL SCORE",
-                    pct: Math.round(
-                      (((trendAlignment ? 1 : 0) +
-                        (!fomoCheck ? 1 : 0) +
-                        (!vengeanceTrade ? 1 : 0) +
-                        (stopLoss ? 1 : 0) +
-                        (takeProfit ? 1 : 0)) /
-                        5) *
-                        100,
-                    ),
-                  },
-                ].map((bar) => (
-                  <div key={bar.label} className="mb-2.5">
-                    <div className="flex justify-between mb-1">
-                      <span
-                        className="text-xs"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        {bar.label}
-                      </span>
-                      <span
-                        className="text-xs"
-                        style={{
-                          color:
-                            bar.pct >= 70
-                              ? "var(--accent-profit)"
-                              : bar.pct >= 40
-                                ? "var(--accent-warn)"
-                                : "var(--accent-loss)",
-                        }}
-                      >
-                        {bar.pct}%
-                      </span>
-                    </div>
-                    <div
-                      className="h-[3px] rounded"
-                      style={{ backgroundColor: "var(--border)" }}
-                    >
-                      <div
-                        className="h-[3px] rounded transition-all"
-                        style={{
-                          width: `${bar.pct}%`,
-                          backgroundColor:
-                            bar.pct >= 70
-                              ? "var(--accent-profit)"
-                              : bar.pct >= 40
-                                ? "var(--accent-warn)"
-                                : "var(--accent-loss)",
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div
-          className="rounded p-4 md:px-5 md:py-4 flex flex-col sm:flex-row justify-between items-center gap-3 mt-4"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          {error ? (
-            <span
-              className="text-sm tracking-wide"
-              style={{ color: "var(--accent-loss)" }}
-            >
-              {error}
-            </span>
-          ) : (
-            <span
-              className="text-xs tracking-wide"
-              style={{ color: "var(--text-muted)" }}
-            >
-              ALL FIELDS VALIDATED // READY TO COMMIT
-            </span>
-          )}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-6 md:px-8 py-3 font-mono text-xs font-bold tracking-widest rounded disabled:cursor-not-allowed transition-colors"
+          {/* Sticky action bar */}
+          <div
             style={{
-              backgroundColor: submitting
-                ? "var(--border)"
-                : "var(--text-primary)",
-              color: submitting ? "var(--text-muted)" : "var(--bg-primary)",
-              border: "none",
+              position: "sticky",
+              bottom: 0,
+              marginTop: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              gap: 12,
+              padding: "14px 18px",
+              background: "var(--bg-glass)",
+              backdropFilter: "blur(10px)",
+              border: "1px solid var(--border-soft)",
+              borderRadius: 12,
+              boxShadow: "0 -8px 24px -12px rgba(0,0,0,0.5)",
             }}
           >
-            {submitting ? "COMMITTING..." : "COMMIT EXECUTION"}
-          </button>
-        </div>
-      </form>
+            <div style={{ marginRight: "auto" }}>
+              {error ? (
+                <span style={{ color: "var(--accent-loss)", fontSize: 12 }}>
+                  {error}
+                </span>
+              ) : (
+                <span style={{ color: "var(--text-dim)", fontSize: 12 }}>
+                  Ctrl / ⌘ + Enter to commit
+                </span>
+              )}
+            </div>
+            <Button variant="subtle" onClick={() => submitTrade(true)} disabled={submitting}>
+              SAVE &amp; ADD ANOTHER
+            </Button>
+            <Button variant="primary" onClick={() => submitTrade(false)} disabled={submitting}>
+              {submitting ? "COMMITTING…" : "COMMIT TRADE"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function fmtMoney(n: number): string {
+  return n.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        background: "var(--bg-primary)",
+        border: "1px solid var(--border-soft)",
+        borderRadius: 8,
+        padding: "8px 10px",
+      }}
+    >
+      <div style={{ fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-dim)" }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+        {value}
+      </div>
     </div>
   );
 }

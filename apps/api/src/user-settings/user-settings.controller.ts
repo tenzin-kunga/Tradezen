@@ -20,7 +20,18 @@ const VALIDATION_ENDPOINTS: Record<string, string> = {
   openrouter: 'https://openrouter.ai/api/v1/models',
   openai: 'https://api.openai.com/v1/models',
   anthropic: 'https://api.anthropic.com/v1/models',
+  google: 'https://generativelanguage.googleapis.com/v1beta/openai/models',
+  mistral: 'https://api.mistral.ai/v1/models',
+  groq: 'https://api.groq.com/openai/v1/models',
+  together: 'https://api.together.xyz/v1/models',
+  perplexity: 'https://api.perplexity.ai/models',
+  fireworks: 'https://api.fireworks.ai/inference/v1/models',
+  deepseek: 'https://api.deepseek.com/v1/models',
+  xai: 'https://api.x.ai/v1/models',
 };
+
+// Providers that use x-api-key header instead of Authorization: Bearer
+const API_KEY_HEADER_PROVIDERS = new Set(['anthropic']);
 
 @ApiTags('user-settings')
 @ApiBearerAuth()
@@ -58,40 +69,8 @@ export class UserSettingsController {
     @CurrentUser('id') userId: string,
     @Body() dto: ValidateApiKeyDto,
   ) {
-    const endpoint = VALIDATION_ENDPOINTS[dto.provider];
-    if (!endpoint) {
-      throw new HttpException(
-        `Unsupported provider: ${dto.provider}`,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    try {
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${dto.apiKey}`,
-      };
-      // Anthropic uses x-api-key header instead
-      if (dto.provider === 'anthropic') {
-        headers['x-api-key'] = dto.apiKey;
-        delete headers['Authorization'];
-      }
-
-      const res = await fetch(endpoint, {
-        headers,
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) {
-        throw new HttpException('Invalid API key', HttpStatus.BAD_REQUEST);
-      }
-      const data = (await res.json()) as { data?: unknown[] };
-      return { valid: true, modelCount: data.data?.length ?? 0 };
-    } catch (e) {
-      if (e instanceof HttpException) throw e;
-      throw new HttpException(
-        'Failed to validate API key',
-        HttpStatus.BAD_GATEWAY,
-      );
-    }
+    const { modelCount } = await this.validateProviderKey(dto);
+    return { valid: true, modelCount };
   }
 
   @Patch('api-key')
@@ -102,6 +81,22 @@ export class UserSettingsController {
     @CurrentUser('id') userId: string,
     @Body() dto: ValidateApiKeyDto,
   ) {
+    // Validate first
+    const { modelCount } = await this.validateProviderKey(dto);
+
+    // Encrypt and store
+    const status = await this.service.setApiKey(
+      userId,
+      dto.apiKey,
+      dto.provider,
+      true,
+      undefined,
+      dto.baseUrl,
+    );
+    return { ...status, modelCount };
+  }
+
+  private async validateProviderKey(dto: ValidateApiKeyDto) {
     const endpoint = VALIDATION_ENDPOINTS[dto.provider];
     if (!endpoint) {
       throw new HttpException(
@@ -110,15 +105,12 @@ export class UserSettingsController {
       );
     }
 
-    // Validate first
-    let modelCount = 0;
     try {
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${dto.apiKey}`,
-      };
-      if (dto.provider === 'anthropic') {
+      const headers: Record<string, string> = {};
+      if (API_KEY_HEADER_PROVIDERS.has(dto.provider)) {
         headers['x-api-key'] = dto.apiKey;
-        delete headers['Authorization'];
+      } else {
+        headers['Authorization'] = `Bearer ${dto.apiKey}`;
       }
 
       const res = await fetch(endpoint, {
@@ -129,7 +121,7 @@ export class UserSettingsController {
         throw new HttpException('Invalid API key', HttpStatus.BAD_REQUEST);
       }
       const data = (await res.json()) as { data?: unknown[] };
-      modelCount = data.data?.length ?? 0;
+      return { modelCount: data.data?.length ?? 0 };
     } catch (e) {
       if (e instanceof HttpException) throw e;
       throw new HttpException(
@@ -137,15 +129,6 @@ export class UserSettingsController {
         HttpStatus.BAD_GATEWAY,
       );
     }
-
-    // Encrypt and store
-    const status = await this.service.setApiKey(
-      userId,
-      dto.apiKey,
-      dto.provider,
-      true,
-    );
-    return { ...status, modelCount };
   }
 
   @Delete('api-key')

@@ -16,6 +16,7 @@ import {
   logout as apiLogout,
   refreshToken,
   setAccessToken,
+  updateProfile as apiUpdateProfile,
 } from "./api";
 
 type User = {
@@ -44,6 +45,8 @@ type AuthContextType = {
     password: string,
   ) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (data: { email?: string; username?: string }) => Promise<void>;
+  syncUser: (user: User) => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -53,6 +56,8 @@ const AuthContext = createContext<AuthContextType>({
   googleLogin: async () => {},
   register: async () => {},
   logout: async () => {},
+  updateUser: async () => {},
+  syncUser: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -140,9 +145,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateUser = useCallback(
+    async (data: { email?: string; username?: string }) => {
+      const res = await apiUpdateProfile(data);
+      setUser(res);
+    },
+    [],
+  );
+
+  const syncUser = useCallback((user: User) => {
+    setUser(user);
+  }, []);
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, googleLogin, register, logout }}
+      value={{
+        user,
+        loading,
+        login,
+        googleLogin,
+        register,
+        logout,
+        updateUser,
+        syncUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

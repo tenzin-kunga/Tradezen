@@ -100,7 +100,7 @@ class Container:
         )
         self.concurrency = ConcurrencyLimiter(
             max_per_user=config.max_concurrent_ollama,
-            max_total=config.max_concurrent_openrouter,
+            max_total=config.max_concurrent_cloud,
         )
         self.circuit_breaker = CircuitBreaker(
             failure_threshold=config.circuit_failure_threshold,
@@ -206,7 +206,7 @@ class Container:
         elif self.config.embedding_provider == "openai":
             provider = OpenAIEmbeddingProvider(
                 api_key=self.config.embedding_api_key,
-                base_url=self.config.openrouter_base_url,
+                base_url=self.config.cloud_base_url,
                 model=self.config.embedding_model,
             )
         else:

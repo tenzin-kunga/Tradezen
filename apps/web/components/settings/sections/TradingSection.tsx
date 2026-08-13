@@ -1,7 +1,7 @@
 "use client";
 
 import { useSettings } from "../context/SettingsContext";
-import { DisabledField } from "../components/DisabledField";
+import { NumberInput } from "@/components/primitives/NumberInput";
 
 const TIMEZONES = [
   { value: "UTC", label: "UTC" },
@@ -82,9 +82,8 @@ export function TradingSection() {
         description="Baseline for performance tracking"
         error={validationErrors.initial_capital}
       >
-        <input
+        <NumberInput
           className="input-glass"
-          type="number"
           step="any"
           min="0"
           value={values.initial_capital}
@@ -92,25 +91,6 @@ export function TradingSection() {
             update("initial_capital", parseFloat(e.target.value) || 0)
           }
           placeholder="10000"
-          style={{ width: "100%" }}
-        />
-      </FieldRow>
-
-      <FieldRow
-        label="Default Position Size"
-        description="Pre-filled when logging new trades"
-        error={validationErrors.default_lot_size}
-      >
-        <input
-          className="input-glass"
-          type="number"
-          step="any"
-          min="0"
-          value={values.default_lot_size}
-          onChange={(e) =>
-            update("default_lot_size", parseFloat(e.target.value) || 0.01)
-          }
-          placeholder="0.01"
           style={{ width: "100%" }}
         />
       </FieldRow>
@@ -132,29 +112,6 @@ export function TradingSection() {
           ))}
         </select>
       </FieldRow>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-4)",
-          paddingTop: "var(--space-4)",
-          borderTop: "1px solid var(--border)",
-        }}
-      >
-        <DisabledField
-          label="Maximum Risk Per Trade (%)"
-          value="2.00"
-          status="planned"
-          description="Used for coaching and alerts"
-        />
-        <DisabledField
-          label="Maximum Daily Drawdown (%)"
-          value="5.00"
-          status="planned"
-          description="Triggers discipline notifications"
-        />
-      </div>
     </div>
   );
 }

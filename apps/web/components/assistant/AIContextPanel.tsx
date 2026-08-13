@@ -88,7 +88,7 @@ export default function AIContextPanel({
       <div
         style={{
           padding: "12px 12px 8px",
-          borderBottom: "1px solid var(--border, #23252d)",
+          borderBottom: "1px solid var(--border-soft, #23252d)",
           flexShrink: 0,
         }}
       >
@@ -181,12 +181,6 @@ export default function AIContextPanel({
                 description="Create today's entry"
                 onClick={() => {}}
               />
-              <ActionCard
-                icon="portfolio"
-                title="Open portfolio"
-                description="View holdings"
-                onClick={() => {}}
-              />
             </div>
 
             {/* Developer mode */}
@@ -204,7 +198,7 @@ export default function AIContextPanel({
       <div
         style={{
           padding: "6px 12px",
-          borderTop: "1px solid var(--border, #23252d)",
+          borderTop: "1px solid var(--border-soft, #23252d)",
           fontSize: 10,
           color: "var(--text-dim, #6b7280)",
           flexShrink: 0,
@@ -226,7 +220,7 @@ function SectionHeader({ title }: { title: string }) {
         textTransform: "uppercase",
         letterSpacing: "0.05em",
         padding: "12px 0 6px",
-        borderBottom: "1px solid var(--border, #23252d)",
+        borderBottom: "1px solid var(--border-soft, #23252d)",
         marginBottom: 6,
       }}
     >

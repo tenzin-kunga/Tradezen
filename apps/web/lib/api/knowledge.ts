@@ -169,6 +169,7 @@ export interface KnowledgeLink {
   sourceDocumentId: string;
   targetDocumentId: string;
   relationshipType: string;
+  targetTitle: string | null;
   createdAt: string;
 }
 
@@ -199,4 +200,59 @@ export async function createKnowledgeLink(
 
 export async function deleteKnowledgeLink(linkId: string): Promise<void> {
   await authFetch(`${API}/knowledge/links/${linkId}`, { method: "DELETE" });
+}
+
+export async function searchKnowledgeDocuments(
+  query: string,
+): Promise<KnowledgeDocument[]> {
+  const res = await authFetch(
+    `${API}/knowledge/search?q=${encodeURIComponent(query)}`,
+  );
+  return handleResponse<KnowledgeDocument[]>(res);
+}
+
+// ─── Assets ───────────────────────────────────
+
+export interface KnowledgeAsset {
+  id: string;
+  documentId: string;
+  assetType: string;
+  storageKey: string;
+  mimeType: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  url: string;
+}
+
+export async function getKnowledgeAssets(
+  documentId: string,
+): Promise<KnowledgeAsset[]> {
+  const res = await authFetch(
+    `${API}/knowledge/documents/${documentId}/assets`,
+  );
+  return handleResponse<KnowledgeAsset[]>(res);
+}
+
+export async function uploadKnowledgeAsset(
+  documentId: string,
+  file: File,
+  assetType = "file",
+): Promise<KnowledgeAsset> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("category", assetType);
+  const res = await authFetch(
+    `${API}/knowledge/documents/${documentId}/assets`,
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
+  return handleResponse<KnowledgeAsset>(res);
+}
+
+export async function deleteKnowledgeAsset(assetId: string): Promise<void> {
+  await authFetch(`${API}/knowledge/assets/${assetId}`, { method: "DELETE" });
 }

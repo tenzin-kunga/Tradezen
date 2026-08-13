@@ -4,7 +4,11 @@ import type {
   QuickAction,
   WorkspaceResource,
 } from "@/lib/workspace/types";
-import { createResource } from "@/lib/workspace/resource";
+import {
+  createResource,
+  createResearchResource,
+} from "@/lib/workspace/resource";
+import { getResourceManager } from "@/lib/workspace/resource-manager";
 import { searchResearch, type ResearchProject } from "@/lib/api/research";
 
 export function createResearchSearchProvider(): SearchProvider {
@@ -52,7 +56,11 @@ export function createResearchSearchProvider(): SearchProvider {
         {
           id: "research-new",
           label: "New Research Project",
-          action: () => {},
+          action: () => {
+            getResourceManager().open(
+              createResearchResource("default", "Research"),
+            );
+          },
         },
       ];
     },

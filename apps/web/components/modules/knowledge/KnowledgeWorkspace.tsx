@@ -13,6 +13,9 @@ import KnowledgeDocumentView from "./KnowledgeDocumentView";
 import KnowledgeInspector from "./KnowledgeInspector";
 import { EmptyState } from "@/components/primitives/EmptyState";
 import { Skeleton } from "@/components/primitives/Skeleton";
+import { Button } from "@/components/primitives/Button";
+import { IconButton } from "@/components/primitives/IconButton";
+import { Badge } from "@/components/primitives/Badge";
 
 export default function KnowledgeWorkspace() {
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
@@ -22,6 +25,7 @@ export default function KnowledgeWorkspace() {
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showNewDoc, setShowNewDoc] = useState(false);
+  const [assetRefresh, setAssetRefresh] = useState(0);
 
   const loadDocuments = useCallback(async () => {
     try {
@@ -120,6 +124,7 @@ export default function KnowledgeWorkspace() {
             document={activeDocument}
             onUpdate={() => setRefreshTrigger((t) => t + 1)}
             onDelete={() => handleDeleteDocument(activeDocument.id)}
+            onAssetUploaded={() => setAssetRefresh((t) => t + 1)}
           />
         ) : (
           <DocumentList
@@ -136,6 +141,7 @@ export default function KnowledgeWorkspace() {
         document={activeDocument}
         collapsed={inspectorCollapsed}
         onToggle={() => setInspectorCollapsed(!inspectorCollapsed)}
+        assetRefreshToken={assetRefresh}
       />
 
       {/* New document modal */}
@@ -160,6 +166,8 @@ function DocumentList({
   onDelete: (id: string) => void;
   onNew: () => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const DOC_TYPE_ICONS: Record<string, string> = {
@@ -171,6 +179,14 @@ function DocumentList({
     snapshot: "🏢",
     postmortem: "🔍",
   };
+
+  const DOC_TYPES = Object.keys(DOC_TYPE_ICONS);
+
+  const filtered = documents.filter((d) => {
+    const matchesQuery = d.title.toLowerCase().includes(query.toLowerCase());
+    const matchesType = !typeFilter || d.docType === typeFilter;
+    return matchesQuery && matchesType;
+  });
 
   return (
     <div
@@ -184,12 +200,12 @@ function DocumentList({
       {/* Header */}
       <div
         style={{
-          height: 40,
+          height: 48,
           padding: "0 16px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: "1px solid var(--border, #23252d)",
+          borderBottom: "1px solid var(--border-soft, #23252d)",
           flexShrink: 0,
         }}
       >
@@ -201,33 +217,78 @@ function DocumentList({
           }}
         >
           Documents
+          <span
+            style={{
+              marginLeft: 8,
+              fontSize: 11,
+              fontWeight: 400,
+              color: "var(--text-dim, #6b7280)",
+            }}
+          >
+            {filtered.length}
+          </span>
         </span>
-        <button
-          onClick={onNew}
-          style={{
-            padding: "4px 10px",
-            borderRadius: 6,
-            background: "var(--accent, #3b82f6)",
-            color: "#fff",
-            border: "none",
-            fontSize: 11,
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
+        <Button variant="primary" size="sm" onClick={onNew}>
           + New
-        </button>
+        </Button>
+      </div>
+
+      {/* Search + type filter */}
+      <div
+        style={{
+          padding: "8px 16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          borderBottom: "1px solid var(--border-soft, #23252d)",
+          flexShrink: 0,
+        }}
+      >
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search documents…"
+          style={{
+            width: "100%",
+            padding: "6px 10px",
+            borderRadius: 6,
+            border: "1px solid var(--border-soft, #23252d)",
+            background: "var(--bg-surface-hover, #1a1b23)",
+            color: "var(--text-primary, #fafafa)",
+            fontSize: 12,
+            outline: "none",
+          }}
+        />
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <Badge
+            tone={typeFilter === null ? "accent" : "neutral"}
+            style={{ cursor: "pointer" }}
+            onClick={() => setTypeFilter(null)}
+          >
+            All
+          </Badge>
+          {DOC_TYPES.map((t) => (
+            <Badge
+              key={t}
+              tone={typeFilter === t ? "accent" : "neutral"}
+              style={{ cursor: "pointer", textTransform: "capitalize" }}
+              onClick={() => setTypeFilter(typeFilter === t ? null : t)}
+            >
+              {t}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       {/* Document list */}
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px" }}>
-        {documents.length === 0 ? (
+        {filtered.length === 0 ? (
           <EmptyState
-            title="No documents yet"
+            title="No documents found"
             description='Click "+ New" to create your first knowledge document.'
           />
         ) : (
-          documents.map((doc) => (
+          filtered.map((doc) => (
             <div
               key={doc.id}
               onClick={() => onSelect(doc.id)}
@@ -242,14 +303,6 @@ function DocumentList({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
-                transition: "border-color 0.15s",
-                border: "1px solid transparent",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.borderColor = "var(--border, #23252d)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.borderColor = "transparent";
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -278,24 +331,14 @@ function DocumentList({
                 </div>
               </div>
               {hoveredId === doc.id && (
-                <button
+                <IconButton
+                  size={24}
+                  title="Delete"
+                  style={{ color: "var(--accent-loss)" }}
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(doc.id);
                   }}
-                  style={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: 4,
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "var(--text-muted, #9ca3af)",
-                  }}
-                  title="Delete"
                 >
                   <svg
                     width="12"
@@ -308,7 +351,7 @@ function DocumentList({
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                   </svg>
-                </button>
+                </IconButton>
               )}
             </div>
           ))
@@ -447,42 +490,21 @@ function NewDocumentModal({
 
         {/* Actions */}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 6,
-              background: "transparent",
-              color: "var(--text-muted, #9ca3af)",
-              border: "1px solid var(--border, #23252d)",
-              fontSize: 12,
-              cursor: "pointer",
-            }}
-          >
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={!title.trim()}
             onClick={() => {
               if (title.trim()) {
                 onCreate(title.trim(), selectedTemplate || undefined);
               }
             }}
-            disabled={!title.trim()}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 6,
-              background: title.trim()
-                ? "var(--accent, #3b82f6)"
-                : "var(--bg-surface-hover, #1a1b23)",
-              color: title.trim() ? "#fff" : "var(--text-muted, #9ca3af)",
-              border: "none",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: title.trim() ? "pointer" : "default",
-            }}
           >
             Create
-          </button>
+          </Button>
         </div>
       </div>
     </div>

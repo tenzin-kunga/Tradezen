@@ -28,7 +28,10 @@ export class SemanticRetrievalService {
   ): Promise<SemanticResult[]> {
     const start = Date.now();
     const profile = this.profileRegistry.get(intent);
-    const queryVector = await this.embeddingService.generateEmbedding(query);
+    const queryVector = await this.embeddingService.generateEmbedding(
+      userId,
+      query,
+    );
     const records = await this.repository.search(
       userId,
       queryVector,

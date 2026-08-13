@@ -93,35 +93,7 @@ function renderGroup(items: ModuleMetadata[], pathname: string) {
           <Link
             key={item.id}
             href={href}
-            className="tz-focus"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              height: 36,
-              padding: "0 12px",
-              borderRadius: 8,
-              textDecoration: "none",
-              fontSize: 13,
-              fontWeight: active ? 600 : 400,
-              color: active
-                ? "var(--text-primary, #fafafa)"
-                : "var(--text-muted, #9ca3af)",
-              background: active ? "var(--surface-raised)" : "transparent",
-              border: active
-                ? "1px solid var(--border-soft)"
-                : "1px solid transparent",
-              boxShadow: active ? "var(--shadow-soft)" : "none",
-              transition:
-                "background 0.15s var(--ease-out), color 0.15s, border-color 0.15s",
-            }}
-            onMouseEnter={(e) => {
-              if (!active)
-                e.currentTarget.style.background = "var(--bg-surface-hover)";
-            }}
-            onMouseLeave={(e) => {
-              if (!active) e.currentTarget.style.background = "transparent";
-            }}
+            className={`tz-focus ws-nav-link${active ? " active" : ""}`}
           >
             <span style={{ flexShrink: 0 }}>{item.icon}</span>
             {item.name}

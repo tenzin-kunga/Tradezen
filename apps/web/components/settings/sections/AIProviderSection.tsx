@@ -25,6 +25,54 @@ const PROVIDERS = [
     placeholder: "sk-ant-...",
     description: "Direct access to Claude models",
   },
+  {
+    id: "google",
+    name: "Google Gemini",
+    placeholder: "AIza...",
+    description: "Access Gemini 2.0, 1.5 Pro, and other Google models",
+  },
+  {
+    id: "mistral",
+    name: "Mistral AI",
+    placeholder: "...",
+    description: "Access Mistral Large, Medium, and other Mistral models",
+  },
+  {
+    id: "groq",
+    name: "Groq",
+    placeholder: "gsk_...",
+    description: "Fast inference for Llama, Mixtral, and other models",
+  },
+  {
+    id: "together",
+    name: "Together AI",
+    placeholder: "...",
+    description: "Access open-source models with fast inference",
+  },
+  {
+    id: "deepseek",
+    name: "DeepSeek",
+    placeholder: "...",
+    description: "Access DeepSeek-V3 and R1 models",
+  },
+  {
+    id: "xai",
+    name: "xAI (Grok)",
+    placeholder: "...",
+    description: "Access Grok models from xAI",
+  },
+  {
+    id: "perplexity",
+    name: "Perplexity",
+    placeholder: "pplx-...",
+    description: "Access Sonar models for search-augmented generation",
+  },
+  {
+    id: "fireworks",
+    name: "Fireworks AI",
+    placeholder: "...",
+    description: "Fast inference for open-source models",
+  },
 ] as const;
 
 interface ApiKeyStatus {

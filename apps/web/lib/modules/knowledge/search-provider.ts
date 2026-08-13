@@ -4,7 +4,11 @@ import type {
   QuickAction,
   WorkspaceResource,
 } from "@/lib/workspace/types";
-import { createResource } from "@/lib/workspace/resource";
+import {
+  createResource,
+  createKnowledgeResource,
+} from "@/lib/workspace/resource";
+import { getResourceManager } from "@/lib/workspace/resource-manager";
 
 export function createKnowledgeSearchProvider(): SearchProvider {
   return {
@@ -61,7 +65,9 @@ export function createKnowledgeSearchProvider(): SearchProvider {
         {
           id: "knowledge-new",
           label: "New Document",
-          action: () => {},
+          action: () => {
+            getResourceManager().open(createKnowledgeResource());
+          },
         },
       ];
     },

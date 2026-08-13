@@ -14,7 +14,13 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, UpdateSettingsDto, SaveLayoutDto } from './dto';
+import {
+  RegisterDto,
+  LoginDto,
+  UpdateSettingsDto,
+  SaveLayoutDto,
+  UpdateProfileDto,
+} from './dto';
 import { Public } from './public.decorator';
 import { CurrentUser } from './current-user.decorator';
 
@@ -60,6 +66,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   me(@CurrentUser('id') userId: string) {
     return this.authService.getMe(userId);
+  }
+
+  @Patch('me')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update current user profile' })
+  updateMe(@CurrentUser('id') userId: string, @Body() dto: UpdateProfileDto) {
+    return this.authService.updateProfile(userId, dto);
   }
 
   @Post('logout')

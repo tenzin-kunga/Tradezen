@@ -31,7 +31,9 @@ export class ImmediateEmbeddingPipeline implements EmbeddingPipeline {
       if (chunks.length === 0) return;
 
       const vectors = await Promise.all(
-        chunks.map((c) => this.embeddingService.generateEmbedding(c.content)),
+        chunks.map((c) =>
+          this.embeddingService.generateEmbedding(doc.userId, c.content),
+        ),
       );
 
       await this.repository.store(doc, chunks, vectors);

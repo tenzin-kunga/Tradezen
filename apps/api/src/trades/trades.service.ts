@@ -1234,8 +1234,6 @@ export class TradesService {
   async getDashboardData(
     userId: string,
   ): Promise<import('./dto/dashboard.dto').DashboardResponseDto> {
-    await this.autoSeedIfEmpty(userId);
-
     const allTrades = await db
       .select()
       .from(trades)
@@ -1863,16 +1861,6 @@ export class TradesService {
         short: computeDirectionRisk(shortTrades),
       },
     };
-  }
-
-  private async autoSeedIfEmpty(userId: string) {
-    const existingCount = await db
-      .select({ c: count() })
-      .from(trades)
-      .where(eq(trades.userId, userId));
-    if (Number(existingCount[0]?.c ?? 0) === 0) {
-      await this.seedService.seedData(userId);
-    }
   }
 
   private async cleanupSampleData(userId: string) {

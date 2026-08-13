@@ -55,7 +55,7 @@ class CompletionService:
             "usage": result.get("usage", {}),
         }
 
-    async def stream(self, session, messages: list, api_key: str | None = None):
+    async def stream(self, session, messages: list, api_key: str | None = None, base_url: str | None = None):
         """True streaming — yields tokens, sets up streaming response in session."""
         provider = session.provider
         if not provider:
@@ -79,7 +79,7 @@ class CompletionService:
         for attempt in range(max_attempts):
             try:
                 full_response = []
-                async for token in provider.stream(dict_msgs, model=session.model, temperature=temp, api_key=api_key):
+                async for token in provider.stream(dict_msgs, model=session.model, temperature=temp, api_key=api_key, base_url=base_url, provider_name=getattr(session, "provider_name", None)):
                     full_response.append(token)
                     yield token
 

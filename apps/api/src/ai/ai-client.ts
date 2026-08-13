@@ -41,6 +41,7 @@ export interface ToolDefinition {
 export interface ProviderContext {
   provider?: string;
   apiKey?: string;
+  baseUrl?: string;
 }
 
 export interface ChatResponse {
@@ -118,6 +119,9 @@ export class AIClient {
             }),
             ...(options?.providerContext?.apiKey && {
               'X-AI-Provider-Key': options.providerContext.apiKey,
+            }),
+            ...(options?.providerContext?.baseUrl && {
+              'X-AI-Provider-Base-URL': options.providerContext.baseUrl,
             }),
           },
           signal,
@@ -211,6 +215,9 @@ export class AIClient {
             }),
             ...(options?.providerContext?.apiKey && {
               'X-AI-Provider-Key': options.providerContext.apiKey,
+            }),
+            ...(options?.providerContext?.baseUrl && {
+              'X-AI-Provider-Base-URL': options.providerContext.baseUrl,
             }),
           },
           signal: controller.signal,

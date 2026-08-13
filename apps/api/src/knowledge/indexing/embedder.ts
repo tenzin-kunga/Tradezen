@@ -60,6 +60,7 @@ export class DocumentEmbedder {
     for (const chunk of chunks) {
       try {
         const vector = await this.embeddingService.generateEmbedding(
+          userId,
           chunk.content,
         );
         await db.insert(embeddings).values({

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@/hooks/useChat";
 import type { WorkspaceAction } from "@/lib/api/assistant";
-import { IconChart, IconJournal, IconResearch, IconPortfolio } from "./icons";
+import { IconChart, IconJournal, IconResearch } from "./icons";
 import ConversationSidebar from "./ConversationSidebar";
 import ConversationCanvas from "./ConversationCanvas";
 import ChatInput from "./ChatInput";
@@ -15,8 +15,8 @@ import {
   buildReviewRequest,
   buildResearchRequest,
   buildExplainRequest,
-  buildPortfolioRequest,
 } from "@/lib/api/assistant";
+import { IconButton } from "@/components/primitives/IconButton";
 
 export default function AssistantWorkspace() {
   const router = useRouter();
@@ -83,10 +83,6 @@ export default function AssistantWorkspace() {
               contextRequest = buildExplainRequest(args) as Record<string, any>;
             intent = "explain";
             break;
-          case "portfolio":
-            contextRequest = buildPortfolioRequest() as Record<string, any>;
-            intent = "portfolio";
-            break;
         }
 
         send(content, contextRequest, intent, model);
@@ -112,7 +108,7 @@ export default function AssistantWorkspace() {
       <div
         style={{
           width: 200,
-          borderRight: "1px solid var(--border, #23252d)",
+          borderRight: "1px solid var(--border-soft, #23252d)",
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",
@@ -174,12 +170,6 @@ export default function AssistantWorkspace() {
                   description: "Identify patterns",
                   onClick: () => handleSend("What mistakes did I make today?"),
                 },
-                {
-                  icon: "portfolio",
-                  title: "Portfolio snapshot",
-                  description: "Current holdings",
-                  onClick: handleSend.bind(null, "Show my portfolio"),
-                },
               ]}
               onSelect={handleSend}
             />
@@ -224,7 +214,7 @@ export default function AssistantWorkspace() {
         <div
           style={{
             width: 280,
-            borderLeft: "1px solid var(--border, #23252d)",
+            borderLeft: "1px solid var(--border-soft, #23252d)",
             flexShrink: 0,
             display: "flex",
             flexDirection: "column",
@@ -236,26 +226,19 @@ export default function AssistantWorkspace() {
       )}
 
       {/* Toggle workspace button */}
-      <button
+      <IconButton
+        size={24}
+        title={workspaceOpen ? "Hide workspace" : "Show workspace"}
         onClick={() => setWorkspaceOpen(!workspaceOpen)}
         style={{
           position: "absolute",
           right: workspaceOpen ? 320 : 0,
           top: 8,
-          width: 24,
-          height: 24,
-          borderRadius: 4,
           background: "var(--bg-surface-hover, #1a1b23)",
-          border: "1px solid var(--border, #23252d)",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "var(--text-muted, #9ca3af)",
+          border: "1px solid var(--border-soft, #23252d)",
           zIndex: 10,
           transition: "right 0.2s",
         }}
-        title={workspaceOpen ? "Hide workspace" : "Show workspace"}
       >
         <svg
           width="12"
@@ -277,7 +260,7 @@ export default function AssistantWorkspace() {
             </>
           )}
         </svg>
-      </button>
+      </IconButton>
     </div>
   );
 }

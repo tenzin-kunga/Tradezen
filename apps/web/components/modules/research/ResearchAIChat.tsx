@@ -6,6 +6,8 @@ import remarkGfm from "remark-gfm";
 import { streamChat, type ChatMessageDto } from "@/lib/api/assistant";
 import type { ResearchProject } from "@/lib/api/research";
 import { logResearchAiQuery } from "@/lib/api/research";
+import { Button } from "@/components/primitives/Button";
+import { IconButton } from "@/components/primitives/IconButton";
 
 interface ResearchAIChatProps {
   project: ResearchProject;
@@ -117,7 +119,7 @@ export default function ResearchAIChat({ project }: ResearchAIChatProps) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        borderTop: "1px solid var(--border, #23252d)",
+        borderTop: "1px solid var(--border-soft, #23252d)",
       }}
     >
       <div
@@ -141,20 +143,14 @@ export default function ResearchAIChat({ project }: ResearchAIChatProps) {
           AI RESEARCH
         </span>
         {isStreaming && (
-          <button
+          <Button
+            variant="danger"
+            size="sm"
             onClick={() => abortRef.current?.abort()}
-            style={{
-              padding: "2px 8px",
-              borderRadius: 4,
-              background: "var(--accent-loss, #ef4444)",
-              color: "#fff",
-              border: "none",
-              fontSize: 10,
-              cursor: "pointer",
-            }}
+            style={{ background: "var(--accent-loss)", color: "#fff", border: "none" }}
           >
             Stop
-          </button>
+          </Button>
         )}
       </div>
 
@@ -282,43 +278,34 @@ export default function ResearchAIChat({ project }: ResearchAIChatProps) {
             }}
           />
           {isStreaming ? (
-            <button
+            <IconButton
+              size={28}
+              title="Stop"
               onClick={() => abortRef.current?.abort()}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
-                background: "var(--accent-loss, #ef4444)",
+                background: "var(--accent-loss)",
+                color: "#fff",
                 border: "none",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
               }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
                 <rect x="6" y="6" width="12" height="12" rx="2" />
               </svg>
-            </button>
+            </IconButton>
           ) : (
-            <button
-              onClick={() => send(input)}
+            <IconButton
+              size={28}
+              title="Send"
               disabled={!input.trim()}
+              onClick={() => send(input)}
               style={{
-                width: 28,
-                height: 28,
-                borderRadius: 6,
                 background: input.trim()
-                  ? "var(--accent, #3b82f6)"
-                  : "var(--bg-surface-hover, #1a1b23)",
+                  ? "var(--accent)"
+                  : "var(--bg-surface-hover)",
+                color: "#fff",
                 border: "none",
-                cursor: input.trim() ? "pointer" : "default",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
                 opacity: input.trim() ? 1 : 0.5,
+                cursor: input.trim() ? "pointer" : "default",
               }}
             >
               <svg
@@ -332,7 +319,7 @@ export default function ResearchAIChat({ project }: ResearchAIChatProps) {
                 <line x1="22" y1="2" x2="11" y2="13" />
                 <polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>
-            </button>
+            </IconButton>
           )}
         </div>
       </div>

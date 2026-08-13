@@ -45,6 +45,20 @@ const SYMBOLS = [
   'USDJPY',
   'NAS100',
 ];
+
+const CONTRACT_SIZES = {
+  EURUSD: 10000,
+  GBPUSD: 10000,
+  GBPJPY: 10000,
+  USDJPY: 10000,
+  AUDUSD: 10000,
+  BTCUSD: 1000,
+  XAUUSD: 1000,
+  XAGUSD: 1000,
+  US30: 1000,
+  ETHUSD: 1000,
+  NAS100: 1000,
+};
 const STRATEGIES = [
   'BREAKOUT',
   'SMC',
@@ -139,7 +153,7 @@ function generateSeedTrades(): SeedTrade[] {
       8 + Math.floor(Math.random() * 10),
       Math.floor(Math.random() * 60),
     );
-    const contractSize = 100000;
+    const contractSize = CONTRACT_SIZES[symbol] ?? 100000;
     const rawPnl =
       direction === 'buy'
         ? (exitPrice - entryPrice) * lotSize * contractSize

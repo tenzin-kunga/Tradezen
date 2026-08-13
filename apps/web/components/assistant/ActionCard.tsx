@@ -52,7 +52,7 @@ export default function ActionCard({
         border: "1px solid",
         borderColor: isOpened
           ? "var(--accent-profit, #22c55e)"
-          : "var(--border, #23252d)",
+          : "var(--border-soft, #23252d)",
         background: isOpened
           ? "rgba(34, 197, 94, 0.08)"
           : "var(--bg-surface-hover, #1a1b23)",
@@ -62,16 +62,6 @@ export default function ActionCard({
         opacity: isOpened ? 0.7 : 1,
         minWidth: 160,
         flexShrink: 0,
-      }}
-      onMouseEnter={(e) => {
-        if (!isOpened) {
-          e.currentTarget.style.borderColor = "var(--accent, #3b82f6)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isOpened) {
-          e.currentTarget.style.borderColor = "var(--border, #23252d)";
-        }
       }}
     >
       <span

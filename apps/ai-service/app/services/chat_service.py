@@ -86,6 +86,7 @@ class ChatService:
         provider_name, model = self.model_router.select(intent=intent_type, requested_model=request.model)
         provider = self.provider_factory.get(provider_name)
         session.provider = provider
+        session.provider_name = provider_name
         session.model = model
         session.metrics.provider = provider_name
         session.metrics.model = model
@@ -212,7 +213,7 @@ class ChatService:
             completed_steps=completed_steps,
         )
 
-    async def handle(self, request: ChatRequest, session: AISession, api_key: str | None = None) -> ChatResponse:
+    async def handle(self, request: ChatRequest, session: AISession, api_key: str | None = None, base_url: str | None = None) -> ChatResponse:
         # Request-scoped tracer
         tracer = Tracer()
         tracer.start_request()
@@ -286,7 +287,7 @@ class ChatService:
             },
         )
 
-    async def handle_stream(self, request: ChatRequest, session: AISession, api_key: str | None = None):
+    async def handle_stream(self, request: ChatRequest, session: AISession, api_key: str | None = None, base_url: str | None = None):
         """Streaming variant. Same pipeline as handle(), yields tokens."""
         tracer = Tracer()
         tracer.start_request()
@@ -295,7 +296,7 @@ class ChatService:
         session.stream = True
 
         h_llm = tracer.begin(Stage.LLM)
-        async for token in self.completion.stream(session, ctx.messages, api_key=api_key):
+        async for token in self.completion.stream(session, ctx.messages, api_key=api_key, base_url=base_url):
             yield token
         tracer.finish(h_llm, {"model": session.model, "streaming": True})
 

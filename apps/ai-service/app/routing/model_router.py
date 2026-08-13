@@ -26,6 +26,8 @@ class ModelRouter:
         self.health = health
         self.config = config
         self.registry = registry
+        # Cloud provider name is configured (default "cloud"), not hardcoded.
+        self._cloud = config.cloud_provider_name
 
     def select(
         self,
@@ -49,10 +51,10 @@ class ModelRouter:
             if provider_name and entry and self.health.is_healthy(provider_name):
                 return provider_name, model_id
 
-        # Fallback: if the model looks like an OpenRouter ID (contains slash,
-        # not a local model), try OpenRouter even if discovery hasn't loaded it.
-        if requested_model and "/" in requested_model and self.health.is_healthy("openrouter"):
-            return "openrouter", requested_model
+        # Fallback: if the model looks like a cloud ID (contains slash, not a
+        # local model), try the cloud provider even if discovery hasn't loaded it.
+        if requested_model and "/" in requested_model and self.health.is_healthy(self._cloud):
+            return self._cloud, requested_model
 
         # Use intent-based policy.
         intent_name = intent.value if intent else "simple_chat"
@@ -62,12 +64,12 @@ class ModelRouter:
         if prefer == "local" and self.health.is_healthy("ollama"):
             return "ollama", self.config.default_model
         if prefer == "cloud" and self._has_cloud():
-            return "openrouter", self._cloud_model()
+            return self._cloud, self._cloud_model()
 
         # Fallback
         fallback = policy.get("fallback")
         if fallback == "cloud" and self._has_cloud():
-            return "openrouter", self._cloud_model()
+            return self._cloud, self._cloud_model()
         if fallback == "local" and self.health.is_healthy("ollama"):
             return "ollama", self.config.default_model
 
@@ -75,13 +77,13 @@ class ModelRouter:
         if self.health.is_healthy("ollama"):
             return "ollama", self.config.default_model
         if self._has_cloud():
-            return "openrouter", self._cloud_model()
+            return self._cloud, self._cloud_model()
 
         # Default even if unhealthy (will fail with a clear error)
         return self.config.ai_provider, self.config.default_model
 
     def _has_cloud(self) -> bool:
-        return self.health.is_healthy("openrouter")
+        return self.health.is_healthy(self._cloud)
 
     def _cloud_model(self) -> str:
         cloud = self.registry.cloud()

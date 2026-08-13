@@ -114,7 +114,8 @@ Fill in:
 DB_PASSWORD=<from db-password.txt>
 JWT_SECRET=<from jwt-secret.txt>
 JWT_REFRESH_SECRET=<from jwt-refresh-secret.txt>
-OPENROUTER_API_KEY=<your-openrouter-key>
+
+# AI keys are per-user (set in Settings UI, encrypted in DB) — no server-side key.
 
 # Production overrides:
 WEB_URL=https://tradezen.yourdomain.com

@@ -1,26 +1,36 @@
 "use client";
 
+import { useState } from "react";
 import type { KnowledgeDocument } from "@/lib/api/knowledge";
 import KnowledgeRelatedPanel from "./KnowledgeRelatedPanel";
 import KnowledgeInsightsInspector from "./inspectors/InsightsInspector";
+import KnowledgeTradesInspector from "./inspectors/TradesInspector";
+import KnowledgeSourcesInspector from "./inspectors/SourcesInspector";
+import KnowledgeAssetsInspector from "./inspectors/AssetsInspector";
+import LinkDocumentDialog from "./LinkDocumentDialog";
+import { Button } from "@/components/primitives/Button";
+import { IconButton } from "@/components/primitives/IconButton";
+import { Badge } from "@/components/primitives/Badge";
 
 interface KnowledgeInspectorProps {
   document: KnowledgeDocument | null;
   collapsed: boolean;
   onToggle: () => void;
+  assetRefreshToken?: number;
 }
 
 export default function KnowledgeInspector({
   document: doc,
   collapsed,
   onToggle,
+  assetRefreshToken = 0,
 }: KnowledgeInspectorProps) {
   if (collapsed) {
     return (
       <div
         style={{
           width: 36,
-          borderLeft: "1px solid var(--border, #23252d)",
+          borderLeft: "1px solid var(--border-soft, #23252d)",
           background: "var(--bg-sidebar, #0c0c0f)",
           display: "flex",
           alignItems: "center",
@@ -28,22 +38,7 @@ export default function KnowledgeInspector({
           flexShrink: 0,
         }}
       >
-        <button
-          onClick={onToggle}
-          style={{
-            width: 28,
-            height: 28,
-            borderRadius: 6,
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--text-muted, #9ca3af)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          title="Show inspector"
-        >
+        <IconButton size={28} title="Show inspector" onClick={onToggle}>
           <svg
             width="14"
             height="14"
@@ -55,22 +50,25 @@ export default function KnowledgeInspector({
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <line x1="12" y1="3" x2="12" y2="21" />
           </svg>
-        </button>
+        </IconButton>
       </div>
     );
   }
 
+  const [linkRefresh, setLinkRefresh] = useState(0);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+
   return (
     <div
-      style={{
-        width: 280,
-        borderLeft: "1px solid var(--border, #23252d)",
-        background: "var(--bg-sidebar, #0c0c0f)",
-        display: "flex",
-        flexDirection: "column",
-        flexShrink: 0,
-        overflow: "hidden",
-      }}
+        style={{
+          width: 280,
+          borderLeft: "1px solid var(--border-soft, #23252d)",
+          background: "var(--bg-sidebar, #0c0c0f)",
+          display: "flex",
+          flexDirection: "column",
+          flexShrink: 0,
+          overflow: "hidden",
+        }}
     >
       {/* Header */}
       <div
@@ -93,22 +91,7 @@ export default function KnowledgeInspector({
         >
           Inspector
         </span>
-        <button
-          onClick={onToggle}
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 4,
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--text-muted, #9ca3af)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          title="Hide inspector"
-        >
+        <IconButton size={24} title="Hide inspector" onClick={onToggle}>
           <svg
             width="12"
             height="12"
@@ -120,7 +103,7 @@ export default function KnowledgeInspector({
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
-        </button>
+        </IconButton>
       </div>
 
       {/* Sections */}
@@ -145,28 +128,28 @@ export default function KnowledgeInspector({
                     display: "flex",
                     justifyContent: "space-between",
                     padding: "3px 0",
+                    alignItems: "center",
                   }}
                 >
                   <span style={{ color: "var(--text-muted, #9ca3af)" }}>
                     Type
                   </span>
-                  <span style={{ color: "var(--text-primary, #fafafa)" }}>
-                    {doc.docType}
-                  </span>
+                  <Badge tone="neutral">{doc.docType}</Badge>
                 </div>
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     padding: "3px 0",
+                    alignItems: "center",
                   }}
                 >
                   <span style={{ color: "var(--text-muted, #9ca3af)" }}>
                     Status
                   </span>
-                  <span style={{ color: "var(--text-primary, #fafafa)" }}>
+                  <Badge tone={doc.status === "active" ? "profit" : "warn"}>
                     {doc.status}
-                  </span>
+                  </Badge>
                 </div>
                 <div
                   style={{
@@ -207,20 +190,46 @@ export default function KnowledgeInspector({
               <KnowledgeInsightsInspector document={doc} />
             </InspectorSection>
 
+            <InspectorSection title="Related Trades">
+              <KnowledgeTradesInspector document={doc} />
+            </InspectorSection>
+
             <InspectorSection title="Links">
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "var(--text-muted, #9ca3af)",
-                  padding: "8px 0",
-                }}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLinkDialog(true)}
+                style={{ marginBottom: 8 }}
               >
-                No links yet.
-              </div>
+                + Link document
+              </Button>
+              {doc && (
+                <KnowledgeSourcesInspector
+                  document={doc}
+                  refreshToken={linkRefresh}
+                />
+              )}
+            </InspectorSection>
+
+            <InspectorSection title="Attachments">
+              {doc && (
+                <KnowledgeAssetsInspector
+                  document={doc}
+                  refreshToken={assetRefreshToken}
+                />
+              )}
             </InspectorSection>
           </>
         )}
       </div>
+
+      {showLinkDialog && doc && (
+        <LinkDocumentDialog
+          sourceDocument={doc}
+          onLinked={() => setLinkRefresh((t) => t + 1)}
+          onClose={() => setShowLinkDialog(false)}
+        />
+      )}
     </div>
   );
 }

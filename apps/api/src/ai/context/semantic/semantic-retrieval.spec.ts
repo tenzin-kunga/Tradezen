@@ -60,6 +60,7 @@ describe('SemanticRetrievalService', () => {
     );
 
     expect(mockEmbeddingService.generateEmbedding).toHaveBeenCalledWith(
+      'u1',
       'AAPL trades',
     );
     expect(mockRepository.search).toHaveBeenCalledWith(

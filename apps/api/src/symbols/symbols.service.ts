@@ -64,6 +64,7 @@ export class SymbolsService {
       ticker: string;
       exchange: string | null;
       name: string | null;
+      contractSize: number;
     }>
   > {
     if (query.length < 1) return [];
@@ -74,6 +75,7 @@ export class SymbolsService {
         ticker: symbols.ticker,
         exchange: symbols.exchange,
         name: symbols.name,
+        contractSize: symbols.contractSize,
       })
       .from(symbols)
       .where(
@@ -84,7 +86,13 @@ export class SymbolsService {
       )
       .limit(10);
 
-    return results;
+    return results.map((r) => ({
+      id: r.id,
+      ticker: r.ticker,
+      exchange: r.exchange,
+      name: r.name,
+      contractSize: r.contractSize != null ? Number(r.contractSize) : 100000,
+    }));
   }
 
   async getById(id: string) {

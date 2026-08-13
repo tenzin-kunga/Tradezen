@@ -9,6 +9,8 @@ import {
   deleteResearchAsset,
   DOCUMENT_CATEGORIES,
 } from "@/lib/api/research";
+import { Button } from "@/components/primitives/Button";
+import { IconButton } from "@/components/primitives/IconButton";
 
 type SortKey = "newest" | "oldest" | "name" | "category";
 
@@ -119,7 +121,7 @@ export default function ResearchDocuments({
     <div
       style={{
         marginTop: 24,
-        borderTop: "1px solid var(--border, #23252d)",
+        borderTop: "1px solid var(--border-soft, #23252d)",
         paddingTop: 16,
       }}
     >
@@ -131,19 +133,9 @@ export default function ResearchDocuments({
           marginBottom: 10,
         }}
       >
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          style={{
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--text-primary, #fafafa)",
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
+        <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? "▸" : "▾"} Documents ({docs.length})
-        </button>
+        </Button>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <select
             value={sort}
@@ -154,7 +146,7 @@ export default function ResearchDocuments({
               borderRadius: 4,
               background: "var(--bg-surface-hover, #1a1b23)",
               color: "var(--text-primary, #fafafa)",
-              border: "1px solid var(--border, #23252d)",
+              border: "1px solid var(--border-soft, #23252d)",
             }}
           >
             <option value="newest">Newest</option>
@@ -162,22 +154,14 @@ export default function ResearchDocuments({
             <option value="name">Name</option>
             <option value="category">Category</option>
           </select>
-          <button
-            onClick={() => fileRef.current?.click()}
+          <Button
+            variant="primary"
+            size="sm"
             disabled={uploading}
-            style={{
-              padding: "4px 10px",
-              borderRadius: 6,
-              background: "var(--accent, #3b82f6)",
-              color: "#fff",
-              border: "none",
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: uploading ? "default" : "pointer",
-            }}
+            onClick={() => fileRef.current?.click()}
           >
             {uploading ? "Uploading..." : "+ Upload"}
-          </button>
+          </Button>
           <input
             ref={fileRef}
             type="file"
@@ -225,7 +209,7 @@ export default function ResearchDocuments({
                     gap: 10,
                     padding: "8px 10px",
                     borderRadius: 6,
-                    border: "1px solid var(--border, #23252d)",
+                    border: "1px solid var(--border-soft, #23252d)",
                   }}
                 >
                   <span style={{ fontSize: 18 }}>{iconFor(d.mimeType)}</span>
@@ -261,19 +245,14 @@ export default function ResearchDocuments({
                       {formatDate(d.uploadedAt)}
                     </div>
                   </a>
-                  <button
-                    onClick={() => handleDelete(d.id)}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      color: "var(--text-muted, #9ca3af)",
-                      fontSize: 14,
-                    }}
+                  <IconButton
+                    size={18}
                     title="Delete"
+                    style={{ color: "var(--accent-loss)" }}
+                    onClick={() => handleDelete(d.id)}
                   >
                     ×
-                  </button>
+                  </IconButton>
                 </div>
               ))}
             </div>
@@ -298,7 +277,7 @@ export default function ResearchDocuments({
                 borderRadius: 4,
                 background: "var(--bg-surface-hover, #1a1b23)",
                 color: "var(--text-primary, #fafafa)",
-                border: "1px solid var(--border, #23252d)",
+                border: "1px solid var(--border-soft, #23252d)",
               }}
             >
               {DOCUMENT_CATEGORIES.map((c) => (
@@ -318,7 +297,7 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "8px 10px",
   borderRadius: 6,
-  border: "1px solid var(--border, #23252d)",
+  border: "1px solid var(--border-soft, #23252d)",
   background: "var(--bg-surface-hover, #1a1b23)",
   color: "var(--text-primary, #fafafa)",
   fontSize: 12,

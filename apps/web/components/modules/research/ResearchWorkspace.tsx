@@ -22,6 +22,9 @@ import ResearchAIChat from "./ResearchAIChat";
 import ResearchDocuments from "./ResearchDocuments";
 import { EmptyState } from "@/components/primitives/EmptyState";
 import { Skeleton } from "@/components/primitives/Skeleton";
+import { Button } from "@/components/primitives/Button";
+import { IconButton } from "@/components/primitives/IconButton";
+import { Badge } from "@/components/primitives/Badge";
 
 const STATUS_FILTERS: (ResearchStatus | "all")[] = [
   "all",
@@ -172,12 +175,20 @@ function ResearchSidebar({
   onDelete: (id: string) => void;
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
+  const visible = projects.filter(
+    (p) =>
+      p.title.toLowerCase().includes(query.toLowerCase()) ||
+      (p.ticker || "").toLowerCase().includes(query.toLowerCase()),
+  );
+
   return (
     <div
       style={{
         width: 260,
         flexShrink: 0,
-        borderRight: "1px solid var(--border, #23252d)",
+        borderRight: "1px solid var(--border-soft, #23252d)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -185,12 +196,12 @@ function ResearchSidebar({
     >
       <div
         style={{
-          height: 40,
+          height: 48,
           padding: "0 12px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: "1px solid var(--border, #23252d)",
+          borderBottom: "1px solid var(--border-soft, #23252d)",
           flexShrink: 0,
         }}
       >
@@ -203,62 +214,51 @@ function ResearchSidebar({
         >
           Research
         </span>
-        <button
-          onClick={onNew}
-          style={{
-            padding: "4px 10px",
-            borderRadius: 6,
-            background: "var(--accent, #3b82f6)",
-            color: "#fff",
-            border: "none",
-            fontSize: 11,
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
+        <Button variant="primary" size="sm" onClick={onNew}>
           + New
-        </button>
+        </Button>
       </div>
 
       <div
         style={{
           display: "flex",
-          gap: 4,
+          flexDirection: "column",
+          gap: 8,
           padding: "8px 12px",
-          flexWrap: "wrap",
-          borderBottom: "1px solid var(--border, #23252d)",
+          borderBottom: "1px solid var(--border-soft, #23252d)",
         }}
       >
-        {STATUS_FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => onFilter(f)}
-            style={{
-              padding: "2px 8px",
-              borderRadius: 4,
-              fontSize: 10,
-              cursor: "pointer",
-              background:
-                filter === f
-                  ? "var(--bg-surface-hover, #1a1b23)"
-                  : "transparent",
-              color:
-                filter === f
-                  ? "var(--text-primary, #fafafa)"
-                  : "var(--text-muted, #9ca3af)",
-              border:
-                filter === f
-                  ? "1px solid var(--accent, #3b82f6)"
-                  : "1px solid var(--border, #23252d)",
-            }}
-          >
-            {f}
-          </button>
-        ))}
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search projects…"
+          style={{
+            width: "100%",
+            padding: "6px 10px",
+            borderRadius: 6,
+            border: "1px solid var(--border-soft, #23252d)",
+            background: "var(--bg-surface-hover, #1a1b23)",
+            color: "var(--text-primary, #fafafa)",
+            fontSize: 12,
+            outline: "none",
+          }}
+        />
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {STATUS_FILTERS.map((f) => (
+            <Badge
+              key={f}
+              tone={filter === f ? "accent" : "neutral"}
+              style={{ cursor: "pointer", textTransform: "capitalize" }}
+              onClick={() => onFilter(f)}
+            >
+              {f}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
-        {projects.length === 0 ? (
+        {visible.length === 0 ? (
           <div
             style={{
               padding: 16,
@@ -270,7 +270,7 @@ function ResearchSidebar({
             No projects yet.
           </div>
         ) : (
-          projects.map((p) => (
+          visible.map((p) => (
             <div
               key={p.id}
               onClick={() => onSelect(p.id)}
@@ -310,19 +310,14 @@ function ResearchSidebar({
                   {p.title}
                 </div>
                 {hovered === p.id && (
-                  <button
+                  <IconButton
+                    size={20}
+                    title="Delete"
+                    style={{ color: "var(--accent-loss)", flexShrink: 0 }}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (confirm(`Delete "${p.title}"?`)) onDelete(p.id);
                     }}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      cursor: "pointer",
-                      color: "var(--text-muted, #9ca3af)",
-                      flexShrink: 0,
-                    }}
-                    title="Delete"
                   >
                     <svg
                       width="12"
@@ -335,7 +330,7 @@ function ResearchSidebar({
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                     </svg>
-                  </button>
+                  </IconButton>
                 )}
               </div>
               <div
@@ -491,7 +486,7 @@ function ResearchProjectView({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: "1px solid var(--border, #23252d)",
+          borderBottom: "1px solid var(--border-soft, #23252d)",
           flexShrink: 0,
           gap: 8,
         }}
@@ -536,9 +531,10 @@ function ResearchProjectView({
           </select>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          <button
+          <Button
+            variant={showChat ? "primary" : "ghost"}
+            size="sm"
             onClick={() => setShowChat(!showChat)}
-            style={headerBtn(showChat)}
           >
             <svg
               width="12"
@@ -553,26 +549,23 @@ function ResearchProjectView({
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             AI
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={isPreview ? "primary" : "ghost"}
+            size="sm"
             onClick={() => setIsPreview(!isPreview)}
-            style={headerBtn(isPreview)}
           >
             {isPreview ? "Edit" : "Preview"}
-          </button>
-          <button
-            onClick={saveNotes}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             disabled={saving}
-            style={{
-              ...headerBtn(false),
-              background: "var(--accent, #3b82f6)",
-              color: "#fff",
-              border: "none",
-              opacity: saving ? 0.6 : 1,
-            }}
+            onClick={saveNotes}
+            style={{ opacity: saving ? 0.6 : 1 }}
           >
             {saving ? "Saving..." : "Save"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -624,7 +617,7 @@ function ResearchProjectView({
           style={{
             width: 260,
             flexShrink: 0,
-            borderLeft: "1px solid var(--border, #23252d)",
+            borderLeft: "1px solid var(--border-soft, #23252d)",
             padding: 16,
             overflowY: "auto",
             display: "flex",
@@ -658,7 +651,7 @@ function ResearchProjectView({
                     right: 0,
                     marginTop: 4,
                     background: "var(--bg-surface-hover, #1a1b23)",
-                    border: "1px solid var(--border, #23252d)",
+                    border: "1px solid var(--border-soft, #23252d)",
                     borderRadius: 6,
                     zIndex: 10,
                   }}
@@ -688,22 +681,17 @@ function ResearchProjectView({
               )}
             </div>
             {project.symbolId && (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   linkSymbol(null);
                   setSymbolTicker("");
                 }}
-                style={{
-                  marginTop: 6,
-                  fontSize: 10,
-                  background: "transparent",
-                  border: "none",
-                  color: "var(--text-muted, #9ca3af)",
-                  cursor: "pointer",
-                }}
+                style={{ marginTop: 6 }}
               >
                 Unlink
-              </button>
+              </Button>
             )}
           </Section>
 
@@ -791,7 +779,7 @@ function ResearchProjectView({
           <div
             style={{
               width: 360,
-              borderLeft: "1px solid var(--border, #23252d)",
+              borderLeft: "1px solid var(--border-soft, #23252d)",
               flexShrink: 0,
             }}
           >
@@ -807,7 +795,7 @@ function ResearchProjectView({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderTop: "1px solid var(--border, #23252d)",
+          borderTop: "1px solid var(--border-soft, #23252d)",
           fontSize: 10,
           color: "var(--text-dim, #6b7280)",
           flexShrink: 0,
@@ -835,7 +823,7 @@ function ResearchActivityPanel({ project }: { project: ResearchProject }) {
       style={{
         width: 220,
         flexShrink: 0,
-        borderLeft: "1px solid var(--border, #23252d)",
+        borderLeft: "1px solid var(--border-soft, #23252d)",
         padding: 16,
         overflowY: "auto",
       }}
@@ -861,7 +849,7 @@ function ResearchActivityPanel({ project }: { project: ResearchProject }) {
             key={a.id}
             style={{
               padding: "6px 0",
-              borderBottom: "1px solid var(--border, #23252d)",
+              borderBottom: "1px solid var(--border-soft, #23252d)",
             }}
           >
             <div
@@ -989,7 +977,7 @@ function NewProjectModal({
                   right: 0,
                   marginTop: 4,
                   background: "var(--bg-surface-hover, #1a1b23)",
-                  border: "1px solid var(--border, #23252d)",
+                  border: "1px solid var(--border-soft, #23252d)",
                   borderRadius: 6,
                   zIndex: 10,
                 }}
@@ -1020,25 +1008,19 @@ function NewProjectModal({
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button onClick={onClose} style={cancelBtn}>
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={!title.trim()}
             onClick={() =>
               title.trim() && onCreate(title.trim(), selectedSymbol?.id)
             }
-            disabled={!title.trim()}
-            style={{
-              ...cancelBtn,
-              background: title.trim()
-                ? "var(--accent, #3b82f6)"
-                : "var(--bg-surface-hover, #1a1b23)",
-              color: title.trim() ? "#fff" : "var(--text-muted, #9ca3af)",
-              border: "none",
-            }}
           >
             Create
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -1074,7 +1056,7 @@ const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "8px 10px",
   borderRadius: 6,
-  border: "1px solid var(--border, #23252d)",
+  border: "1px solid var(--border-soft, #23252d)",
   background: "var(--bg-surface-hover, #1a1b23)",
   color: "var(--text-primary, #fafafa)",
   fontSize: 12,
@@ -1091,23 +1073,3 @@ const pillStyle = (color: string): React.CSSProperties => ({
   outline: "none",
   cursor: "pointer",
 });
-
-const headerBtn = (active: boolean): React.CSSProperties => ({
-  padding: "4px 10px",
-  borderRadius: 6,
-  background: active ? "var(--accent, #3b82f6)" : "transparent",
-  color: active ? "#fff" : "var(--text-muted, #9ca3af)",
-  border: "1px solid var(--border, #23252d)",
-  fontSize: 11,
-  cursor: "pointer",
-});
-
-const cancelBtn: React.CSSProperties = {
-  padding: "6px 14px",
-  borderRadius: 6,
-  background: "transparent",
-  color: "var(--text-muted, #9ca3af)",
-  border: "1px solid var(--border, #23252d)",
-  fontSize: 12,
-  cursor: "pointer",
-};

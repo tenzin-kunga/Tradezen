@@ -158,9 +158,11 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker up -d
 | `JWT_REFRESH_SECRET` | Yes (prod) | Sign refresh tokens    | `openssl rand -base64 64`      |
 | `DB_PASSWORD`        | Yes        | PostgreSQL auth        | `pwgen 32 1`                   |
 | `DATABASE_URL`       | Optional   | Full connection string | `postgresql://...`             |
-| `OPENROUTER_API_KEY` | Optional   | AI chat feature        | `sk-or-v1-...`                 |
 | `WEB_URL`            | No         | CORS origin            | `https://tradezen.example.com` |
 | `NODE_ENV`           | No         | Environment mode       | `production`                   |
+
+> AI provider keys are **per-user**: set in the Settings UI, stored encrypted in
+> the DB (`KEY_ENCRYPTION_SECRET`), and forwarded per-request. No server-side key.
 
 ### Docker Resource Limits
 

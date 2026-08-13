@@ -154,24 +154,6 @@ const IconTrade = (
   </svg>
 );
 
-const IconJournal = (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    <path d="M8 7h8" />
-    <path d="M8 11h6" />
-  </svg>
-);
-
 const IconTag = (
   <svg
     width="16"
@@ -482,16 +464,6 @@ export default function CommandPalette({
         },
       });
       list.push({
-        id: "nav-journal",
-        label: "Today's Journal",
-        icon: IconJournal,
-        description: "Open today's journal entry",
-        onSelect: () => {
-          close();
-          router.push(`/journal?date=${new Date().toISOString().slice(0, 10)}`);
-        },
-      });
-      list.push({
         id: "nav-analytics",
         label: "Analytics",
         icon: IconAnalytics,
@@ -606,18 +578,6 @@ export default function CommandPalette({
           onSelect: () => {
             close();
             router.push(`/trades/${t.id}`);
-          },
-        });
-      }
-      for (const j of results.journals) {
-        list.push({
-          id: `journal-${j.id}`,
-          label: `Journal — ${j.date}`,
-          description: j.lessons ? `Lesson: ${j.lessons}` : undefined,
-          icon: IconJournal,
-          onSelect: () => {
-            close();
-            router.push(`/journal?date=${j.date}`);
           },
         });
       }
@@ -745,7 +705,7 @@ export default function CommandPalette({
               setActiveIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Search trades, journals, tags…"
+            placeholder="Search trades, tags, symbols…"
             style={{
               flex: 1,
               background: "none",
@@ -797,13 +757,28 @@ export default function CommandPalette({
 
                 if (query.trim().length === 0) {
                   // Quick actions section
-                  const quickCount = 9; // 8 nav + 1 AI
+                  const quickCount = items.filter((i) =>
+                    i.id.startsWith("nav-"),
+                  ).length;
                   sections.push({
                     label: "QUICK ACTIONS",
                     start: 0,
                     end: quickCount,
                   });
                   idx = quickCount;
+
+                  // AI action
+                  const aiCount = items.filter((i) =>
+                    i.id.startsWith("ai-"),
+                  ).length;
+                  if (aiCount > 0) {
+                    sections.push({
+                      label: "AI",
+                      start: idx,
+                      end: idx + aiCount,
+                    });
+                    idx += aiCount;
+                  }
 
                   // Recent searches
                   if (recentSearches.length > 0) {
@@ -838,16 +813,6 @@ export default function CommandPalette({
                     });
                     idx = tradeEnd;
                   }
-                  const journalStart = idx;
-                  const journalEnd = idx + results.journals.length;
-                  if (results.journals.length > 0) {
-                    sections.push({
-                      label: "JOURNALS",
-                      start: journalStart,
-                      end: journalEnd,
-                    });
-                    idx = journalEnd;
-                  }
                   const tagStart = idx;
                   const tagEnd = idx + results.tags.length;
                   if (results.tags.length > 0) {
@@ -870,6 +835,17 @@ export default function CommandPalette({
                   )
                 ) {
                   sections.push({ label: "ACTIONS", start: idx, end: idx + 1 });
+                  idx += 1;
+                }
+
+                // Workspace registry modules
+                if (registryItems.length > 0) {
+                  sections.push({
+                    label: "WORKSPACE",
+                    start: idx,
+                    end: idx + registryItems.length,
+                  });
+                  idx += registryItems.length;
                 }
 
                 let globalIdx = 0;
@@ -920,7 +896,7 @@ export default function CommandPalette({
                   lineHeight: 1.5,
                 }}
               >
-                Search trades, journals, and tags
+                Search trades, tags, and symbols
                 <br />
                 Type{" "}
                 <kbd

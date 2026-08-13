@@ -118,7 +118,10 @@ export class KnowledgeRetrievalService {
     const profile = RETRIEVAL_PROFILES[profileName] || RETRIEVAL_PROFILES.fast;
 
     try {
-      const queryVector = await this.embeddingService.generateEmbedding(query);
+      const queryVector = await this.embeddingService.generateEmbedding(
+        userId,
+        query,
+      );
 
       const results = await db
         .select({

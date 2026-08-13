@@ -36,10 +36,6 @@ describe("Workspace integration", () => {
     const cmdRegistry = getCommandRegistry();
     const commands = cmdRegistry.getAll();
     expect(commands.length).toBeGreaterThan(0);
-
-    // Journal commands exist
-    const journalCmd = cmdRegistry.get("module", "journal");
-    expect(journalCmd).toBeDefined();
   });
 
   it("search registry is populated from modules", () => {
@@ -48,18 +44,18 @@ describe("Workspace integration", () => {
     expect(() => searchRegistry.quickActions()).not.toThrow();
   });
 
-  it("resource manager can open a journal resource", () => {
+  it("resource manager can open a trade resource", () => {
     const rm = getResourceManager();
     const tabsBefore = rm.getTabs().length;
 
     // Opening should not throw
     expect(() => {
       rm.open({
-        id: "journal:2026-07-08",
-        type: "journal",
-        title: "2026-07-08",
-        url: "/workspace/journal?date=2026-07-08",
-        metadata: { date: "2026-07-08" },
+        id: "trade:123",
+        type: "trade",
+        title: "BTCUSD",
+        url: "/trades/123",
+        metadata: { tradeId: "123" },
       });
     }).not.toThrow();
 
@@ -71,9 +67,36 @@ describe("Workspace integration", () => {
     const registry = getModuleRegistry();
     const primaryModules = registry.getByGroup("primary");
     expect(primaryModules.length).toBeGreaterThan(0);
+  });
 
-    // Journal is in primary group
-    const journalMod = primaryModules.find((m) => m.metadata.id === "journal");
-    expect(journalMod).toBeDefined();
+  it("knowledge module commands are wired and execute without throwing", () => {
+    const cmdRegistry = getCommandRegistry();
+    const open = cmdRegistry.get("module", "knowledge");
+    const newDoc = cmdRegistry.get("module", "new-doc");
+
+    expect(open).toBeDefined();
+    expect(newDoc).toBeDefined();
+    expect(() => open!.handler("")).not.toThrow();
+    expect(() => newDoc!.handler("")).not.toThrow();
+  });
+
+  it("research module commands are wired and execute without throwing", () => {
+    const cmdRegistry = getCommandRegistry();
+    const open = cmdRegistry.get("module", "research");
+    const newResearch = cmdRegistry.get("module", "new-research");
+
+    expect(open).toBeDefined();
+    expect(newResearch).toBeDefined();
+    expect(() => open!.handler("")).not.toThrow();
+    expect(() => newResearch!.handler("")).not.toThrow();
+  });
+
+  it("search provider quick actions execute without throwing", () => {
+    const searchRegistry = getSearchRegistry();
+    const actions = searchRegistry.quickActions();
+    expect(actions.length).toBeGreaterThan(0);
+    for (const a of actions) {
+      expect(() => a.action()).not.toThrow();
+    }
   });
 });

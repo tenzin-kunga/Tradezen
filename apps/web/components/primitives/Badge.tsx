@@ -7,6 +7,7 @@ interface BadgeProps {
   children: ReactNode;
   style?: CSSProperties;
   className?: string;
+  onClick?: () => void;
 }
 
 const tones: Record<Tone, CSSProperties> = {
@@ -42,10 +43,12 @@ export function Badge({
   children,
   style,
   className = "",
+  onClick,
 }: BadgeProps) {
   return (
     <span
       className={className}
+      onClick={onClick}
       style={{
         display: "inline-flex",
         alignItems: "center",

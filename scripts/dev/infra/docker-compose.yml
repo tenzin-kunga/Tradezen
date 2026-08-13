@@ -106,12 +106,6 @@ services:
       PORT: 3001
       REDIS_HOST: redis
       REDIS_PORT: '6379'
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
-      OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-qwen/qwen3-next-80b-a3b-instruct:free}
-      OPENROUTER_AVAILABLE_MODELS: ${OPENROUTER_AVAILABLE_MODELS}
-      OPENROUTER_HTTP_REFERER: ${OPENROUTER_HTTP_REFERER}
-      OPENROUTER_APP_TITLE: ${OPENROUTER_APP_TITLE:-TradeZen}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3001/auth/google/callback}
@@ -215,8 +209,6 @@ services:
       AI_PROVIDER: ${AI_PROVIDER:-ollama}
       DEFAULT_MODEL: ${DEFAULT_MODEL:-qwen3:4b}
       OLLAMA_HOST: http://ollama:11434
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
       AUTH_SECRET: ${JWT_SECRET}
       NESTJS_INTERNAL_API_KEY: ${NESTJS_INTERNAL_API_KEY:-tradezen-internal}
       MAX_CONCURRENT_OLLAMA: ${MAX_CONCURRENT_OLLAMA:-4}
@@ -273,7 +265,6 @@ services:
 #    DB_PASSWORD=<strong-random-password>
 #    JWT_SECRET=<long-random-string>
 #    JWT_REFRESH_SECRET=<another-long-random-string>
-#    OPENROUTER_API_KEY=<your-key>
 #    WEB_URL=http://localhost:3000
 #
 # 2. Load it when starting:

@@ -29,6 +29,15 @@ async def openai_chat(request: Request):
 
     container = request.app.state.container
 
+    # Extract provider context early — needed by both tools and non-tools paths.
+    provider_context = getattr(request.state, "provider_context", None)
+    api_key = provider_context.get("api_key") if provider_context else None
+    provider_name_ctx = provider_context.get("provider") if provider_context else None
+    base_url = (
+        provider_context.get("base_url")
+        or (container.config.provider_base_urls.get(provider_name_ctx) if provider_name_ctx else None)
+    )
+
     # Tool-calling passthrough: the NestJS AgentRuntime owns the tool loop, so
     # forward the raw request verbatim to a provider that supports function calling.
     if openai_req.tools:
@@ -36,9 +45,13 @@ async def openai_chat(request: Request):
         provider_req, model_id = ModelRegistry.split_provider_model(openai_req.model)
         entry = container.model_registry.get(model_id) if model_id else None
         provider_name = provider_req or (entry["provider"] if entry else container.config.ai_provider)
-        provider = container.provider_factory.get(provider_name)
+        try:
+            provider = container.provider_factory.get(provider_name)
+        except ValueError:
+            # Unknown vendor prefix (e.g. "groq") — fall through to cloud provider.
+            provider = container.provider_factory.get(container.config.cloud_provider_name)
         if getattr(provider.capabilities, "supports_tools", False):
-            raw = await provider.raw_chat(body, api_key=api_key)
+            raw = await provider.raw_chat(body, api_key=api_key, base_url=base_url, provider_name=provider_name_ctx)
             return raw
         # Provider can't do tools — drop them and run the normal pipeline.
 
@@ -53,16 +66,13 @@ async def openai_chat(request: Request):
         stream=openai_req.stream,
     )
 
-    provider_context = getattr(request.state, "provider_context", None)
-    api_key = provider_context.get("api_key") if provider_context else None
-
     if openai_req.stream:
         return StreamingResponse(
-            _stream_openai(container, chat_req, session, api_key),
+            _stream_openai(container, chat_req, session, api_key, base_url),
             media_type="text/event-stream",
         )
 
-    response = await container.chat_service.handle(chat_req, session, api_key=api_key)
+    response = await container.chat_service.handle(chat_req, session, api_key=api_key, base_url=base_url)
 
     # Convert to OpenAI format
     return OpenAIResponse(
@@ -82,13 +92,13 @@ async def openai_chat(request: Request):
     ).model_dump()
 
 
-async def _stream_openai(container, chat_req: ChatRequest, session: AISession, api_key: str | None = None):
+async def _stream_openai(container, chat_req: ChatRequest, session: AISession, api_key: str | None = None, base_url: str | None = None):
     """Stream in OpenAI SSE format. Uses the same pipeline as non-streaming."""
     import json
 
     yield 'data: {"object":"chat.completion.chunk","choices":[{"delta":{"role":"assistant"},"index":0}]}\n\n'
 
-    async for token in container.chat_service.handle_stream(chat_req, session, api_key=api_key):
+    async for token in container.chat_service.handle_stream(chat_req, session, api_key=api_key, base_url=base_url):
         chunk = {
             "object": "chat.completion.chunk",
             "choices": [{"delta": {"content": token}, "index": 0}],

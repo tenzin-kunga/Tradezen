@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ChatMessage } from "@/hooks/useChat";
 import type { WorkspaceAction } from "@/lib/api/assistant";
+import { normalizeAssistantMarkdown } from "@/lib/assistant/normalizeMarkdown";
 import ToolCard from "./ToolCard";
 import ActionCard from "./ActionCard";
 import SourceCitation, { type Source } from "./SourceCitation";
@@ -49,7 +50,7 @@ export default function ResponseBlock({
           background: isUser
             ? "var(--accent, #3b82f6)"
             : "var(--bg-surface-hover, #1a1b23)",
-          border: isUser ? "none" : "1px solid var(--border, #23252d)",
+          border: isUser ? "none" : "1px solid var(--border-soft, #23252d)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -106,7 +107,7 @@ export default function ResponseBlock({
           ) : message.type === "markdown" || message.type === "text" ? (
             <div className="prose prose-invert prose-sm max-w-none">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {message.content}
+                {normalizeAssistantMarkdown(message.content)}
               </ReactMarkdown>
             </div>
           ) : message.type === "error" ? (

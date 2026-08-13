@@ -17,10 +17,10 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-class OpenRouterProvider:
-    """OpenRouter cloud model provider."""
+class CloudProvider:
+    """Generic OpenAI-compatible cloud model provider (OpenRouter, NVIDIA, Groq, …)."""
 
-    name = "openrouter"
+    name = "cloud"
 
     def __init__(
         self,
@@ -50,11 +50,16 @@ class OpenRouterProvider:
         }
 
     @staticmethod
-    def _normalize_model(model: str | None) -> str:
-        # Strip our internal "openrouter/" namespace prefix before hitting the API.
+    def _normalize_model(model: str | None, provider_name: str | None = None) -> str:
+        # Strip namespace prefixes before hitting the vendor API.
+        # "groq/llama-3.3-70b-versatile" → "llama-3.3-70b-versatile" when base_url
+        # points to Groq directly; "cloud/openai/gpt-4o" → "openai/gpt-4o" for OpenRouter.
         if not model:
             return "qwen/qwen3-next-80b-a3b-instruct:free"
-        return model[len("openrouter/"):] if model.startswith("openrouter/") else model
+        if provider_name and model.startswith(f"{provider_name}/"):
+            return model[len(provider_name) + 1 :]
+        prefix = f"{CloudProvider.name}/"
+        return model[len(prefix):] if model.startswith(prefix) else model
 
     async def chat(
         self,
@@ -65,9 +70,12 @@ class OpenRouterProvider:
         max_tokens: int | None = None,
         stream: bool = False,
         api_key: str | None = None,
+        base_url: str | None = None,
+        provider_name: str | None = None,
     ) -> dict[str, Any]:
+        url = (base_url or self.base_url).rstrip("/")
         body: dict[str, Any] = {
-            "model": self._normalize_model(model),
+            "model": self._normalize_model(model, provider_name),
             "messages": messages,
             "stream": False,
             "temperature": temperature,
@@ -77,7 +85,7 @@ class OpenRouterProvider:
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             resp = await client.post(
-                f"{self.base_url}/chat/completions",
+                f"{url}/chat/completions",
                 headers=self._headers(api_key),
                 json=body,
             )
@@ -98,9 +106,12 @@ class OpenRouterProvider:
         temperature: float = 0.4,
         max_tokens: int | None = None,
         api_key: str | None = None,
+        base_url: str | None = None,
+        provider_name: str | None = None,
     ) -> AsyncIterator[str]:
+        url = (base_url or self.base_url).rstrip("/")
         body: dict[str, Any] = {
-            "model": self._normalize_model(model),
+            "model": self._normalize_model(model, provider_name),
             "messages": messages,
             "stream": True,
             "temperature": temperature,
@@ -111,7 +122,7 @@ class OpenRouterProvider:
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             async with client.stream(
                 "POST",
-                f"{self.base_url}/chat/completions",
+                f"{url}/chat/completions",
                 headers=self._headers(api_key),
                 json=body,
             ) as resp:
@@ -130,16 +141,17 @@ class OpenRouterProvider:
                     except json.JSONDecodeError:
                         continue
 
-    async def raw_chat(self, body: dict[str, Any], api_key: str | None = None) -> dict[str, Any]:
+    async def raw_chat(self, body: dict[str, Any], api_key: str | None = None, base_url: str | None = None, provider_name: str | None = None) -> dict[str, Any]:
         """Transparent OpenAI-compatible passthrough (tools/tool_calls).
 
         The caller (NestJS AgentRuntime) owns the tool loop, so we forward the
         full request body verbatim and return the raw provider response.
         """
-        body = {**body, "model": self._normalize_model(body.get("model"))}
+        url = (base_url or self.base_url).rstrip("/")
+        body = {**body, "model": self._normalize_model(body.get("model"), provider_name)}
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             resp = await client.post(
-                f"{self.base_url}/chat/completions",
+                f"{url}/chat/completions",
                 headers=self._headers(api_key),
                 json=body,
             )
@@ -174,7 +186,7 @@ class OpenRouterProvider:
                 return [
                     {
                         "id": m["id"],
-                        "provider": "openrouter",
+                        "provider": "cloud",
                         "contextWindow": m.get("context_length"),
                         "raw": {
                             "name": m.get("name"),
@@ -186,7 +198,7 @@ class OpenRouterProvider:
                     if m.get("id")
                 ]
         except Exception as e:
-            logger.warning(f"OpenRouter model discovery failed: {e}")
+            logger.warning(f"Cloud model discovery failed: {e}")
             return []
 
     async def health(self) -> dict:

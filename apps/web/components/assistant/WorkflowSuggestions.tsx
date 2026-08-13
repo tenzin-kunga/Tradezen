@@ -4,7 +4,6 @@ import {
   IconChart,
   IconJournal,
   IconResearch,
-  IconPortfolio,
   IconSparkle,
 } from "./icons";
 
@@ -19,7 +18,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
   chart: IconChart,
   journal: IconJournal,
   research: IconResearch,
-  portfolio: IconPortfolio,
 };
 
 interface WorkflowSuggestionsProps {
@@ -100,12 +98,6 @@ export default function WorkflowSuggestions({
                 cursor: "pointer",
                 textAlign: "left",
                 background: "var(--bg-surface-hover, #1a1b23)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--accent, #3b82f6)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-soft)";
               }}
             >
               <span

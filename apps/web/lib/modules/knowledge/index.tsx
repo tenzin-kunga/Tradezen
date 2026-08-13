@@ -51,14 +51,18 @@ export const KnowledgeModule: WorkspaceModule = {
         command: "knowledge",
         label: "Open Knowledge",
         description: "Open the knowledge workspace",
-        handler: () => {},
+        handler: () => {
+          getResourceManager().open(createKnowledgeResource());
+        },
       },
       {
         namespace: "module",
         command: "new-doc",
         label: "New Document",
         description: "Create a new knowledge document",
-        handler: () => {},
+        handler: () => {
+          getResourceManager().open(createKnowledgeResource());
+        },
       },
     ]),
     new InspectorCap([

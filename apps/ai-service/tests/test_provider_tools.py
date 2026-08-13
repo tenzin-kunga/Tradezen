@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.providers.openrouter import OpenRouterProvider
+from app.providers.cloud import CloudProvider
 
 
 class _FakeResp:
@@ -33,7 +33,7 @@ class _FakeClient:
 
 @pytest.mark.asyncio
 async def test_raw_chat_forwards_tools_and_returns_tool_calls(monkeypatch):
-    provider = OpenRouterProvider(api_key="test")
+    provider = CloudProvider(api_key="test")
     body = {
         "model": "openai/gpt-4o-mini",
         "messages": [{"role": "user", "content": "win rate?"}],

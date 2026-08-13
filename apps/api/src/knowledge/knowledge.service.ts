@@ -7,20 +7,24 @@ import {
   knowledgeAssets,
   knowledgeDocumentLinks,
 } from '@tradezen/db';
-import { eq, and, asc, desc } from 'drizzle-orm';
+import { eq, and, asc, desc, isNull, ilike } from 'drizzle-orm';
 import {
   CreateFolderDto,
   CreateDocumentDto,
   UpdateDocumentDto,
   CreateLinkDto,
 } from './dto';
-import { DocumentEmbedder } from './indexing/embedder';
+import { KnowledgeEnrichmentService } from './knowledge-enrichment.service';
+import { AssetsService } from '../assets/assets.service';
 
 @Injectable()
 export class KnowledgeService {
   private readonly logger = new Logger(KnowledgeService.name);
 
-  constructor(private readonly embedder: DocumentEmbedder) {}
+  constructor(
+    private readonly enrichment: KnowledgeEnrichmentService,
+    private readonly assetsService: AssetsService,
+  ) {}
   // ─── Folders ─────────────────────────────────
 
   async listFolders(userId: string, parentId?: string) {
@@ -28,8 +32,7 @@ export class KnowledgeService {
     if (parentId) {
       conditions.push(eq(knowledgeFolders.parentId, parentId));
     } else {
-      // Root folders: parent_id IS NULL
-      // Drizzle doesn't have isNull, so we check for undefined
+      conditions.push(isNull(knowledgeFolders.parentId));
     }
 
     return db
@@ -138,10 +141,10 @@ export class KnowledgeService {
       content: dto.content || '',
     });
 
-    // Trigger background embedding (non-blocking)
+    // Trigger background enrichment (embedding + summary), non-blocking
     if (dto.content && dto.content.length > 0) {
-      this.embedder.embedDocument(userId, doc.id, dto.content).catch((e) => {
-        this.logger.error(`Failed to embed document ${doc.id}: ${e}`);
+      this.enrichment.enrichDocument(userId, doc.id, dto.content).catch((e) => {
+        this.logger.error(`Failed to enrich document ${doc.id}: ${e}`);
       });
     }
 
@@ -168,12 +171,15 @@ export class KnowledgeService {
         content: dto.content,
       });
 
-      // Trigger background embedding (non-blocking)
-      this.embedder
-        .embedDocument(userId, documentId, dto.content)
-        .catch((e) => {
-          this.logger.error(`Failed to embed document ${documentId}: ${e}`);
-        });
+      // Trigger background enrichment (embedding + summary) only when the
+      // content actually changed, non-blocking
+      if (dto.content !== doc.content) {
+        this.enrichment
+          .enrichDocument(userId, documentId, dto.content)
+          .catch((e) => {
+            this.logger.error(`Failed to enrich document ${documentId}: ${e}`);
+          });
+      }
     }
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.frontmatter !== undefined) updateData.frontmatter = dto.frontmatter;
@@ -213,14 +219,74 @@ export class KnowledgeService {
     const doc = await this.getDocument(userId, documentId);
     if (!doc) throw new NotFoundException('Document not found');
 
-    return db
+    const rows = await db
       .select()
       .from(knowledgeAssets)
       .where(eq(knowledgeAssets.documentId, documentId))
       .orderBy(desc(knowledgeAssets.createdAt));
+
+    return rows.map((a) => ({
+      ...a,
+      url: this.assetsService.getUrl(
+        {
+          provider: 'cloudinary',
+          providerKey: a.storageKey,
+          mimeType: a.mimeType,
+        } as any,
+        'original',
+      ),
+    }));
+  }
+
+  async uploadAsset(
+    userId: string,
+    documentId: string,
+    file: {
+      buffer: Buffer;
+      mimetype: string;
+      size: number;
+      originalname?: string;
+    },
+    assetType: string,
+  ) {
+    const doc = await this.getDocument(userId, documentId);
+    if (!doc) throw new NotFoundException('Document not found');
+
+    const stored = await this.assetsService.upload(file, userId, 'manual');
+    const [asset] = await db
+      .insert(knowledgeAssets)
+      .values({
+        documentId,
+        assetType: assetType || 'file',
+        storageKey: stored.providerKey,
+        mimeType: stored.mimeType,
+        fileName: stored.fileName,
+        fileSize: stored.fileSize,
+        metadata: {},
+      })
+      .returning();
+
+    return {
+      ...asset,
+      url: this.assetsService.getUrl(
+        {
+          provider: 'cloudinary',
+          providerKey: asset.storageKey,
+          mimeType: asset.mimeType,
+        } as any,
+        'original',
+      ),
+    };
   }
 
   async deleteAsset(userId: string, assetId: string) {
+    const [asset] = await db
+      .select({ documentId: knowledgeAssets.documentId })
+      .from(knowledgeAssets)
+      .where(eq(knowledgeAssets.id, assetId));
+    if (!asset) throw new NotFoundException('Asset not found');
+    const doc = await this.getDocument(userId, asset.documentId);
+    if (!doc) throw new NotFoundException('Asset not found');
     await db.delete(knowledgeAssets).where(eq(knowledgeAssets.id, assetId));
   }
 
@@ -231,8 +297,19 @@ export class KnowledgeService {
     if (!doc) throw new NotFoundException('Document not found');
 
     return db
-      .select()
+      .select({
+        id: knowledgeDocumentLinks.id,
+        sourceDocumentId: knowledgeDocumentLinks.sourceDocumentId,
+        targetDocumentId: knowledgeDocumentLinks.targetDocumentId,
+        relationshipType: knowledgeDocumentLinks.relationshipType,
+        createdAt: knowledgeDocumentLinks.createdAt,
+        targetTitle: knowledgeDocuments.title,
+      })
       .from(knowledgeDocumentLinks)
+      .leftJoin(
+        knowledgeDocuments,
+        eq(knowledgeDocumentLinks.targetDocumentId, knowledgeDocuments.id),
+      )
       .where(eq(knowledgeDocumentLinks.sourceDocumentId, documentId))
       .orderBy(desc(knowledgeDocumentLinks.createdAt));
   }
@@ -253,6 +330,13 @@ export class KnowledgeService {
   }
 
   async deleteLink(userId: string, linkId: string) {
+    const [link] = await db
+      .select({ sourceDocumentId: knowledgeDocumentLinks.sourceDocumentId })
+      .from(knowledgeDocumentLinks)
+      .where(eq(knowledgeDocumentLinks.id, linkId));
+    if (!link) throw new NotFoundException('Link not found');
+    const doc = await this.getDocument(userId, link.sourceDocumentId);
+    if (!doc) throw new NotFoundException('Link not found');
     await db
       .delete(knowledgeDocumentLinks)
       .where(eq(knowledgeDocumentLinks.id, linkId));
@@ -261,13 +345,18 @@ export class KnowledgeService {
   // ─── Search ───────────────────────────────────
 
   async search(userId: string, query: string) {
-    if (query.length < 1) return [];
+    const q = query.trim();
+    if (q.length < 2) return [];
 
-    // Simple search by title
     return db
       .select()
       .from(knowledgeDocuments)
-      .where(eq(knowledgeDocuments.userId, userId))
+      .where(
+        and(
+          eq(knowledgeDocuments.userId, userId),
+          ilike(knowledgeDocuments.title, `%${q}%`),
+        ),
+      )
       .orderBy(desc(knowledgeDocuments.updatedAt))
       .limit(20);
   }

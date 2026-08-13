@@ -1,11 +1,9 @@
 "use client";
 
 import { AssistantModule } from "./assistant";
-import { JournalModule } from "./journal";
 import { WatchlistModule } from "./watchlist";
 import { KnowledgeModule } from "./knowledge";
 import { ResearchModule } from "./research";
-import { PortfolioModule } from "./portfolio";
 import { MemoryModule } from "./memory";
 import { getModuleRegistry } from "../workspace/module-registry";
 import { getCommandRegistry } from "../workspace/command-registry";
@@ -19,11 +17,9 @@ import type {
 
 const ALL_MODULES = [
   AssistantModule,
-  JournalModule,
   WatchlistModule,
   KnowledgeModule,
   ResearchModule,
-  PortfolioModule,
   MemoryModule,
 ];
 
@@ -78,10 +74,8 @@ export function registerAllModules(): void {
 
 export {
   AssistantModule,
-  JournalModule,
   WatchlistModule,
   KnowledgeModule,
   ResearchModule,
-  PortfolioModule,
   MemoryModule,
 };

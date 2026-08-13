@@ -1,8 +1,7 @@
 "use client";
 
-import { User, Palette, TrendingUp, Bell, Database, Bot } from "lucide-react";
+import { Palette, TrendingUp, Bell, Database, Bot } from "lucide-react";
 import { SettingsProvider, SettingsShell } from "@/components/settings";
-import { ProfileSection } from "@/components/settings/sections/ProfileSection";
 import { InterfaceSection } from "@/components/settings/sections/InterfaceSection";
 import { TradingSection } from "@/components/settings/sections/TradingSection";
 import { AIProviderSection } from "@/components/settings/sections/AIProviderSection";
@@ -12,17 +11,6 @@ import { SectionHeader } from "@/components/settings/components/SectionHeader";
 import type { SettingsSection, Surface } from "@/components/settings/types";
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
-  {
-    id: "profile",
-    title: "Profile",
-    description: "Your identity and current session",
-    icon: User,
-    displayOrder: 10,
-    category: "account",
-    surface: "raised",
-    importance: "primary",
-    component: ProfileSection,
-  },
   {
     id: "interface",
     title: "Interface",

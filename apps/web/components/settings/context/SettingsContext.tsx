@@ -12,10 +12,12 @@ import {
 } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
-import { updateSettings } from "@/lib/api";
+import { updateSettings, updateProfile } from "@/lib/api";
 import type { SaveResult } from "../types";
 
 type UserSettings = {
+  username: string;
+  email: string;
   initial_capital: number;
   default_lot_size: number;
   timezone: string;
@@ -62,16 +64,27 @@ function validateSettings(values: UserSettings): Record<string, string> {
   if (values.default_lot_size <= 0) {
     errors.default_lot_size = "Must be positive";
   }
+  if (values.username.length < 3 || values.username.length > 30) {
+    errors.username = "Username must be 3–30 characters";
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(values.username)) {
+    errors.username = "Letters, numbers, and underscores only";
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+    errors.email = "Enter a valid email address";
+  }
   return errors;
 }
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, syncUser } = useAuth();
   const { setTheme } = useTheme();
 
   const [values, setValues] = useState<UserSettings>({
+    username: "",
+    email: "",
     initial_capital: 0,
     default_lot_size: 0.01,
     timezone: "UTC",
@@ -79,6 +92,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   });
 
   const [defaults, setDefaults] = useState<UserSettings>({
+    username: "",
+    email: "",
     initial_capital: 0,
     default_lot_size: 0.01,
     timezone: "UTC",
@@ -92,6 +107,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) {
       const initial: UserSettings = {
+        username: user.username ?? "",
+        email: user.email ?? "",
         initial_capital: user.initial_capital ?? 0,
         default_lot_size: user.default_lot_size ?? 0.01,
         timezone: user.timezone ?? "UTC",
@@ -137,12 +154,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
     setSaving(true);
     try {
-      await updateSettings({
+      let updated = await updateSettings({
         initial_capital: values.initial_capital,
         default_lot_size: values.default_lot_size,
         timezone: values.timezone,
         theme: values.theme,
       });
+      if (values.username !== defaults.username || values.email !== defaults.email) {
+        updated = await updateProfile({
+          username: values.username !== defaults.username ? values.username : undefined,
+          email: values.email !== defaults.email ? values.email : undefined,
+        });
+      }
+      syncUser(updated);
       setDefaults(values);
       const now = new Date();
       setLastSaved(now);
@@ -161,7 +185,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     } finally {
       setSaving(false);
     }
-  }, [values]);
+  }, [values, defaults.email, defaults.username, syncUser]);
 
   return (
     <SettingsContext.Provider

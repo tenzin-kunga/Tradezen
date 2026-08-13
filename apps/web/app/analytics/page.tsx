@@ -28,12 +28,14 @@ import StrategyComparisonTable from "@/components/StrategyComparisonTable";
 import StrategyDrawer from "@/components/StrategyDrawer";
 import RiskDistributionChart from "@/components/RiskDistributionChart";
 import RiskByWeekChart from "@/components/RiskByWeekChart";
-type Tab = "overview" | "strategy" | "risk";
+import PositionSizeCalculator from "@/components/PositionSizeCalculator";
+type Tab = "overview" | "strategy" | "risk" | "calculator";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "strategy", label: "Strategy" },
   { key: "risk", label: "Risk" },
+  { key: "calculator", label: "Calculator" },
 ];
 
 function getSeverity(count: number): { label: string; color: string } {
@@ -197,7 +199,27 @@ export default function AnalyticsPage() {
         return <StrategyTab />;
       case "risk":
         return <RiskTab />;
+      case "calculator":
+        return <CalculatorTab />;
     }
+  }
+
+  function CalculatorTab() {
+    return (
+      <div className="surface-1 rounded-xl p-5 md:p-6 fade-up">
+        <div
+          style={{
+            fontSize: "var(--section-title)",
+            fontWeight: 600,
+            color: "var(--text-primary)",
+            marginBottom: "var(--space-4)",
+          }}
+        >
+          Position Size Calculator
+        </div>
+        <PositionSizeCalculator />
+      </div>
+    );
   }
 
   function OverviewTab() {
@@ -1232,7 +1254,21 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {!loading && !error && safeStats.totalTrades === 0 && (
+        {!loading && !error && activeTab === "calculator" && (
+          <>
+            {renderTabContent()}
+            <div className="surface-1 rounded-xl px-4 md:px-5 py-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mt-4">
+              <span
+                className="text-xs tracking-widest"
+                style={{ color: "var(--text-dim)" }}
+              >
+                POSITION SIZE CALCULATOR // RISK-BASED SIZING TOOL
+              </span>
+            </div>
+          </>
+        )}
+
+        {!loading && !error && safeStats.totalTrades === 0 && activeTab !== "calculator" && (
           <EmptyState
             title="NO TRADE DATA AVAILABLE"
             description="Start journaling your trades to unlock advanced protocol analytics, equity curves, and strategy breakdowns."

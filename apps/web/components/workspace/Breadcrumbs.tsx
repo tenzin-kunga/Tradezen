@@ -21,10 +21,10 @@ export default function Breadcrumbs({ resource }: BreadcrumbsProps) {
         padding: "0 16px",
         display: "flex",
         alignItems: "center",
-        gap: 6,
+        gap: 8,
         fontSize: 11,
         color: "var(--text-muted, #9ca3af)",
-        borderBottom: "1px solid var(--border, #23252d)",
+        borderBottom: "1px solid var(--border-soft, #23252d)",
         flexShrink: 0,
       }}
     >

@@ -175,13 +175,13 @@ export const tradesRouter = router({
 
   getCsvImportJobStatus: protectedProcedure
     .input(z.object({ jobId: z.string() }))
-    .query(async ({ input }) => {
+    .query(({ input }) => {
       return { jobId: input.jobId, status: 'pending' };
     }),
 
   getCsvImportJobHistory: protectedProcedure
     .input(z.object({ limit: z.number().optional() }))
-    .query(async () => {
+    .query(() => {
       return [];
     }),
 });

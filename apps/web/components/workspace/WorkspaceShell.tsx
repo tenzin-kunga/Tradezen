@@ -1,9 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import WorkspaceSidebar from "./WorkspaceSidebar";
-import WorkspaceTabs from "./WorkspaceTabs";
-import ContextPanel from "./ContextPanel";
 import Breadcrumbs from "./Breadcrumbs";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { IconButton } from "@/components/primitives/IconButton";
@@ -20,10 +17,6 @@ function WorkspaceContent({ children }: { children?: React.ReactNode }) {
     canGoForward,
   } = useWorkspace();
 
-  const tabs = resourceManager.getTabs();
-  const activeId = resourceManager.getActiveId();
-  const [contextCollapsed, setContextCollapsed] = useState(false);
-
   return (
     <>
       <WorkspaceSidebar />
@@ -36,19 +29,6 @@ function WorkspaceContent({ children }: { children?: React.ReactNode }) {
           overflow: "hidden",
         }}
       >
-        {/* Tab bar */}
-        <WorkspaceTabs
-          tabs={tabs}
-          activeId={activeId}
-          onSelect={(id) => {
-            resourceManager.setActive(id);
-            const resource = tabs.find((t) => t.id === id)?.resource;
-            if (resource) open(resource);
-          }}
-          onClose={(id) => resourceManager.close(id)}
-          onPin={(id) => resourceManager.togglePin(id)}
-        />
-
         {/* Breadcrumbs */}
         <Breadcrumbs resource={activeResource} />
 
@@ -139,13 +119,6 @@ function WorkspaceContent({ children }: { children?: React.ReactNode }) {
           )}
         </div>
       </div>
-
-      {/* Context panel */}
-      <ContextPanel
-        resource={activeResource}
-        collapsed={contextCollapsed}
-        onToggle={() => setContextCollapsed(!contextCollapsed)}
-      />
     </>
   );
 }

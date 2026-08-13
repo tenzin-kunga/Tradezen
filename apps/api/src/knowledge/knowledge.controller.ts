@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,10 +8,20 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
+  UseInterceptors,
+  HttpCode,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { KnowledgeService } from './knowledge.service';
+
+const ASSET_MAX_SIZE_MB = parseInt(process.env.ASSET_MAX_SIZE_MB || '25', 10);
+const ALLOWED_ASSET_TYPES = (
+  process.env.ALLOWED_ASSET_TYPES ||
+  'application/pdf,image/,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation'
+).split(',');
 import {
   CreateFolderDto,
   CreateDocumentDto,
@@ -131,6 +142,36 @@ export class KnowledgeController {
     @Param('id') documentId: string,
   ) {
     return this.knowledgeService.listAssets(userId, documentId);
+  }
+
+  @Post('documents/:id/assets')
+  @ApiOperation({ summary: 'Upload an asset to a knowledge document' })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: ASSET_MAX_SIZE_MB * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = ALLOWED_ASSET_TYPES.some((t) =>
+          t.endsWith('/') ? file.mimetype.startsWith(t) : file.mimetype === t,
+        );
+        if (allowed) cb(null, true);
+        else cb(new Error('Unsupported file type'), false);
+      },
+    }),
+  )
+  @HttpCode(201)
+  async uploadAsset(
+    @CurrentUser('id') userId: string,
+    @Param('id') documentId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('category') category?: string,
+  ) {
+    if (!file) throw new BadRequestException('No file provided');
+    return this.knowledgeService.uploadAsset(
+      userId,
+      documentId,
+      file,
+      category || 'file',
+    );
   }
 
   @Delete('assets/:id')

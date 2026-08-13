@@ -11,7 +11,6 @@ import {
   Query,
   Req,
   Res,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -19,7 +18,6 @@ import { Queue } from 'bullmq';
 import type { Request, Response } from 'express';
 import { InjectQueue } from '@nestjs/bullmq';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { ChatService } from './chat.service';
 import { ChatThreadService } from './chat-thread.service';
@@ -48,13 +46,15 @@ export class ChatController {
     private readonly jobStatusService: JobStatusService,
   ) {}
 
-  @Public()
   @Get('models')
   @ApiOperation({
     summary: 'Get configured chat models (proxied from AI service)',
   })
-  async models() {
-    return this.chatService.getModelsV2();
+  async models(
+    @CurrentUser('id') userId: string,
+    @Query('refresh') refresh?: string,
+  ) {
+    return this.chatService.getModelsV2(userId, refresh === 'true');
   }
 
   @Public()
@@ -66,17 +66,15 @@ export class ChatController {
     return this.chatService.getProviderHealth();
   }
 
-  @Public()
   @Post('models/refresh')
   @ApiOperation({ summary: 'Force re-discovery of models from all providers' })
   async refreshModels() {
     return this.chatService.refreshModels();
   }
 
-  @Public()
   @Post('models/providers')
   @ApiOperation({ summary: 'Add a custom model provider' })
-  addProvider(
+  async addProvider(
     @Body()
     body: {
       name: string;
@@ -88,7 +86,6 @@ export class ChatController {
     return this.chatService.addProvider(body);
   }
 
-  @Public()
   @Delete('models/providers/:id')
   @ApiOperation({ summary: 'Remove a custom model provider' })
   removeProvider(@Param('id') id: string) {
@@ -108,6 +105,15 @@ export class ChatController {
   @ApiOperation({ summary: 'List user chat threads' })
   async listThreads(@CurrentUser('id') userId: string) {
     return this.threadService.listThreads(userId);
+  }
+
+  @Get('threads/search')
+  @ApiOperation({ summary: 'Search chat threads' })
+  async searchThreads(
+    @CurrentUser('id') userId: string,
+    @Query('q') query: string,
+  ) {
+    return this.threadService.searchThreads(userId, query || '');
   }
 
   @Get('threads/:id')
@@ -140,15 +146,6 @@ export class ChatController {
     return this.threadService.updateThreadTitle(userId, threadId, title);
   }
 
-  @Get('threads/search')
-  @ApiOperation({ summary: 'Search chat threads' })
-  async searchThreads(
-    @CurrentUser('id') userId: string,
-    @Query('q') query: string,
-  ) {
-    return this.threadService.searchThreads(userId, query || '');
-  }
-
   @Patch('threads/:id/pin')
   @ApiOperation({ summary: 'Toggle pin on a chat thread' })
   async togglePin(
@@ -158,7 +155,6 @@ export class ChatController {
     return this.threadService.togglePin(userId, threadId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('threads/:id/messages')
   @ApiOperation({ summary: 'Get messages for a chat thread' })
   async getMessages(
@@ -176,12 +172,12 @@ export class ChatController {
 
   @Get('semantic/metrics')
   @ApiOperation({ summary: 'Get semantic subsystem metrics' })
-  async semanticMetrics() {
+  semanticMetrics() {
     return this.metricsService.getMetrics();
   }
 
   @Post('stream')
-  @ApiOperation({ summary: 'Stream chat completions via OpenRouter' })
+  @ApiOperation({ summary: 'Stream chat completions via the cloud provider' })
   async stream(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateChatDto,
@@ -213,6 +209,8 @@ export class ChatController {
           }
         },
         onDone: () => writeEvent('done', '[DONE]'),
+        onResponseReformatted: (markdown) =>
+          writeEvent('response_reformatted', JSON.stringify(markdown)),
       });
       if (!res.writableEnded) res.end();
     } catch (error) {

@@ -13,6 +13,7 @@ import {
 } from "./icons";
 import { IconButton } from "@/components/primitives/IconButton";
 import { Badge } from "@/components/primitives/Badge";
+import { Button } from "@/components/primitives/Button";
 
 const TYPE_ICONS: Record<
   ConversationType,
@@ -44,7 +45,6 @@ const FILTERS: { id: FilterType; label: string }[] = [
   { id: "daily_review", label: "Review" },
   { id: "journal", label: "Journal" },
   { id: "research", label: "Research" },
-  { id: "portfolio", label: "Portfolio" },
   { id: "risk", label: "Risk" },
   { id: "coaching", label: "Coaching" },
 ];
@@ -174,23 +174,7 @@ export default function ConversationSidebar({
         >
           Assistant
         </span>
-        <button
-          onClick={onCreate}
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 6,
-            background: "var(--bg-surface-hover, #1a1b23)",
-            border: "1px solid var(--border, #23252d)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--text-muted, #9ca3af)",
-            transition: "color 0.15s",
-          }}
-          title="New conversation"
-        >
+        <IconButton size={24} title="New conversation" onClick={onCreate}>
           <svg
             width="12"
             height="12"
@@ -202,7 +186,7 @@ export default function ConversationSidebar({
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-        </button>
+        </IconButton>
       </div>
 
       {/* Search */}
@@ -258,34 +242,14 @@ export default function ConversationSidebar({
         }}
       >
         {FILTERS.map((f) => (
-          <button
+          <Badge
             key={f.id}
+            tone={activeFilter === f.id ? "accent" : "neutral"}
+            style={{ cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
             onClick={() => setActiveFilter(f.id)}
-            style={{
-              padding: "3px 8px",
-              borderRadius: 4,
-              fontSize: 11,
-              fontWeight: activeFilter === f.id ? 600 : 400,
-              color:
-                activeFilter === f.id
-                  ? "var(--text-primary, #fafafa)"
-                  : "var(--text-muted, #9ca3af)",
-              background:
-                activeFilter === f.id
-                  ? "var(--bg-surface-hover, #1a1b23)"
-                  : "transparent",
-              border: "1px solid",
-              borderColor:
-                activeFilter === f.id
-                  ? "var(--border, #23252d)"
-                  : "transparent",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
           >
             {f.label}
-          </button>
+          </Badge>
         ))}
       </div>
 
@@ -533,25 +497,18 @@ function ConversationCard({
                 padding: 4,
               }}
             >
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   onTogglePin();
                   onMenuToggle();
                 }}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
                   width: "100%",
-                  padding: "8px 10px",
-                  fontSize: 12,
-                  borderRadius: 6,
+                  justifyContent: "flex-start",
                   color: "var(--text-primary, #fafafa)",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  textAlign: "left",
                 }}
               >
                 <svg
@@ -566,27 +523,16 @@ function ConversationCard({
                   <path d="M9 10.76V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v5.76l2 3.24H7z" />
                 </svg>
                 {thread.pinned ? "Unpin" : "Pin"}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete();
                   onMenuToggle();
                 }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  width: "100%",
-                  padding: "8px 10px",
-                  fontSize: 12,
-                  borderRadius: 6,
-                  color: "var(--accent-loss, #ef4444)",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
+                style={{ width: "100%", justifyContent: "flex-start" }}
               >
                 <svg
                   width="13"
@@ -600,7 +546,7 @@ function ConversationCard({
                   <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 </svg>
                 Delete
-              </button>
+              </Button>
             </div>
           )}
         </div>

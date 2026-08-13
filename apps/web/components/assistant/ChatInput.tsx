@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatStatus } from "@/hooks/useChat";
 import {
   getChatModels,
-  addProvider,
   removeProvider,
   type ChatModels,
   type ModelInfo,
@@ -15,6 +14,8 @@ import {
   type ApiKeyStatus,
 } from "@/lib/api/user-settings";
 import ModelBrowser from "./ModelBrowser";
+import { Button } from "@/components/primitives/Button";
+import { IconButton } from "@/components/primitives/IconButton";
 
 interface ChatInputProps {
   onSend: (content: string, model?: string) => void;
@@ -70,17 +71,20 @@ export default function ChatInput({
       setApiKeyStatus(keyStatus);
       const active =
         settings?.assistantSettings?.activeModels ?? data.models ?? [];
-      // Filter out OpenRouter models if no API key configured
-      const orConfigured = keyStatus?.configured ?? false;
-      const filtered = orConfigured
-        ? active
-        : active.filter((m) => !m.includes("/"));
-      setActiveModels(filtered);
+      setActiveModels(active);
+      // Default to the backend's working default (a cloud model when Ollama is
+      // unavailable, else the local model), preferring it over the first match.
+      const allIds = (data.providers ?? []).flatMap((p: any) =>
+        p.models.map((m: any) => m.id),
+      );
       const fallback = data.defaultModel;
-      if (!selectedModel || !filtered.includes(selectedModel)) {
-        setSelectedModel(
-          filtered.includes(fallback) ? fallback : (filtered[0] ?? fallback),
-        );
+      const initial = allIds.includes(fallback)
+        ? fallback
+        : (allIds.find((id: string) => id.includes("/")) ??
+          allIds[0] ??
+          fallback);
+      if (!selectedModel || !allIds.includes(selectedModel)) {
+        setSelectedModel(initial);
       }
     } catch (e) {
       console.warn("Failed to fetch models:", e);
@@ -150,7 +154,7 @@ export default function ChatInput({
     <div
       style={{
         padding: "8px 16px 16px",
-        borderTop: "1px solid var(--border, #23252d)",
+        borderTop: "1px solid var(--border-soft, #23252d)",
         flexShrink: 0,
       }}
     >
@@ -170,7 +174,7 @@ export default function ChatInput({
             alignItems: "center",
             gap: 6,
             padding: "6px 12px",
-            borderBottom: "1px solid var(--border, #23252d)",
+            borderBottom: "1px solid var(--border-soft, #23252d)",
           }}
         >
           <div ref={modelMenuRef} style={{ position: "relative" }}>
@@ -185,7 +189,7 @@ export default function ChatInput({
                 }
                 setModelOpen(!modelOpen);
               }}
-              style={{
+               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 5,
@@ -195,15 +199,9 @@ export default function ChatInput({
                 fontWeight: 500,
                 color: "var(--text-muted, #9ca3af)",
                 background: "var(--bg-surface-hover, #1a1b23)",
-                border: "1px solid var(--border, #23252d)",
+                border: "1px solid var(--border-soft, #23252d)",
                 cursor: "pointer",
                 transition: "border-color 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--accent, #3b82f6)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--border, #23252d)";
               }}
             >
               <svg
@@ -238,7 +236,7 @@ export default function ChatInput({
                   bottom: dropdownBottom,
                   left: dropdownPos.left,
                   background: "var(--bg-surface, #12131a)",
-                  border: "1px solid var(--border, #23252d)",
+                  border: "1px solid var(--border-soft, #23252d)",
                   borderRadius: 8,
                   boxShadow: "var(--shadow-pop)",
                   overflow: "hidden",
@@ -248,9 +246,90 @@ export default function ChatInput({
                   overflowY: "auto",
                 }}
               >
-                {/* Active models (user-selected) */}
+                {/* All available models, grouped by provider */}
                 <div style={{ padding: "4px 0" }}>
-                  {activeModels.length === 0 && (
+                  {(catalog?.providers ?? []).map((p: any, idx: number) => {
+                    if (!p.models) p.models = [];
+                    return (
+                      <div key={p.id}>
+                        {idx > 0 && (
+                          <div
+                            style={{
+                              height: 1,
+                              background: "var(--border-soft, #23252d)",
+                              margin: "4px 12px",
+                            }}
+                          />
+                        )}
+                        <div
+                          style={{
+                            padding: "6px 12px 2px",
+                            fontSize: 10,
+                            fontWeight: 600,
+                            textTransform: "uppercase",
+                            letterSpacing: 0.5,
+                            color: "var(--text-dim, #6b7280)",
+                          }}
+                        >
+                          {p.name}
+                        </div>
+                        {p.models.map((m: any) => {
+                          const modelId = m.id;
+                          const name =
+                            m.displayName ??
+                            modelId.split("/").pop() ??
+                            modelId;
+                          const isSelected = modelId === selectedModel;
+                          const isActive = activeModels.includes(modelId);
+                          return (
+                            <button
+                              key={modelId}
+                              onClick={() => {
+                                setSelectedModel(modelId);
+                                setModelOpen(false);
+                              }}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                width: "100%",
+                                padding: "8px 12px",
+                                fontSize: 12,
+                                color: isSelected
+                                  ? "var(--accent, #3b82f6)"
+                                  : "var(--text-primary, #fafafa)",
+                                background: isSelected
+                                  ? "rgba(59, 130, 246, 0.08)"
+                                  : "transparent",
+                                border: "none",
+                                cursor: "pointer",
+                                textAlign: "left",
+                              }}
+                            >
+                              <span style={{ flex: 1 }}>{name}</span>
+                              {isActive && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    color: "var(--text-dim, #6b7280)",
+                                  }}
+                                >
+                                  active
+                                </span>
+                              )}
+                              {isSelected && (
+                                <span style={{ color: "var(--accent, #3b82f6)" }}>
+                                  ✓
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                  {(!catalog ||
+                    (catalog?.providers ?? []).length === 0) && (
                     <div
                       style={{
                         padding: "8px 12px",
@@ -258,114 +337,51 @@ export default function ChatInput({
                         color: "var(--text-dim, #6b7280)",
                       }}
                     >
-                      No models enabled. Browse to add some.
+                      No models available.
                     </div>
                   )}
-                  {activeModels.map((modelId) => {
-                    const entry = modelIndex.get(modelId);
-                    const name =
-                      entry?.info.displayName ??
-                      modelId.split("/").pop() ??
-                      modelId;
-                    const provider = entry?.providerName ?? "local";
-                    const isSelected = modelId === selectedModel;
-                    return (
-                      <button
-                        key={modelId}
-                        onClick={() => {
-                          setSelectedModel(modelId);
-                          setModelOpen(false);
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          width: "100%",
-                          padding: "8px 12px",
-                          fontSize: 12,
-                          color: isSelected
-                            ? "var(--accent, #3b82f6)"
-                            : "var(--text-primary, #fafafa)",
-                          background: isSelected
-                            ? "rgba(59, 130, 246, 0.08)"
-                            : "transparent",
-                          border: "none",
-                          cursor: "pointer",
-                          textAlign: "left",
-                        }}
-                      >
-                        <span style={{ flex: 1 }}>{name}</span>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            color: "var(--text-dim, #6b7280)",
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          {provider}
-                        </span>
-                        {isSelected && (
-                          <span style={{ color: "var(--accent, #3b82f6)" }}>
-                            ✓
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
                 </div>
 
                 {/* Divider */}
                 <div
-                  style={{ height: 1, background: "var(--border, #23252d)" }}
+                  style={{ height: 1, background: "var(--border-soft, #23252d)" }}
                 />
 
                 {/* Add provider button */}
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setModelOpen(false);
                     setAddProviderOpen(true);
                   }}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
                     width: "100%",
-                    padding: "8px 12px",
-                    fontSize: 12,
+                    justifyContent: "flex-start",
                     color: "var(--accent, #3b82f6)",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    textAlign: "left",
                   }}
                 >
                   <span style={{ fontSize: 14, fontWeight: 600 }}>+</span>
                   <span>Add Provider</span>
-                </button>
+                </Button>
 
                 {/* Browse models button */}
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setModelOpen(false);
                     setModelBrowserOpen(true);
                   }}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
                     width: "100%",
-                    padding: "8px 12px",
-                    fontSize: 12,
+                    justifyContent: "flex-start",
                     color: "var(--accent, #3b82f6)",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    textAlign: "left",
                   }}
                 >
                   <span style={{ fontSize: 14 }}></span>
                   <span>Browse Models</span>
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -419,48 +435,35 @@ export default function ChatInput({
             }}
           />
           {isStreaming ? (
-            <button
+            <IconButton
+              size={32}
+              title="Stop generating"
               onClick={onAbort}
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
                 background: "var(--accent-loss, #ef4444)",
+                color: "#fff",
                 border: "none",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                transition: "background 0.15s",
               }}
-              title="Stop generating"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
                 <rect x="6" y="6" width="12" height="12" rx="2" />
               </svg>
-            </button>
+            </IconButton>
           ) : (
-            <button
-              onClick={handleSend}
+            <IconButton
+              size={32}
+              title="Send message"
               disabled={!input.trim() || disabled}
+              onClick={handleSend}
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
                 background: input.trim()
                   ? "var(--accent, #3b82f6)"
                   : "var(--bg-surface-hover, #1a1b23)",
+                color: "#fff",
                 border: "none",
-                cursor: input.trim() ? "pointer" : "default",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                transition: "background 0.15s",
                 opacity: input.trim() ? 1 : 0.5,
+                cursor: input.trim() ? "pointer" : "default",
               }}
-              title="Send message"
             >
               <svg
                 width="14"
@@ -475,7 +478,7 @@ export default function ChatInput({
                 <line x1="22" y1="2" x2="11" y2="13" />
                 <polygon points="22 2 15 22 11 13 2 9 22 2" />
               </svg>
-            </button>
+            </IconButton>
           )}
         </div>
       </div>
@@ -512,40 +515,81 @@ function AddProviderModal({
   onClose: () => void;
   onAdded: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [baseUrl, setBaseUrl] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState("openai");
+  const [customBaseUrl, setCustomBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [modelsInput, setModelsInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const KNOWN_PROVIDERS = [
+    { id: "openai", name: "OpenAI", baseUrl: "https://api.openai.com/v1", placeholder: "sk-..." },
+    { id: "anthropic", name: "Anthropic", baseUrl: "https://api.anthropic.com/v1", placeholder: "sk-ant-..." },
+    { id: "google", name: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/", placeholder: "AIza..." },
+    { id: "openrouter", name: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", placeholder: "sk-or-v1-..." },
+    { id: "mistral", name: "Mistral AI", baseUrl: "https://api.mistral.ai/v1", placeholder: "..." },
+    { id: "groq", name: "Groq", baseUrl: "https://api.groq.com/openai/v1", placeholder: "gsk_..." },
+    { id: "together", name: "Together AI", baseUrl: "https://api.together.xyz/v1", placeholder: "..." },
+    { id: "deepseek", name: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", placeholder: "..." },
+    { id: "xai", name: "xAI (Grok)", baseUrl: "https://api.x.ai/v1", placeholder: "..." },
+    { id: "perplexity", name: "Perplexity", baseUrl: "https://api.perplexity.ai", placeholder: "pplx-..." },
+    { id: "fireworks", name: "Fireworks AI", baseUrl: "https://api.fireworks.ai/inference/v1", placeholder: "..." },
+    { id: "custom", name: "Custom Provider", baseUrl: "", placeholder: "" },
+  ] as const;
+
+  const currentProvider = KNOWN_PROVIDERS.find((p) => p.id === selectedProvider);
+  const isCustom = selectedProvider === "custom";
+  const baseUrl = isCustom ? customBaseUrl : (currentProvider?.baseUrl ?? "");
+
   const handleSubmit = async () => {
-    if (!name.trim() || !baseUrl.trim() || !modelsInput.trim()) {
-      setError("Name, base URL, and at least one model are required");
+    if (!apiKey.trim()) {
+      setError("API key is required");
       return;
     }
-
-    const models = modelsInput
-      .split(",")
-      .map((m) => m.trim())
-      .filter(Boolean);
+    if (isCustom && !customBaseUrl.trim()) {
+      setError("Base URL is required for custom providers");
+      return;
+    }
 
     setLoading(true);
     setError("");
 
     try {
-      await addProvider({
-        name: name.trim(),
-        baseUrl: baseUrl.trim(),
-        apiKey: apiKey.trim() || undefined,
-        models,
+      const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+      const token = localStorage.getItem("tradezen_access_token");
+      const res = await fetch(`${API}/user-settings/api-key`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          apiKey: apiKey.trim(),
+          provider: currentProvider?.id ?? "openrouter",
+          baseUrl: baseUrl || undefined,
+        }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message ?? "Failed to save provider");
+      }
       onAdded();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to add provider");
     } finally {
       setLoading(false);
     }
+  };
+
+  const inputStyle = {
+    width: "100%" as const,
+    padding: "8px 12px",
+    borderRadius: 6,
+    border: "1px solid var(--border-soft, #23252d)",
+    background: "var(--bg-surface-hover, #1a1b23)",
+    color: "var(--text-primary, #fafafa)",
+    fontSize: 13,
+    outline: "none",
   };
 
   return (
@@ -564,7 +608,7 @@ function AddProviderModal({
       <div
         style={{
           background: "var(--bg-surface, #12131a)",
-          border: "1px solid var(--border, #23252d)",
+          border: "1px solid var(--border-soft, #23252d)",
           borderRadius: 12,
           padding: 24,
           width: 400,
@@ -594,25 +638,49 @@ function AddProviderModal({
                 marginBottom: 4,
               }}
             >
-              Provider Name
+              Provider
             </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., My OpenAI"
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: 6,
-                border: "1px solid var(--border, #23252d)",
-                background: "var(--bg-surface-hover, #1a1b23)",
-                color: "var(--text-primary, #fafafa)",
-                fontSize: 13,
-                outline: "none",
+            <select
+              value={selectedProvider}
+              onChange={(e) => {
+                setSelectedProvider(e.target.value);
+                setError("");
               }}
-            />
+              style={{
+                ...inputStyle,
+                cursor: "pointer",
+              }}
+            >
+              {KNOWN_PROVIDERS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
           </div>
+
+          {isCustom && (
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: "var(--text-muted, #9ca3af)",
+                  marginBottom: 4,
+                }}
+              >
+                Base URL
+              </label>
+              <input
+                type="text"
+                value={customBaseUrl}
+                onChange={(e) => setCustomBaseUrl(e.target.value)}
+                placeholder="https://api.example.com/v1"
+                style={inputStyle}
+              />
+            </div>
+          )}
 
           <div>
             <label
@@ -624,83 +692,17 @@ function AddProviderModal({
                 marginBottom: 4,
               }}
             >
-              Base URL
-            </label>
-            <input
-              type="text"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="e.g., https://api.openai.com/v1"
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: 6,
-                border: "1px solid var(--border, #23252d)",
-                background: "var(--bg-surface-hover, #1a1b23)",
-                color: "var(--text-primary, #fafafa)",
-                fontSize: 13,
-                outline: "none",
-              }}
-            />
-          </div>
-
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: 12,
-                fontWeight: 500,
-                color: "var(--text-muted, #9ca3af)",
-                marginBottom: 4,
-              }}
-            >
-              API Key (optional)
+              API Key
             </label>
             <input
               type="password"
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-..."
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: 6,
-                border: "1px solid var(--border, #23252d)",
-                background: "var(--bg-surface-hover, #1a1b23)",
-                color: "var(--text-primary, #fafafa)",
-                fontSize: 13,
-                outline: "none",
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                setError("");
               }}
-            />
-          </div>
-
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: 12,
-                fontWeight: 500,
-                color: "var(--text-muted, #9ca3af)",
-                marginBottom: 4,
-              }}
-            >
-              Models (comma-separated)
-            </label>
-            <input
-              type="text"
-              value={modelsInput}
-              onChange={(e) => setModelsInput(e.target.value)}
-              placeholder="e.g., gpt-4o, gpt-4o-mini"
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: 6,
-                border: "1px solid var(--border, #23252d)",
-                background: "var(--bg-surface-hover, #1a1b23)",
-                color: "var(--text-primary, #fafafa)",
-                fontSize: 13,
-                outline: "none",
-              }}
+              placeholder={currentProvider?.placeholder ?? "API key..."}
+              style={inputStyle}
             />
           </div>
 
@@ -724,38 +726,18 @@ function AddProviderModal({
             marginTop: 20,
           }}
         >
-          <button
-            onClick={onClose}
-            style={{
-              padding: "8px 16px",
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 500,
-              color: "var(--text-muted, #9ca3af)",
-              background: "transparent",
-              border: "1px solid var(--border, #23252d)",
-              cursor: "pointer",
-            }}
-          >
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             disabled={loading}
-            style={{
-              padding: "8px 16px",
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 500,
-              color: "#fff",
-              background: "var(--accent, #3b82f6)",
-              border: "none",
-              cursor: loading ? "default" : "pointer",
-              opacity: loading ? 0.6 : 1,
-            }}
+            onClick={handleSubmit}
+            style={{ opacity: loading ? 0.6 : 1 }}
           >
             {loading ? "Adding..." : "Add Provider"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

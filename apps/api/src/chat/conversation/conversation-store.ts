@@ -1,4 +1,4 @@
-import type { ChatThreadService } from '../chat-thread.service';
+import { ChatThreadService } from '../chat-thread.service';
 import type { StoredMessageRow } from './conversation-serializer';
 
 export abstract class ConversationStore {

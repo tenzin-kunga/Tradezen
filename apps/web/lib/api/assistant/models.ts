@@ -36,8 +36,12 @@ export interface ProviderHealth {
 }
 
 export async function getChatModels(): Promise<ChatModels> {
-  const res = await fetch(`${API}/chat/models`, {
+  const token = localStorage.getItem("tradezen_access_token");
+  const res = await fetch(`${API}/chat/models?refresh=true`, {
     credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
   });
 
   if (!res.ok) {
@@ -77,7 +81,7 @@ export async function addProvider(provider: {
   baseUrl: string;
   apiKey?: string;
   models: string[];
-}): Promise<{ id: string }> {
+}): Promise<{ id: string; models: string[] }> {
   const res = await fetch(`${API}/chat/models/providers`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

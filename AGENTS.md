@@ -70,7 +70,7 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker up -d post
 | `apps/api/.env` | API dev defaults (DB_HOST=localhost, etc.)               |
 | `apps/web/.env` | Web dev defaults (NEXT_PUBLIC_API_URL)                   |
 
-Required Docker secrets: `DB_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET` (all 64+ chars), `OPENROUTER_API_KEY` (if chat used), `WEB_URL`
+Required Docker secrets: `DB_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET` (all 64+ chars), `WEB_URL`. AI API keys are per-user (set in the Settings UI, encrypted in DB) — no server-side key.
 
 ## Key architecture
 

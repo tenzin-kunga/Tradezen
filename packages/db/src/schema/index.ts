@@ -71,6 +71,7 @@ export interface CloudProviderConfig {
   provider: string; // "openrouter", "openai", "anthropic", etc.
   encryptedKey: EncryptedPayload;
   status: ProviderStatus;
+  baseUrl?: string; // Custom provider base URL
 }
 
 export interface AiProvidersConfig {

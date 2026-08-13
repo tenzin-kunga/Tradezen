@@ -5,10 +5,10 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, and, ne } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { users } from '@tradezen/db';
-import { RegisterDto, LoginDto, SaveLayoutDto } from './dto';
+import { RegisterDto, LoginDto, SaveLayoutDto, UpdateProfileDto } from './dto';
 import type { Response } from 'express';
 import { BruteForceService } from '../common/services/brute-force.service';
 import { AuditService } from '../common/services/audit.service';
@@ -24,6 +24,28 @@ export class AuthService {
     private readonly audit: AuditService,
     private readonly suspiciousLogin: SuspiciousLoginService,
   ) {}
+
+  private toUserDto(user: {
+    id: string;
+    email: string;
+    username: string;
+    createdAt: Date | string | null;
+    initialCapital: string | number | null;
+    defaultLotSize: string | number | null;
+    timezone: string | null;
+    theme: string | null;
+  }) {
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      created_at: user.createdAt,
+      initial_capital: Number(user.initialCapital) || 0,
+      default_lot_size: Number(user.defaultLotSize) || 0.01,
+      timezone: user.timezone ?? 'UTC',
+      theme: user.theme ?? 'dark',
+    };
+  }
 
   private getJwtSecret(): string {
     const secret = process.env.JWT_SECRET;
@@ -255,7 +277,36 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    return user;
+    return this.toUserDto(user);
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    if (dto.username !== undefined || dto.email !== undefined) {
+      const existing = await db.query.users.findFirst({
+        where: and(
+          ne(users.id, userId),
+          or(
+            dto.username !== undefined
+              ? eq(users.username, dto.username)
+              : undefined,
+            dto.email !== undefined ? eq(users.email, dto.email) : undefined,
+          ),
+        ),
+      });
+      if (existing) {
+        throw new ConflictException('Email or username already taken');
+      }
+    }
+
+    const updateData: Record<string, string> = {};
+    if (dto.email !== undefined) updateData.email = dto.email;
+    if (dto.username !== undefined) updateData.username = dto.username;
+
+    if (Object.keys(updateData).length > 0) {
+      await db.update(users).set(updateData).where(eq(users.id, userId));
+    }
+
+    return this.getMe(userId);
   }
 
   async updateSettings(
@@ -293,7 +344,7 @@ export class AuthService {
         timezone: users.timezone,
         theme: users.theme,
       });
-    return user;
+    return this.toUserDto(user);
   }
 
   async getLayout(userId: string) {

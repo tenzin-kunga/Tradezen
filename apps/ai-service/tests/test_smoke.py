@@ -18,7 +18,7 @@ async def test_providers_health(client, auth_headers):
     resp = await client.get("/providers/health", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
-    assert "ollama" in data or "openrouter" in data
+    assert "ollama" in data or "cloud" in data
 
 
 async def test_chat_unauthorized(client, chat_payload):

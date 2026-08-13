@@ -121,10 +121,12 @@ def create_app() -> FastAPI:
         # Store provider context from headers (forwarded by NestJS)
         provider = request.headers.get("x-ai-provider")
         provider_key = request.headers.get("x-ai-provider-key")
+        provider_base_url = request.headers.get("x-ai-provider-base-url")
         if provider or provider_key:
             request.state.provider_context = {
                 "provider": provider,
                 "api_key": provider_key,
+                "base_url": provider_base_url,
             }
 
         try:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pydantic_settings import BaseSettings
 
 
@@ -14,9 +13,31 @@ class Config(BaseSettings):
     # Ollama
     ollama_host: str = "http://localhost:11434"
 
-    # OpenRouter
-    openrouter_api_key: str = ""
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # Cloud (generic OpenAI-compatible provider: OpenRouter, NVIDIA, Groq, …)
+    cloud_provider_name: str = "cloud"
+    cloud_api_key: str = ""
+    cloud_base_url: str = ""
+    cloud_timeout: int = 30
+
+    # Per-provider base URL map (resolved from X-AI-Provider header)
+    provider_base_urls: dict[str, str] = {
+        "openai": "https://api.openai.com/v1",
+        "anthropic": "https://api.anthropic.com/v1",
+        "google": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "openrouter": "https://openrouter.ai/api/v1",
+        "mistral": "https://api.mistral.ai/v1",
+        "groq": "https://api.groq.com/openai/v1",
+        "together": "https://api.together.xyz/v1",
+        "perplexity": "https://api.perplexity.ai",
+        "fireworks": "https://api.fireworks.ai/inference/v1",
+        "deepseek": "https://api.deepseek.com/v1",
+        "xai": "https://api.x.ai/v1",
+        "ollama": "http://localhost:11434/v1",
+        "lmstudio": "http://localhost:1234/v1",
+        "vllm": "http://localhost:8000/v1",
+        "localai": "http://localhost:8080/v1",
+        "litellm": "http://localhost:4000/v1",
+    }
 
     # Rate limits
     chat_rate_limit: str = "60/min"
@@ -29,7 +50,7 @@ class Config(BaseSettings):
 
     # Concurrency
     max_concurrent_ollama: int = 4
-    max_concurrent_openrouter: int = 20
+    max_concurrent_cloud: int = 20
 
     # Validation
     max_prompt_size: int = 20000
@@ -40,7 +61,7 @@ class Config(BaseSettings):
 
     # Timeouts (seconds)
     ollama_timeout: int = 120
-    openrouter_timeout: int = 30
+
     sql_timeout: int = 5
     retrieval_timeout: int = 3
 

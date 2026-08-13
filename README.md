@@ -56,27 +56,41 @@ tradezen/
 - **Bun 1.3+** (recommended) or Node.js 20+
 - Docker Desktop (for local PostgreSQL + Redis)
 
-### Quick Start (One-Click)
+### Quick Start
 
 ```sh
-scripts/dev/start.bat
+bun install
+bun run doctor      # verify your environment (Bun, Docker, Postgres, Redis, venv, ...)
+bun run infra:up    # start PostgreSQL + Redis (and Ollama if ENABLE_OLLAMA=true)
+bun run dev:all     # launch API (3001) + Web (3000) + AI (8000) with hot reload
 ```
 
-This script handles:
+`bun run dev:all` is the one-command, cross-platform launcher. It ensures Docker is up,
+starts infrastructure with health checks, builds `@tradezen/db`, and opens each service
+in its **own terminal window** (API, Web, AI) so their output stays separate. Close a
+window to stop that service; the database and Redis keep running between sessions.
 
-1. Docker Desktop startup (if not running)
-2. Cleaning stale containers
-3. Starting PostgreSQL + Redis with health checks
-4. Launching API (`localhost:3001`) and Web (`localhost:3000`) in separate windows
+The Windows `scripts/dev/start.bat` is now just a thin wrapper that calls `bun run dev:all`.
 
-### Manual Setup
+### Individual commands
 
 ```sh
-# Clone and install
-git clone https://github.com/tampered-sin/Tradezen.git
-cd Tradezen
-bun install
+bun run doctor        # diagnostic health check (exit 1 if anything critical is missing)
+bun run infra:up      # start PostgreSQL + Redis (+ Ollama when enabled)
+bun run infra:down    # stop the Docker infrastructure
+bun run dev:api       # run only the API
+bun run dev:web       # run only the Web app
+bun run dev:ai        # run only the AI service (needs its Python venv)
+bun run dev:all       # run everything
+```
 
+To enable the local Ollama LLM, copy `.env.dev.example` to `.env.dev` and set
+`ENABLE_OLLAMA=true`. Set `AUTO_PULL_OLLAMA=true` to have the launcher pull the
+default model (`qwen3:4b`) automatically; otherwise it prints the pull command.
+
+### Manual Setup (Docker only)
+
+```sh
 # Configure environment
 cp .env.docker.example .env.docker
 # Edit .env.docker with your values
@@ -97,7 +111,6 @@ bun run dev
 | `DB_PASSWORD`        | _(required)_            | PostgreSQL password                 |
 | `JWT_SECRET`         | _(required)_            | JWT signing secret (min 64 chars)   |
 | `JWT_REFRESH_SECRET` | _(required)_            | Refresh token secret (min 64 chars) |
-| `OPENROUTER_API_KEY` | _(optional)_            | OpenRouter API key for AI chat      |
 | `WEB_URL`            | `http://localhost:3000` | Frontend URL (CORS origin)          |
 
 **API** (`apps/api/.env`) — development defaults:

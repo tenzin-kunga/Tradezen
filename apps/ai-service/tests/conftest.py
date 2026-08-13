@@ -93,9 +93,9 @@ async def container(config):
     # Inject mock provider so tests don't hit real LLMs
     mock = MockProvider()
     c.provider_factory._providers["ollama"] = mock
-    c.provider_factory._providers["openrouter"] = mock
+    c.provider_factory._providers["cloud"] = mock
     c.provider_health.set("ollama", True)
-    c.provider_health.set("openrouter", True)
+    c.provider_health.set("cloud", True)
     await c.initialize()
     yield c
     await c.close()

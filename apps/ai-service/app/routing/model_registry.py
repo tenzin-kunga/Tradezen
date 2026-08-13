@@ -126,7 +126,7 @@ class ModelRegistry:
     def split_provider_model(requested_model: str | None) -> tuple[str | None, str | None]:
         """Split a possibly-prefixed model id into (provider, model_id).
 
-        ``openrouter/anthropic/claude-sonnet-4`` -> ('openrouter', 'anthropic/claude-sonnet-4').
+        ``cloud/anthropic/claude-sonnet-4`` -> ('cloud', 'anthropic/claude-sonnet-4').
         ``qwen3:latest`` -> (None, 'qwen3:latest').
         """
         if not requested_model:

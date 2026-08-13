@@ -49,10 +49,6 @@ export function createTradeResource(
   return createResource("trade", tradeId, symbol || "Trade", { tradeId });
 }
 
-export function createJournalResource(date: string): WorkspaceResource {
-  return createResource("journal", date, date, { date });
-}
-
 export function createConversationResource(
   conversationId: string,
   title?: string,
@@ -76,10 +72,6 @@ export function createResearchResource(
   title?: string,
 ): WorkspaceResource {
   return createResource("research", topicId, title || "Research");
-}
-
-export function createPortfolioResource(): WorkspaceResource {
-  return createResource("report", "default", "Portfolio");
 }
 
 export function createKnowledgeResource(

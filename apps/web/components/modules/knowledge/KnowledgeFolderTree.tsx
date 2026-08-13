@@ -7,6 +7,7 @@ import {
   deleteKnowledgeFolder,
   type KnowledgeFolder,
 } from "@/lib/api/knowledge";
+import { IconButton } from "@/components/primitives/IconButton";
 
 interface KnowledgeFolderTreeProps {
   activeFolderId: string | null;
@@ -109,7 +110,7 @@ export default function KnowledgeFolderTree({
     <div
       style={{
         width: 220,
-        borderRight: "1px solid var(--border, #23252d)",
+        borderRight: "1px solid var(--border-soft, #23252d)",
         background: "var(--bg-sidebar, #0c0c0f)",
         display: "flex",
         flexDirection: "column",
@@ -133,22 +134,7 @@ export default function KnowledgeFolderTree({
         >
           Knowledge
         </span>
-        <button
-          onClick={() => setIsCreating(true)}
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 6,
-            background: "var(--bg-surface-hover, #1a1b23)",
-            border: "1px solid var(--border, #23252d)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "var(--text-muted, #9ca3af)",
-          }}
-          title="New folder"
-        >
+        <IconButton size={24} title="New folder" onClick={() => setIsCreating(true)}>
           <svg
             width="12"
             height="12"
@@ -160,7 +146,7 @@ export default function KnowledgeFolderTree({
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-        </button>
+        </IconButton>
       </div>
 
       {/* New folder input */}
@@ -198,24 +184,11 @@ export default function KnowledgeFolderTree({
         onClick={() => onSelectFolder(null)}
         onMouseEnter={() => setHoveredId("root")}
         onMouseLeave={() => setHoveredId(null)}
+        className={`ws-nav-link${activeFolderId === null ? " active" : ""}`}
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
           padding: "8px 12px",
-          cursor: "pointer",
-          background:
-            activeFolderId === null
-              ? "var(--bg-surface-hover, #1a1b23)"
-              : "transparent",
-          borderRadius: 6,
           margin: "4px 8px",
           fontSize: 12,
-          fontWeight: activeFolderId === null ? 600 : 400,
-          color:
-            activeFolderId === null
-              ? "var(--text-primary, #fafafa)"
-              : "var(--text-muted, #9ca3af)",
         }}
       >
         <span>📄</span>
@@ -297,24 +270,13 @@ function FolderNode({
           </span>
         </span>
         {isHovered && (
-          <button
+          <IconButton
+            size={18}
+            title="Delete folder"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(folder.id);
             }}
-            style={{
-              width: 18,
-              height: 18,
-              borderRadius: 4,
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--text-muted, #9ca3af)",
-            }}
-            title="Delete folder"
           >
             <svg
               width="10"
@@ -327,7 +289,7 @@ function FolderNode({
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-          </button>
+          </IconButton>
         )}
       </div>
       {folder.expanded &&

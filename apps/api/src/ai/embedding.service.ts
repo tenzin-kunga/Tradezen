@@ -3,30 +3,33 @@ import { db } from '../db/drizzle';
 import { embeddings } from '@tradezen/db';
 import { eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
+import { UserSettingsService } from '../user-settings/user-settings.service';
 
 @Injectable()
 export class EmbeddingService {
   private readonly logger = new Logger('EmbeddingService');
-  private readonly embeddingModel = 'openai/text-embedding-3-small';
+  private readonly embeddingModel =
+    process.env.EMBEDDING_MODEL?.trim() || 'openai/text-embedding-3-small';
 
-  async generateEmbedding(text: string): Promise<number[]> {
-    const response = await fetch(
-      `${process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1'}/embeddings`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer':
-            process.env.OPENROUTER_HTTP_REFERER ?? 'http://localhost:3000',
-          'X-Title': process.env.OPENROUTER_APP_TITLE ?? 'TradeZen',
-        },
-        body: JSON.stringify({
-          model: this.embeddingModel,
-          input: [text],
-        }),
+  constructor(private readonly userSettings: UserSettingsService) {}
+
+  async generateEmbedding(userId: string, text: string): Promise<number[]> {
+    const creds = await this.userSettings.getDecryptedApiKey(userId);
+    const cloudApiKey = creds?.key;
+    if (!cloudApiKey) {
+      throw new Error(
+        'No API key configured for this user. Add one in Settings.',
+      );
+    }
+    const cloudBaseUrl = creds?.baseUrl ?? 'https://openrouter.ai/api/v1';
+    const response = await fetch(`${cloudBaseUrl}/embeddings`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${cloudApiKey}`,
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({ model: this.embeddingModel, input: [text] }),
+    });
 
     if (!response.ok) {
       throw new Error(`Embedding API error: ${response.status}`);
@@ -58,7 +61,7 @@ export class EmbeddingService {
     sourceId: string,
     content: string,
   ): Promise<void> {
-    const embedding = await this.generateEmbedding(content);
+    const embedding = await this.generateEmbedding(userId, content);
     await this.storeEmbedding(userId, sourceType, sourceId, content, embedding);
   }
 
@@ -75,7 +78,7 @@ export class EmbeddingService {
       similarity: number;
     }>
   > {
-    const queryEmbedding = await this.generateEmbedding(query);
+    const queryEmbedding = await this.generateEmbedding(userId, query);
     const vectorStr = `[${queryEmbedding.join(',')}]`;
 
     const conditions = [eq(embeddings.userId, userId)];

@@ -1,13 +1,13 @@
 from .budget import CostProtector
 from .factory import ProviderFactory
 from .health import ProviderHealthManager
+from .cloud import CloudProvider
 from .ollama import OllamaProvider
-from .openrouter import OpenRouterProvider
 
 __all__ = [
+    "CloudProvider",
     "CostProtector",
     "OllamaProvider",
-    "OpenRouterProvider",
     "ProviderFactory",
     "ProviderHealthManager",
 ]

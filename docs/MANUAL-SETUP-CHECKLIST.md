@@ -27,9 +27,8 @@ GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 GITHUB_CALLBACK_URL=http://localhost:3001/auth/github/callback
 
-# ── OpenRouter (AI Chat) ─────────────────────────────────────────────────────
-OPENROUTER_API_KEY=sk-or-v1-...
-OPENROUTER_AVAILABLE_MODELS=qwen/qwen3-next-80b-a3b-instruct:free,google/gemma-3-4b-it:free,nvidia/nemotron-nano-9b-v2:free
+# ── AI (per-user, no server key) ─────────────────────────────────────────────
+# Users set their own provider key in the Settings UI (encrypted in the DB).
 
 # ── URLs ─────────────────────────────────────────────────────────────────────
 WEB_URL=http://localhost:3000
@@ -214,10 +213,12 @@ Verify: `redis-cli ping` → should return `PONG`
 
 ## 8. AI/LLM Configuration
 
-### OpenRouter (already configured)
+### Per-user provider keys (no server-side key)
 
-- Set `OPENROUTER_API_KEY` in `.env`
-- Models are pre-configured in `.env.example`
+- No `OPENROUTER_API_KEY`/`CLOUD_API_KEY` in env — users configure their own key
+  in the Settings UI; it is stored encrypted in the DB and forwarded per request.
+- Model catalog is discovered from the AI service; `CLOUD_DEFAULT_MODEL` (optional)
+  sets the default for background AI jobs.
 
 ### If using OpenAI directly (for embeddings/AI memory):
 

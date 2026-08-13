@@ -409,6 +409,18 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
               return updated;
             });
           },
+          onResponseReformatted: (markdown) => {
+            // ponytail: never let a degraded formatter response wipe the streamed reply
+            if (!markdown || !markdown.trim()) return;
+            setMessages((prev) => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last?.role === "assistant") {
+                updated[updated.length - 1] = { ...last, content: markdown };
+              }
+              return updated;
+            });
+          },
           onDone: () => {
             if (controller.signal.aborted) return;
             setStatus("complete");

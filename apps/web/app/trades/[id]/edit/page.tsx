@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import TagPicker from "@/components/TagPicker";
 import type { Tag } from "@/components/TagPicker";
+import { NumberInput } from "@/components/primitives/NumberInput";
 
 function RRDisplay({
   entry,
@@ -482,9 +483,8 @@ export default function EditTradePage() {
               >
                 <div>
                   <label style={labelStyle}>ENTRY PRICE</label>
-                  <input
+                  <NumberInput
                     style={inputStyle}
-                    type="number"
                     step="any"
                     value={entry}
                     onChange={(e) => setEntry(e.target.value)}
@@ -493,9 +493,8 @@ export default function EditTradePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>EXIT PRICE</label>
-                  <input
+                  <NumberInput
                     style={inputStyle}
-                    type="number"
                     step="any"
                     value={exit}
                     onChange={(e) => setExit(e.target.value)}
@@ -504,9 +503,8 @@ export default function EditTradePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>QUANTITY / LOT SIZE</label>
-                  <input
+                  <NumberInput
                     style={inputStyle}
-                    type="number"
                     step="any"
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
@@ -523,9 +521,8 @@ export default function EditTradePage() {
               >
                 <div>
                   <label style={labelStyle}>STOP LOSS</label>
-                  <input
+                  <NumberInput
                     style={inputStyle}
-                    type="number"
                     step="any"
                     value={stopLoss}
                     onChange={(e) => setStopLoss(e.target.value)}
@@ -534,9 +531,8 @@ export default function EditTradePage() {
                 </div>
                 <div>
                   <label style={labelStyle}>TAKE PROFIT</label>
-                  <input
+                  <NumberInput
                     style={inputStyle}
-                    type="number"
                     step="any"
                     value={takeProfit}
                     onChange={(e) => setTakeProfit(e.target.value)}
