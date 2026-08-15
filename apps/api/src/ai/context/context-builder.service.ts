@@ -14,6 +14,7 @@ import { PortfolioProvider } from './providers/portfolio.provider';
 import { NewsProvider } from './providers/news.provider';
 import { MemoryProvider } from './semantic/memory-provider';
 import { RetrievalPipeline } from './retrieval-pipeline';
+import { QueryPlanner } from './query-planner';
 
 @Injectable()
 export class ContextBuilderService {
@@ -33,6 +34,7 @@ export class ContextBuilderService {
     portfolio: PortfolioProvider,
     news: NewsProvider,
     memory: MemoryProvider,
+    private readonly planner: QueryPlanner,
   ) {
     this.providers = [
       trades,
@@ -51,7 +53,12 @@ export class ContextBuilderService {
     request: ContextRequest = {},
     lastUserMessage?: string,
   ): Promise<BuiltContext> {
-    const cacheKey = `${userId}:${JSON.stringify(request)}`;
+    const plan = this.planner.plan({
+      request,
+      lastUserMessage,
+      intent: request.intent,
+    });
+    const cacheKey = `${userId}:${JSON.stringify(request)}:${plan.selectedBy}`;
     const cached = this.cache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return this.assembleResult(cached.blocks, [], cached.trace);
@@ -61,12 +68,13 @@ export class ContextBuilderService {
       userId,
       request,
       lastUserMessage,
+      plan,
     );
 
     // Cache with provider-specific TTLs
     const minCache = Math.min(
       ...this.providers
-        .filter((p) => p.supports(request))
+        .filter((p) => plan.providers.includes(p.id))
         .map((p) => p.cacheMs),
       60_000,
     );
@@ -77,7 +85,7 @@ export class ContextBuilderService {
     });
 
     const skipped = this.providers
-      .filter((p) => !p.supports(request))
+      .filter((p) => !plan.providers.includes(p.id))
       .map((p) => p.id);
 
     return this.assembleResult(blocks, skipped, trace);

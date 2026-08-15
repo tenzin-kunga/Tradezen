@@ -7,6 +7,7 @@ import type {
 } from './context-provider';
 export type { RetrievalTrace } from './context-provider';
 import { SCORE_THRESHOLD, TOTAL_TOKEN_BUDGET } from './context-provider';
+import type { ContextPlan } from './query-planner';
 
 export class RetrievalPipeline {
   constructor(
@@ -18,13 +19,25 @@ export class RetrievalPipeline {
     userId: string,
     request: ContextRequest,
     lastUserMessage?: string,
+    plan?: ContextPlan,
   ): Promise<{
     blocks: ContextBlock[];
     trace: RetrievalTrace;
     warnings: string[];
   }> {
     const scores = this.scoreProviders(request, lastUserMessage);
-    const active = this.filterByThreshold(scores, request);
+    const active = plan
+      ? this.providers
+          .filter((p) => plan.providers.includes(p.id))
+          .map(
+            (p) =>
+              scores.find((s) => s.provider === p.id) ?? {
+                provider: p.id,
+                score: 0,
+                reasons: [],
+              },
+          )
+      : this.filterByThreshold(scores, request);
     const budgetMap = this.allocateBudget(active);
     const { blocks, warnings, latencies } = await this.executeProviders(
       userId,

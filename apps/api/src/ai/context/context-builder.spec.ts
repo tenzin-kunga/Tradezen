@@ -7,6 +7,7 @@ import { DocumentsProvider } from './providers/documents.provider';
 import { PortfolioProvider } from './providers/portfolio.provider';
 import { NewsProvider } from './providers/news.provider';
 import { MemoryProvider } from './semantic/memory-provider';
+import { QueryPlanner } from './query-planner';
 
 jest.mock('../../db/drizzle', () => ({
   db: {
@@ -74,6 +75,7 @@ describe('ContextBuilderService', () => {
         { provide: PortfolioProvider, useValue: providers.portfolio },
         { provide: NewsProvider, useValue: providers.news },
         { provide: MemoryProvider, useValue: providers.memory },
+        QueryPlanner,
       ],
     }).compile();
     service = module.get<ContextBuilderService>(ContextBuilderService);

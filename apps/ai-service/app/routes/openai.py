@@ -34,7 +34,7 @@ async def openai_chat(request: Request):
     api_key = provider_context.get("api_key") if provider_context else None
     provider_name_ctx = provider_context.get("provider") if provider_context else None
     base_url = (
-        provider_context.get("base_url")
+        (provider_context.get("base_url") if provider_context else None)
         or (container.config.provider_base_urls.get(provider_name_ctx) if provider_name_ctx else None)
     )
 
@@ -64,6 +64,7 @@ async def openai_chat(request: Request):
         model=openai_req.model,
         temperature=openai_req.temperature,
         stream=openai_req.stream,
+        context_owned=request.headers.get("x-context-owned-by-nestjs", "").lower() == "true",
     )
 
     if openai_req.stream:
@@ -104,5 +105,10 @@ async def _stream_openai(container, chat_req: ChatRequest, session: AISession, a
             "choices": [{"delta": {"content": token}, "index": 0}],
         }
         yield f"data: {json.dumps(chunk)}\n\n"
+
+    # Final chunk with usage (stream_options.include_usage) before [DONE].
+    usage = getattr(session, "usage", {})
+    if usage:
+        yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [], 'usage': usage})}\n\n"
 
     yield "data: [DONE]\n\n"

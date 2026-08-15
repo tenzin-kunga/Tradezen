@@ -108,6 +108,7 @@ class CloudProvider:
         api_key: str | None = None,
         base_url: str | None = None,
         provider_name: str | None = None,
+        usage_out: dict | None = None,
     ) -> AsyncIterator[str]:
         url = (base_url or self.base_url).rstrip("/")
         body: dict[str, Any] = {
@@ -115,6 +116,7 @@ class CloudProvider:
             "messages": messages,
             "stream": True,
             "temperature": temperature,
+            "stream_options": {"include_usage": True},
         }
         if max_tokens:
             body["max_tokens"] = max_tokens
@@ -135,6 +137,16 @@ class CloudProvider:
                         break
                     try:
                         chunk = json.loads(payload)
+                        # Final chunk carries usage with empty choices (stream_options.include_usage).
+                        if usage_out is not None and chunk.get("usage"):
+                            usage_out.update(
+                                {
+                                    k: chunk["usage"].get(k)
+                                    for k in ("prompt_tokens", "completion_tokens", "total_tokens")
+                                    if chunk["usage"].get(k) is not None
+                                }
+                            )
+                            continue
                         token = chunk.get("choices", [{}])[0].get("delta", {}).get("content")
                         if token:
                             yield token

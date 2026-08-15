@@ -16,6 +16,7 @@ from .routes.openai import router as openai_router
 from .routes.tradezen import router as tradezen_router
 from .routes.ingestion import router as ingestion_router
 from .routes.models import router as models_router
+from .routes.retrieval import router as retrieval_router
 from .routes import traces as traces_route
 
 logging.basicConfig(
@@ -88,8 +89,8 @@ def create_app() -> FastAPI:
                 content={"error": "Rate limited", "retry_after": retry_after},
             )
 
-        # Validation (for POST with body)
-        if body and request.method == "POST":
+        # Validation (for chat POST bodies; other endpoints have their own shape)
+        if body and request.method == "POST" and "messages" in body:
             from .models.chat import ChatRequest, Message
 
             try:
@@ -145,6 +146,7 @@ def create_app() -> FastAPI:
     app.include_router(openai_router)
     app.include_router(models_router)
     app.include_router(ingestion_router)
+    app.include_router(retrieval_router)
     traces_route.init(container.traces_store)
     app.include_router(traces_route.router)
 

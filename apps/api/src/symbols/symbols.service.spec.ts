@@ -87,7 +87,13 @@ describe('SymbolsService', () => {
 
     it('should search by ticker/name', async () => {
       const results = [
-        { id: 's1', ticker: 'AAPL', exchange: 'NASDAQ', name: 'Apple' },
+        {
+          id: 's1',
+          ticker: 'AAPL',
+          exchange: 'NASDAQ',
+          name: 'Apple',
+          contractSize: 100000,
+        },
       ];
       mockDb.select.mockReturnValue(mockQueryChain(results));
 

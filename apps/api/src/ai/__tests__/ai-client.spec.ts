@@ -100,3 +100,49 @@ describe('AIClient circuit breaker', () => {
     expect(snap.circuitBreakerOpens).toBe(1);
   });
 });
+
+describe('AIClient stream usage', () => {
+  let metrics: AiMetricsService;
+
+  beforeEach(() => {
+    metrics = new AiMetricsService();
+    mockFetch.mockReset();
+  });
+
+  it('surfaces usage from the final SSE chunk', async () => {
+    const client = new AIClient(metrics);
+    const encoder = new TextEncoder();
+    const chunks = [
+      encoder.encode('data: {"choices":[{"delta":{"content":"hi"}}]}\n\n'),
+      encoder.encode(
+        'data: {"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":5}}\n\n',
+      ),
+      encoder.encode('data: [DONE]\n\n'),
+    ];
+    const body = {
+      getReader: () => ({
+        async read() {
+          return chunks.length
+            ? { done: false as const, value: chunks.shift()! }
+            : { done: true as const, value: undefined };
+        },
+        async cancel() {},
+      }),
+    };
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 200, body });
+
+    const usage: Array<{
+      prompt_tokens: number;
+      completion_tokens: number;
+    }> = [];
+    const tokens: string[] = [];
+    for await (const t of client.stream([{ role: 'user', content: 'x' }], {
+      onUsage: (u) => usage.push(u),
+    })) {
+      tokens.push(t);
+    }
+
+    expect(tokens).toEqual(['hi']);
+    expect(usage).toEqual([{ prompt_tokens: 10, completion_tokens: 5 }]);
+  });
+});

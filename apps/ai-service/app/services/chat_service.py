@@ -10,6 +10,7 @@ from ..models import (
     ChatResponse,
     TokenUsage,
 )
+from ..execution.base import ExecutionResult
 from ..models.context import Context
 from ..models.common import ExecutionMode
 from ..providers.factory import ProviderFactory
@@ -67,6 +68,30 @@ class ChatService:
         """Shared by handle() and handle_stream(). Returns immutable Context."""
         query = request.messages[-1].content if request.messages else ""
         session.user_id = request.user_id
+
+        # Slice 7: NestJS owns orchestration + final context. Passthrough —
+        # the conversation already contains the NestJS-assembled system prompt
+        # (persona + retrieved docs + memories). Skip autonomous RAG entirely.
+        if request.context_owned:
+            provider_name, model = self.model_router.select(requested_model=request.model)
+            provider = self.provider_factory.get(provider_name)
+            session.provider = provider
+            session.provider_name = provider_name
+            session.model = model
+            session.metrics.provider = provider_name
+            session.metrics.model = model
+            conversation = [{"role": m.role, "content": m.content} for m in request.messages]
+            return Context(
+                user_id=request.user_id,
+                query=query,
+                messages=conversation,
+                intent=None,
+                model=model,
+                provider=provider,
+                temperature=request.temperature or session.temperature or 0.4,
+                request_id=session.request_id,
+                context_owned=True,
+            )
 
         # 1. Classify intent
         h = tracer.begin(Stage.INTENT) if tracer else None
@@ -222,6 +247,39 @@ class ChatService:
 
         # LLM generation
         h_llm = tracer.begin(Stage.LLM)
+        if ctx.context_owned:
+            # Slice 7 passthrough: no agent/strategy (they would re-wrap the
+            # prompt with TradeZen persona). Send the conversation verbatim.
+            raw = await self.completion.complete(session, ctx.messages)
+            result = ExecutionResult(
+                content=raw.get("content", ""),
+                usage=raw.get("usage", {}),
+            )
+            tracer.finish(h_llm, {"model": session.model, "provider": session.metrics.provider, "tokens_out": result.usage.get("completion_tokens", 0), "passthrough": True})
+            # Build trace and save
+            trace = tracer.build_trace(session.request_id, session.trace_id, ctx.user_id, ctx.query)
+            if self.traces_repo:
+                await self.traces_repo.save(trace)
+            session.metrics = MetricsProjector.to_session_metrics(trace)
+            session.metrics.latency_ms = trace.total_latency_ms
+            return ChatResponse(
+                content=result.content,
+                model=session.model,
+                usage=TokenUsage(
+                    prompt_tokens=result.usage.get("prompt_tokens", 0),
+                    completion_tokens=result.usage.get("completion_tokens", 0),
+                    total_tokens=result.usage.get("prompt_tokens", 0) + result.usage.get("completion_tokens", 0),
+                ),
+                request_id=session.request_id,
+                metadata={
+                    "provider": session.metrics.provider,
+                    "model": session.model,
+                    "total_latency_ms": trace.total_latency_ms,
+                    "intent": "passthrough",
+                    "context_owned": True,
+                },
+            )
+
         strategy = self.direct_strategy
         if ctx.intent and ctx.intent.execution == ExecutionMode.TOOL and self.tool_strategy:
             strategy = self.tool_strategy

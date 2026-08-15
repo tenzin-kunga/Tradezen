@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '../db/drizzle';
 import { sql } from 'drizzle-orm';
+import { rowsOf } from '../ai/corpus-baseline.service';
 
 export interface PortfolioSummary {
   totalTrades: number;
@@ -91,7 +92,7 @@ export class PortfolioService {
       `),
       ]);
 
-    const s = (summaryRes as any).rows[0] ?? {};
+    const s = rowsOf(summaryRes)[0] ?? {};
     const totalTrades = Number(s.total_trades ?? 0);
     const grossProfit = Number(s.gross_profit ?? 0);
     const grossLoss = Number(s.gross_loss ?? 0);
@@ -114,7 +115,7 @@ export class PortfolioService {
       vengeanceTrades: Number(s.vengeance_count ?? 0),
     };
 
-    const symbolRows = (symbolsRes as any).rows as any[];
+    const symbolRows = rowsOf(symbolsRes) as any[];
     const totalAbsPnl = symbolRows.reduce(
       (acc, r) => acc + Math.abs(Number(r.realized_pnl ?? 0)),
       0,
@@ -136,7 +137,7 @@ export class PortfolioService {
       };
     });
 
-    const strategyRows = (strategiesRes as any).rows as any[];
+    const strategyRows = rowsOf(strategiesRes) as any[];
     const strategies: StrategyAttribution[] = strategyRows.map((r) => {
       const trades = Number(r.trades ?? 0);
       const wins = Number(r.wins ?? 0);
@@ -148,7 +149,7 @@ export class PortfolioService {
       };
     });
 
-    const d = (directionRes as any).rows[0] ?? { long: 0, short: 0 };
+    const d = rowsOf(directionRes)[0] ?? { long: 0, short: 0 };
 
     return {
       summary,

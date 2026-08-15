@@ -23,3 +23,6 @@ class Context:
     plan: object = None  # QueryPlan
     sql_results: list[ToolResult] = field(default_factory=list)
     completed_steps: list[str] = field(default_factory=list)
+
+    # Slice 7: NestJS owns orchestration + final context; Python passthrough.
+    context_owned: bool = False

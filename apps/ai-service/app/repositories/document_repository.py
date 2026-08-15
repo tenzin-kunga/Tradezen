@@ -89,6 +89,13 @@ class DocumentRepository:
         )
         return self._row_to_doc(row) if row else None
 
+    async def list_by_source(self, user_id: str, source_type: str, source_id: str) -> list[DocumentRow]:
+        rows = await self.db.fetch(
+            "SELECT * FROM ai_documents WHERE user_id = $1 AND source_type = $2 AND source_id = $3",
+            user_id, source_type, source_id,
+        )
+        return [self._row_to_doc(r) for r in rows]
+
     async def list_by_user(self, user_id: str, source_type: str | None = None) -> list[DocumentRow]:
         if source_type:
             rows = await self.db.fetch(

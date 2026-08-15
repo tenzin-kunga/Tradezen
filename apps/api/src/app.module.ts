@@ -39,6 +39,8 @@ import { CoachingEngineService } from './ai/coaching-engine.service';
 import { AiInsightsService } from './ai/ai-insights.service';
 import { CoachingPushPolicy } from './ai/insights/push-policy';
 import { AiController } from './ai/ai.controller';
+import { CorpusBaselineService } from './ai/corpus-baseline.service';
+import { ReconciliationService } from './ai/reconciliation.service';
 import { NotificationService } from './common/services/notification.service';
 import { NotificationTriggersService } from './common/services/notification-triggers.service';
 import { JournalsService } from './journals/journals.service';
@@ -118,6 +120,8 @@ import { JournalsService } from './journals/journals.service';
     NotificationTriggersService,
     JournalsService,
     CoachingPushPolicy,
+    CorpusBaselineService,
+    ReconciliationService,
   ],
   exports: [
     SnapshotService,
@@ -134,6 +138,8 @@ import { JournalsService } from './journals/journals.service';
     NotificationTriggersService,
     JournalsService,
     CoachingPushPolicy,
+    CorpusBaselineService,
+    ReconciliationService,
   ],
 })
 export class AppModule implements NestModule {

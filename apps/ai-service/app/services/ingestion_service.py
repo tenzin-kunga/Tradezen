@@ -96,6 +96,50 @@ class IngestionService:
         journals = await self.ingest_journals(user_id)
         return {"trades": trades, "journals": journals}
 
+    async def upsert_document(
+        self,
+        user_id: str,
+        source_type: str,
+        source_id: str,
+        content: str,
+        metadata: dict | None = None,
+    ) -> dict:
+        """Idempotent single-document upsert for event-driven ingestion.
+
+        Skips re-embedding when content_hash is unchanged. On changed/new
+        content, replaces stale embeddings for the document.
+        """
+        doc, created = await self.doc_repo.create_or_find(
+            user_id=user_id,
+            source_type=source_type,
+            content=content,
+            source_id=source_id,
+            metadata=metadata,
+        )
+        if not created:
+            return {"status": "skipped", "document_id": doc.id}
+
+        await self.vector_repo.delete_by_document(doc.id)
+        embedding = await self.embedding_service.generate_single(content)
+        await self.vector_repo.insert(
+            document_id=doc.id,
+            embedding=embedding,
+            model=self.embedding_service.get_model_info()["model"],
+        )
+        return {"status": "upserted", "document_id": doc.id}
+
+    async def delete_document(
+        self, user_id: str, source_type: str, source_id: str
+    ) -> dict:
+        """Delete all chunks/embeddings for a source. Idempotent (not_found ok)."""
+        docs = await self.doc_repo.list_by_source(user_id, source_type, source_id)
+        if not docs:
+            return {"status": "not_found", "deleted": 0}
+        for doc in docs:
+            await self.vector_repo.delete_by_document(doc.id)
+            await self.doc_repo.delete(doc.id)
+        return {"status": "deleted", "deleted": len(docs)}
+
     async def get_status(self, user_id: str) -> dict:
         doc_count = await self.db.fetchval(
             "SELECT COUNT(*) FROM ai_documents WHERE user_id = $1", user_id,

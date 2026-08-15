@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { db } from '../db/drizzle';
 import { embeddings } from '@tradezen/db';
-import { eq } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
 import { UserSettingsService } from '../user-settings/user-settings.service';
+
+export const EMBEDDING_VERSION = 1;
 
 @Injectable()
 export class EmbeddingService {
@@ -12,6 +12,10 @@ export class EmbeddingService {
     process.env.EMBEDDING_MODEL?.trim() || 'openai/text-embedding-3-small';
 
   constructor(private readonly userSettings: UserSettingsService) {}
+
+  getModelInfo(): { model: string; version: number } {
+    return { model: this.embeddingModel, version: EMBEDDING_VERSION };
+  }
 
   async generateEmbedding(userId: string, text: string): Promise<number[]> {
     const creds = await this.userSettings.getDecryptedApiKey(userId);
@@ -52,6 +56,8 @@ export class EmbeddingService {
       sourceId,
       content,
       embedding,
+      embeddingModel: this.embeddingModel,
+      embeddingVersion: EMBEDDING_VERSION,
     });
   }
 
@@ -63,42 +69,5 @@ export class EmbeddingService {
   ): Promise<void> {
     const embedding = await this.generateEmbedding(userId, content);
     await this.storeEmbedding(userId, sourceType, sourceId, content, embedding);
-  }
-
-  async searchSimilar(
-    userId: string,
-    query: string,
-    limit = 5,
-    sourceType?: string,
-  ): Promise<
-    Array<{
-      sourceType: string;
-      sourceId: string;
-      content: string;
-      similarity: number;
-    }>
-  > {
-    const queryEmbedding = await this.generateEmbedding(userId, query);
-    const vectorStr = `[${queryEmbedding.join(',')}]`;
-
-    const conditions = [eq(embeddings.userId, userId)];
-    if (sourceType) {
-      conditions.push(eq(embeddings.sourceType, sourceType));
-    }
-
-    const results = await db.execute(sql`
-      SELECT source_type as "sourceType", source_id as "sourceId", content, 1 - (embedding <=> ${vectorStr}::vector) as similarity
-      FROM embeddings
-      WHERE ${sql.join(conditions, sql` AND `)}
-      ORDER BY embedding <=> ${vectorStr}::vector
-      LIMIT ${limit}
-    `);
-
-    return results as unknown as Array<{
-      sourceType: string;
-      sourceId: string;
-      content: string;
-      similarity: number;
-    }>;
   }
 }

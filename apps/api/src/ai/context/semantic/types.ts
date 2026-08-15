@@ -16,6 +16,15 @@ export enum RetrievalIntent {
   COACH = 'coach',
 }
 
+export type DocumentOperation = 'create' | 'update' | 'delete';
+
+export interface DocumentProvenance {
+  source: string;
+  entity: string;
+  operation: DocumentOperation;
+  version?: number;
+}
+
 export interface SemanticDocument {
   id: string;
   userId: string;
@@ -23,6 +32,9 @@ export interface SemanticDocument {
   title?: string;
   content: string;
   metadata: Record<string, unknown>;
+  provenance?: DocumentProvenance;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EmbeddingRecord {

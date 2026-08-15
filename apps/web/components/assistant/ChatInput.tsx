@@ -17,11 +17,17 @@ import ModelBrowser from "./ModelBrowser";
 import { Button } from "@/components/primitives/Button";
 import { IconButton } from "@/components/primitives/IconButton";
 
+function formatTokens(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(n);
+}
+
 interface ChatInputProps {
   onSend: (content: string, model?: string) => void;
   onAbort: () => void;
   status: ChatStatus;
   disabled?: boolean;
+  tokenUsage?: number;
 }
 
 export default function ChatInput({
@@ -29,6 +35,7 @@ export default function ChatInput({
   onAbort,
   status,
   disabled,
+  tokenUsage,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [selectedModel, setSelectedModel] = useState<string>("");
@@ -395,6 +402,21 @@ export default function ChatInput({
               }}
             >
               Thinking...
+            </span>
+          )}
+
+          {typeof tokenUsage === "number" && tokenUsage > 0 && (
+            <span
+              title={`${tokenUsage.toLocaleString()} tokens used in this conversation`}
+              style={{
+                marginLeft: "auto",
+                fontSize: 10,
+                fontFamily: "var(--font-mono, monospace)",
+                color: "var(--text-dim, #6b7280)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {formatTokens(tokenUsage)}
             </span>
           )}
         </div>

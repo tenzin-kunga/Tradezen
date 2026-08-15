@@ -119,6 +119,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
 
   const abortRef = useRef<AbortController | null>(null);
   const sendingRef = useRef(false);
+  const threadIdRef = useRef<string | null>(null);
   const initialContextRef = useRef(options?.initialContext);
   initialContextRef.current = options?.initialContext;
   const lastContextRequestRef = useRef<Record<string, any> | null>(null);
@@ -167,11 +168,15 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       const t = threads.find((thr) => thr.id === id);
       if (!t) return;
 
+      abortRef.current?.abort();
+      threadIdRef.current = id;
       setThread(t);
+      setMessages([]);
       saveLastThread(id);
 
       try {
         const msgs = await getThreadMessages(id);
+        if (threadIdRef.current !== id) return;
         let mapped: ChatMessage[] = msgs.map((m) => {
           const meta = m.metadata as
             | {
@@ -202,6 +207,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         }
         setMessages(mapped);
       } catch (e) {
+        if (threadIdRef.current !== id) return;
         console.error("Failed to load messages:", e);
         const cached = loadCachedMessages(id);
         setMessages(cached ?? []);
@@ -221,6 +227,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       pinned: false,
       updatedAt: new Date().toISOString(),
     };
+    clearCachedMessages(id);
+    threadIdRef.current = id;
     setThreads((prev) => [newThread, ...prev]);
     setThread(newThread);
     setMessages([]);
@@ -233,6 +241,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       await apiDeleteThread(id);
       setThreads((prev) => prev.filter((t) => t.id !== id));
       if (thread?.id === id) {
+        threadIdRef.current = null;
         setThread(null);
         setMessages([]);
         saveLastThread(null);
@@ -417,6 +426,25 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
               const last = updated[updated.length - 1];
               if (last?.role === "assistant") {
                 updated[updated.length - 1] = { ...last, content: markdown };
+              }
+              return updated;
+            });
+          },
+          onUsage: (usage) => {
+            setMessages((prev) => {
+              const updated = [...prev];
+              const last = updated[updated.length - 1];
+              if (last?.role === "assistant") {
+                updated[updated.length - 1] = {
+                  ...last,
+                  metadata: {
+                    ...(last.metadata ?? {}),
+                    tokenUsage: {
+                      prompt: usage.promptTokens,
+                      completion: usage.completionTokens,
+                    },
+                  },
+                };
               }
               return updated;
             });

@@ -300,6 +300,25 @@ export const embeddings = pgTable(
   }),
 );
 
+export const ingestionOutbox = pgTable(
+  "ingestion_outbox",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    status: text("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    statusIdx: index("idx_ingestion_outbox_status").on(
+      table.status,
+      table.createdAt,
+    ),
+  }),
+);
+
 export const chatThreads = pgTable(
   "chat_threads",
   {

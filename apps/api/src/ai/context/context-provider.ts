@@ -5,6 +5,7 @@ export interface ContextRequest {
   researchIds?: string[];
   portfolio?: boolean;
   limit?: number;
+  intent?: string;
 }
 
 // --- Scoring ---

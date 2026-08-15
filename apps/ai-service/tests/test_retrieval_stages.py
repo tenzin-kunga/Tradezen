@@ -1,10 +1,9 @@
 import pytest
 from app.retrieval.stages.rrf import RRFFusionStage, RRFConfig
-from app.retrieval.stages.metadata import MetadataFilterStage, MetadataFilter
 from app.retrieval.stages.keyword import KeywordSearchStage
 from app.retrieval.stages.vector import VectorSearchStage
 from app.retrieval.pipeline import RetrievalPipeline, RetrievalOptions, RetrievalResult
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 
 # ── RRF ──────────────────────────────────────────────────────
@@ -55,62 +54,6 @@ class TestRRFStage:
         ]
         result = rrf.fuse(vector, [])
         assert result[0]["document_id"] == "first"
-
-
-# ── Metadata ─────────────────────────────────────────────────
-class TestMetadataStage:
-    def test_eq_filter(self):
-        stage = MetadataFilterStage()
-        docs = [
-            {"document_id": "1", "metadata": {"symbol": "EURUSD"}},
-            {"document_id": "2", "metadata": {"symbol": "GBPUSD"}},
-        ]
-        result = stage.filter(docs, [MetadataFilter(key="symbol", operator="eq", value="EURUSD")])
-        assert len(result) == 1
-        assert result[0]["document_id"] == "1"
-
-    def test_gt_filter(self):
-        stage = MetadataFilterStage()
-        docs = [
-            {"document_id": "1", "metadata": {"pnl": 100}},
-            {"document_id": "2", "metadata": {"pnl": -50}},
-        ]
-        result = stage.filter(docs, [MetadataFilter(key="pnl", operator="gt", value=0)])
-        assert len(result) == 1
-
-    def test_contains_filter(self):
-        stage = MetadataFilterStage()
-        docs = [
-            {"document_id": "1", "metadata": {"notes": "liquidity sweep setup"}},
-            {"document_id": "2", "metadata": {"notes": "regular trade"}},
-        ]
-        result = stage.filter(docs, [MetadataFilter(key="notes", operator="contains", value="liquidity")])
-        assert len(result) == 1
-
-    def test_in_filter(self):
-        stage = MetadataFilterStage()
-        docs = [
-            {"document_id": "1", "metadata": {"symbol": "EURUSD"}},
-            {"document_id": "2", "metadata": {"symbol": "GBPUSD"}},
-            {"document_id": "3", "metadata": {"symbol": "USDJPY"}},
-        ]
-        result = stage.filter(docs, [MetadataFilter(key="symbol", operator="in", value=["EURUSD", "GBPUSD"])])
-        assert len(result) == 2
-
-    def test_no_filters(self):
-        stage = MetadataFilterStage()
-        docs = [{"document_id": "1", "metadata": {}}]
-        assert stage.filter(docs, None) == docs
-        assert stage.filter(docs, []) == docs
-
-    def test_top_level_field(self):
-        stage = MetadataFilterStage()
-        docs = [
-            {"document_id": "1", "source_type": "trade", "metadata": {}},
-            {"document_id": "2", "source_type": "journal", "metadata": {}},
-        ]
-        result = stage.filter(docs, [MetadataFilter(key="source_type", operator="eq", value="trade")])
-        assert len(result) == 1
 
 
 # ── KeywordSearch ────────────────────────────────────────────

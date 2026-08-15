@@ -84,13 +84,15 @@ export type StreamHandlers = {
   onDone: () => void;
   onToolStatus?: (event: ToolStatusEvent) => void;
   onResponseReformatted?: (markdown: string) => void;
+  onUsage?: (usage: { promptTokens: number; completionTokens: number }) => void;
 };
-
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   private readonly defaultModel = process.env.AI_MODEL ?? 'qwen3:latest';
   private readonly historyPolicy = new ConversationHistoryPolicy();
+  private readonly contextOwnedEnabled =
+    (process.env.RETRIEVAL_CLIENT_ENABLED ?? 'false').toLowerCase() === 'true';
   private customProviders: Array<{
     id: string;
     name: string;
@@ -406,7 +408,7 @@ export class ChatService {
 
       const ctx = await this.contextBuilder.buildContext(
         userId,
-        dto.contextRequest ?? {},
+        { ...dto.contextRequest, intent: dto.intent },
         lastUserMsg,
       );
       const { systemPrompt: assembled } = buildSystemPrompt(ctx, systemPrompt);
@@ -507,6 +509,7 @@ export class ChatService {
               // Persist + format after run() returns so the reformatted event
               // is emitted before onDone (see finalizeAssistant).
             },
+            onUsage: (usage) => handlers.onUsage?.(usage),
           },
         );
         await this.finalizeAssistant(threadId, agentBuffer, handlers);
@@ -521,11 +524,20 @@ export class ChatService {
     let assistantBuffer = '';
     try {
       const providerContext = await this.getProviderContext(userId);
+      let usage: { promptTokens: number; completionTokens: number } | null =
+        null;
       const stream = this.aiClient.stream(currentMessages, {
         model: dto.model?.trim() || this.defaultModel,
         temperature: dto.temperature ?? 0.4,
         signal,
         providerContext,
+        contextOwned: this.contextOwnedEnabled && !!dto.contextRequest,
+        onUsage: (u) => {
+          usage = {
+            promptTokens: u.prompt_tokens,
+            completionTokens: u.completion_tokens,
+          };
+        },
       });
 
       for await (const token of stream) {
@@ -533,6 +545,7 @@ export class ChatService {
         assistantBuffer += token;
         handlers.onToken(token);
       }
+      if (usage) handlers.onUsage?.(usage);
       await this.finalizeAssistant(dto.threadId, assistantBuffer, handlers);
       handlers.onDone();
     } catch (error) {

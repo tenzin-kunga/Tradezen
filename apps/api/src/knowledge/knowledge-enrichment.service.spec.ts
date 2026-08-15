@@ -1,10 +1,31 @@
 ﻿import { Test, TestingModule } from '@nestjs/testing';
 import { KnowledgeEnrichmentService } from './knowledge-enrichment.service';
-import { DocumentEmbedder } from './indexing/embedder';
 import { AIClient } from '../ai/ai-client';
+import { FormatterRegistry } from '../ai/context/semantic/formatters/registry';
+import { KnowledgeDocumentFormatter } from '../ai/context/semantic/formatters/knowledge-document.formatter';
 
 jest.mock('../db/drizzle', () => ({
   db: {
+    select: jest.fn(() => ({
+      from: jest.fn(() => ({
+        where: jest.fn(() => ({
+          limit: jest.fn(() =>
+            Promise.resolve([
+              {
+                id: 'doc1',
+                title: 'Doc',
+                content: 'body',
+                docType: 'note',
+                status: 'draft',
+                currentVersion: 1,
+                aiSummary: null,
+                frontmatter: {},
+              },
+            ]),
+          ),
+        })),
+      })),
+    })),
     update: jest.fn(() => ({
       set: jest.fn(() => ({
         where: jest.fn(() => Promise.resolve([])),
@@ -15,7 +36,7 @@ jest.mock('../db/drizzle', () => ({
 
 describe('KnowledgeEnrichmentService generateSummary', () => {
   let service: KnowledgeEnrichmentService;
-  const embedder = { embedDocument: jest.fn().mockResolvedValue(undefined) };
+  const pipeline = { enqueue: jest.fn().mockResolvedValue(undefined) };
   const aiClient = {
     complete: jest.fn().mockResolvedValue({ content: 'A summary.' }),
   };
@@ -26,8 +47,12 @@ describe('KnowledgeEnrichmentService generateSummary', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KnowledgeEnrichmentService,
-        { provide: DocumentEmbedder, useValue: embedder },
+        { provide: 'EmbeddingPipeline', useValue: pipeline },
         { provide: AIClient, useValue: aiClient },
+        {
+          provide: FormatterRegistry,
+          useValue: { get: jest.fn(() => new KnowledgeDocumentFormatter()) },
+        },
       ],
     }).compile();
     service = module.get<KnowledgeEnrichmentService>(

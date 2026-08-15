@@ -264,11 +264,7 @@ export class TradesService {
 
     // Embed trade for semantic retrieval (fire-and-forget)
     if (this.memoryService) {
-      const tradeContent =
-        `${trade.symbol} ${trade.direction} entry=${trade.entryPrice} exit=${trade.exitPrice} pnl=${trade.pnl} strategy=${trade.strategy ?? 'none'} notes=${trade.notes ?? ''}`.trim();
-      this.memoryService
-        .embedNewTrade(userId, trade.id, tradeContent)
-        .catch(() => {});
+      this.memoryService.embedNewTrade(userId, trade).catch(() => {});
     }
 
     return trade;

@@ -10,13 +10,11 @@ import ConversationCanvas from "./ConversationCanvas";
 import ChatInput from "./ChatInput";
 import WorkflowSuggestions from "./WorkflowSuggestions";
 import SlashCommandPalette from "./SlashCommandPalette";
-import AIContextPanel from "./AIContextPanel";
 import {
   buildReviewRequest,
   buildResearchRequest,
   buildExplainRequest,
 } from "@/lib/api/assistant";
-import { IconButton } from "@/components/primitives/IconButton";
 
 export default function AssistantWorkspace() {
   const router = useRouter();
@@ -26,7 +24,6 @@ export default function AssistantWorkspace() {
     messages,
     status,
     error,
-    lastContextRequest,
     selectThread,
     createThread,
     deleteThread,
@@ -38,9 +35,16 @@ export default function AssistantWorkspace() {
 
   const [slashOpen, setSlashOpen] = useState(false);
   const [slashFilter, setSlashFilter] = useState("");
-  const [workspaceOpen, setWorkspaceOpen] = useState(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const totalTokens = messages.reduce(
+    (sum, m) =>
+      sum +
+      (m.metadata?.tokenUsage?.prompt ?? 0) +
+      (m.metadata?.tokenUsage?.completion ?? 0),
+    0,
+  );
 
   // Keep the conversation scrolled to the bottom on new messages / streaming.
   useEffect(() => {
@@ -206,61 +210,13 @@ export default function AssistantWorkspace() {
           </div>
         )}
 
-        <ChatInput onSend={handleSend} onAbort={abort} status={status} />
+        <ChatInput
+          onSend={handleSend}
+          onAbort={abort}
+          status={status}
+          tokenUsage={totalTokens}
+        />
       </div>
-
-      {/* AI Context panel (collapsible) */}
-      {workspaceOpen && (
-        <div
-          style={{
-            width: 280,
-            borderLeft: "1px solid var(--border-soft, #23252d)",
-            flexShrink: 0,
-            display: "flex",
-            flexDirection: "column",
-            background: "var(--bg-sidebar, #0c0c0f)",
-          }}
-        >
-          <AIContextPanel contextRequest={lastContextRequest} />
-        </div>
-      )}
-
-      {/* Toggle workspace button */}
-      <IconButton
-        size={24}
-        title={workspaceOpen ? "Hide workspace" : "Show workspace"}
-        onClick={() => setWorkspaceOpen(!workspaceOpen)}
-        style={{
-          position: "absolute",
-          right: workspaceOpen ? 320 : 0,
-          top: 8,
-          background: "var(--bg-surface-hover, #1a1b23)",
-          border: "1px solid var(--border-soft, #23252d)",
-          zIndex: 10,
-          transition: "right 0.2s",
-        }}
-      >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          {workspaceOpen ? (
-            <>
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <line x1="12" y1="3" x2="12" y2="21" />
-            </>
-          ) : (
-            <>
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <line x1="9" y1="3" x2="9" y2="21" />
-            </>
-          )}
-        </svg>
-      </IconButton>
     </div>
   );
 }

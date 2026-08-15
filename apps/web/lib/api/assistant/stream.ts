@@ -37,6 +37,7 @@ export interface StreamChatParams {
   onToolStatus?: (event: ToolStatusEvent) => void;
   onActions?: (actions: WorkspaceAction[]) => void;
   onResponseReformatted?: (markdown: string) => void;
+  onUsage?: (usage: { promptTokens: number; completionTokens: number }) => void;
   onDone?: () => void;
 }
 
@@ -106,6 +107,7 @@ export async function streamChat(params: StreamChatParams): Promise<void> {
     onToolStatus,
     onActions,
     onResponseReformatted,
+    onUsage,
     onDone,
   } = params;
 
@@ -189,6 +191,12 @@ export async function streamChat(params: StreamChatParams): Promise<void> {
               onResponseReformatted?.(JSON.parse(data));
             } catch {
               // ignore malformed reformat event
+            }
+          } else if (eventType === "usage") {
+            try {
+              onUsage?.(JSON.parse(data));
+            } catch {
+              // ignore malformed usage event
             }
           } else if (eventType === "error") {
             throw new Error(data);

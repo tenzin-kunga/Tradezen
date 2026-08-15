@@ -10,6 +10,7 @@ import cron from 'node-cron';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { SnapshotService } from './analytics/snapshot.service';
+import { ReconciliationService } from './ai/reconciliation.service';
 import { runMigrations } from './db';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TimingInterceptor } from './common/interceptors/timing.interceptor';
@@ -150,6 +151,18 @@ async function bootstrap() {
     await snapshotService.createAllSnapshots();
     console.log('Nightly analytics snapshots completed');
   });
+
+  // ── Scheduled Corpus Reconciliation (correctness backstop, plan §18.11) ─────
+  // Non-destructive by default; set RECONCILE_PRUNE=true to authorize
+  // deleting orphaned/duplicate corpus rows. Env-gated: RECONCILE_ENABLED.
+  if (process.env.RECONCILE_ENABLED === 'true') {
+    const reconciliationService = app.get(ReconciliationService);
+    cron.schedule(process.env.RECONCILE_CRON ?? '0 3 * * *', async () => {
+      console.log('Running corpus reconciliation...');
+      await reconciliationService.run();
+      console.log('Corpus reconciliation completed');
+    });
+  }
 
   // ── Start Server ────────────────────────────────────────────────────────────
   const port = process.env.PORT ?? 3001;

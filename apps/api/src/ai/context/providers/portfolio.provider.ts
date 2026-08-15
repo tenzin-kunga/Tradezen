@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { db } from '../../../db/drizzle';
 import { sql } from 'drizzle-orm';
+import { rowsOf } from '../../corpus-baseline.service';
 import type {
   ContextProvider,
   ContextRequest,
@@ -91,12 +92,12 @@ export class PortfolioProvider implements ContextProvider {
       `),
     ]);
 
-    const s = (summaryRes as any).rows[0] ?? {};
+    const s = rowsOf(summaryRes)[0] ?? {};
     const total = Number(s.total ?? 0);
     const pnl = Number(s.pnl ?? 0);
     const wins = Number(s.wins ?? 0);
 
-    const symbolLines = ((symbolsRes as any).rows ?? []).map(
+    const symbolLines = rowsOf(symbolsRes).map(
       (r: any) =>
         `- ${r.symbol}: ${Number(r.pnl) >= 0 ? '+' : ''}${Number(r.pnl).toFixed(2)} (${r.trades} trades)`,
     );

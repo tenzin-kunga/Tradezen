@@ -47,9 +47,7 @@ export class JournalsService {
         .filter(Boolean)
         .join('\n');
       if (content) {
-        this.memoryService
-          .embedNewJournal(userId, journal.id, content)
-          .catch(() => {});
+        this.memoryService.embedNewJournal(userId, journal).catch(() => {});
       }
     }
 

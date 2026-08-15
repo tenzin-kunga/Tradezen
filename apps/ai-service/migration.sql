@@ -55,18 +55,3 @@ CREATE TABLE IF NOT EXISTS "ai_memories" (
 
 CREATE INDEX IF NOT EXISTS "idx_ai_memories_user" ON "ai_memories"("user_id");
 CREATE INDEX IF NOT EXISTS "idx_ai_memories_type" ON "ai_memories"("user_id", "memory_type");
-
--- ai_embedding_jobs: tracking embedding work
-CREATE TABLE IF NOT EXISTS "ai_embedding_jobs" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "document_id" UUID NOT NULL REFERENCES "ai_documents"("id") ON DELETE CASCADE,
-  "status" VARCHAR(20) NOT NULL DEFAULT 'pending',
-  "embedding_model" VARCHAR(100),
-  "error_message" TEXT,
-  "started_at" TIMESTAMPTZ,
-  "completed_at" TIMESTAMPTZ,
-  "created_at" TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS "idx_ai_embedding_jobs_status" ON "ai_embedding_jobs"("status");
-CREATE INDEX IF NOT EXISTS "idx_ai_embedding_jobs_doc" ON "ai_embedding_jobs"("document_id");

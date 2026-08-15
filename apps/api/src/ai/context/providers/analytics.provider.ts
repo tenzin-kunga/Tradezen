@@ -76,7 +76,7 @@ export class AnalyticsProvider implements ContextProvider {
   }
 
   async build(userId: string, _req: ContextRequest): Promise<ContextBlock> {
-    const [summary] = (await db.execute(sql`
+    const [summary] = await db.execute(sql`
       SELECT
         COUNT(*)::int AS total,
         COUNT(*) FILTER (WHERE pnl > 0)::int AS wins,
@@ -87,9 +87,9 @@ export class AnalyticsProvider implements ContextProvider {
         COUNT(*) FILTER (WHERE vengeance_trade)::int AS revenge,
         COUNT(*) FILTER (WHERE trend_alignment)::int AS aligned
       FROM trades WHERE user_id = ${userId}
-    `)) as any;
+    `);
 
-    const s = summary?.rows?.[0] ?? {};
+    const s = summary ?? {};
     const total = Number(s.total ?? 0);
     const wins = Number(s.wins ?? 0);
     const grossProfit = Number(s.gross_profit ?? 0);

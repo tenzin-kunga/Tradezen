@@ -203,6 +203,46 @@ describe('RetrievalPipeline', () => {
     });
   });
 
+  describe('execute with plan', () => {
+    it('executes exactly the planned providers, each once', async () => {
+      const p1 = makeProvider('a');
+      const p2 = makeProvider('b');
+      const p3 = makeProvider('c');
+      const build1 = jest.spyOn(p1, 'build');
+      const build2 = jest.spyOn(p2, 'build');
+      const build3 = jest.spyOn(p3, 'build');
+      const pipeline = new RetrievalPipeline([p1, p2, p3]);
+      const plan = {
+        providers: ['a', 'c'],
+        selectedBy: 'intent' as const,
+        reasons: {},
+      };
+      const { blocks } = await pipeline.execute('user1', {}, undefined, plan);
+      expect(blocks.map((b) => b.source)).toEqual(
+        expect.arrayContaining(['a', 'c']),
+      );
+      expect(blocks).toHaveLength(2);
+      expect(build1).toHaveBeenCalledTimes(1);
+      expect(build2).not.toHaveBeenCalled();
+      expect(build3).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores planned providers that are not registered', async () => {
+      const p1 = makeProvider('a');
+      const build1 = jest.spyOn(p1, 'build');
+      const pipeline = new RetrievalPipeline([p1]);
+      const plan = {
+        providers: ['a', 'ghost'],
+        selectedBy: 'intent' as const,
+        reasons: {},
+      };
+      const { blocks } = await pipeline.execute('user1', {}, undefined, plan);
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0].source).toBe('a');
+      expect(build1).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('buildTrace (via execute)', () => {
     it('includes budget allocated and used', async () => {
       const p = makeProvider('a', {

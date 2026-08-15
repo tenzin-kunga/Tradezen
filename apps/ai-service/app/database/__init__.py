@@ -1,7 +1,6 @@
 from .connection import Database
 from .types import (
     DocumentRow,
-    EmbeddingJobRow,
     EmbeddingRow,
     JournalRow,
     MemoryRow,
@@ -14,7 +13,6 @@ from .types import (
 __all__ = [
     "Database",
     "DocumentRow",
-    "EmbeddingJobRow",
     "EmbeddingRow",
     "JournalRow",
     "MemoryRow",

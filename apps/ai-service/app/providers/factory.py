@@ -29,7 +29,14 @@ class ProviderFactory:
                 timeout=self._config.cloud_timeout,
             )
         else:
-            raise ValueError(f"Unknown provider: {provider_name}")
+            # Unknown provider (e.g. a user-saved custom provider name routed
+            # from X-AI-Provider) — use the generic OpenAI-compatible client.
+            # Per-request api_key/base_url headers override the defaults at call time.
+            provider = CloudProvider(
+                api_key=self._config.cloud_api_key,
+                base_url=self._config.cloud_base_url,
+                timeout=self._config.cloud_timeout,
+            )
 
         self._providers[provider_name] = provider
         return provider

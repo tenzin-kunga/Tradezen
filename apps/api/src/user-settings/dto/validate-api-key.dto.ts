@@ -14,6 +14,7 @@ const PROVIDERS = [
   'fireworks',
   'deepseek',
   'xai',
+  'custom',
 ] as const;
 
 export class ValidateApiKeyDto {

@@ -211,6 +211,7 @@ export class ChatController {
         onDone: () => writeEvent('done', '[DONE]'),
         onResponseReformatted: (markdown) =>
           writeEvent('response_reformatted', JSON.stringify(markdown)),
+        onUsage: (usage) => writeEvent('usage', JSON.stringify(usage)),
       });
       if (!res.writableEnded) res.end();
     } catch (error) {

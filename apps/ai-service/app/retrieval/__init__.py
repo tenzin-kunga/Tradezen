@@ -1,6 +1,5 @@
 from .pipeline import RetrievalPipeline, RetrievalResult, RetrievalOptions, RetrievedDocument
 from .policies import RetrievalPolicy
-from .explain import SearchExplainer
 
 __all__ = [
     "RetrievalPipeline",
@@ -8,5 +7,4 @@ __all__ = [
     "RetrievalOptions",
     "RetrievedDocument",
     "RetrievalPolicy",
-    "SearchExplainer",
 ]

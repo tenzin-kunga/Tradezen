@@ -15,6 +15,7 @@ export interface AgentHandlers {
   onToken: (token: string) => void;
   onToolStatus: (event: ToolStatusEvent) => void;
   onDone: () => void;
+  onUsage?: (usage: { promptTokens: number; completionTokens: number }) => void;
 }
 
 export interface ToolStatusEvent {
@@ -60,6 +61,8 @@ export class AgentRuntime {
     }
 
     const tools = options.tools ?? [];
+    let promptTokens = 0;
+    let completionTokens = 0;
 
     for (
       state.iteration = 1;
@@ -75,6 +78,9 @@ export class AgentRuntime {
         signal: options.signal,
         providerContext: options.providerContext,
       });
+
+      promptTokens += response.usage.prompt_tokens;
+      completionTokens += response.usage.completion_tokens;
 
       if (response.tool_calls && response.tool_calls.length > 0) {
         state.add({
@@ -132,10 +138,12 @@ export class AgentRuntime {
           handlers.onToken(token);
         }
       }
+      handlers.onUsage?.({ promptTokens, completionTokens });
       handlers.onDone();
       return;
     }
 
+    handlers.onUsage?.({ promptTokens, completionTokens });
     handlers.onToken(
       '\n\n_[Stopped: reached maximum reasoning steps. The answer may be incomplete.]_',
     );

@@ -1,12 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import { db } from '../../db/drizzle';
-import {
-  embeddings,
-  knowledgeDocumentLinks,
-  knowledgeDocuments,
-} from '@tradezen/db';
-import { eq, sql } from 'drizzle-orm';
+import { knowledgeDocumentLinks, knowledgeDocuments } from '@tradezen/db';
+import { eq } from 'drizzle-orm';
 import { EmbeddingService } from '../../ai/embedding.service';
+import type { EmbeddingRepository } from '../../ai/context/semantic/embedding-repository';
 
 // ─── Retrieval Profiles ──────────────────────
 
@@ -108,7 +106,11 @@ export interface DocumentContext {
 export class KnowledgeRetrievalService {
   private readonly logger = new Logger(KnowledgeRetrievalService.name);
 
-  constructor(private readonly embeddingService: EmbeddingService) {}
+  constructor(
+    private readonly embeddingService: EmbeddingService,
+    @Inject('EmbeddingRepository')
+    private readonly repository: EmbeddingRepository,
+  ) {}
 
   async semanticSearch(
     userId: string,
@@ -122,36 +124,28 @@ export class KnowledgeRetrievalService {
         userId,
         query,
       );
+      const records = await this.repository.search(
+        userId,
+        queryVector,
+        profile.maxResults,
+        profile.similarityThreshold,
+      );
 
-      const results = await db
-        .select({
-          sourceType: embeddings.sourceType,
-          sourceId: embeddings.sourceId,
-          content: embeddings.content,
-          similarity: sql<number>`1 - (${embeddings.embedding} <=> ${queryVector}::vector)`,
-        })
-        .from(embeddings)
-        .where(eq(embeddings.userId, userId))
-        .orderBy(sql`${embeddings.embedding} <=> ${queryVector}::vector`)
-        .limit(profile.maxResults);
-
-      return results
-        .filter((r) => r.similarity >= profile.similarityThreshold)
-        .map((r) => ({
-          id: r.sourceId,
-          type: r.sourceType,
-          title: r.content.slice(0, 100),
-          score: r.similarity,
-          evidence: [
-            {
-              source: 'semantic',
-              score: r.similarity,
-              reason: `Matched: "${r.content.slice(0, 50)}..."`,
-              matchedChunks: [r.content],
-              highlights: [],
-            },
-          ],
-        }));
+      return records.map((r) => ({
+        id: r.sourceId,
+        type: r.sourceType,
+        title: r.content.slice(0, 100),
+        score: r.similarity,
+        evidence: [
+          {
+            source: 'semantic',
+            score: r.similarity,
+            reason: `Matched: "${r.content.slice(0, 50)}..."`,
+            matchedChunks: [r.content],
+            highlights: [],
+          },
+        ],
+      }));
     } catch (e) {
       this.logger.error(`Semantic search failed: ${e}`);
       return [];

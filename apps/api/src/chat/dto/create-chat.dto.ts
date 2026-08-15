@@ -55,6 +55,15 @@ export class ContextRequestDto {
   @IsNumber()
   @Min(1)
   limit?: number;
+
+  @ApiPropertyOptional({
+    description: 'Agent intent that scopes planner provider selection',
+    example: 'review',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  intent?: string;
 }
 
 export class CreateChatDto {

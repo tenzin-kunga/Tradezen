@@ -1,5 +1,6 @@
 import { db } from '../../db/drizzle';
 import { sql } from 'drizzle-orm';
+import { rowsOf } from '../corpus-baseline.service';
 
 export interface DirectionalExpectancy {
   long: number;
@@ -24,7 +25,7 @@ export async function computeDirectionalExpectancy(
     GROUP BY direction
   `);
 
-  const rows = (res as any).rows as {
+  const rows = rowsOf(res) as {
     direction: string;
     trades: number;
     avg_pnl: number;

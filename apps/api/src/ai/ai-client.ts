@@ -176,6 +176,11 @@ export class AIClient {
       signal?: AbortSignal;
       timeoutMs?: number;
       providerContext?: ProviderContext;
+      contextOwned?: boolean;
+      onUsage?: (usage: {
+        prompt_tokens: number;
+        completion_tokens: number;
+      }) => void;
     },
   ): AsyncGenerator<string> {
     const timeoutMs = options?.timeoutMs ?? this.defaultTimeoutMs;
@@ -219,6 +224,9 @@ export class AIClient {
             ...(options?.providerContext?.baseUrl && {
               'X-AI-Provider-Base-URL': options.providerContext.baseUrl,
             }),
+            ...(options?.contextOwned && {
+              'x-context-owned-by-nestjs': 'true',
+            }),
           },
           signal: controller.signal,
           body: JSON.stringify({
@@ -240,7 +248,7 @@ export class AIClient {
           throw new AIServiceResponseError(200, 'No response body');
         }
 
-        yield* this.consumeSSE(resp.body, options?.signal);
+        yield* this.consumeSSE(resp.body, options?.signal, options?.onUsage);
         this.onSuccess();
         return; // Success — exit retry loop
       } catch (error) {
@@ -367,6 +375,10 @@ export class AIClient {
   private async *consumeSSE(
     body: ReadableStream<Uint8Array>,
     signal?: AbortSignal,
+    onUsage?: (usage: {
+      prompt_tokens: number;
+      completion_tokens: number;
+    }) => void,
   ): AsyncGenerator<string> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
@@ -392,6 +404,14 @@ export class AIClient {
 
           try {
             const parsed = JSON.parse(payload);
+            const usage = parsed?.usage;
+            if (usage && typeof usage.prompt_tokens === 'number') {
+              onUsage?.({
+                prompt_tokens: usage.prompt_tokens,
+                completion_tokens: usage.completion_tokens ?? 0,
+              });
+              continue;
+            }
             const token = parsed?.choices?.[0]?.delta?.content;
             if (typeof token === 'string' && token.length > 0) {
               yield token;

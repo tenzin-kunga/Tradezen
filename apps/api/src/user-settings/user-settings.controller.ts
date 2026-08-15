@@ -97,22 +97,39 @@ export class UserSettingsController {
   }
 
   private async validateProviderKey(dto: ValidateApiKeyDto) {
-    const endpoint = VALIDATION_ENDPOINTS[dto.provider];
-    if (!endpoint) {
-      throw new HttpException(
-        `Unsupported provider: ${dto.provider}`,
-        HttpStatus.BAD_REQUEST,
-      );
+    let endpoint: string;
+    if (dto.provider === 'custom') {
+      if (!dto.baseUrl) {
+        throw new HttpException(
+          'baseUrl is required for custom providers',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      endpoint = `${dto.baseUrl}/models`;
+    } else {
+      endpoint = VALIDATION_ENDPOINTS[dto.provider];
+      if (!endpoint) {
+        throw new HttpException(
+          `Unsupported provider: ${dto.provider}`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
     }
 
-    try {
-      const headers: Record<string, string> = {};
-      if (API_KEY_HEADER_PROVIDERS.has(dto.provider)) {
-        headers['x-api-key'] = dto.apiKey;
-      } else {
-        headers['Authorization'] = `Bearer ${dto.apiKey}`;
-      }
+    const headers: Record<string, string> = {};
+    if (API_KEY_HEADER_PROVIDERS.has(dto.provider)) {
+      headers['x-api-key'] = dto.apiKey;
+    } else {
+      headers['Authorization'] = `Bearer ${dto.apiKey}`;
+    }
+    return this.checkProviderEndpoint(endpoint, headers);
+  }
 
+  private async checkProviderEndpoint(
+    endpoint: string,
+    headers: Record<string, string>,
+  ) {
+    try {
       const res = await fetch(endpoint, {
         headers,
         signal: AbortSignal.timeout(10000),

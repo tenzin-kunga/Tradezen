@@ -44,3 +44,22 @@ describe('ChatService models cache TTL', () => {
     expect((makeService() as any).modelsCacheTtlMs).toBe(300000);
   });
 });
+
+describe('ChatService context-owned cutover (Slice 7)', () => {
+  const original = process.env.RETRIEVAL_CLIENT_ENABLED;
+
+  afterEach(() => {
+    if (original === undefined) delete process.env.RETRIEVAL_CLIENT_ENABLED;
+    else process.env.RETRIEVAL_CLIENT_ENABLED = original;
+  });
+
+  it('disables the cutover marker by default', () => {
+    delete process.env.RETRIEVAL_CLIENT_ENABLED;
+    expect((makeService() as any).contextOwnedEnabled).toBe(false);
+  });
+
+  it('enables the cutover marker when flag is on', () => {
+    process.env.RETRIEVAL_CLIENT_ENABLED = 'true';
+    expect((makeService() as any).contextOwnedEnabled).toBe(true);
+  });
+});

@@ -106,14 +106,24 @@ export class ResearchService {
     try {
       const result = await extractor.extract(buffer);
       if (result.text) {
-        await this.pipeline.enqueue({
-          id: stored.id,
-          userId,
-          sourceType: SemanticSourceType.RESEARCH_DOCUMENT,
-          title: stored.fileName ?? 'Untitled',
-          content: result.text,
-          metadata: { category, projectId, wordCount: result.wordCount },
-        });
+        const formatter = this.formatterRegistry.get(
+          SemanticSourceType.RESEARCH_DOCUMENT,
+        );
+        if (formatter) {
+          await this.pipeline.enqueue(
+            formatter.format(
+              {
+                id: stored.id,
+                fileName: stored.fileName,
+                text: result.text,
+                wordCount: result.wordCount,
+                category,
+                projectId,
+              },
+              userId,
+            ),
+          );
+        }
       }
     } catch (e) {
       this.logger.error(`Failed to embed asset ${stored.id}: ${e}`);

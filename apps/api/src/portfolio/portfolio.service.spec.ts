@@ -65,7 +65,7 @@ describe('PortfolioService', () => {
     (db.execute as jest.Mock).mockImplementation(() => {
       const rows = sequence[call] ?? [];
       call += 1;
-      return Promise.resolve({ rows });
+      return Promise.resolve(rows);
     });
   });
 
@@ -87,7 +87,7 @@ describe('PortfolioService', () => {
   });
 
   it('returns zeros for a user with no trades', async () => {
-    (db.execute as jest.Mock).mockResolvedValue({ rows: [] });
+    (db.execute as jest.Mock).mockResolvedValue([]);
     const p = await service.getPortfolio('u2');
     expect(p.summary.totalTrades).toBe(0);
     expect(p.summary.realizedPnl).toBe(0);

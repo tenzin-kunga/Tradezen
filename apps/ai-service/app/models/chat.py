@@ -25,6 +25,7 @@ class ChatRequest(BaseModel):
     temperature: float | None = None
     stream: bool = True
     retrieval_options: RetrievalOptions | None = None
+    context_owned: bool = False
 
 
 class TokenUsage(BaseModel):

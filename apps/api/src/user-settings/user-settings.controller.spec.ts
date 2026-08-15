@@ -44,6 +44,33 @@ describe('UserSettingsController API key validation', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  it('validateApiKey validates a custom provider against its baseUrl', async () => {
+    (global as any).fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ data: [{ id: 'a' }] }),
+    });
+
+    const result = await controller.validateApiKey('u1', {
+      provider: 'custom',
+      apiKey: 'k',
+      baseUrl: 'https://integrate.api.nvidia.com/v1',
+    });
+
+    expect(result).toEqual({ valid: true, modelCount: 1 });
+    const [url, init] = (global as any).fetch.mock.calls[0];
+    expect(url).toBe('https://integrate.api.nvidia.com/v1/models');
+    expect(init.headers).toEqual({ Authorization: 'Bearer k' });
+  });
+
+  it('validateApiKey requires baseUrl for custom providers', async () => {
+    await expect(
+      controller.validateApiKey('u1', dto('custom', 'k')),
+    ).rejects.toThrow(
+      new HttpException('baseUrl is required for custom providers', 400),
+    );
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it('validateApiKey uses x-api-key header for anthropic', async () => {
     (global as any).fetch.mockResolvedValue({
       ok: true,

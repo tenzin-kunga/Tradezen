@@ -1,11 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import { db } from '../db/drizzle';
 import { coachingSessions } from '@tradezen/db';
 import { eq, desc } from 'drizzle-orm';
 import { CoachingWorkflow } from './workflows/coaching.workflow';
 import { TradesService } from '../trades/trades.service';
 import { BehavioralService } from '../analytics/behavioral.service';
-import { EmbeddingService } from './embedding.service';
+import type { EmbeddingPipeline } from './context/semantic/embedding-pipeline';
+import { SemanticSourceType } from './context/semantic/types';
+import { FormatterRegistry } from './context/semantic/formatters/registry';
 
 @Injectable()
 export class CoachingEngineService {
@@ -15,7 +18,8 @@ export class CoachingEngineService {
     private readonly workflow: CoachingWorkflow,
     private readonly tradesService: TradesService,
     private readonly behavioralService: BehavioralService,
-    private readonly embeddingService: EmbeddingService,
+    @Inject('EmbeddingPipeline') private readonly pipeline: EmbeddingPipeline,
+    private readonly formatterRegistry: FormatterRegistry,
   ) {}
 
   async evaluateAndCoach(userId: string): Promise<{
@@ -41,21 +45,40 @@ export class CoachingEngineService {
 
     const result = await this.workflow.run(combinedAnalytics, scores);
 
-    await db.insert(coachingSessions).values({
-      userId,
-      severity: result.severity,
-      triggers: result.triggers,
-      message: result.coachingMessage,
-      analyticsSnapshot: combinedAnalytics,
-    });
+    const [session] = await db
+      .insert(coachingSessions)
+      .values({
+        userId,
+        severity: result.severity,
+        triggers: result.triggers,
+        message: result.coachingMessage,
+        analyticsSnapshot: combinedAnalytics,
+      })
+      .returning({ id: coachingSessions.id });
 
     if (result.severity === 'critical') {
-      await this.embeddingService.embedAndStore(
-        userId,
-        'coaching',
-        `coaching_${Date.now()}`,
-        result.coachingMessage,
-      );
+      try {
+        const formatter = this.formatterRegistry.get(
+          SemanticSourceType.COACHING,
+        );
+        if (formatter) {
+          await this.pipeline.enqueue(
+            formatter.format(
+              {
+                id: session.id,
+                severity: result.severity,
+                triggers: result.triggers,
+                message: result.coachingMessage,
+              },
+              userId,
+            ),
+          );
+        }
+      } catch (error) {
+        this.logger.error(
+          `Failed to embed coaching session ${session.id}: ${(error as Error).message}`,
+        );
+      }
     }
 
     this.logger.log(

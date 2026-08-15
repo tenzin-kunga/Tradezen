@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { EmbeddingPipeline } from './context/semantic/embedding-pipeline';
 import { SemanticSourceType } from './context/semantic/types';
+import { FormatterRegistry } from './context/semantic/formatters/registry';
 
 export interface MemoryContext {
   journals: string[];
@@ -14,45 +15,69 @@ export class MemoryService {
 
   constructor(
     @Inject('EmbeddingPipeline') private readonly pipeline: EmbeddingPipeline,
+    private readonly formatterRegistry: FormatterRegistry,
   ) {}
 
-  async embedNewJournal(
+  private async embedEntity(
+    sourceType: SemanticSourceType,
+    entity: object,
     userId: string,
-    journalId: string,
-    content: string,
+    label: string,
   ): Promise<void> {
+    const formatter = this.formatterRegistry.get(sourceType);
+    if (!formatter) return;
     try {
-      await this.pipeline.enqueue({
-        id: journalId,
-        userId,
-        sourceType: SemanticSourceType.JOURNAL,
-        content,
-        metadata: {},
-      });
+      await this.pipeline.enqueue(formatter.format(entity, userId));
     } catch (error) {
       this.logger.error(
-        `Failed to embed journal ${journalId}: ${(error as Error).message}`,
+        `Failed to embed ${label} ${(entity as { id?: string }).id}: ${(error as Error).message}`,
       );
     }
   }
 
+  async embedNewJournal(
+    userId: string,
+    journal: {
+      id: string;
+      date: string;
+      preMarketNotes: string | null;
+      postMarketNotes: string | null;
+      mood: string | null;
+      marketConditions: string | null;
+      lessons: string | null;
+      createdAt: Date | null;
+      updatedAt: Date | null;
+    },
+  ): Promise<void> {
+    await this.embedEntity(
+      SemanticSourceType.JOURNAL,
+      journal,
+      userId,
+      'journal',
+    );
+  }
+
   async embedNewTrade(
     userId: string,
-    tradeId: string,
-    content: string,
+    trade: {
+      id: string;
+      symbol: string;
+      direction: string;
+      entryPrice: string;
+      exitPrice: string;
+      pnl: string;
+      strategy: string | null;
+      notes: string | null;
+      lotSize: string | null;
+      stopLoss: string | null;
+      takeProfit: string | null;
+      commission: string | null;
+      contractSize: string | null;
+      tradeDate: Date | null;
+      createdAt: Date | null;
+      updatedAt: Date | null;
+    },
   ): Promise<void> {
-    try {
-      await this.pipeline.enqueue({
-        id: tradeId,
-        userId,
-        sourceType: SemanticSourceType.TRADE,
-        content,
-        metadata: {},
-      });
-    } catch (error) {
-      this.logger.error(
-        `Failed to embed trade ${tradeId}: ${(error as Error).message}`,
-      );
-    }
+    await this.embedEntity(SemanticSourceType.TRADE, trade, userId, 'trade');
   }
 }

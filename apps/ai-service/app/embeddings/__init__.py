@@ -4,12 +4,10 @@ from .provider import (
     OpenAIEmbeddingProvider,
 )
 from .service import EmbeddingService
-from .jobs import EmbeddingJobManager
 
 __all__ = [
     "EmbeddingProvider",
     "EmbeddingService",
-    "EmbeddingJobManager",
     "OllamaEmbeddingProvider",
     "OpenAIEmbeddingProvider",
 ]

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { SemanticMetrics } from './metrics';
+import type { SemanticMetrics, ShadowComparison } from './metrics';
 
 @Injectable()
 export class SemanticMetricsService {
@@ -9,6 +9,7 @@ export class SemanticMetricsService {
   private similarityScores: number[] = [];
   private documentsIndexed = 0;
   private totalEmbeddings = 0;
+  private shadowComparisons: ShadowComparison[] = [];
 
   private readonly maxSamples = 100;
 
@@ -31,6 +32,13 @@ export class SemanticMetricsService {
     }
     while (this.similarityScores.length > this.maxSamples) {
       this.similarityScores.shift();
+    }
+  }
+
+  recordShadowComparison(comparison: ShadowComparison): void {
+    this.shadowComparisons.push(comparison);
+    if (this.shadowComparisons.length > this.maxSamples) {
+      this.shadowComparisons.shift();
     }
   }
 
@@ -61,6 +69,7 @@ export class SemanticMetricsService {
       similarityDistribution: [...this.similarityScores],
       documentsIndexed: this.documentsIndexed,
       totalEmbeddings: this.totalEmbeddings,
+      shadowComparisons: [...this.shadowComparisons],
     };
   }
 
@@ -71,5 +80,6 @@ export class SemanticMetricsService {
     this.similarityScores = [];
     this.documentsIndexed = 0;
     this.totalEmbeddings = 0;
+    this.shadowComparisons = [];
   }
 }

@@ -221,3 +221,80 @@ describe('ChatController provider auth', () => {
     expect(withToken.status).toBe(200);
   });
 });
+
+describe('ChatController stream usage event', () => {
+  let app: INestApplication;
+
+  class MockJwtStrategy {
+    name = 'jwt';
+    authenticate(req: any) {
+      const auth = req.headers?.authorization ?? '';
+      if (auth === 'Bearer valid-token') {
+        (this as any).success({ id: 'u1' });
+      } else {
+        (this as any).fail('Unauthorized', 401);
+      }
+    }
+  }
+
+  const streamChat = jest.fn(
+    async (
+      _userId: string,
+      _dto: any,
+      _signal: AbortSignal | undefined,
+      handlers: any,
+    ) => {
+      handlers.onToken('hello');
+      handlers.onUsage({ promptTokens: 10, completionTokens: 5 });
+      handlers.onDone();
+    },
+  );
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    passport.use('jwt', new MockJwtStrategy());
+
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      controllers: [ChatController],
+      providers: [
+        {
+          provide: ChatService,
+          useValue: {
+            streamChat,
+          },
+        },
+        { provide: ChatThreadService, useValue: {} },
+        { provide: JournalIntelligenceService, useValue: {} },
+        { provide: CoachingEngineService, useValue: {} },
+        { provide: NotificationService, useValue: {} },
+        { provide: ContextBuilderService, useValue: {} },
+        { provide: SemanticMetricsService, useValue: {} },
+        { provide: getQueueToken('ai-processing'), useValue: {} },
+        { provide: JobStatusService, useValue: {} },
+        { provide: APP_GUARD, useClass: JwtAuthGuard },
+      ],
+    }).compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it('POST /chat/stream emits a usage event after tokens', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/chat/stream')
+      .set('Authorization', 'Bearer valid-token')
+      .send({ messages: [{ role: 'user', content: 'hi' }], model: 'm' });
+
+    expect(res.status).toBe(201);
+    expect(res.text).toContain('event: token');
+    expect(res.text).toContain('event: usage');
+    expect(res.text).toContain(
+      'data: {"promptTokens":10,"completionTokens":5}',
+    );
+    expect(res.text).toContain('event: done');
+  });
+});

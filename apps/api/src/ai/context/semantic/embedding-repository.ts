@@ -2,14 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { db } from '../../../db/drizzle';
 import { embeddings } from '@tradezen/db';
 import { eq, and, sql } from 'drizzle-orm';
+import { rowsOf } from '../../corpus-baseline.service';
 import type { SemanticDocument, EmbeddingRecord } from './types';
 import type { Chunk } from './chunker';
+
+export interface ModelInfo {
+  model: string;
+  version: number;
+}
 
 export interface EmbeddingRepository {
   store(
     doc: SemanticDocument,
     chunks: Chunk[],
     vectors: number[][],
+    modelInfo: ModelInfo,
   ): Promise<void>;
   search(
     userId: string,
@@ -27,6 +34,7 @@ export class PostgresEmbeddingRepository implements EmbeddingRepository {
     doc: SemanticDocument,
     chunks: Chunk[],
     vectors: number[][],
+    modelInfo: ModelInfo,
   ): Promise<void> {
     // Remove old embeddings for this source
     await this.remove(doc.sourceType, doc.id);
@@ -39,8 +47,13 @@ export class PostgresEmbeddingRepository implements EmbeddingRepository {
         chunkIndex: chunks[i].index,
         content: chunks[i].content,
         embedding: vectors[i],
+        embeddingModel: modelInfo.model,
+        embeddingVersion: modelInfo.version,
         metadata: {
           ...doc.metadata,
+          ...(doc.provenance ? { provenance: doc.provenance } : {}),
+          ...(doc.createdAt ? { createdAt: doc.createdAt } : {}),
+          ...(doc.updatedAt ? { updatedAt: doc.updatedAt } : {}),
           title: doc.title,
           startOffset: chunks[i].startOffset,
           endOffset: chunks[i].endOffset,
@@ -73,7 +86,7 @@ export class PostgresEmbeddingRepository implements EmbeddingRepository {
       LIMIT ${limit}
     `);
 
-    return (results as any).rows.map((r: any) => ({
+    return rowsOf(results).map((r: any) => ({
       id: r.id,
       sourceType: r.sourceType,
       sourceId: r.sourceId,

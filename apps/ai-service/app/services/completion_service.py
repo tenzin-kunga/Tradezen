@@ -79,11 +79,13 @@ class CompletionService:
         for attempt in range(max_attempts):
             try:
                 full_response = []
-                async for token in provider.stream(dict_msgs, model=session.model, temperature=temp, api_key=api_key, base_url=base_url, provider_name=getattr(session, "provider_name", None)):
+                usage_out: dict = {}
+                async for token in provider.stream(dict_msgs, model=session.model, temperature=temp, api_key=api_key, base_url=base_url, provider_name=getattr(session, "provider_name", None), usage_out=usage_out):
                     full_response.append(token)
                     yield token
 
                 session._full_response = "".join(full_response)
+                session.usage = usage_out
 
                 # Record success
                 if self.circuit:

@@ -76,18 +76,6 @@ class MemoryRow:
 
 
 @dataclass
-class EmbeddingJobRow:
-    id: str
-    document_id: str
-    status: str = "pending"  # pending, running, completed, failed
-    embedding_model: str | None = None
-    error_message: str | None = None
-    started_at: datetime | None = None
-    completed_at: datetime | None = None
-    created_at: datetime | None = None
-
-
-@dataclass
 class TradeAnalytics:
     total_trades: int = 0
     win_rate: float = 0.0

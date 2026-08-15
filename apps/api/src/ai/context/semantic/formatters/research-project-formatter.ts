@@ -15,6 +15,8 @@ interface ResearchProjectEntity {
     risksReviewed: boolean;
     earningsReviewed: boolean;
   } | null;
+  createdAt?: Date | null;
+  updatedAt?: Date | null;
 }
 
 export class ResearchProjectFormatter implements SemanticFormatter<ResearchProjectEntity> {
@@ -55,6 +57,14 @@ export class ResearchProjectFormatter implements SemanticFormatter<ResearchProje
         conviction: entity.conviction,
         ticker: entity.ticker,
       },
+      provenance: {
+        source: 'research',
+        entity: 'research_project',
+        operation: 'create',
+        version: entity.notes?.version,
+      },
+      createdAt: entity.createdAt?.toISOString(),
+      updatedAt: entity.updatedAt?.toISOString(),
     };
   }
 }
