@@ -92,6 +92,9 @@ export class AIClient {
       toolChoice?: ToolChoice | 'auto' | 'none';
       signal?: AbortSignal;
       providerContext?: ProviderContext;
+      // Treat messages as already-final (formatter/agent passthrough) — the AI
+      // service must not re-run intent/agent/prompt pipelines on them.
+      contextOwned?: boolean;
     },
   ): Promise<ChatResponse> {
     const timeoutMs = options?.timeoutMs ?? this.defaultTimeoutMs;
@@ -122,6 +125,9 @@ export class AIClient {
             }),
             ...(options?.providerContext?.baseUrl && {
               'X-AI-Provider-Base-URL': options.providerContext.baseUrl,
+            }),
+            ...(options?.contextOwned && {
+              'x-context-owned-by-nestjs': 'true',
             }),
           },
           signal,

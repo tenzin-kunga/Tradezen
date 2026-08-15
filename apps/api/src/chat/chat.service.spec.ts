@@ -203,6 +203,28 @@ describe('ChatService response formatter (finalizeAssistant)', () => {
     });
   });
 
+  it('routes the formatter request as a context-owned passthrough', async () => {
+    process.env.AI_MODEL = 'default-model-x';
+    delete process.env.AI_FORMAT_MODEL;
+    const complete = jest.fn().mockResolvedValue({
+      content: FORMATTED,
+      model: 'default-model-x',
+      usage: { prompt_tokens: 0, completion_tokens: 0 },
+    });
+    const handlers = { onToken: jest.fn(), onDone: jest.fn() };
+    await runStreamChat(
+      makeClient(complete),
+      makePersistence(),
+      makeUserSettings(),
+      handlers,
+    );
+    expect(complete).toHaveBeenCalledTimes(1);
+    // contextOwned: true makes the AI service pass FORMATTER_PROMPT_V2 + the
+    // prose through verbatim instead of re-running intent/agent/prompt
+    // pipelines on the formatter request (regression: newline-collapsed output).
+    expect(complete.mock.calls[0][1].contextOwned).toBe(true);
+  });
+
   it('does not log provider credentials', async () => {
     process.env.AI_MODEL = 'default-model-x';
     const complete = jest.fn().mockResolvedValue({

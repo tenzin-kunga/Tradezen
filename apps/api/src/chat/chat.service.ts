@@ -605,8 +605,15 @@ export class ChatService {
             { role: 'system', content: FORMATTER_PROMPT_V2 },
             { role: 'user', content: text },
           ],
-          // Reuse the user's provider context (same key/provider as generation).
-          { model: formatterModel, temperature: 0, providerContext },
+          // Reuse the user's provider context (same key/provider as generation)
+          // and route the formatter request as a context-owned passthrough so
+          // the model receives FORMATTER_PROMPT_V2 verbatim.
+          {
+            model: formatterModel,
+            temperature: 0,
+            providerContext,
+            contextOwned: true,
+          },
         )
         .then((r) => r.content);
 

@@ -169,6 +169,46 @@ describe('runFormattingPipeline — forced (under-structured prose) path', () =>
     expect(result.markdown).toBe(LONG_PROSE);
   });
 
+  it('preserves internal Markdown whitespace of a well-formed candidate (regression)', async () => {
+    const original = [
+      "Hello! I'm ready to help.",
+      'Please share your trade setup, the market and timeframe you are trading,',
+      'your risk management and position sizing rules, your journal review and',
+      'performance metrics, and any platform navigation questions. Once I have',
+      'those details I can give you specific guidance.',
+    ].join(' ');
+    const candidate = [
+      'Hello!',
+      '',
+      "I'm ready to help.",
+      '',
+      'Please share:',
+      '',
+      '- Your trade setup',
+      '- Market and timeframe',
+      '- Risk management and position sizing',
+      '- Journal review and performance metrics',
+      '- Platform navigation',
+    ].join('\n');
+    const formatter = jest.fn().mockResolvedValue(candidate);
+    const result = await runFormattingPipeline(original, {
+      formatter,
+      forceFormatter: true,
+    });
+    // Accepted candidate must be preserved byte-for-byte — the pipeline may
+    // only trim outer boundaries, never internal spaces/paragraphs/lists.
+    expect(result.changed).toBe(true);
+    expect(result.markdown).toBe(candidate);
+    expect(result.markdown).toContain("Hello!\n\nI'm ready to help.");
+    expect(result.markdown).toContain('Please share:\n\n- Your trade setup');
+    expect(result.markdown).toContain(
+      '- Market and timeframe\n- Risk management',
+    );
+    // Explicitly assert no collapsed whitespace corruption.
+    expect(result.markdown).not.toContain("Hello!I'm");
+    expect(result.markdown).not.toContain('share:- Your trade setup- Market');
+  });
+
   it('propagates a formatter throw so the caller keeps the original response', async () => {
     const formatter = jest.fn().mockRejectedValue(new Error('formatter down'));
     await expect(
