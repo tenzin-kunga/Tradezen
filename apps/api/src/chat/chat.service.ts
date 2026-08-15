@@ -20,9 +20,12 @@ import { ConversationPersistenceService } from './conversation/conversation-pers
 import { ConversationHistoryPolicy } from './conversation/conversation-history';
 import { ToolLifecycleStatus } from '../ai/tools/tool-lifecycle';
 import { UserSettingsService } from '../user-settings/user-settings.service';
-import { runFormattingPipeline } from './formatting-pipeline';
+import {
+  runFormattingPipeline,
+  isUnstructuredProse,
+} from './formatting-pipeline';
 import type { FormattingResult } from './validators';
-import { FORMATTER_PROMPT_V1 } from './formatting-prompts';
+import { FORMATTER_PROMPT_V2 } from './formatting-prompts';
 import { detectStyle, requiresStructuredOutput } from './format-router';
 
 const DEFAULT_MODELS_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -512,7 +515,12 @@ export class ChatService {
             onUsage: (usage) => handlers.onUsage?.(usage),
           },
         );
-        await this.finalizeAssistant(threadId, agentBuffer, handlers);
+        await this.finalizeAssistant(
+          threadId,
+          agentBuffer,
+          handlers,
+          providerContext,
+        );
         handlers.onDone();
       } catch (error) {
         throw this.mapError(error);
@@ -546,7 +554,12 @@ export class ChatService {
         handlers.onToken(token);
       }
       if (usage) handlers.onUsage?.(usage);
-      await this.finalizeAssistant(dto.threadId, assistantBuffer, handlers);
+      await this.finalizeAssistant(
+        dto.threadId,
+        assistantBuffer,
+        handlers,
+        providerContext,
+      );
       handlers.onDone();
     } catch (error) {
       throw this.mapError(error);
@@ -571,6 +584,7 @@ export class ChatService {
     threadId: string | undefined,
     buffer: string,
     handlers: StreamHandlers,
+    providerContext: ProviderContext = {},
   ): Promise<void> {
     const pipelineEnabled = (process.env.AI_FORMAT_PIPELINE ?? '1') !== '0';
     if (!pipelineEnabled || !buffer.trim()) {
@@ -580,24 +594,29 @@ export class ChatService {
       return;
     }
 
-    const formatterModel = process.env.AI_FORMAT_MODEL?.trim() || undefined;
-    const formatter = formatterModel
-      ? (text: string) =>
-          this.aiClient
-            .complete(
-              [
-                { role: 'system', content: FORMATTER_PROMPT_V1 },
-                { role: 'user', content: text },
-              ],
-              { model: formatterModel, temperature: 0 },
-            )
-            .then((r) => r.content)
-      : undefined;
+    // Formatter model: explicit override or the generation default. Absence of
+    // AI_FORMAT_MODEL must NOT disable formatting.
+    const formatterModel =
+      process.env.AI_FORMAT_MODEL?.trim() || this.defaultModel;
+    const formatter = (text: string) =>
+      this.aiClient
+        .complete(
+          [
+            { role: 'system', content: FORMATTER_PROMPT_V2 },
+            { role: 'user', content: text },
+          ],
+          // Reuse the user's provider context (same key/provider as generation).
+          { model: formatterModel, temperature: 0, providerContext },
+        )
+        .then((r) => r.content);
 
     const style = detectStyle(buffer);
     let result: FormattingResult;
     try {
-      result = await runFormattingPipeline(buffer, { formatter });
+      result = await runFormattingPipeline(buffer, {
+        formatter,
+        forceFormatter: isUnstructuredProse(buffer),
+      });
     } catch (err) {
       // ponytail: formatting failure must never block delivery or wipe the streamed reply
       this.logger.warn(
@@ -629,8 +648,8 @@ export class ChatService {
           style,
           requiresStructuredOutput: requiresStructuredOutput(style),
           generationModel: this.defaultModel,
-          formatterModel: formatterModel ?? null,
-          promptVersion: 'v1',
+          formatterModel,
+          promptVersion: 'v2',
           scoreBefore: result.scoreBefore,
           scoreAfter: result.scoreAfter,
           formatterInvoked: result.formatterInvoked,
