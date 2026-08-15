@@ -206,7 +206,6 @@ export default function TradeLog() {
   }, []);
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this trade?")) return;
     try {
       await deleteTrade(id);
       addToast("success", "Trade deleted");
@@ -221,9 +220,10 @@ export default function TradeLog() {
     setDrawerOpen(true);
   }
 
-  function handleTradeEdit(id: string) {
+  function handleTradeSaved() {
     setDrawerOpen(false);
-    router.push(`/trades/${id}/edit`);
+    addToast("success", "Trade updated");
+    fetchTrades();
   }
 
   async function handleTradeDelete(id: string) {
@@ -698,7 +698,7 @@ export default function TradeLog() {
         trade={selectedTrade}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onEdit={handleTradeEdit}
+        onSaved={handleTradeSaved}
         onDelete={handleTradeDelete}
       />
 

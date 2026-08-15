@@ -59,6 +59,14 @@ export default function TradeCard({
       <div
         className="hidden md:block surface-2 rounded-xl overflow-hidden cursor-pointer"
         onClick={() => onView(trade)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onView(trade);
+          }
+        }}
         style={{
           transition:
             "background var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out)",
@@ -286,6 +294,14 @@ export default function TradeCard({
       <div
         className="block md:hidden surface-2 rounded-xl overflow-hidden cursor-pointer px-4 py-3"
         onClick={() => onView(trade)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onView(trade);
+          }
+        }}
         style={{
           transition: "background var(--duration-fast) var(--ease-out)",
         }}
