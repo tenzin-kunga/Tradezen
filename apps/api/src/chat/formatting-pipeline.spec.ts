@@ -2,6 +2,7 @@ import {
   runFormattingPipeline,
   isUnstructuredProse,
   preservesNumbers,
+  preservesPlaceholders,
 } from './formatting-pipeline';
 import { autoFixMarkdown } from './validators';
 
@@ -247,5 +248,60 @@ describe('preservesNumbers', () => {
     expect(
       preservesNumbers('plain prose only', '## Heading\n\nplain prose only'),
     ).toBe(true);
+  });
+});
+
+describe('preservesPlaceholders', () => {
+  it('passes when neither side carries placeholders', () => {
+    expect(
+      preservesPlaceholders('plain answer', '## Heading\n\nplain answer'),
+    ).toBe(true);
+  });
+
+  it('fails when the candidate introduces an internal placeholder', () => {
+    expect(
+      preservesPlaceholders('a normal answer', 'a normal answer {{documents}}'),
+    ).toBe(false);
+  });
+
+  it('fails on any internal template token the original lacks', () => {
+    expect(
+      preservesPlaceholders('no tokens', '{{memories}} {{tool_results}}'),
+    ).toBe(false);
+  });
+
+  it('passes when a placeholder present in the original survives unchanged', () => {
+    expect(
+      preservesPlaceholders(
+        '{{documents}} leaked',
+        '## Heading\n\n{{documents}} leaked',
+      ),
+    ).toBe(true);
+  });
+});
+
+describe('runFormattingPipeline — placeholder leak protection', () => {
+  it('rejects a formatter candidate that introduces {{documents}}', async () => {
+    const original =
+      'The stop goes at 42 points.\n\nTake profit sits at 88 points.\n\nRisk stays at two percent.';
+    const candidate = `## Summary\n\n${original}\n\n{{documents}}`;
+    const formatter = jest.fn().mockResolvedValue(candidate);
+    const result = await runFormattingPipeline(original, {
+      formatter,
+      forceFormatter: true,
+    });
+    expect(formatter).toHaveBeenCalledTimes(1);
+    expect(result.changed).toBe(false);
+    expect(result.markdown).toBe(original);
+    expect(result.markdown).not.toContain('{{documents}}');
+  });
+
+  it('does not fabricate placeholders when the original is clean', async () => {
+    const structured =
+      '## Overview\n\nA **structured** reply.\n\n- item one\n- item two';
+    const formatter = jest.fn();
+    const result = await runFormattingPipeline(structured, { formatter });
+    expect(formatter).not.toHaveBeenCalled();
+    expect(result.markdown).not.toContain('{{');
   });
 });

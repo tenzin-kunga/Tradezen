@@ -41,6 +41,28 @@ export function preservesNumbers(original: string, candidate: string): boolean {
   return true;
 }
 
+// Internal prompt/context template tokens (e.g. {{documents}}) must never reach
+// user-visible output. The AI service now resolves every {{variable}} at the
+// source; this guard is defense-in-depth: a formatter candidate that INTRODUCES
+// a placeholder absent from the original is rejected.
+const TEMPLATE_PLACEHOLDER = /\{\{\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\}\}/g;
+
+function templatePlaceholders(text: string): Set<string> {
+  return new Set(text.match(TEMPLATE_PLACEHOLDER) ?? []);
+}
+
+export function preservesPlaceholders(
+  original: string,
+  candidate: string,
+): boolean {
+  const originalTokens = templatePlaceholders(original);
+  const candidateTokens = templatePlaceholders(candidate);
+  for (const token of candidateTokens) {
+    if (!originalTokens.has(token)) return false;
+  }
+  return true;
+}
+
 const MIN_PROSE_LENGTH = 400;
 const MIN_PROSE_PARAGRAPHS = 3;
 const PROSE_STRUCTURE_MARKERS = [
@@ -111,7 +133,8 @@ export async function runFormattingPipeline(
       const safe =
         corrected.length > 0 &&
         keptEnough &&
-        preservesNumbers(buffer, corrected);
+        preservesNumbers(buffer, corrected) &&
+        preservesPlaceholders(buffer, corrected);
       // NORMAL path keeps the existing score requirement (candidate must not be
       // worse than the baseline). FORCED prose path bypasses ONLY that gate and
       // instead rejects candidates carrying a hard (major) validation failure.
