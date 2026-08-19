@@ -14,6 +14,11 @@ import {
 import { IconButton } from "@/components/primitives/IconButton";
 import { Badge } from "@/components/primitives/Badge";
 import { Button } from "@/components/primitives/Button";
+import {
+  subscribeActivity,
+  getThinkingThreads,
+  getReadyThreads,
+} from "@/lib/chat/activity";
 
 const TYPE_ICONS: Record<
   ConversationType,
@@ -113,6 +118,12 @@ export default function ConversationSidebar({
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const [, forceRender] = useState(0);
+
+  // Live thinking/ready indicators for background replies.
+  useEffect(() => subscribeActivity(() => forceRender((n) => n + 1)), []);
+  const thinkingIds = getThinkingThreads();
+  const readyIds = getReadyThreads();
 
   // Close menu on outside click
   useEffect(() => {
@@ -296,6 +307,8 @@ export default function ConversationSidebar({
                     isActive={t.id === activeId}
                     isHovered={t.id === hoveredId}
                     menuOpen={t.id === menuOpenId}
+                    isThinking={thinkingIds.has(t.id)}
+                    isReady={readyIds.has(t.id)}
                     onHover={setHoveredId}
                     onClick={() => onSelect(t.id)}
                     onTogglePin={() => onTogglePin(t.id)}
@@ -331,6 +344,8 @@ export default function ConversationSidebar({
                     isActive={t.id === activeId}
                     isHovered={t.id === hoveredId}
                     menuOpen={t.id === menuOpenId}
+                    isThinking={thinkingIds.has(t.id)}
+                    isReady={readyIds.has(t.id)}
                     onHover={setHoveredId}
                     onClick={() => onSelect(t.id)}
                     onTogglePin={() => onTogglePin(t.id)}
@@ -355,6 +370,8 @@ function ConversationCard({
   isActive,
   isHovered,
   menuOpen,
+  isThinking,
+  isReady,
   onHover,
   onClick,
   onTogglePin,
@@ -366,6 +383,8 @@ function ConversationCard({
   isActive: boolean;
   isHovered: boolean;
   menuOpen: boolean;
+  isThinking: boolean;
+  isReady: boolean;
   onHover: (id: string | null) => void;
   onClick: () => void;
   onTogglePin: () => void;
@@ -382,7 +401,7 @@ function ConversationCard({
       onClick={onClick}
       onMouseEnter={() => onHover(thread.id)}
       onMouseLeave={() => onHover(null)}
-      className="tz-lift"
+      className={`tz-lift${isReady ? " tz-flash" : ""}`}
       style={{
         display: "flex",
         alignItems: "flex-start",
@@ -452,6 +471,20 @@ function ConversationCard({
                 </Badge>
               ))}
             </div>
+          )}
+          {isThinking && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 11,
+                color: "var(--accent-cyan, #06b6d4)",
+              }}
+            >
+              <span className="tz-thinking-dot" />
+              Thinking
+            </span>
           )}
           <span
             style={{

@@ -16,6 +16,7 @@ import {
 import ModelBrowser from "./ModelBrowser";
 import { Button } from "@/components/primitives/Button";
 import { IconButton } from "@/components/primitives/IconButton";
+import { loadChatModel, saveChatModel } from "@/lib/workspace/persistence";
 
 function formatTokens(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -38,7 +39,9 @@ export default function ChatInput({
   tokenUsage,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [selectedModel, setSelectedModel] = useState<string>(() =>
+    loadChatModel(),
+  );
   const [catalog, setCatalog] = useState<ChatModels | null>(null);
   const [activeModels, setActiveModels] = useState<string[]>([]);
   const [apiKeyStatus, setApiKeyStatus] = useState<ApiKeyStatus | null>(null);
@@ -293,6 +296,7 @@ export default function ChatInput({
                               key={modelId}
                               onClick={() => {
                                 setSelectedModel(modelId);
+                                saveChatModel(modelId);
                                 setModelOpen(false);
                               }}
                               style={{

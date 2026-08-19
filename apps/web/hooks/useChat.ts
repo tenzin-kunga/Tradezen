@@ -20,6 +20,15 @@ import {
   loadLastThread,
   saveLastThread,
 } from "@/lib/workspace/persistence";
+import {
+  setActiveThread,
+  clearReady,
+  markThinking,
+  markReady,
+  clearThinking,
+} from "@/lib/chat/activity";
+import { cancelStream } from "@/lib/api/assistant/stream";
+import { useRealtime } from "@/hooks/use-realtime";
 
 export type ChatStatus =
   | "idle"
@@ -118,8 +127,15 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
-  const sendingRef = useRef(false);
+  // Number of sends currently in flight. Only the LAST stream to finish
+  // brings it back to 0, so an older stream's finally can never clear state
+  // while a newer stream is still active.
+  const sendingCountRef = useRef(0);
+  // In-flight thread creation, deduped so a "+" click followed by a quick
+  // send resolves to exactly ONE thread id instead of racing two.
+  const pendingCreateRef = useRef<Promise<string> | null>(null);
   const threadIdRef = useRef<string | null>(null);
+  const liveStreamThreadRef = useRef<string | null>(null);
   const initialContextRef = useRef(options?.initialContext);
   initialContextRef.current = options?.initialContext;
   const lastContextRequestRef = useRef<Record<string, any> | null>(null);
@@ -140,7 +156,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
 
   // Restore last thread
   useEffect(() => {
-    if (sendingRef.current) return; // Skip while sending to avoid race condition
+    if (sendingCountRef.current > 0) return; // Skip while sending to avoid race condition
     const lastId = loadLastThread();
     if (lastId && threads.length > 0) {
       const found = threads.find((t) => t.id === lastId);
@@ -149,6 +165,10 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       }
     }
   }, [threads]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // On unmount, release the active-thread claim so a reply that finishes
+  // while the user is elsewhere can still toast / flash the sidebar.
+  useEffect(() => () => setActiveThread(null), []);
 
   // Mirror the active conversation to localStorage so it persists across
   // navigation / reload (saved once streaming settles).
@@ -163,17 +183,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     }
   }, [thread?.id, messages, status]);
 
-  const selectThread = useCallback(
-    async (id: string) => {
-      const t = threads.find((thr) => thr.id === id);
-      if (!t) return;
-
-      abortRef.current?.abort();
-      threadIdRef.current = id;
-      setThread(t);
-      setMessages([]);
-      saveLastThread(id);
-
+  const loadMessagesForThread = useCallback(
+    async (id: string, opts?: { completeWhenDone?: boolean }) => {
       try {
         const msgs = await getThreadMessages(id);
         if (threadIdRef.current !== id) return;
@@ -205,6 +216,21 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
           const cached = loadCachedMessages(id);
           if (cached) mapped = cached;
         }
+        // Re-attach to a still-running generation: only when this component
+        // owns a live stream for this thread can tokens keep flowing into a
+        // placeholder. Otherwise show persisted messages — no stuck spinner.
+        if (liveStreamThreadRef.current === id) {
+          mapped.push({
+            id: nextMessageId(),
+            role: "assistant",
+            content: "",
+            type: "markdown",
+            timestamp: new Date(),
+          });
+          setStatus("streaming");
+        } else {
+          setStatus(opts?.completeWhenDone ? "complete" : "idle");
+        }
         setMessages(mapped);
       } catch (e) {
         if (threadIdRef.current !== id) return;
@@ -213,27 +239,87 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         setMessages(cached ?? []);
       }
     },
-    [threads],
+    [],
+  );
+
+  const selectThread = useCallback(
+    async (id: string) => {
+      const t = threads.find((thr) => thr.id === id);
+      if (!t) return;
+      // Reselecting the already-active conversation is a no-op; otherwise an
+      // unrelated restore/thread-list update could wipe it mid-stream.
+      if (threadIdRef.current === id && thread?.id === id) return;
+
+      // ponytail: never kill an in-flight reply on thread switch — the stream
+      // keeps running in the background, guarded by streamThreadId.
+      threadIdRef.current = id;
+      setThread(t);
+      setError(null);
+      setActiveThread(id);
+      clearReady(id);
+      saveLastThread(id);
+
+      const live = liveStreamThreadRef.current === id;
+      if (live) {
+        // Re-attach to the running generation without clearing its messages;
+        // loadMessagesForThread merges persisted state + a streaming placeholder.
+        void loadMessagesForThread(id);
+      } else {
+        setMessages([]);
+        setStatus("idle");
+        void loadMessagesForThread(id);
+      }
+    },
+    [threads, thread?.id, loadMessagesForThread],
+  );
+
+  // When the active thread's reply finishes on the server but no local stream
+  // is live (e.g. the user navigated away and back mid-generation), reload so
+  // the persisted reply appears instead of a stuck placeholder.
+  useRealtime(
+    "chat:reply-ready",
+    useCallback(
+      (data: unknown) => {
+        const { threadId } = data as { threadId: string };
+        if (!threadId || threadId !== threadIdRef.current) return;
+        if (liveStreamThreadRef.current === threadId) return;
+        void loadMessagesForThread(threadId, { completeWhenDone: true });
+      },
+      [loadMessagesForThread],
+    ),
   );
 
   const createThread = useCallback(async (title?: string): Promise<string> => {
-    const { id } = await apiCreateThread(title);
-    const newThread: Thread = {
-      id,
-      title: title || "New Conversation",
-      summary: null,
-      primaryType: null,
-      tags: null,
-      pinned: false,
-      updatedAt: new Date().toISOString(),
-    };
-    clearCachedMessages(id);
-    threadIdRef.current = id;
-    setThreads((prev) => [newThread, ...prev]);
-    setThread(newThread);
-    setMessages([]);
-    saveLastThread(id);
-    return id;
+    // Reuse an in-flight creation: a "+" click followed by a quick send must
+    // resolve to exactly ONE authoritative thread id, never two.
+    if (pendingCreateRef.current) return pendingCreateRef.current;
+    const p = (async () => {
+      const { id } = await apiCreateThread(title);
+      const newThread: Thread = {
+        id,
+        title: title || "New Conversation",
+        summary: null,
+        primaryType: null,
+        tags: null,
+        pinned: false,
+        updatedAt: new Date().toISOString(),
+      };
+      clearCachedMessages(id);
+      threadIdRef.current = id;
+      setThreads((prev) => [newThread, ...prev]);
+      setThread(newThread);
+      setMessages([]);
+      setStatus("idle");
+      setActiveThread(id);
+      saveLastThread(id);
+      return id;
+    })();
+    pendingCreateRef.current = p;
+    try {
+      return await p;
+    } finally {
+      if (pendingCreateRef.current === p) pendingCreateRef.current = null;
+    }
   }, []);
 
   const deleteThread = useCallback(
@@ -244,9 +330,13 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         threadIdRef.current = null;
         setThread(null);
         setMessages([]);
+        setStatus("idle");
+        setActiveThread(null);
         saveLastThread(null);
       }
       clearCachedMessages(id);
+      clearReady(id);
+      clearThinking(id);
     },
     [thread],
   );
@@ -256,9 +346,14 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     saveChatModel(model);
   }, []);
 
-  const abort = useCallback(() => {
+const abort = useCallback(() => {
+    const threadId = threadIdRef.current;
     abortRef.current?.abort();
     abortRef.current = null;
+    if (threadId) {
+      clearThinking(threadId);
+      cancelStream(threadId).catch(() => {});
+    }
     setStatus("idle");
   }, []);
 
@@ -271,13 +366,16 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     ) => {
       // Store for ContextExplorer
       if (contextRequest) lastContextRequestRef.current = contextRequest;
-      sendingRef.current = true;
+      sendingCountRef.current += 1;
 
-      // Create thread if none active
+      // Resolve exactly ONE authoritative thread id before streaming or
+      // persisting. If a sidebar "+" creation is still in flight, route to it
+      // instead of the stale closure thread — never create a second one.
       let activeThread = thread;
-      if (!activeThread) {
+      let usingNewThread = false;
+      const ensureThread = async (): Promise<Thread> => {
         const id = await createThread();
-        activeThread = {
+        const t: Thread = {
           id,
           title: content.slice(0, 50),
           summary: null,
@@ -286,8 +384,24 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
           pinned: false,
           updatedAt: new Date().toISOString(),
         };
-        setThread(activeThread);
+        setThread(t);
+        return t;
+      };
+      try {
+        if (pendingCreateRef.current) {
+          activeThread = await ensureThread();
+          usingNewThread = true;
+        } else if (!activeThread) {
+          activeThread = await ensureThread();
+          usingNewThread = true;
+        }
+      } catch (e) {
+        sendingCountRef.current = Math.max(0, sendingCountRef.current - 1);
+        throw e;
       }
+
+      const streamThreadId = activeThread.id;
+      markThinking(streamThreadId);
 
       // Add user message
       const userMsg: ChatMessage = {
@@ -300,18 +414,24 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       setMessages((prev) => [...prev, userMsg]);
       setStatus("pending");
 
-      // Build message history for API
+      // Build message history for API. For a freshly created thread the
+      // closure `messages` still belongs to the previous conversation, so
+      // start from just the new user message.
+      const history =
+        usingNewThread || messages.length === 0
+          ? []
+          : messages.map((m) => ({
+              role: m.role as ChatMessageDto["role"],
+              content: m.content,
+            }));
       const apiMessages: ChatMessageDto[] = [
-        ...messages.map((m) => ({
-          role: m.role as ChatMessageDto["role"],
-          content: m.content,
-        })),
+        ...history,
         { role: "user" as const, content },
       ];
 
       // Add initial context prompt
       const ic = initialContextRef.current;
-      if (ic?.prompt && messages.length === 0) {
+      if (ic?.prompt && apiMessages.length === 1) {
         apiMessages.unshift({
           role: "system",
           content: ic.prompt,
@@ -359,6 +479,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       // Stream
       const controller = new AbortController();
       abortRef.current = controller;
+      liveStreamThreadRef.current = streamThreadId;
 
       try {
         setStatus("streaming");
@@ -370,10 +491,11 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
           intent,
           threadId: activeThread?.id,
           onToken: (token) => {
+            if (threadIdRef.current !== streamThreadId) return;
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
+              if (last?.role === "assistant") {
                 updated[updated.length - 1] = {
                   ...last,
                   content: last.content + token,
@@ -383,6 +505,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
             });
           },
           onToolStatus: (event) => {
+            if (threadIdRef.current !== streamThreadId) return;
             if (event.status === "started") {
               upsertToolMessage(event.id, {
                 type: "tool_call",
@@ -406,10 +529,11 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
             }
           },
           onActions: (actions) => {
+            if (threadIdRef.current !== streamThreadId) return;
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
-              if (last.role === "assistant") {
+              if (last?.role === "assistant") {
                 updated[updated.length - 1] = {
                   ...last,
                   actions: [...(last.actions ?? []), ...actions],
@@ -421,6 +545,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
           onResponseReformatted: (markdown) => {
             // ponytail: never let a degraded formatter response wipe the streamed reply
             if (!markdown || !markdown.trim()) return;
+            if (threadIdRef.current !== streamThreadId) return;
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -431,6 +556,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
             });
           },
           onUsage: (usage) => {
+            if (threadIdRef.current !== streamThreadId) return;
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -450,10 +576,16 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
             });
           },
           onDone: () => {
+            const background = threadIdRef.current !== streamThreadId;
             if (controller.signal.aborted) return;
-            setStatus("complete");
+            clearThinking(streamThreadId);
+            if (background) {
+              markReady(streamThreadId);
+            } else {
+              setStatus("complete");
+            }
             // Generate title after first exchange
-            if (messages.length === 0 && activeThread) {
+            if ((usingNewThread || messages.length === 0) && activeThread) {
               const title =
                 content.length > 50 ? content.slice(0, 50) + "..." : content;
               updateThreadTitle(activeThread.id, title).catch(() => {});
@@ -467,11 +599,17 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         });
       } catch (e) {
         if (controller.signal.aborted) return;
+        clearThinking(streamThreadId);
+        if (threadIdRef.current !== streamThreadId) return;
         setError(e instanceof Error ? e.message : "Stream failed");
         setStatus("error");
       } finally {
-        abortRef.current = null;
-        sendingRef.current = false;
+        if (abortRef.current === controller) abortRef.current = null;
+        if (liveStreamThreadRef.current === streamThreadId) {
+          liveStreamThreadRef.current = null;
+        }
+        // Only the last stream to finish clears the shared sending state.
+        sendingCountRef.current = Math.max(0, sendingCountRef.current - 1);
       }
     },
     [thread, messages, selectedModel, createThread],

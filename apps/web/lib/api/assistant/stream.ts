@@ -93,6 +93,13 @@ function isAbortError(e: unknown): boolean {
   );
 }
 
+export async function cancelStream(threadId: string): Promise<void> {
+  await authFetchStream(`${API}/chat/stream/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ threadId }),
+  });
+}
+
 export async function streamChat(params: StreamChatParams): Promise<void> {
   const {
     messages,
@@ -113,11 +120,16 @@ export async function streamChat(params: StreamChatParams): Promise<void> {
 
   let res: Response;
   try {
+    // Strip empty-content entries (e.g. re-attach placeholders, empty tool
+    // results) and cap history — the server validates MinLength(1) + ArrayMaxSize(30).
+    const safeMessages = messages
+      .filter((m) => m.content && m.content.trim().length > 0)
+      .slice(-30);
     res = await authFetchStream(`${API}/chat/stream`, {
       method: "POST",
       signal,
       body: JSON.stringify({
-        messages,
+        messages: safeMessages,
         model,
         systemPrompt,
         temperature,

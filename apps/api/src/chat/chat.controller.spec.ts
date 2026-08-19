@@ -34,6 +34,9 @@ import { ContextBuilderService } from '../ai/context/context-builder.service';
 import { SemanticMetricsService } from '../ai/context/semantic/semantic-metrics.service';
 import { JobStatusService } from '../queues/job-status.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { TradesGateway } from '../gateway/trades.gateway';
+
+const gatewayMock = { emitToUser: jest.fn() };
 
 const UUID = '11111111-1111-1111-1111-111111111111';
 const UUID_RE =
@@ -72,6 +75,7 @@ describe('ChatController routes', () => {
         { provide: SemanticMetricsService, useValue: {} },
         { provide: getQueueToken('ai-processing'), useValue: {} },
         { provide: JobStatusService, useValue: {} },
+        { provide: TradesGateway, useValue: gatewayMock },
       ],
     }).compile();
 
@@ -164,6 +168,7 @@ describe('ChatController provider auth', () => {
         { provide: SemanticMetricsService, useValue: {} },
         { provide: getQueueToken('ai-processing'), useValue: {} },
         { provide: JobStatusService, useValue: {} },
+        { provide: TradesGateway, useValue: gatewayMock },
         { provide: APP_GUARD, useClass: JwtAuthGuard },
       ],
     }).compile();
@@ -271,6 +276,7 @@ describe('ChatController stream usage event', () => {
         { provide: SemanticMetricsService, useValue: {} },
         { provide: getQueueToken('ai-processing'), useValue: {} },
         { provide: JobStatusService, useValue: {} },
+        { provide: TradesGateway, useValue: gatewayMock },
         { provide: APP_GUARD, useClass: JwtAuthGuard },
       ],
     }).compile();

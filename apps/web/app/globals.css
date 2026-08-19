@@ -787,6 +787,30 @@ html {
   50% { opacity: 1; }
 }
 
+@keyframes tz-flash {
+  0%, 100% { background: transparent; }
+  50% { background: color-mix(in srgb, var(--accent-cyan) 20%, transparent); }
+}
+
+@keyframes tz-dot-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.tz-flash {
+  animation: tz-flash 0.9s ease-in-out 4;
+  border-color: color-mix(in srgb, var(--accent-cyan) 40%, transparent) !important;
+}
+
+.tz-thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-cyan, #06b6d4);
+  animation: tz-dot-pulse 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
 .fade-up {
   animation: fadeUp var(--duration-slow) var(--ease-out) forwards;
   opacity: 0;

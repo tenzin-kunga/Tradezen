@@ -9,6 +9,7 @@ import CommandPalette from "./CommandPalette";
 import KeyboardShortcutProvider from "./KeyboardShortcutProvider";
 import MobileBottomNav from "./MobileBottomNav";
 import FabButton from "./FabButton";
+import ChatActivityListener from "./assistant/ChatActivityListener";
 
 const PUBLIC_ROUTES = ["/login", "/register", "/auth/callback"];
 
@@ -177,6 +178,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         }}
       >
         <TopBar onSearchClick={() => setPaletteOpen(true)} />
+        <ChatActivityListener />
         <main
           className="pb-14 md:pb-0"
           style={{
