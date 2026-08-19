@@ -5,12 +5,12 @@ import {
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Put,
   Query,
   Req,
   Res,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -18,7 +18,7 @@ import { Queue } from 'bullmq';
 import type { Request, Response } from 'express';
 import { InjectQueue } from '@nestjs/bullmq';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
 import { ChatService } from './chat.service';
 import { ChatThreadService } from './chat-thread.service';
 import { CreateChatDto } from './dto/create-chat.dto';
@@ -26,6 +26,9 @@ import { JobStatusService } from '../queues/job-status.service';
 import { JournalIntelligenceService } from '../ai/journal-intelligence.service';
 import { CoachingEngineService } from '../ai/coaching-engine.service';
 import { NotificationService } from '../common/services/notification.service';
+import { ContextBuilderService } from '../ai/context/context-builder.service';
+import { SemanticMetricsService } from '../ai/context/semantic/semantic-metrics.service';
+import { TradesGateway } from '../gateway/trades.gateway';
 
 @ApiTags('chat')
 @ApiBearerAuth()
@@ -38,14 +41,59 @@ export class ChatController {
     private readonly journalIntelligenceService: JournalIntelligenceService,
     private readonly coachingEngineService: CoachingEngineService,
     private readonly notificationService: NotificationService,
+    private readonly contextBuilder: ContextBuilderService,
+    private readonly metricsService: SemanticMetricsService,
     @InjectQueue('ai-processing') private aiQueue: Queue,
     private readonly jobStatusService: JobStatusService,
+    private readonly gateway: TradesGateway,
   ) {}
 
+  private readonly activeStreams = new Map<string, AbortController>();
+
   @Get('models')
-  @ApiOperation({ summary: 'Get configured OpenRouter models' })
-  models() {
-    return this.chatService.getModels();
+  @ApiOperation({
+    summary: 'Get configured chat models (proxied from AI service)',
+  })
+  async models(
+    @CurrentUser('id') userId: string,
+    @Query('refresh') refresh?: string,
+  ) {
+    return this.chatService.getModelsV2(userId, refresh === 'true');
+  }
+
+  @Public()
+  @Get('models/providers')
+  @ApiOperation({
+    summary: 'Get provider health status (proxied from AI service)',
+  })
+  async modelProviders() {
+    return this.chatService.getProviderHealth();
+  }
+
+  @Post('models/refresh')
+  @ApiOperation({ summary: 'Force re-discovery of models from all providers' })
+  async refreshModels() {
+    return this.chatService.refreshModels();
+  }
+
+  @Post('models/providers')
+  @ApiOperation({ summary: 'Add a custom model provider' })
+  async addProvider(
+    @Body()
+    body: {
+      name: string;
+      baseUrl: string;
+      apiKey?: string;
+      models: string[];
+    },
+  ) {
+    return this.chatService.addProvider(body);
+  }
+
+  @Delete('models/providers/:id')
+  @ApiOperation({ summary: 'Remove a custom model provider' })
+  removeProvider(@Param('id') id: string) {
+    return this.chatService.removeProvider(id);
   }
 
   @Post('threads')
@@ -61,6 +109,15 @@ export class ChatController {
   @ApiOperation({ summary: 'List user chat threads' })
   async listThreads(@CurrentUser('id') userId: string) {
     return this.threadService.listThreads(userId);
+  }
+
+  @Get('threads/search')
+  @ApiOperation({ summary: 'Search chat threads' })
+  async searchThreads(
+    @CurrentUser('id') userId: string,
+    @Query('q') query: string,
+  ) {
+    return this.threadService.searchThreads(userId, query || '');
   }
 
   @Get('threads/:id')
@@ -83,7 +140,25 @@ export class ChatController {
     return this.threadService.deleteThread(userId, threadId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Patch('threads/:id')
+  @ApiOperation({ summary: 'Update a chat thread title' })
+  async updateThreadTitle(
+    @CurrentUser('id') userId: string,
+    @Param('id') threadId: string,
+    @Body('title') title: string,
+  ) {
+    return this.threadService.updateThreadTitle(userId, threadId, title);
+  }
+
+  @Patch('threads/:id/pin')
+  @ApiOperation({ summary: 'Toggle pin on a chat thread' })
+  async togglePin(
+    @CurrentUser('id') userId: string,
+    @Param('id') threadId: string,
+  ) {
+    return this.threadService.togglePin(userId, threadId);
+  }
+
   @Get('threads/:id/messages')
   @ApiOperation({ summary: 'Get messages for a chat thread' })
   async getMessages(
@@ -93,8 +168,20 @@ export class ChatController {
     return this.threadService.getMessages(threadId, userId);
   }
 
+  @Get('context-preview')
+  @ApiOperation({ summary: 'Preview what context the AI would receive' })
+  async contextPreview(@CurrentUser('id') userId: string, @Query() query: any) {
+    return this.contextBuilder.previewContext(userId, query);
+  }
+
+  @Get('semantic/metrics')
+  @ApiOperation({ summary: 'Get semantic subsystem metrics' })
+  semanticMetrics() {
+    return this.metricsService.getMetrics();
+  }
+
   @Post('stream')
-  @ApiOperation({ summary: 'Stream chat completions via OpenRouter' })
+  @ApiOperation({ summary: 'Stream chat completions via the cloud provider' })
   async stream(
     @CurrentUser('id') userId: string,
     @Body() dto: CreateChatDto,
@@ -106,24 +193,54 @@ export class ChatController {
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
 
-    const abortController = new AbortController();
-    const onClientClose = () => abortController.abort();
+    // ponytail: detach instead of abort. The client may switch threads or
+    // navigate away — the reply must still finish and persist. `detached`
+    // only stops SSE writes. A generation is aborted only by an explicit
+    // cancel (stop button) via POST /chat/stream/cancel.
+    let detached = false;
+    const onClientClose = () => {
+      detached = true;
+    };
     req.on('close', onClientClose);
 
+    const abortController = new AbortController();
+    const streamKey = dto.threadId ? `${userId}:${dto.threadId}` : null;
+    if (streamKey) this.activeStreams.set(streamKey, abortController);
+
     const writeEvent = (event: string, data: string) => {
-      if (res.writableEnded) return;
+      if (detached || res.writableEnded) return;
       res.write(`event: ${event}\n`);
       res.write(`data: ${data}\n\n`);
     };
 
+    if (dto.threadId) {
+      this.gateway.emitToUser(userId, 'chat:reply-start', {
+        threadId: dto.threadId,
+      });
+    }
+
     try {
       await this.chatService.streamChat(userId, dto, abortController.signal, {
         onToken: (token) => writeEvent('token', token),
+        onToolStatus: (event) => {
+          writeEvent('tool_status', JSON.stringify(event));
+          if (event.suggestedActions?.length) {
+            writeEvent('actions', JSON.stringify(event.suggestedActions));
+          }
+        },
         onDone: () => writeEvent('done', '[DONE]'),
+        onResponseReformatted: (markdown) =>
+          writeEvent('response_reformatted', JSON.stringify(markdown)),
+        onUsage: (usage) => writeEvent('usage', JSON.stringify(usage)),
       });
+      if (dto.threadId) {
+        this.gateway.emitToUser(userId, 'chat:reply-ready', {
+          threadId: dto.threadId,
+        });
+      }
       if (!res.writableEnded) res.end();
     } catch (error) {
-      if (abortController.signal.aborted) {
+      if (detached) {
         if (!res.writableEnded) res.end();
         return;
       }
@@ -132,8 +249,21 @@ export class ChatController {
       writeEvent('error', message);
       if (!res.writableEnded) res.end();
     } finally {
+      if (streamKey) this.activeStreams.delete(streamKey);
       req.off('close', onClientClose);
     }
+  }
+
+  @Post('stream/cancel')
+  @ApiOperation({ summary: 'Cancel an in-flight chat generation for a thread' })
+  async cancelStream(
+    @CurrentUser('id') userId: string,
+    @Body('threadId') threadId: string,
+  ) {
+    if (threadId) {
+      this.activeStreams.get(`${userId}:${threadId}`)?.abort();
+    }
+    return { message: 'Stream cancelled' };
   }
 
   @Post('jobs/summarize-journals')

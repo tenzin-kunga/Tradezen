@@ -1,46 +1,68 @@
-# TradeZen — OpenCode Agent
+# TradeZen — Carbon Ledger
 
-## Project Context
+## Stack
 
-- **Stack:** Next.js 14 (web) + NestJS 11 (api), PostgreSQL 16 + pgvector, Redis 7, Turborepo (Bun)
-- **Apps:** `apps/api` (NestJS), `apps/web` (Next.js App Router)
-- **Packages:** `packages/db` (Drizzle ORM + pgvector), `packages/types`, `packages/ui`, `packages/eslint-config`, `packages/typescript-config`
+- **Web:** Next.js 14.2, React 18.2, Tailwind v3.4, shadcn/ui
+- **API:** NestJS 11, Drizzle ORM + pgvector, PostgreSQL 16, Redis 7, BullMQ
 - **Auth:** JWT access + HTTP-only refresh cookies, OAuth (Google/GitHub)
-- **AI:** OpenRouter integration (LangChain/LangGraph)
+- **AI:** LangChain/LangGraph (OpenRouter), BullMQ queues, nightly snapshots
+- **Monorepo:** Bun workspaces + Turborepo v2
 - **Deploy:** Vercel (web) + Render (api) + Neon (prod DB) / Docker Compose (local)
 
-## Developer Commands
+## Workspace layout
+
+| Path                         | Package name              | Role                                     |
+| ---------------------------- | ------------------------- | ---------------------------------------- |
+| `apps/api`                   | `api`                     | NestJS backend (HTTP + WebSocket + tRPC) |
+| `apps/web`                   | `web`                     | Next.js App Router frontend              |
+| `packages/db`                | `@tradezen/db`            | Drizzle schema + connection + types      |
+| `packages/types`             | `@tradezen/types`         | Shared TS types                          |
+| `packages/ui`                | `@tradezen/ui`            | Shared UI components                     |
+| `packages/eslint-config`     | `@repo/eslint-config`     | ESLint presets                           |
+| `packages/typescript-config` | `@repo/typescript-config` | TSConfig presets                         |
+
+## Critical commands
 
 ```bash
-# Root (Turborepo)
-bun install                 # install all deps
-bun run dev                 # build @tradezen/db then start api+web (turborepo)
-bun run build               # build all packages
-bun run lint                # lint all packages
-bun run check-types         # typecheck all packages
-bun run format              # prettier write
+# Root
+bun install                    # install everything
+bun run dev                    # builds @tradezen/db first, then starts api+web
+bun run build                  # turbo run build
+bun run lint                   # turbo run lint
+bun run check-types            # turbo run check-types -- each app has its own tsc --noEmit
+bun run format                 # prettier --write "**/*.{ts,tsx,md}"
 
 # API (apps/api)
-bun run migrate             # drizzle migrations (ts-node src/migrate.ts)
-bun run test                # unit tests (jest)
-bun run test:e2e            # e2e tests (jest --config test/jest-e2e.json)
+bun run migrate                # drizzle migrations via ts-node src/migrate.ts
+bun run test                   # jest (spec files in src/)
+bun run test:e2e               # jest --config test/jest-e2e.json
 
-# Web (apps/web)
-bun run dev                 # next dev -p 3000
-bun run build               # next build
-bun run start               # next start -p 3000
-
-# Docker (root)
-scripts/dev/start.bat       # one-click: Docker Desktop + postgres/redis + api+web in separate windows
-docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis  # infra only
-docker compose --file infra/docker-compose.yml --env-file .env.docker up -d                 # full stack
+# Docker
+scripts/dev/start.bat          # one-click Docker Desktop + infra + api+web
+docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis
 ```
 
-## Required Order
+## CI pipeline order (must-match)
 
-`lint → check-types → test` (CI pipeline order)
+**`changes → security → lint → test → e2e → build-api/build-web → deploy-staging|deploy-prod`**
 
-## Environment Files
+`lint` and `check-types` both run before `test`. Path-filtering skips irrelevant jobs:
+
+- `apps/api/**` or `packages/db/**` → runs API unit/e2e
+- `apps/web/**` → runs web lint/typecheck only (no web tests exist)
+
+## Gotchas
+
+- **`bun run dev` auto-runs migrations** — `main.ts:144` calls `runMigrations()` on startup. There is no separate migration step in local dev.
+- **@tradezen/db must be built first** — root `dev` script explicitly runs `bun run build --filter=@tradezen/db` before turbo.
+- **JWT secrets must be 64+ chars** — validated at startup in production (`main.ts:33-42`). Dev mode skips validation.
+- **tRPC:** API mounts `/trpc` via Express middleware. Web imports `api/trpc` for end-to-end types (path alias in web's tsconfig: `api/trpc -> ../../apps/api/src/trpc/index.ts`).
+- **Swagger** at `/api/docs` — dev only, disabled in production (`main.ts:118`).
+- **No web tests** configured — only API has Jest.
+- **Next.js 14 specific** — `apps/web/AGENTS.md` warns about breaking changes. Check `node_modules/next/dist/docs/` before writing Next.js code.
+- **Bun required** — packageManager is `bun@1.3.13`. Lockfile is `bun.lock`.
+
+## Environment files
 
 | File            | Purpose                                                  |
 | --------------- | -------------------------------------------------------- |
@@ -48,49 +70,21 @@ docker compose --file infra/docker-compose.yml --env-file .env.docker up -d     
 | `apps/api/.env` | API dev defaults (DB_HOST=localhost, etc.)               |
 | `apps/web/.env` | Web dev defaults (NEXT_PUBLIC_API_URL)                   |
 
-**Required Docker secrets:** `DB_PASSWORD`, `JWT_SECRET` (64+ chars), `JWT_REFRESH_SECRET` (64+ chars), `OPENROUTER_API_KEY` (optional), `WEB_URL`
+Required Docker secrets: `DB_PASSWORD`, `JWT_SECRET`, `JWT_REFRESH_SECRET` (all 64+ chars), `WEB_URL`. AI API keys are per-user (set in the Settings UI, encrypted in DB) — no server-side key.
 
-## Database
+## Key architecture
 
-- **ORM:** Drizzle + pgvector (schema in `packages/db/src/schema/`)
-- **Migrations:** `apps/api/drizzle/` (run via `bun run migrate` in api)
-- **Local:** `pgvector/pgvector:pg16` on port 5432 (Docker)
-- **Prod:** Neon PostgreSQL
-
-## Key Architecture Notes
-
-- **Monorepo:** Bun workspaces + Turborepo (`turbo.json` defines build/lint/typecheck/dev tasks)
-- **API → DB:** Internal Docker network `tradezen-net` (static IPs), not localhost
-- **Web → API:** `NEXT_PUBLIC_API_URL=http://api:3001` (Docker) or `http://localhost:3001` (local)
-- **tRPC:** API exports `@tradezen/api/trpc` for end-to-end types
-- **Shared types:** `@tradezen/types` package
-- **Swagger:** `/api/docs` (dev only, disabled in production)
-
-## Testing
-
-- **Unit:** Jest + ts-jest (API: `test/`, Web: none configured)
-- **E2E:** NestJS supertest against real Postgres+Redis (CI uses sidecar containers)
-- **CI order:** security → lint → typecheck → test → e2e → build → deploy
-
-## CI/CD (`.github/workflows/ci.yml`)
-
-- **Branches:** `develop` → staging, `main` → prod (requires approval)
-- **Concurrency:** cancels stale runs on PRs/develop, never on main
-- **Required secrets:** `RENDER_API_KEY`, `RENDER_SERVICE_ID`, `VERCEL_TOKEN`, `CODECOV_TOKEN`, etc.
-
-## Context-Mode Rules (MANDATORY)
-
-- **Shell (>20 lines):** Use `ctx_batch_execute` or `ctx_execute(language: "shell")`
-- **File analysis:** Use `ctx_execute_file` (not Read)
-- **grep/search:** Use `ctx_execute(language: "shell", code: "grep ...")`
-- **Web fetch:** `ctx_fetch_and_index` → `ctx_search` (no direct fetch)
-- **Think in Code:** Write JS in sandbox, `console.log()` only answer
-- **Parallel I/O:** `concurrency: 4-8` for network calls
+- **Drizzle:** Schema in `packages/db/src/schema/`, migrations in `apps/api/drizzle/`. ORM is drizzled directly — no Prisma.
+- **API → DB:** Docker internal network `tradezen-net` (not localhost). Locally uses `DB_HOST=localhost`.
+- **Web → API:** `NEXT_PUBLIC_API_URL=http://api:3001` (Docker) or `http://localhost:3001` (local).
+- **Global NestJS module** (`app.module.ts`) registers JwtAuthGuard + ThrottlerEventsGuard globally, along with SnapshotService, AI services, notification services.
+- **BullMQ** for queues (AI processing, analytics snapshots). Redis required.
+- **WebSocket** via Socket.IO gateway module.
 
 ## References
 
-- `README.md` — full project overview, endpoints, deployment
-- `docs/ARCHITECTURE.md` — system architecture
-- `docs/SECURITY.md` — hardening
+- `docs/ARCHITECTURE.md` — system design
 - `docs/DEPLOYMENT.md` — production steps
+- `docs/SECURITY.md` — hardening guide
 - `docs/DEV_QUICKSTART.md` — 5-min onboarding
+- `docs/decisions/` — ADRs

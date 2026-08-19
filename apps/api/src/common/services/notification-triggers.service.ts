@@ -3,6 +3,7 @@ import { NotificationService } from './notification.service';
 import { TradesService } from '../../trades/trades.service';
 import { BehavioralService } from '../../analytics/behavioral.service';
 import { JournalsService } from '../../journals/journals.service';
+import { AiInsightsService } from '../../ai/ai-insights.service';
 
 @Injectable()
 export class NotificationTriggersService {
@@ -13,6 +14,7 @@ export class NotificationTriggersService {
     private readonly tradesService: TradesService,
     private readonly behavioralService: BehavioralService,
     private readonly journalsService: JournalsService,
+    private readonly aiInsightsService: AiInsightsService,
   ) {}
 
   async checkAndNotify(userId: string): Promise<void> {
@@ -54,23 +56,27 @@ export class NotificationTriggersService {
         }
       }
 
-      // Losing streak
-      const advanced = await this.tradesService.getAdvancedAnalytics(userId);
-      if (
-        (advanced as any).currentStreak?.type === 'loss' &&
-        (advanced as any).currentStreak?.count >= 3
-      ) {
-        const enabled = await this.notificationService.isTypeEnabled(
-          userId,
-          'coaching',
-        );
-        if (enabled) {
+      // Proactive coaching — deterministic insight engine decides what is
+      // worth interrupting the user about; PushPolicy dedupes per rule/day.
+      const coachingEnabled = await this.notificationService.isTypeEnabled(
+        userId,
+        'coaching',
+      );
+      if (coachingEnabled) {
+        const push = await this.aiInsightsService.getCoachingPush(userId);
+        if (push) {
           await this.notificationService.create(
             userId,
             'coaching',
-            'Losing Streak Alert',
-            `You're on a ${(advanced as any).currentStreak.count}-trade losing streak. Consider stepping back and reviewing your strategy.`,
-            { streak: (advanced as any).currentStreak },
+            push.title,
+            push.message,
+            {
+              ruleId: push.ruleId,
+              source: push.source,
+              category: push.category,
+              severity: push.severity,
+              priority: push.priority,
+            },
           );
         }
       }

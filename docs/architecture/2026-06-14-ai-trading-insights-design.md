@@ -6,6 +6,8 @@
 
 ---
 
+> **Implementation note (2026-07-08):** The engine described here shipped and was restructured in Phase 12 into a rule-registry architecture under `apps/api/src/ai/insights/`. The deterministic rules in "Widget 2" (session gap, trend alignment, avg RR, streak, discipline) still apply and now live in `rules/{performance,risk,discipline,consistency}.rules.ts`. Phase 12 added portfolio-aware rules (concentration risk, strategy over-reliance, losing-symbol by expectancy, directional imbalance by expectancy) — all mapped to the same four coaching categories (`performance`/`discipline`/`risk`/`consistency`); "portfolio" is a data source, never a category. An LLM narrative layer was added and is rendered as the "Portfolio Summary" block in `AiCoachWidget`. See `semantic-architecture-v1.md` → _Insight Engine_ for the current structure.
+
 ## Overview
 
 Replace the current basic `AnalyticsPreviewWidget` with two separate dashboard widgets:

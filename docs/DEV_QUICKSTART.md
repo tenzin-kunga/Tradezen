@@ -36,7 +36,7 @@ For local development, you can use simple defaults:
 DB_PASSWORD=localdevpassword123
 JWT_SECRET=dev-secret-only-for-local-development-not-for-production-1234567890
 JWT_REFRESH_SECRET=dev-refresh-secret-only-for-local-1234567890
-OPENROUTER_API_KEY=sk-or-v1-...  # optional, only if using chat
+# AI keys are per-user — set yours in the Settings UI after logging in
 ```
 
 ⚠️ **Never commit `.env.docker`** — it's in `.gitignore`.

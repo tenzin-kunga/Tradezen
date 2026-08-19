@@ -9,6 +9,7 @@ import CommandPalette from "./CommandPalette";
 import KeyboardShortcutProvider from "./KeyboardShortcutProvider";
 import MobileBottomNav from "./MobileBottomNav";
 import FabButton from "./FabButton";
+import ChatActivityListener from "./assistant/ChatActivityListener";
 
 const PUBLIC_ROUTES = ["/login", "/register", "/auth/callback"];
 
@@ -92,7 +93,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col md:flex-row" style={{ minHeight: "100vh" }}>
+    <div
+      className="flex flex-col md:flex-row"
+      style={{ height: "100vh", overflow: "hidden" }}
+    >
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div
@@ -169,16 +173,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         className="flex flex-col flex-1"
         style={{
           minWidth: 0,
+          overflow: "hidden",
           marginLeft: typeof window !== "undefined" ? sidebarWidth : 72,
         }}
       >
         <TopBar onSearchClick={() => setPaletteOpen(true)} />
+        <ChatActivityListener />
         <main
           className="pb-14 md:pb-0"
           style={{
             flex: 1,
-            overflowY: "auto",
-            padding: 32,
+            minHeight: 0,
+            overflowY: pathname.startsWith("/workspace") ? "hidden" : "auto",
+            padding: pathname.startsWith("/workspace") ? 0 : 32,
             background: "var(--bg-primary, #09090b)",
           }}
         >

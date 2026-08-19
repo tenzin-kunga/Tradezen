@@ -30,7 +30,7 @@ export function createContext({
         (req as any).user = { id: userId };
       }
     }
-  } catch (error) {
+  } catch {
     // Invalid JWT format - will be caught by protectedProcedure
   }
 

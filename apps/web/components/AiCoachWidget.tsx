@@ -12,7 +12,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 export default function AiCoachWidget() {
-  const { insights, loading } = useAiInsights();
+  const { insights, narrative, loading } = useAiInsights();
 
   return (
     <WidgetShell
@@ -21,6 +21,26 @@ export default function AiCoachWidget() {
       isEmpty={!loading && insights.length === 0}
       emptyMessage="Complete 5 trades to unlock coaching insights."
     >
+      {narrative && (
+        <div
+          className="mb-3 rounded-lg px-3 py-2.5"
+          style={{ background: "var(--bg-primary)" }}
+        >
+          <div
+            className="text-[10px] font-semibold tracking-wider mb-1"
+            style={{ color: "var(--text-dim)" }}
+          >
+            Portfolio Summary
+          </div>
+          <p
+            className="text-xs leading-relaxed"
+            style={{ color: "var(--text-muted)", margin: 0 }}
+          >
+            {narrative}
+          </p>
+        </div>
+      )}
+
       {insights.length === 0 ? (
         <div className="flex flex-col gap-3">
           <div
@@ -85,6 +105,7 @@ export default function AiCoachWidget() {
           ))}
         </div>
       )}
+
     </WidgetShell>
   );
 }

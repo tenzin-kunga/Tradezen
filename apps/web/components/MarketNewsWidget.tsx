@@ -1,130 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMarketNews, type MarketNewsEvent, type Impact } from "@/lib/api";
+import { getMarketNews } from "@/lib/api";
 import { WidgetShell } from "@/components/design-system";
 import NewsDetailModal from "@/components/NewsDetailModal";
-import { getEventStatus, type EventStatus } from "@/lib/event-status";
-
-function formatEventTime(dateStr: string): string {
-  try {
-    return new Date(dateStr).toLocaleTimeString(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
-function isPastEvent(event: MarketNewsEvent): boolean {
-  try {
-    const ts = event.timestamp || event.date;
-    return new Date(ts).getTime() < Date.now();
-  } catch {
-    return false;
-  }
-}
-
-function isSpeech(title: string): boolean {
-  return (
-    title.toLowerCase().includes("speaks") ||
-    title.toLowerCase().includes("speech")
-  );
-}
-
-const IMPACT_COLORS: Record<
-  Impact,
-  { bar: string; bg: string; badge: string; glow: string }
-> = {
-  high: {
-    bar: "#ef4444",
-    bg: "rgba(239,68,68,0.06)",
-    badge: "#ef4444",
-    glow: "0 0 12px rgba(239,68,68,0.15)",
-  },
-  medium: {
-    bar: "#f59e0b",
-    bg: "rgba(245,158,11,0.06)",
-    badge: "#f59e0b",
-    glow: "0 0 12px rgba(245,158,11,0.15)",
-  },
-  low: {
-    bar: "#3b82f6",
-    bg: "rgba(59,130,246,0.04)",
-    badge: "#3b82f6",
-    glow: "",
-  },
-  holiday: {
-    bar: "#6b7280",
-    bg: "transparent",
-    badge: "#6b7280",
-    glow: "",
-  },
-  speech: {
-    bar: "#8b5cf6",
-    bg: "rgba(139,92,246,0.06)",
-    badge: "#8b5cf6",
-    glow: "0 0 12px rgba(139,92,246,0.15)",
-  },
-};
-
-function StatusChip({ status }: { status: EventStatus }) {
-  const config: Record<
-    EventStatus,
-    { color: string; bg: string; label: string }
-  > = {
-    upcoming: {
-      color: "#60a5fa",
-      bg: "rgba(96,165,250,0.1)",
-      label: "Upcoming",
-    },
-    live: {
-      color: "#22c55e",
-      bg: "rgba(34,197,94,0.15)",
-      label: "Live",
-    },
-    released: {
-      color: "#6b7280",
-      bg: "rgba(107,114,128,0.1)",
-      label: "Released",
-    },
-  };
-  const { color, bg, label } = config[status];
-
-  return (
-    <span
-      style={{
-        fontSize: 9,
-        fontWeight: 600,
-        padding: "1px 6px",
-        borderRadius: 4,
-        backgroundColor: bg,
-        color,
-        textTransform: "uppercase",
-        letterSpacing: "0.5px",
-        lineHeight: "16px",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 3,
-      }}
-    >
-      {status === "live" && (
-        <span
-          className="animate-pulse"
-          style={{
-            display: "inline-block",
-            width: 5,
-            height: 5,
-            borderRadius: "50%",
-            backgroundColor: color,
-          }}
-        />
-      )}
-      {label}
-    </span>
-  );
-}
+import {
+  IMPACT_COLORS,
+  formatEventTime,
+  isPastEvent,
+  isSpeech,
+  getEventStatus,
+  StatusChip,
+  type MarketNewsEvent,
+} from "@/lib/news";
 
 function MetricColumn({
   label,
@@ -332,7 +220,7 @@ export default function MarketNewsWidget({
                       fontWeight: 500,
                     }}
                   >
-                    {formatEventTime(event.date)}
+                    {formatEventTime(event.timestamp || event.date)}
                   </span>
 
                   {/* Row 4: Metrics */}

@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import DashboardShell from "@/components/DashboardShell";
 import DashboardHero from "@/components/DashboardHero";
+import LiveSessionIndicator from "@/components/LiveSessionIndicator";
 import EquityCurve from "@/components/EquityCurve";
 import DailySummaryCard from "@/components/DailySummaryCard";
 import RecentTradesWidget from "@/components/RecentTradesWidget";
@@ -254,8 +255,11 @@ export default function Dashboard() {
           winRateToday={dashboard?.dailySummary.winRateToday ?? 0}
           weeklyPnl={dashboard?.weeklyPnl ?? 0}
           weeklyWinRate={dashboard?.weeklyWinRate ?? 0}
+          totalPnl={dashboard?.totalPnl ?? 0}
           loading={loading}
         />
+
+        <LiveSessionIndicator />
 
         <PerformanceStrip
           winRate={hasTrades ? `${dashboard!.overallWinRate}%` : "--"}

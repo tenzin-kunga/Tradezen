@@ -146,6 +146,26 @@ export async function getMe() {
   }>(res);
 }
 
+export async function updateProfile(data: {
+  email?: string;
+  username?: string;
+}) {
+  const res = await authFetch(`${API}/auth/me`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  return handleResponse<{
+    id: string;
+    email: string;
+    username: string;
+    created_at: string;
+    initial_capital: number;
+    default_lot_size: number;
+    timezone: string;
+    theme: string;
+  }>(res);
+}
+
 export async function updateSettings(data: {
   initial_capital?: number;
   default_lot_size?: number;
@@ -757,6 +777,7 @@ export interface AiInsight {
 
 export interface AiInsightsResponse {
   insights: AiInsight[];
+  narrative?: string;
   generatedAt: string;
 }
 
@@ -774,6 +795,11 @@ export async function seedMockData() {
 
 export async function deleteAllSeedData() {
   const res = await authFetch(`${API}/seed`, { method: "DELETE" });
+  return handleResponse<{ message: string }>(res);
+}
+
+export async function deleteSampleData() {
+  const res = await authFetch(`${API}/seed/sample`, { method: "DELETE" });
   return handleResponse<{ message: string }>(res);
 }
 
@@ -893,7 +919,9 @@ export interface MarketNewsEvent {
   released: boolean;
 }
 
-export const getMarketNews = async (signal?: AbortSignal): Promise<MarketNewsEvent[]> => {
+export const getMarketNews = async (
+  signal?: AbortSignal,
+): Promise<MarketNewsEvent[]> => {
   const res = await authFetch(`${API}/news`, { signal });
   return handleResponse<MarketNewsEvent[]>(res);
 };

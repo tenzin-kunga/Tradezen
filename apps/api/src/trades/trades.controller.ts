@@ -23,6 +23,7 @@ import { TradesService } from './trades.service';
 import { BehavioralService } from '../analytics/behavioral.service';
 import { SnapshotService } from '../analytics/snapshot.service';
 import { JobStatusService } from '../queues/job-status.service';
+import { NotificationTriggersService } from '../common/services/notification-triggers.service';
 import { CreateTradeDto, UpdateTradeDto, QueryTradesDto } from './dto';
 import type { Express, Response } from 'express';
 
@@ -41,12 +42,16 @@ export class TradesController {
     private readonly snapshotService: SnapshotService,
     @InjectQueue('csv-import') private csvQueue: Queue,
     private readonly jobStatusService: JobStatusService,
+    private readonly notificationTriggers: NotificationTriggersService,
   ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new trade' })
   create(@CurrentUser('id') userId: string, @Body() dto: CreateTradeDto) {
-    return this.service.create(userId, dto);
+    const result = this.service.create(userId, dto);
+    // Fire-and-forget proactive coaching; must never break trade creation.
+    this.notificationTriggers.checkAndNotify(userId).catch(() => {});
+    return result;
   }
 
   @Get()

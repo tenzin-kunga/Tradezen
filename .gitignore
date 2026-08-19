@@ -58,6 +58,10 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# ── Python ───────────────────────────────────────────────────────────────────
+.venv/
+__pycache__/
+
 # ── Misc ─────────────────────────────────────────────────────────────────────
 *.pem
 *.key
@@ -66,6 +70,10 @@ lerna-debug.log*
 ssl/
 certs/
 secrets/
+
+# ── API Testing ──────────────────────────────────────────────────────────────
+.postman/
+postman/
 
 # ── Logs ─────────────────────────────────────────────────────────────────────
 logs
@@ -89,6 +97,7 @@ docker-compose*.yml
 .dockerignore
 !apps/api/Dockerfile
 !apps/web/Dockerfile
+!apps/ai-service/Dockerfile
 !docker-compose.yml
 !.dockerignore
 
@@ -125,6 +134,11 @@ apps/api/uploads/
 
 # OpenCode configuration and plans (local agent artifacts)
 .opencode/
+
+# Lint / debug artifacts (local only)
+lint-errors*.json
+lint-errors*.txt
+graphify-out/
 
 nul
 

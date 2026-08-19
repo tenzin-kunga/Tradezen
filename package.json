@@ -4,6 +4,13 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "bun run build --filter=@tradezen/db && turbo run dev",
+    "doctor": "bun scripts/dev/orchestrator.mjs doctor",
+    "infra:up": "bun scripts/dev/orchestrator.mjs up",
+    "infra:down": "bun scripts/dev/orchestrator.mjs down",
+    "dev:api": "bun scripts/dev/orchestrator.mjs api",
+    "dev:web": "bun scripts/dev/orchestrator.mjs web",
+    "dev:ai": "bun scripts/dev/orchestrator.mjs ai",
+    "dev:all": "bun scripts/dev/orchestrator.mjs all",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types"

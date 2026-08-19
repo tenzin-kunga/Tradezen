@@ -1,0 +1,162 @@
+[
+  {
+    "id": "ans_001",
+    "question": "What is my win rate?",
+    "expected": {
+      "execution": {
+        "required_intent": "analytics",
+        "required_steps": ["sql"],
+        "required_metrics": ["win_rate"],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": true,
+        "required_information_units": ["win_rate_value"]
+      }
+    }
+  },
+  {
+    "id": "ans_002",
+    "question": "How much have I made this month?",
+    "expected": {
+      "execution": {
+        "required_intent": "analytics",
+        "required_steps": ["sql"],
+        "required_metrics": ["total_pnl"],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": true,
+        "required_information_units": ["total_pnl_value"]
+      }
+    }
+  },
+  {
+    "id": "ans_003",
+    "question": "Summarize my EURUSD trades and mistakes",
+    "expected": {
+      "execution": {
+        "required_intent": "journal",
+        "required_steps": ["rag"],
+        "required_metrics": [],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": false,
+        "required_information_units": ["trade_summary", "biggest_mistake"]
+      }
+    }
+  },
+  {
+    "id": "ans_004",
+    "question": "What's my expectancy per trade?",
+    "expected": {
+      "execution": {
+        "required_intent": "analytics",
+        "required_steps": ["sql"],
+        "required_metrics": ["expectancy"],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": true,
+        "required_information_units": ["win_rate_value"]
+      }
+    }
+  },
+  {
+    "id": "ans_005",
+    "question": "How do I improve my trading?",
+    "expected": {
+      "execution": {
+        "required_intent": "coach",
+        "required_steps": ["rag"],
+        "required_metrics": [],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": false,
+        "required_information_units": ["biggest_mistake", "repeated_mistakes"]
+      }
+    }
+  },
+  {
+    "id": "ans_006",
+    "question": "Write a journal entry for my GBPUSD trade yesterday",
+    "expected": {
+      "execution": {
+        "required_intent": "journal",
+        "required_steps": ["rag"],
+        "required_metrics": [],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": false,
+        "required_information_units": ["journal_entry", "trade_summary"]
+      }
+    }
+  },
+  {
+    "id": "ans_007",
+    "question": "What are the key levels for gold right now?",
+    "expected": {
+      "execution": {
+        "required_intent": "research",
+        "required_steps": ["rag"],
+        "required_metrics": [],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": false,
+        "required_information_units": ["trade_summary"]
+      }
+    }
+  },
+  {
+    "id": "ans_008",
+    "question": "What's my biggest mistake this week?",
+    "expected": {
+      "execution": {
+        "required_intent": "journal",
+        "required_steps": ["rag"],
+        "required_metrics": [],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": false,
+        "required_information_units": ["biggest_mistake"]
+      }
+    }
+  },
+  {
+    "id": "ans_009",
+    "question": "What's my average loss on AUDUSD?",
+    "expected": {
+      "execution": {
+        "required_intent": "analytics",
+        "required_steps": ["sql"],
+        "required_metrics": ["avg_loss"],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": true,
+        "required_information_units": ["total_pnl_value"]
+      }
+    }
+  },
+  {
+    "id": "ans_010",
+    "question": "How do I feel about trading lately?",
+    "expected": {
+      "execution": {
+        "required_intent": "journal",
+        "required_steps": ["rag"],
+        "required_metrics": [],
+        "requires_grounding": true
+      },
+      "answer": {
+        "requires_numeric": false,
+        "required_information_units": ["mood_feeling"]
+      }
+    }
+  }
+]

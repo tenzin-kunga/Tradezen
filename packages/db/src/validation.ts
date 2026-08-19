@@ -121,3 +121,97 @@ export type ChatMessageInput = z.infer<typeof chatMessageSchema>;
 export type JournalMood = z.infer<typeof journalMoodEnum>;
 export type TagCategory = z.infer<typeof tagCategoryEnum>;
 export type ChatRole = z.infer<typeof chatRoleEnum>;
+
+// Symbol schemas
+export const createSymbolSchema = z.object({
+  ticker: z.string().min(1).max(20),
+  exchange: z.string().max(20).nullish(),
+  asset_type: z.string().max(20).nullish(),
+  currency: z.string().max(10).nullish(),
+  name: z.string().max(200).nullish(),
+});
+
+// Watchlist schemas
+export const createWatchlistSchema = z.object({
+  name: z.string().min(1).max(100),
+  type: z.enum(["manual", "smart"]).optional(),
+  definition: z.record(z.unknown()).nullish(),
+});
+
+export const createWatchlistItemSchema = z.object({
+  ticker: z.string().min(1).max(20),
+  exchange: z.string().max(20).nullish(),
+  priority: z.number().int().min(0).max(2).optional(),
+  notes: z.string().max(1000).nullish(),
+});
+
+export const reorderWatchlistSchema = z.object({
+  type: z.literal("move"),
+  itemId: z.string().uuid(),
+  from: z.number().int().min(0),
+  to: z.number().int().min(0),
+});
+
+export type CreateSymbolInput = z.infer<typeof createSymbolSchema>;
+export type CreateWatchlistInput = z.infer<typeof createWatchlistSchema>;
+export type CreateWatchlistItemInput = z.infer<
+  typeof createWatchlistItemSchema
+>;
+export type ReorderWatchlistInput = z.infer<typeof reorderWatchlistSchema>;
+
+// Knowledge schemas
+export const createKnowledgeFolderSchema = z.object({
+  name: z.string().min(1).max(200),
+  parent_id: z.string().uuid().nullish(),
+  icon: z.string().max(10).nullish(),
+});
+
+export const createKnowledgeDocumentSchema = z.object({
+  title: z.string().min(1).max(500),
+  folder_id: z.string().uuid().nullish(),
+  content: z.string().max(1000000).nullish(),
+  doc_type: z
+    .enum([
+      "thesis",
+      "analysis",
+      "playbook",
+      "macro",
+      "note",
+      "snapshot",
+      "postmortem",
+    ])
+    .optional(),
+  template_id: z.string().max(50).nullish(),
+  frontmatter: z.record(z.unknown()).nullish(),
+});
+
+export const updateKnowledgeDocumentSchema = z.object({
+  title: z.string().min(1).max(500).optional(),
+  content: z.string().max(1000000).optional(),
+  status: z.enum(["draft", "active", "archived"]).optional(),
+  frontmatter: z.record(z.unknown()).optional(),
+});
+
+export const createKnowledgeLinkSchema = z.object({
+  target_document_id: z.string().uuid(),
+  relationship_type: z.enum([
+    "references",
+    "cites",
+    "related",
+    "contradicts",
+    "supports",
+  ]),
+});
+
+export type CreateKnowledgeFolderInput = z.infer<
+  typeof createKnowledgeFolderSchema
+>;
+export type CreateKnowledgeDocumentInput = z.infer<
+  typeof createKnowledgeDocumentSchema
+>;
+export type UpdateKnowledgeDocumentInput = z.infer<
+  typeof updateKnowledgeDocumentSchema
+>;
+export type CreateKnowledgeLinkInput = z.infer<
+  typeof createKnowledgeLinkSchema
+>;

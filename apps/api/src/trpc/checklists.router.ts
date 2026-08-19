@@ -323,7 +323,7 @@ export const checklistsRouter = router({
 
     updateItem: protectedProcedure
       .input(updateChecklistRunItemSchema)
-      .mutation(async ({ ctx, input }) => {
+      .mutation(async ({ input }) => {
         const db = getDb();
         const [runItem] = await db
           .update(checklistRunItems)

@@ -17,6 +17,14 @@ import { GatewayModule } from './gateway/gateway.module';
 import { QueuesModule } from './queues/queues.module';
 import { ReportModule } from './reports/report.module';
 import { NewsModule } from './news/news.module';
+import { SymbolsModule } from './symbols/symbols.module';
+import { WatchlistModule } from './watchlist/watchlist.module';
+import { KnowledgeModule } from './knowledge/knowledge.module';
+import { RetrievalModule } from './knowledge/retrieval/retrieval.module';
+import { ResearchModule } from './research/research.module';
+import { PortfolioModule } from './portfolio/portfolio.module';
+import { SemanticModule } from './ai/context/semantic/semantic.module';
+import { UserSettingsModule } from './user-settings/user-settings.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { ThrottlerEventsGuard } from './common/guards/throttler.guard';
 import { SnapshotService } from './analytics/snapshot.service';
@@ -29,7 +37,10 @@ import { JournalAnalysisWorkflow } from './ai/workflows/journal-analysis.workflo
 import { CoachingWorkflow } from './ai/workflows/coaching.workflow';
 import { CoachingEngineService } from './ai/coaching-engine.service';
 import { AiInsightsService } from './ai/ai-insights.service';
+import { CoachingPushPolicy } from './ai/insights/push-policy';
 import { AiController } from './ai/ai.controller';
+import { CorpusBaselineService } from './ai/corpus-baseline.service';
+import { ReconciliationService } from './ai/reconciliation.service';
 import { NotificationService } from './common/services/notification.service';
 import { NotificationTriggersService } from './common/services/notification-triggers.service';
 import { JournalsService } from './journals/journals.service';
@@ -81,6 +92,14 @@ import { JournalsService } from './journals/journals.service';
     SearchModule,
     SeedModule,
     NewsModule,
+    SymbolsModule,
+    WatchlistModule,
+    KnowledgeModule,
+    RetrievalModule,
+    ResearchModule,
+    PortfolioModule,
+    SemanticModule,
+    UserSettingsModule,
   ],
   controllers: [AppController, AiController],
   providers: [
@@ -100,6 +119,9 @@ import { JournalsService } from './journals/journals.service';
     NotificationService,
     NotificationTriggersService,
     JournalsService,
+    CoachingPushPolicy,
+    CorpusBaselineService,
+    ReconciliationService,
   ],
   exports: [
     SnapshotService,
@@ -115,6 +137,9 @@ import { JournalsService } from './journals/journals.service';
     NotificationService,
     NotificationTriggersService,
     JournalsService,
+    CoachingPushPolicy,
+    CorpusBaselineService,
+    ReconciliationService,
   ],
 })
 export class AppModule implements NestModule {

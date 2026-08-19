@@ -1,7 +1,14 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
-import { getDailyPnl, getTrades } from "@/lib/api";
+import { getDailyPnl, getTrades, getMarketNews } from "@/lib/api";
 import DashboardShell from "@/components/DashboardShell";
+import {
+  IMPACT_COLORS,
+  formatEventTime,
+  isPastEvent,
+  isSpeech,
+  type MarketNewsEvent,
+} from "@/lib/news";
 
 interface DayData {
   date: string;
@@ -67,6 +74,7 @@ export default function CalendarPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [dayTrades, setDayTrades] = useState<any[]>([]);
+  const [news, setNews] = useState<MarketNewsEvent[]>([]);
 
   useEffect(() => {
     const firstDay = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`;
@@ -126,6 +134,21 @@ export default function CalendarPage() {
       .catch(console.error)
       .finally(() => setIsLoading(false));
   }, [currentYear, currentMonth]);
+
+  useEffect(() => {
+    const abort = new AbortController();
+    getMarketNews(abort.signal)
+      .then((data) => {
+        setNews(
+          data
+            .filter((e) => !isPastEvent(e) && !isSpeech(e.title))
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .slice(0, 10),
+        );
+      })
+      .catch(() => {});
+    return () => abort.abort();
+  }, []);
 
   const monthDays = useMemo(
     () => getMonthDays(currentYear, currentMonth),
@@ -325,6 +348,65 @@ export default function CalendarPage() {
           })}
         </div>
       </div>
+
+      {/* Upcoming News */}
+      {news.length > 0 && (
+        <div className="surface-2 rounded-xl p-3 md:p-5 mt-4">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-sm font-bold tracking-widest m-0">
+              UPCOMING NEWS
+            </h2>
+            <a
+              href="https://www.forexfactory.com/calendar"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-text-dim hover:text-text-primary no-underline"
+            >
+              FULL CALENDAR →
+            </a>
+          </div>
+          <div className="flex flex-col">
+            {news.map((event, i) => {
+              const colors = IMPACT_COLORS[event.impact] ?? IMPACT_COLORS.low;
+              return (
+                <div
+                  key={event.id}
+                  className="flex items-center gap-3 py-2.5"
+                  style={{
+                    borderBottom:
+                      i < news.length - 1
+                        ? "1px solid var(--border-subtle)"
+                        : "none",
+                  }}
+                >
+                  <div
+                    className="w-1 self-stretch rounded"
+                    style={{ backgroundColor: colors.bar }}
+                  />
+                  <div className="text-sm font-bold text-text-primary w-14 shrink-0">
+                    {formatEventTime(event.timestamp || event.date)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm truncate">{event.title}</div>
+                    <div className="text-xs text-text-dim">
+                      {event.currency || event.country} ·{" "}
+                      {event.impact === "high" ? "High" : "Medium"} impact
+                    </div>
+                  </div>
+                  <div className="hidden md:flex gap-4 text-xs text-text-dim shrink-0">
+                    <span>
+                      FCST <span className="text-text-primary">{event.forecast || "—"}</span>
+                    </span>
+                    <span>
+                      PREV <span className="text-text-primary">{event.previous || "—"}</span>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Day Detail Panel */}
       {selectedDay && (

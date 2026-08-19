@@ -3,12 +3,14 @@ import type { ReactNode } from "react";
 import { Inter } from "next/font/google";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import "@/lib/workspace/init";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { ToastProvider } from "@/components/Toast";
 import AppShell from "@/components/AppShell";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TrpcProvider } from "@/providers/trpc-provider";
+import { WorkspaceProvider } from "@/lib/workspace/workspace-context";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -38,7 +40,9 @@ export default function RootLayout({
             <ToastProvider>
               <TrpcProvider>
                 <TooltipProvider>
-                  <AppShell>{children}</AppShell>
+                  <WorkspaceProvider>
+                    <AppShell>{children}</AppShell>
+                  </WorkspaceProvider>
                 </TooltipProvider>
               </TrpcProvider>
             </ToastProvider>

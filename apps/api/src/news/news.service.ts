@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import Redis from 'ioredis';
 import { getRedisConnection } from '../common/utils/redis-connection';
-import { fetchCalendarEvents } from './finnhub.mapper';
+import { fetchCalendarEvents } from './calendar.mapper';
 import type { EconomicEvent } from './news.types';
 
 export interface MarketNewsEvent {
@@ -32,7 +32,7 @@ function getTodayKey(): string {
   const y = now.getUTCFullYear();
   const m = String(now.getUTCMonth() + 1).padStart(2, '0');
   const d = String(now.getUTCDate()).padStart(2, '0');
-  return `news:finnhub:${y}-${m}-${d}`;
+  return `news:calendar:${y}-${m}-${d}`;
 }
 
 function normalizeNewsKey(title: string): string {
@@ -108,7 +108,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     const d = String(utcNow.getUTCDate()).padStart(2, '0');
     const dateStr = `${y}-${m}-${d}`;
 
-    this.logger.log(`Starting Finnhub fetch for ${dateStr}`);
+    this.logger.log(`Starting calendar fetch for ${dateStr}`);
     this.fetchPromise = this.fetchAndCache(dateStr, cacheKey);
     try {
       return await this.fetchPromise;
@@ -122,7 +122,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
     cacheKey: string,
   ): Promise<MarketNewsEvent[]> {
     try {
-      const events = await fetchCalendarEvents(dateStr);
+      const events = await fetchCalendarEvents();
       const dtos = events.map(toDto);
 
       try {
@@ -133,7 +133,7 @@ export class NewsService implements OnModuleInit, OnModuleDestroy {
 
       return dtos;
     } catch (err) {
-      this.logger.error(`Finnhub fetch failed: ${(err as Error).message}`);
+      this.logger.error(`Calendar fetch failed: ${(err as Error).message}`);
       return [];
     }
   }

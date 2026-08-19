@@ -1,9 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import { db } from '../db/drizzle';
 import { aiInsights } from '@tradezen/db';
 import { eq, desc, and } from 'drizzle-orm';
 import { JournalAnalysisWorkflow } from './workflows/journal-analysis.workflow';
-import { EmbeddingService } from './embedding.service';
+import type { EmbeddingPipeline } from './context/semantic/embedding-pipeline';
+import { SemanticSourceType } from './context/semantic/types';
+import { FormatterRegistry } from './context/semantic/formatters/registry';
 
 @Injectable()
 export class JournalIntelligenceService {
@@ -11,7 +14,8 @@ export class JournalIntelligenceService {
 
   constructor(
     private readonly workflow: JournalAnalysisWorkflow,
-    private readonly embeddingService: EmbeddingService,
+    @Inject('EmbeddingPipeline') private readonly pipeline: EmbeddingPipeline,
+    private readonly formatterRegistry: FormatterRegistry,
   ) {}
 
   async analyzeJournals(
@@ -26,25 +30,50 @@ export class JournalIntelligenceService {
   }> {
     const result = await this.workflow.run(userId, dateFrom, dateTo);
 
-    await db.insert(aiInsights).values({
-      userId,
-      insightType: 'journal_analysis',
-      content: result.summary,
-      metadata: {
-        sentiment: result.sentiment,
-        patterns: result.patterns,
-        insights: result.insights,
-        dateFrom,
-        dateTo,
-      },
-    });
+    const [insight] = await db
+      .insert(aiInsights)
+      .values({
+        userId,
+        insightType: 'journal_analysis',
+        content: result.summary,
+        metadata: {
+          sentiment: result.sentiment,
+          patterns: result.patterns,
+          insights: result.insights,
+          dateFrom,
+          dateTo,
+        },
+      })
+      .returning({ id: aiInsights.id });
 
-    await this.embeddingService.embedAndStore(
-      userId,
-      'ai_insight',
-      `journal_analysis_${Date.now()}`,
-      result.summary,
-    );
+    try {
+      const formatter = this.formatterRegistry.get(
+        SemanticSourceType.AI_INSIGHT,
+      );
+      if (formatter) {
+        await this.pipeline.enqueue(
+          formatter.format(
+            {
+              id: insight.id,
+              insightType: 'journal_analysis',
+              content: result.summary,
+              metadata: {
+                sentiment: result.sentiment,
+                patterns: result.patterns,
+                insights: result.insights,
+                dateFrom,
+                dateTo,
+              },
+            },
+            userId,
+          ),
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to embed insight ${insight.id}: ${(error as Error).message}`,
+      );
+    }
 
     this.logger.log(`Journal analysis complete for user ${userId}`);
     return result;

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ret_001",
+    "question": "What was my biggest EURUSD loss?",
+    "relevant_document_ids": [],
+    "expected_source_type": "trade",
+    "description": "Should retrieve trade documents filtered by symbol"
+  },
+  {
+    "id": "ret_002",
+    "question": "When did I revenge trade?",
+    "relevant_document_ids": [],
+    "expected_source_type": "trade",
+    "description": "Should retrieve trades with revenge_trade=true or notes mentioning revenge"
+  },
+  {
+    "id": "ret_003",
+    "question": "What lessons did I write about liquidity sweeps?",
+    "relevant_document_ids": [],
+    "expected_source_type": "journal",
+    "description": "Should retrieve journal entries mentioning liquidity sweeps in lessons"
+  },
+  {
+    "id": "ret_004",
+    "question": "Which trade followed my SMC strategy?",
+    "relevant_document_ids": [],
+    "expected_source_type": "trade",
+    "description": "Should retrieve trades with SMC strategy"
+  },
+  {
+    "id": "ret_005",
+    "question": "How did I feel during my trades last week?",
+    "relevant_document_ids": [],
+    "expected_source_type": "journal",
+    "description": "Should retrieve recent journal entries with mood data"
+  },
+  {
+    "id": "ret_006",
+    "question": "Show me the trade where I exited too early.",
+    "relevant_document_ids": [],
+    "expected_source_type": "trade",
+    "description": "Should retrieve trades with notes about early exit"
+  },
+  {
+    "id": "ret_007",
+    "question": "What did I learn about overtrading?",
+    "relevant_document_ids": [],
+    "expected_source_type": "journal",
+    "description": "Should retrieve journal entries mentioning overtrading in lessons"
+  },
+  {
+    "id": "ret_008",
+    "question": "Summarize my GBPUSD performance.",
+    "relevant_document_ids": [],
+    "expected_source_type": "trade",
+    "description": "Should retrieve GBPUSD trades for summary"
+  },
+  {
+    "id": "ret_009",
+    "question": "What was my market outlook last Monday?",
+    "relevant_document_ids": [],
+    "expected_source_type": "journal",
+    "description": "Should retrieve journal entries from Monday with pre-market notes"
+  },
+  {
+    "id": "ret_010",
+    "question": "Which trades had the highest profit?",
+    "relevant_document_ids": [],
+    "expected_source_type": "trade",
+    "description": "Should retrieve top profitable trades"
+  }
+]

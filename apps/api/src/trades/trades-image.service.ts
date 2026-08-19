@@ -46,7 +46,7 @@ export class TradeImageService {
         .insert(tradeImages)
         .values({
           tradeId,
-          cloudinaryPublicId: result.publicId,
+          cloudinaryPublicId: result.providerKey,
           cloudinaryVersion: result.version,
           width: result.width,
           height: result.height,
@@ -59,7 +59,7 @@ export class TradeImageService {
       return this.formatImageResponse(image[0]);
     } catch (error) {
       // Rollback: delete uploaded asset
-      await this.storageProvider.delete(result.publicId, result.version);
+      await this.storageProvider.delete(result.providerKey);
       throw error;
     }
   }
@@ -80,10 +80,7 @@ export class TradeImageService {
     if (!image) throw new NotFoundException();
 
     // Delete from Cloudinary
-    await this.storageProvider.delete(
-      image.cloudinaryPublicId,
-      image.cloudinaryVersion,
-    );
+    await this.storageProvider.delete(image.cloudinaryPublicId);
 
     // Delete from database
     await db.delete(tradeImages).where(eq(tradeImages.id, imageId));
@@ -119,7 +116,7 @@ export class TradeImageService {
     const updated = await db
       .update(tradeImages)
       .set({
-        cloudinaryPublicId: newResult.publicId,
+        cloudinaryPublicId: newResult.providerKey,
         cloudinaryVersion: newResult.version,
         width: newResult.width,
         height: newResult.height,
@@ -131,10 +128,7 @@ export class TradeImageService {
       .returning();
 
     // Delete old Cloudinary asset
-    await this.storageProvider.delete(
-      existingImage.cloudinaryPublicId,
-      existingImage.cloudinaryVersion,
-    );
+    await this.storageProvider.delete(existingImage.cloudinaryPublicId);
 
     return this.formatImageResponse(updated[0]);
   }

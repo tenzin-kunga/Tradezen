@@ -1,6 +1,6 @@
 # TradeZen — Carbon Ledger
 
-A professional trading journal web app with a Glass Depth design system. Track trades, analyze performance, maintain a daily journal, and tag trades for organization.
+A professional trading journal web app with a Glass Depth design system. Track trades, analyze performance, maintain a daily journal, and tag trades for organization — with AI-powered coaching and insights.
 
 **Live:** [tradezen-tampered-sins-projects.vercel.app](https://tradezen-tampered-sins-projects.vercel.app)
 
@@ -8,17 +8,18 @@ A professional trading journal web app with a Glass Depth design system. Track t
 
 ## Tech Stack
 
-| Layer          | Technology                                                       |
-| -------------- | ---------------------------------------------------------------- |
-| **Frontend**   | Next.js 14.2.25, React 18.2.0, Tailwind CSS v3.4, Recharts       |
-| **Backend**    | NestJS 11, PostgreSQL (raw `pg`), Passport JWT, Redis            |
-| **Database**   | PostgreSQL 16-alpine (Docker) / Neon (production)                |
-| **Monorepo**   | Bun workspaces (Turborepo)                                       |
-| **Deployment** | Vercel (web) + Render (API) + Neon (DB) / Docker Compose (local) |
+| Layer          | Technology                                                                  |
+| -------------- | --------------------------------------------------------------------------- |
+| **Frontend**   | Next.js 14.2, React 18.2, Tailwind CSS v3.4, shadcn/ui, Recharts            |
+| **Backend**    | NestJS 11, tRPC, Socket.IO, Passport JWT + OAuth (Google/GitHub)             |
+| **Database**   | PostgreSQL 16 + pgvector, Drizzle ORM, Redis 7, BullMQ                       |
+| **AI**         | LangChain/LangGraph (OpenRouter) + Python FastAPI service (Ollama optional)  |
+| **Monorepo**   | Bun workspaces + Turborepo                                                  |
+| **Deployment** | Vercel (web) + Render (API) + Neon (DB) / Docker Compose (local)             |
 
 ## Features
 
-- **Authentication** — JWT access tokens + HTTP-only refresh cookies
+- **Authentication** — JWT access tokens + HTTP-only refresh cookies, OAuth (Google/GitHub)
 - **Trade Logging** — Full CRUD with symbol, direction, entry/exit, lot size, stop loss, take profit, strategy, notes
 - **Behavioral Tracking** — FOMO check, trend alignment, vengeance trade flags
 - **Analytics Dashboard** — Win rate, profit factor, expectancy, max drawdown, Sharpe ratio, day-of-week performance, equity curve
@@ -26,6 +27,7 @@ A professional trading journal web app with a Glass Depth design system. Track t
 - **Tags** — Color-coded tags with categories, attach to trades for filtering
 - **CSV Export** — Export trades to CSV
 - **AI Chat** — OpenRouter integration for trade analysis assistance
+- **AI Insights** — Deterministic coaching cards across Performance / Discipline / Risk / Consistency, plus an AI-generated portfolio narrative and proactive coaching delivery via real-time notifications
 - **Glass Depth UI** — Modern glass morphism design with cyan/emerald accents
 - **Swagger Docs** — Interactive API docs at `/api/docs` (dev only)
 
@@ -34,16 +36,18 @@ A professional trading journal web app with a Glass Depth design system. Track t
 ```
 tradezen/
 ├── apps/
-│   ├── api/          # NestJS backend (auth, trades, journals, tags, chat)
-│   └── web/          # Next.js frontend (dashboard, trade log, analytics, journal, calendar)
+│   ├── api/          # NestJS backend (auth, trades, journals, tags, chat, WebSocket, tRPC)
+│   ├── web/          # Next.js frontend (dashboard, trade log, analytics, journal, calendar)
+│   └── ai-service/   # Python FastAPI AI service (agents, retrieval, prompts)
 ├── packages/
+│   ├── db/           # @tradezen/db — Drizzle schema + connection + types
 │   ├── types/        # Shared TypeScript types
 │   ├── ui/           # Shared UI components
 │   ├── eslint-config/# ESLint configs
 │   └── typescript-config/ # TSConfig presets
 ├── docs/             # Project documentation
-├── infra/            # Infrastructure configs (Docker, Render)
-├── scripts/          # Utility scripts (dev, db, security, monitoring)
+├── infra/            # Docker Compose (PostgreSQL, Redis, Ollama)
+├── scripts/          # Dev orchestrator, utility scripts
 ├── .githooks/        # Git hooks (pre-commit secret scanning)
 └── .env.docker.example # Environment template
 ```
@@ -52,30 +56,43 @@ tradezen/
 
 ### Prerequisites
 
-- **Bun 1.3+** (recommended) or Node.js 20+
+- **Bun 1.3+** — see [Gotchas](#gotchas), lockfile is `bun.lock`
 - Docker Desktop (for local PostgreSQL + Redis)
 
-### Quick Start (One-Click)
+### Quick Start
 
 ```sh
-scripts/dev/start.bat
+bun install
+bun run doctor      # verify your environment (Bun, Docker, Postgres, Redis, venv, ...)
+bun run dev:all     # launch API (3001) + Web (3000) + AI (8000) with hot reload
 ```
 
-This script handles:
+`bun run dev:all` is the one-command, cross-platform launcher. It ensures Docker is up,
+starts infrastructure with health checks, builds `@tradezen/db`, and opens each service
+in its **own terminal window** (API, Web, AI) so their output stays separate. Close a
+window to stop that service; the database and Redis keep running between sessions.
 
-1. Docker Desktop startup (if not running)
-2. Cleaning stale containers
-3. Starting PostgreSQL + Redis with health checks
-4. Launching API (`localhost:3001`) and Web (`localhost:3000`) in separate windows
+The Windows `scripts/dev/start.bat` is now just a thin wrapper that calls `bun run dev:all`.
 
-### Manual Setup
+### Individual commands
 
 ```sh
-# Clone and install
-git clone https://github.com/tampered-sin/Tradezen.git
-cd Tradezen
-bun install
+bun run doctor        # diagnostic health check (exit 1 if anything critical is missing)
+bun run infra:up      # start PostgreSQL + Redis (+ Ollama when enabled)
+bun run infra:down    # stop the Docker infrastructure
+bun run dev:api       # run only the API
+bun run dev:web       # run only the Web app
+bun run dev:ai        # run only the AI service (needs its Python venv)
+bun run dev:all       # run everything
+```
 
+To enable the local Ollama LLM, copy `.env.dev.example` to `.env.dev` and set
+`ENABLE_OLLAMA=true`. Set `AUTO_PULL_OLLAMA=true` to have the launcher pull the
+default model (`qwen3:4b`) automatically; otherwise it prints the pull command.
+
+### Manual Setup (Docker only)
+
+```sh
 # Configure environment
 cp .env.docker.example .env.docker
 # Edit .env.docker with your values
@@ -96,7 +113,6 @@ bun run dev
 | `DB_PASSWORD`        | _(required)_            | PostgreSQL password                 |
 | `JWT_SECRET`         | _(required)_            | JWT signing secret (min 64 chars)   |
 | `JWT_REFRESH_SECRET` | _(required)_            | Refresh token secret (min 64 chars) |
-| `OPENROUTER_API_KEY` | _(optional)_            | OpenRouter API key for AI chat      |
 | `WEB_URL`            | `http://localhost:3000` | Frontend URL (CORS origin)          |
 
 **API** (`apps/api/.env`) — development defaults:
@@ -114,6 +130,8 @@ bun run dev
 | Variable              | Default                 | Description     |
 | --------------------- | ----------------------- | --------------- |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | Backend API URL |
+
+> AI API keys are per-user (set in the Settings UI, encrypted in DB) — no server-side key.
 
 ## Docker Infrastructure
 
@@ -146,60 +164,37 @@ See [SECURITY.md](docs/SECURITY.md) for full hardening guide.
 
 ## API Endpoints
 
-| Method   | Endpoint               | Description                 |
-| -------- | ---------------------- | --------------------------- |
-| `POST`   | `/auth/register`       | Register new user           |
-| `POST`   | `/auth/login`          | Login                       |
-| `POST`   | `/auth/refresh`        | Refresh access token        |
-| `POST`   | `/auth/logout`         | Logout                      |
-| `GET`    | `/auth/me`             | Get current user            |
-| `POST`   | `/trades`              | Create trade                |
-| `GET`    | `/trades`              | List trades (paginated)     |
-| `GET`    | `/trades/analytics`    | Trade analytics             |
-| `GET`    | `/trades/export/csv`   | Export CSV                  |
-| `GET`    | `/trades/:id`          | Get trade                   |
-| `PUT`    | `/trades/:id`          | Update trade                |
-| `DELETE` | `/trades/:id`          | Delete trade                |
-| `POST`   | `/journals`            | Create/upsert journal entry |
-| `GET`    | `/journals`            | List journal entries        |
-| `GET`    | `/journals/streak`     | Get journal streak stats    |
-| `GET`    | `/journals/date/:date` | Get entry by date           |
-| `POST`   | `/tags`                | Create tag                  |
-| `GET`    | `/tags`                | List tags                   |
-| `PUT`    | `/tags/:id`            | Update tag                  |
-| `DELETE` | `/tags/:id`            | Delete tag                  |
-| `POST`   | `/chat`                | AI chat message             |
+| Method   | Endpoint               | Description                                        |
+| -------- | ---------------------- | -------------------------------------------------- |
+| `POST`   | `/auth/register`       | Register new user                                  |
+| `POST`   | `/auth/login`          | Login                                              |
+| `POST`   | `/auth/refresh`        | Refresh access token                               |
+| `POST`   | `/auth/logout`         | Logout                                             |
+| `GET`    | `/auth/me`             | Get current user                                   |
+| `GET`    | `/auth/google`         | OAuth login with Google                            |
+| `GET`    | `/auth/github`         | OAuth login with GitHub                            |
+| `POST`   | `/auth/oauth/link`     | Link OAuth account to existing user                |
+| `POST`   | `/auth/oauth/unlink`   | Unlink OAuth account                               |
+| `GET`    | `/auth/oauth/accounts` | List linked OAuth accounts                         |
+| `POST`   | `/trades`              | Create trade                                       |
+| `GET`    | `/trades`              | List trades (paginated)                            |
+| `GET`    | `/trades/analytics`    | Trade analytics                                    |
+| `GET`    | `/trades/export/csv`   | Export CSV                                         |
+| `GET`    | `/trades/:id`          | Get trade                                          |
+| `PUT`    | `/trades/:id`          | Update trade                                       |
+| `DELETE` | `/trades/:id`          | Delete trade                                       |
+| `POST`   | `/journals`            | Create/upsert journal entry                        |
+| `GET`    | `/journals`            | List journal entries                               |
+| `GET`    | `/journals/streak`     | Get journal streak stats                           |
+| `GET`    | `/journals/date/:date` | Get entry by date                                  |
+| `POST`   | `/tags`                | Create tag                                         |
+| `GET`    | `/tags`                | List tags                                          |
+| `PUT`    | `/tags/:id`            | Update tag                                         |
+| `DELETE` | `/tags/:id`            | Delete tag                                         |
+| `POST`   | `/chat`                | AI chat message                                    |
+| `GET`    | `/ai/insights`         | Trading insights + portfolio narrative (cached 6h) |
 
-Full interactive docs at `/api/docs` (development only).
-
-## CI/CD Pipeline
-
-GitHub Actions workflow (`.github/workflows/ci.yml`):
-
-1. **Security Audit** — `bun pm audit`, Trivy filesystem scan, secret detection
-2. **Lint & Type Check** — ESLint + TypeScript validation
-3. **Unit Tests** — Jest test suite
-4. **Build & Deploy** — Docker Buildx with caching, auto-deploy on `main`
-
-## Documentation
-
-| File                                        | Purpose                       |
-| ------------------------------------------- | ----------------------------- |
-| [SECURITY.md](docs/SECURITY.md)             | Security hardening guide      |
-| [DEPLOYMENT.md](docs/DEPLOYMENT.md)         | Production deployment steps   |
-| [DEV_QUICKSTART.md](docs/DEV_QUICKSTART.md) | 5-minute developer onboarding |
-| [AUDIT-REPORT.md](docs/AUDIT-REPORT.md)     | Infrastructure audit results  |
-| [decisions/](docs/decisions/)               | Architecture Decision Records |
-
-## Deployment
-
-| Service                      | Purpose               |
-| ---------------------------- | --------------------- |
-| [Vercel](https://vercel.com) | Frontend (`apps/web`) |
-| [Render](https://render.com) | Backend (`apps/api`)  |
-| [Neon](https://neon.tech)    | PostgreSQL database   |
-
-Auto-deploys on push to `main`.
+Additional surfaces: tRPC (`/trpc`), WebSocket (Socket.IO gateway), Swagger at `/api/docs` (development only).
 
 ## CI/CD Pipeline
 
@@ -252,6 +247,36 @@ Set in repo **Settings → Secrets and variables → Actions**:
 curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash
 ./actionlint .github/workflows/*.yml
 ```
+
+## Gotchas
+
+- **`bun run dev` auto-runs migrations** — `main.ts:144` calls `runMigrations()` on startup. There is no separate migration step in local dev.
+- **@tradezen/db must be built first** — root `dev` script explicitly runs `bun run build --filter=@tradezen/db` before turbo.
+- **JWT secrets must be 64+ chars** — validated at startup in production. Dev mode skips validation.
+- **tRPC:** API mounts `/trpc` via Express middleware. Web imports `api/trpc` for end-to-end types.
+- **Swagger** at `/api/docs` — dev only, disabled in production.
+- **No web tests** configured — only API has Jest.
+- **Bun required** — packageManager is `bun@1.3.13`. Lockfile is `bun.lock`.
+
+## Documentation
+
+| File                                        | Purpose                       |
+| ------------------------------------------- | ----------------------------- |
+| [SECURITY.md](docs/SECURITY.md)             | Security hardening guide      |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md)         | Production deployment steps   |
+| [DEV_QUICKSTART.md](docs/DEV_QUICKSTART.md) | 5-minute developer onboarding |
+| [AUDIT-REPORT.md](docs/AUDIT-REPORT.md)     | Infrastructure audit results  |
+| [decisions/](docs/decisions/)               | Architecture Decision Records |
+
+## Deployment
+
+| Service                      | Purpose               |
+| ---------------------------- | --------------------- |
+| [Vercel](https://vercel.com) | Frontend (`apps/web`) |
+| [Render](https://render.com) | Backend (`apps/api`)  |
+| [Neon](https://neon.tech)    | PostgreSQL database   |
+
+Auto-deploys on push to `main` (prod) and `develop` (staging) — see [CI/CD Pipeline](#cicd-pipeline).
 
 ## License
 

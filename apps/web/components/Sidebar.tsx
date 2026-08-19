@@ -11,28 +11,7 @@ type NavItem = {
   icon: React.ReactNode;
 };
 
-const GROUP1: NavItem[] = [
-  {
-    label: "Dashboard",
-    href: "/",
-    icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
-  },
+const JOURNAL: NavItem[] = [
   {
     label: "Trades",
     href: "/trades",
@@ -56,71 +35,6 @@ const GROUP1: NavItem[] = [
       </svg>
     ),
   },
-  {
-    label: "Analytics",
-    href: "/analytics",
-    icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M3 3v18h18" />
-        <path d="M7 16l4-8 4 4 4-6" />
-      </svg>
-    ),
-  },
-  {
-    label: "Journal",
-    href: "/journal",
-    icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-        <path d="M8 7h8" />
-        <path d="M8 11h6" />
-      </svg>
-    ),
-  },
-  {
-    label: "Reports",
-    href: "/reports",
-    icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <polyline points="10 9 9 9 8 9" />
-      </svg>
-    ),
-  },
-];
-
-const GROUP2: NavItem[] = [
   {
     label: "Calendar",
     href: "/calendar",
@@ -161,9 +75,12 @@ const GROUP2: NavItem[] = [
       </svg>
     ),
   },
+];
+
+const INSIGHTS: NavItem[] = [
   {
-    label: "Calculator",
-    href: "/calculator",
+    label: "Dashboard",
+    href: "/",
     icon: (
       <svg
         width="18"
@@ -175,15 +92,93 @@ const GROUP2: NavItem[] = [
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <rect x="4" y="2" width="16" height="20" rx="2" />
-        <line x1="8" y1="6" x2="16" y2="6" />
-        <line x1="8" y1="10" x2="8" y2="10.01" />
-        <line x1="12" y1="10" x2="12" y2="10.01" />
-        <line x1="16" y1="10" x2="16" y2="10.01" />
-        <line x1="8" y1="14" x2="8" y2="14.01" />
-        <line x1="12" y1="14" x2="12" y2="14.01" />
-        <line x1="16" y1="14" x2="16" y2="14.01" />
-        <line x1="8" y1="18" x2="16" y2="18" />
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>
+    ),
+  },
+  {
+    label: "Analytics",
+    href: "/analytics",
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 3v18h18" />
+        <path d="M7 16l4-8 4 4 4-6" />
+      </svg>
+    ),
+  },
+  {
+    label: "Reports",
+    href: "/reports",
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <polyline points="10 9 9 9 8 9" />
+      </svg>
+    ),
+  },
+];
+
+const INTELLIGENCE: NavItem[] = [
+  {
+    label: "Assistant",
+    href: "/workspace/assistant",
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    ),
+  },
+  {
+    label: "Workspace",
+    href: "/workspace/knowledge",
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        <path d="M8 7h8" />
+        <path d="M8 11h6" />
       </svg>
     ),
   },
@@ -290,6 +285,24 @@ function NavItemLink({
         )}
       </div>
     </Link>
+  );
+}
+
+function SectionHeader({ label, expanded }: { label: string; expanded: boolean }) {
+  if (!expanded) return null;
+  return (
+    <div
+      style={{
+        fontSize: 10,
+        fontWeight: 600,
+        color: "var(--text-dim, #6b7280)",
+        textTransform: "uppercase",
+        letterSpacing: "0.05em",
+        padding: "4px 16px",
+      }}
+    >
+      {label}
+    </div>
   );
 }
 
@@ -491,8 +504,9 @@ export default function Sidebar({
           paddingTop: 8,
         }}
       >
+        <SectionHeader label="Journal" expanded={expanded} />
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {GROUP1.map((item) => (
+          {JOURNAL.map((item) => (
             <NavItemLink
               key={item.href}
               item={item}
@@ -512,8 +526,31 @@ export default function Sidebar({
           }}
         />
 
+        <SectionHeader label="Insights" expanded={expanded} />
         <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {GROUP2.map((item) => (
+          {INSIGHTS.map((item) => (
+            <NavItemLink
+              key={item.href}
+              item={item}
+              pathname={pathname}
+              collapsed={!expanded}
+              onHoverStart={(label, rect) => setTooltip({ label, rect })}
+              onHoverEnd={() => setTooltip(null)}
+            />
+          ))}
+        </div>
+
+        <div
+          style={{
+            height: 1,
+            background: "var(--border, #23252d)",
+            margin: "12px 16px",
+          }}
+        />
+
+        <SectionHeader label="Intelligence" expanded={expanded} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {INTELLIGENCE.map((item) => (
             <NavItemLink
               key={item.href}
               item={item}
@@ -621,7 +658,9 @@ export default function Sidebar({
                 justifyContent: "flex-start",
               }}
             >
-              <div
+              <Link
+                href="/profile"
+                onClick={onClose}
                 style={{
                   width: 28,
                   height: 28,
@@ -634,10 +673,19 @@ export default function Sidebar({
                   fontWeight: 700,
                   color: "var(--text-muted, #9ca3af)",
                   flexShrink: 0,
+                  textDecoration: "none",
+                  transition: "background 0.15s var(--ease-out)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background =
+                    "var(--bg-surface-hover, #17181c)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "var(--border, #23252d)";
                 }}
               >
                 {initials}
-              </div>
+              </Link>
               <div style={{ flex: 1, overflow: "hidden" }}>
                 <div
                   style={{
@@ -733,22 +781,25 @@ export default function Sidebar({
             }}
           >
             <div className="group relative">
-              <div
+              <Link
+                href="/profile"
+                onClick={onClose}
                 style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   width: 28,
                   height: 28,
                   borderRadius: "50%",
                   background: "var(--border, #23252d)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
                   fontSize: 10,
                   fontWeight: 700,
                   color: "var(--text-muted, #9ca3af)",
+                  textDecoration: "none",
                 }}
               >
                 {initials}
-              </div>
+              </Link>
               <div
                 className="opacity-0 group-hover:opacity-100"
                 style={{

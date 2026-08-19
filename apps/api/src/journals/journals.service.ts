@@ -1,11 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { journals } from '@tradezen/db';
 import { CreateJournalDto, UpdateJournalDto } from './dto';
+import { MemoryService } from '../ai/memory.service';
 
 @Injectable()
 export class JournalsService {
+  constructor(@Optional() private readonly memoryService?: MemoryService) {}
+
   async create(userId: string, dto: CreateJournalDto) {
     const result = await db
       .insert(journals)
@@ -30,7 +33,25 @@ export class JournalsService {
         },
       })
       .returning();
-    return result[0];
+    const journal = result[0];
+
+    // Embed journal for semantic retrieval (fire-and-forget)
+    if (this.memoryService) {
+      const content = [
+        journal.preMarketNotes,
+        journal.postMarketNotes,
+        journal.lessons,
+        journal.mood,
+        journal.marketConditions,
+      ]
+        .filter(Boolean)
+        .join('\n');
+      if (content) {
+        this.memoryService.embedNewJournal(userId, journal).catch(() => {});
+      }
+    }
+
+    return journal;
   }
 
   async findAll(userId: string, limit = 30, offset = 0) {

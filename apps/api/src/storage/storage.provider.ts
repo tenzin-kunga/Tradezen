@@ -2,10 +2,11 @@ export interface UploadFile {
   buffer: Buffer;
   mimetype: string;
   size: number;
+  originalname?: string;
 }
 
 export interface UploadResult {
-  publicId: string;
+  providerKey: string;
   version: number;
   width: number;
   height: number;
@@ -15,7 +16,15 @@ export interface UploadResult {
 
 export interface StorageProvider {
   upload(file: UploadFile): Promise<UploadResult>;
-  delete(publicId: string, version: number): Promise<void>;
-  getThumbnailUrl(publicId: string, version: number): string;
-  getOriginalUrl(publicId: string, version: number): string;
+  delete(providerKey: string): Promise<void>;
+  getThumbnailUrl(
+    providerKey: string,
+    version: number,
+    mimetype?: string,
+  ): string;
+  getOriginalUrl(
+    providerKey: string,
+    version: number,
+    mimetype?: string,
+  ): string;
 }

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { getResourceManager } from "@/lib/workspace/resource-manager";
 
 const NAV_KEYS: Record<string, string> = {
   d: "/",
@@ -55,6 +56,19 @@ export default function KeyboardShortcutProvider({
         }
         gPending.current = false;
         clearTimeout(gTimer.current);
+      }
+
+      // Cmd/Ctrl + 1-9: switch workspace tabs
+      if ((e.metaKey || e.ctrlKey) && !isInput) {
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= 9) {
+          const rm = getResourceManager();
+          const tabs = rm.getTabs();
+          if (tabs[num - 1]) {
+            e.preventDefault();
+            rm.setActive(tabs[num - 1].id);
+          }
+        }
       }
 
       if (!isInput && !e.metaKey && !e.ctrlKey) {

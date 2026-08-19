@@ -13,16 +13,24 @@ export class CloudinaryProvider implements StorageProvider {
   }
 
   async upload(file: UploadFile): Promise<UploadResult> {
+    const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder: process.env.CLOUDINARY_FOLDER || 'tradezen',
-          resource_type: 'image',
+          resource_type: resourceType,
         },
         (error, result) => {
-          if (error) return reject(error);
+          if (error)
+            return reject(
+              new Error(
+                error instanceof Error
+                  ? error.message
+                  : 'cloudinary upload failed',
+              ),
+            );
           resolve({
-            publicId: result!.public_id,
+            providerKey: result!.public_id,
             version: result!.version,
             width: result!.width,
             height: result!.height,
@@ -35,12 +43,19 @@ export class CloudinaryProvider implements StorageProvider {
     });
   }
 
-  async delete(publicId: string, _version: number): Promise<void> {
-    await cloudinary.uploader.destroy(publicId);
+  async delete(providerKey: string): Promise<void> {
+    await cloudinary.uploader.destroy(providerKey, { invalidate: true });
   }
 
-  getThumbnailUrl(publicId: string, version: number): string {
-    return cloudinary.url(publicId, {
+  getThumbnailUrl(
+    providerKey: string,
+    version: number,
+    mimetype?: string,
+  ): string {
+    if (mimetype && !mimetype.startsWith('image/')) {
+      return this.getOriginalUrl(providerKey, version, mimetype);
+    }
+    return cloudinary.url(providerKey, {
       version,
       transformation: [
         {
@@ -52,8 +67,16 @@ export class CloudinaryProvider implements StorageProvider {
     });
   }
 
-  getOriginalUrl(publicId: string, version: number): string {
-    return cloudinary.url(publicId, {
+  getOriginalUrl(
+    providerKey: string,
+    version: number,
+    mimetype?: string,
+  ): string {
+    if (mimetype && !mimetype.startsWith('image/')) {
+      // Raw files (pdf, xlsx, docx, ...): no transformations.
+      return cloudinary.url(providerKey, { version });
+    }
+    return cloudinary.url(providerKey, {
       version,
       transformation: [
         {

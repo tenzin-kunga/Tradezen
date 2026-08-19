@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   getTrades,
   deleteTrade,
@@ -38,6 +38,7 @@ import { getTradingSession } from "@/lib/session";
 
 export default function TradeLog() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -66,6 +67,25 @@ export default function TradeLog() {
 
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) setSearchQuery(q);
+    const symbol = searchParams.get("symbol");
+    if (symbol) setAssetFilter(symbol);
+    const strategy = searchParams.get("strategy");
+    if (strategy) setStrategyFilter(strategy);
+    const tag = searchParams.get("tag");
+    if (tag) {
+      const match = availableTags.find(
+        (t: any) => t.name.toLowerCase() === tag.toLowerCase(),
+      );
+      if (match) setTagFilter(match.id);
+      else setPendingTagName(tag);
+    }
+  }, [searchParams, availableTags]);
+
+  const [pendingTagName, setPendingTagName] = useState<string | null>(null);
 
   useEffect(() => {
     importJobIdRef.current = importJobId;
@@ -186,7 +206,6 @@ export default function TradeLog() {
   }, []);
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this trade?")) return;
     try {
       await deleteTrade(id);
       addToast("success", "Trade deleted");
@@ -201,9 +220,10 @@ export default function TradeLog() {
     setDrawerOpen(true);
   }
 
-  function handleTradeEdit(id: string) {
+  function handleTradeSaved() {
     setDrawerOpen(false);
-    router.push(`/trades/${id}/edit`);
+    addToast("success", "Trade updated");
+    fetchTrades();
   }
 
   async function handleTradeDelete(id: string) {
@@ -678,7 +698,7 @@ export default function TradeLog() {
         trade={selectedTrade}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onEdit={handleTradeEdit}
+        onSaved={handleTradeSaved}
         onDelete={handleTradeDelete}
       />
 

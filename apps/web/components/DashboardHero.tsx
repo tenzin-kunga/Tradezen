@@ -8,6 +8,7 @@ type Props = {
   winRateToday: number;
   weeklyPnl: number;
   weeklyWinRate: number;
+  totalPnl: number;
   loading?: boolean;
 };
 
@@ -17,9 +18,11 @@ export default function DashboardHero({
   winRateToday,
   weeklyPnl,
   weeklyWinRate,
+  totalPnl,
   loading,
 }: Props) {
   const { user } = useAuth();
+  const balance = (user?.initial_capital ?? 0) + (totalPnl || 0);
 
   if (loading) {
     return (
@@ -85,6 +88,33 @@ export default function DashboardHero({
         </div>
 
         <div className="flex gap-8">
+          <div className="flex flex-col">
+            <span
+              style={{
+                fontSize: "var(--metric-primary)",
+                fontWeight: 700,
+                color: "var(--text-primary)",
+                lineHeight: 1,
+              }}
+            >
+              ${balance >= 0 ? "" : "-"}
+              <AnimatedNumber
+                value={Math.abs(balance)}
+                decimals={0}
+                duration={600}
+              />
+            </span>
+            <span
+              className="mt-0.5"
+              style={{
+                fontSize: "var(--meta)",
+                color: "var(--text-muted)",
+                fontWeight: 500,
+              }}
+            >
+              Balance
+            </span>
+          </div>
           <div className="flex flex-col">
             <span
               style={{

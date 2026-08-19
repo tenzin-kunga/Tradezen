@@ -18,4 +18,11 @@ export class SeedController {
     await this.seedService.deleteAllUserData(userId);
     return { message: 'All data deleted successfully' };
   }
+
+  @Delete('sample')
+  @HttpCode(200)
+  async deleteSample(@CurrentUser('id') userId: string) {
+    await this.seedService.deleteSampleData(userId);
+    return { message: 'Sample data deleted successfully' };
+  }
 }

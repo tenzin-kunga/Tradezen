@@ -1,27 +1,16 @@
 "use client";
 
-import { User, Palette, TrendingUp, Bell, Database } from "lucide-react";
+import { Palette, TrendingUp, Bell, Database, Bot } from "lucide-react";
 import { SettingsProvider, SettingsShell } from "@/components/settings";
-import { ProfileSection } from "@/components/settings/sections/ProfileSection";
 import { InterfaceSection } from "@/components/settings/sections/InterfaceSection";
 import { TradingSection } from "@/components/settings/sections/TradingSection";
+import { AIProviderSection } from "@/components/settings/sections/AIProviderSection";
 import { NotificationSection } from "@/components/settings/sections/NotificationSection";
 import { DataPrivacySection } from "@/components/settings/sections/DataPrivacySection";
 import { SectionHeader } from "@/components/settings/components/SectionHeader";
 import type { SettingsSection, Surface } from "@/components/settings/types";
 
 const SETTINGS_SECTIONS: SettingsSection[] = [
-  {
-    id: "profile",
-    title: "Profile",
-    description: "Your identity and current session",
-    icon: User,
-    displayOrder: 10,
-    category: "account",
-    surface: "raised",
-    importance: "primary",
-    component: ProfileSection,
-  },
   {
     id: "interface",
     title: "Interface",
@@ -43,6 +32,17 @@ const SETTINGS_SECTIONS: SettingsSection[] = [
     surface: "raised",
     importance: "primary",
     component: TradingSection,
+  },
+  {
+    id: "ai-providers",
+    title: "AI Providers",
+    description: "Configure API keys for cloud AI providers",
+    icon: Bot,
+    displayOrder: 35,
+    category: "workspace",
+    surface: "raised",
+    importance: "primary",
+    component: AIProviderSection,
   },
   {
     id: "notifications",

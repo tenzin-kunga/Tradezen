@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { seedMockData, deleteAllSeedData } from "@/lib/api";
+import { seedMockData, deleteAllSeedData, deleteSampleData } from "@/lib/api";
 
 export function DataPrivacySection() {
   const [seeding, setSeeding] = useState(false);
@@ -51,6 +51,28 @@ export function DataPrivacySection() {
     }
   };
 
+  const handleDeleteSample = async () => {
+    if (
+      !confirm(
+        "Are you sure? This will permanently delete all your sample trades, journals, and tags. This cannot be undone.",
+      )
+    )
+      return;
+    setDeleting(true);
+    setMessage("");
+    setMessageType(null);
+    try {
+      const res = await deleteSampleData();
+      setMessage(res.message);
+      setMessageType("success");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Failed to delete sample data");
+      setMessageType("error");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div
       style={{
@@ -79,25 +101,46 @@ export function DataPrivacySection() {
         >
           Load sample trades to explore features
         </p>
-        <button
-          type="button"
-          onClick={handleLoadSample}
-          disabled={seeding}
-          style={{
-            fontSize: "var(--text-sm)",
-            fontWeight: 600,
-            color: "var(--bg-primary)",
-            background: "var(--accent-profit)",
-            border: "none",
-            borderRadius: "var(--radius-sm)",
-            padding: "var(--space-2) var(--space-5)",
-            cursor: seeding ? "not-allowed" : "pointer",
-            opacity: seeding ? 0.5 : 1,
-            fontFamily: "var(--font-display)",
-          }}
-        >
-          {seeding ? "Loading…" : "Load Sample Data"}
-        </button>
+        <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={handleLoadSample}
+            disabled={seeding}
+            style={{
+              fontSize: "var(--text-sm)",
+              fontWeight: 600,
+              color: "var(--bg-primary)",
+              background: "var(--accent-profit)",
+              border: "none",
+              borderRadius: "var(--radius-sm)",
+              padding: "var(--space-2) var(--space-5)",
+              cursor: seeding ? "not-allowed" : "pointer",
+              opacity: seeding ? 0.5 : 1,
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            {seeding ? "Loading…" : "Load Sample Data"}
+          </button>
+          <button
+            type="button"
+            onClick={handleDeleteSample}
+            disabled={deleting}
+            style={{
+              fontSize: "var(--text-sm)",
+              fontWeight: 600,
+              color: "var(--accent-warn)",
+              background: "none",
+              border: "1px solid var(--accent-warn)",
+              borderRadius: "var(--radius-sm)",
+              padding: "var(--space-2) var(--space-5)",
+              cursor: deleting ? "not-allowed" : "pointer",
+              opacity: deleting ? 0.5 : 1,
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            {deleting ? "Deleting…" : "Delete Sample Data"}
+          </button>
+        </div>
       </div>
 
       <div

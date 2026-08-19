@@ -68,15 +68,21 @@ export function ImageLightbox({
       }}
     >
       <DialogContent
-        className="max-w-[90vw] max-h-[90vh] bg-black/90 border-none p-0"
+        overlayClassName="bg-black/50 backdrop-blur-md"
+        className="sm:max-w-[90vw] max-w-[90vw] max-h-[90vh] w-fit p-0 border overflow-hidden"
+        style={{
+          background: "var(--bg-surface)",
+          borderColor: "var(--border)",
+          boxShadow: "var(--shadow-2xl)",
+        }}
         showCloseButton={false}
       >
-        <div className="relative flex items-center justify-center w-full h-full min-h-[50vh]">
+        <div className="relative flex items-center justify-center w-fit">
           {hasMultipleImages && (
             <Button
               variant="secondary"
               size="icon"
-              className="absolute left-2 z-10 opacity-70 hover:opacity-100"
+              className="absolute left-4 z-20 opacity-70 hover:opacity-100"
               disabled={currentIndex === 0}
               onClick={goPrev}
               aria-label="Previous image"
@@ -119,8 +125,7 @@ export function ImageLightbox({
               alt="Trade screenshot"
               width={previewImage.width ?? 1200}
               height={previewImage.height ?? 800}
-              className="max-h-[85vh] w-auto object-contain rounded-lg"
-              style={{ maxWidth: "90vw" }}
+              className="max-h-[85vh] max-w-[90vw] h-auto w-auto object-contain rounded-lg"
               unoptimized
             />
           )}
@@ -129,7 +134,7 @@ export function ImageLightbox({
             <Button
               variant="secondary"
               size="icon"
-              className="absolute right-2 z-10 opacity-70 hover:opacity-100"
+              className="absolute right-4 z-20 opacity-70 hover:opacity-100"
               disabled={currentIndex >= totalImages - 1}
               onClick={goNext}
               aria-label="Next image"
@@ -150,7 +155,7 @@ export function ImageLightbox({
         </div>
 
         {/* Counter */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
           {hasMultipleImages && images.length > 0 ? (
             <span
               className="text-xs font-medium px-2 py-1 rounded bg-black/60"
@@ -171,12 +176,16 @@ export function ImageLightbox({
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 z-10 opacity-70 hover:opacity-100 p-1 rounded"
+          className="absolute top-4 right-4 z-20 flex items-center justify-center w-9 h-9 rounded-full opacity-80 hover:opacity-100 transition-opacity border-none cursor-pointer"
+          style={{
+            background: "rgba(255,255,255,0.12)",
+            color: "var(--text-primary)",
+          }}
           aria-label="Close lightbox"
         >
           <svg
-            width="20"
-            height="20"
+            width="18"
+            height="18"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

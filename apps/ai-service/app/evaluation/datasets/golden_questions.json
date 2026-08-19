@@ -1,0 +1,137 @@
+[
+  {
+    "id": "analytics_001",
+    "question": "What is my win rate?",
+    "expected_intent": "analytics",
+    "expected_sql": true,
+    "expected_rag": false,
+    "expected_keywords": ["win rate", "%"],
+    "category": "analytics"
+  },
+  {
+    "id": "analytics_002",
+    "question": "How much did I make this month?",
+    "expected_intent": "analytics",
+    "expected_sql": true,
+    "expected_rag": false,
+    "expected_keywords": ["PnL", "$"],
+    "category": "analytics"
+  },
+  {
+    "id": "analytics_003",
+    "question": "What is my profit factor?",
+    "expected_intent": "analytics",
+    "expected_sql": true,
+    "expected_rag": false,
+    "expected_keywords": ["profit factor"],
+    "category": "analytics"
+  },
+  {
+    "id": "analytics_004",
+    "question": "What is my expectancy?",
+    "expected_intent": "analytics",
+    "expected_sql": true,
+    "expected_rag": false,
+    "expected_keywords": ["expectancy", "$"],
+    "category": "analytics"
+  },
+  {
+    "id": "analytics_005",
+    "question": "Compare my performance this month vs last month.",
+    "expected_intent": "analytics",
+    "expected_sql": true,
+    "expected_rag": false,
+    "expected_keywords": ["compare", "month"],
+    "category": "analytics"
+  },
+  {
+    "id": "coach_001",
+    "question": "Why do I keep revenge trading?",
+    "expected_intent": "coach",
+    "expected_sql": false,
+    "expected_rag": true,
+    "expected_keywords": ["revenge", "trading"],
+    "category": "coaching"
+  },
+  {
+    "id": "coach_002",
+    "question": "How can I improve my discipline?",
+    "expected_intent": "coach",
+    "expected_sql": false,
+    "expected_rag": true,
+    "expected_keywords": ["discipline"],
+    "category": "coaching"
+  },
+  {
+    "id": "coach_003",
+    "question": "I keep overtrading. Help me fix this habit.",
+    "expected_intent": "coach",
+    "expected_sql": false,
+    "expected_rag": true,
+    "expected_keywords": ["overtrading", "habit"],
+    "category": "coaching"
+  },
+  {
+    "id": "journal_001",
+    "question": "What did I trade yesterday?",
+    "expected_intent": "journal",
+    "expected_sql": false,
+    "expected_rag": true,
+    "expected_keywords": ["trade", "yesterday"],
+    "category": "journal"
+  },
+  {
+    "id": "journal_002",
+    "question": "Summarize my journal entries from last week.",
+    "expected_intent": "journal",
+    "expected_sql": false,
+    "expected_rag": true,
+    "expected_keywords": ["journal", "entries"],
+    "category": "journal"
+  },
+  {
+    "id": "journal_003",
+    "question": "How did I feel during my trades this week?",
+    "expected_intent": "journal",
+    "expected_sql": false,
+    "expected_rag": true,
+    "expected_keywords": ["feel", "mood"],
+    "category": "journal"
+  },
+  {
+    "id": "research_001",
+    "question": "Analyze AAPL stock for me.",
+    "expected_intent": "research",
+    "expected_sql": false,
+    "expected_rag": false,
+    "expected_keywords": ["AAPL"],
+    "category": "research"
+  },
+  {
+    "id": "general_001",
+    "question": "Explain risk-reward ratio.",
+    "expected_intent": "general",
+    "expected_sql": false,
+    "expected_rag": true,
+    "expected_keywords": ["risk", "reward", "ratio"],
+    "category": "general"
+  },
+  {
+    "id": "general_002",
+    "question": "What is a stop loss?",
+    "expected_intent": "general",
+    "expected_sql": false,
+    "expected_rag": true,
+    "expected_keywords": ["stop loss"],
+    "category": "general"
+  },
+  {
+    "id": "general_003",
+    "question": "How does compound interest work?",
+    "expected_intent": "general",
+    "expected_sql": false,
+    "expected_rag": true,
+    "expected_keywords": ["compound", "interest"],
+    "category": "general"
+  }
+]

@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { EmbeddingService } from './embedding.service';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { EmbeddingPipeline } from './context/semantic/embedding-pipeline';
+import { SemanticSourceType } from './context/semantic/types';
+import { FormatterRegistry } from './context/semantic/formatters/registry';
 
 export interface MemoryContext {
   journals: string[];
@@ -9,78 +11,73 @@ export interface MemoryContext {
 
 @Injectable()
 export class MemoryService {
-  private readonly logger = new Logger('MemoryService');
+  private readonly logger = new Logger(MemoryService.name);
 
-  constructor(private readonly embeddingService: EmbeddingService) {}
+  constructor(
+    @Inject('EmbeddingPipeline') private readonly pipeline: EmbeddingPipeline,
+    private readonly formatterRegistry: FormatterRegistry,
+  ) {}
 
-  async getContextForChat(
+  private async embedEntity(
+    sourceType: SemanticSourceType,
+    entity: object,
     userId: string,
-    userMessage: string,
-    limit = 3,
-  ): Promise<MemoryContext> {
-    const memories = await this.embeddingService.searchSimilar(
-      userId,
-      userMessage,
-      limit * 3,
-    );
-
-    const context: MemoryContext = { journals: [], trades: [], notes: [] };
-
-    for (const memory of memories) {
-      const sim = memory.similarity;
-      if (sim < 0.7) continue;
-
-      switch (memory.sourceType) {
-        case 'journal':
-          context.journals.push(memory.content);
-          break;
-        case 'trade':
-          context.trades.push(memory.content);
-          break;
-        case 'note':
-          context.notes.push(memory.content);
-          break;
-      }
+    label: string,
+  ): Promise<void> {
+    const formatter = this.formatterRegistry.get(sourceType);
+    if (!formatter) return;
+    try {
+      await this.pipeline.enqueue(formatter.format(entity, userId));
+    } catch (error) {
+      this.logger.error(
+        `Failed to embed ${label} ${(entity as { id?: string }).id}: ${(error as Error).message}`,
+      );
     }
-
-    return context;
   }
 
   async embedNewJournal(
     userId: string,
-    journalId: string,
-    content: string,
+    journal: {
+      id: string;
+      date: string;
+      preMarketNotes: string | null;
+      postMarketNotes: string | null;
+      mood: string | null;
+      marketConditions: string | null;
+      lessons: string | null;
+      createdAt: Date | null;
+      updatedAt: Date | null;
+    },
   ): Promise<void> {
-    try {
-      await this.embeddingService.embedAndStore(
-        userId,
-        'journal',
-        journalId,
-        content,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to embed journal ${journalId}: ${(error as Error).message}`,
-      );
-    }
+    await this.embedEntity(
+      SemanticSourceType.JOURNAL,
+      journal,
+      userId,
+      'journal',
+    );
   }
 
   async embedNewTrade(
     userId: string,
-    tradeId: string,
-    content: string,
+    trade: {
+      id: string;
+      symbol: string;
+      direction: string;
+      entryPrice: string;
+      exitPrice: string;
+      pnl: string;
+      strategy: string | null;
+      notes: string | null;
+      lotSize: string | null;
+      stopLoss: string | null;
+      takeProfit: string | null;
+      commission: string | null;
+      contractSize: string | null;
+      tradeDate: Date | null;
+      createdAt: Date | null;
+      updatedAt: Date | null;
+    },
   ): Promise<void> {
-    try {
-      await this.embeddingService.embedAndStore(
-        userId,
-        'trade',
-        tradeId,
-        content,
-      );
-    } catch (error) {
-      this.logger.error(
-        `Failed to embed trade ${tradeId}: ${(error as Error).message}`,
-      );
-    }
+    await this.embedEntity(SemanticSourceType.TRADE, trade, userId, 'trade');
   }
 }

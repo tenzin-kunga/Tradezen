@@ -5,6 +5,7 @@ import { db } from '../db/drizzle';
 import { journals, trades } from '@tradezen/db';
 import { eq, and, gte, lte } from 'drizzle-orm';
 import { EventPublisherService } from '../common/services/event-publisher.service';
+import { UserSettingsService } from '../user-settings/user-settings.service';
 
 interface JournalSummarizeJobData {
   userId: string;
@@ -21,7 +22,10 @@ interface PatternAnalysisJobData {
 export class AiProcessingProcessor extends WorkerHost {
   private readonly logger = new Logger('AiProcessingProcessor');
 
-  constructor(private readonly eventPublisher: EventPublisherService) {
+  constructor(
+    private readonly eventPublisher: EventPublisherService,
+    private readonly userSettings: UserSettingsService,
+  ) {
     super();
   }
 
@@ -97,7 +101,7 @@ export class AiProcessingProcessor extends WorkerHost {
     });
 
     const prompt = this.buildSummarizationPrompt(journalRows);
-    const summary = await this.callOpenRouter(prompt);
+    const summary = await this.callCloud(userId, prompt);
 
     this.logger.log(
       `Journal summarization complete: ${journalRows.length} journals`,
@@ -145,7 +149,7 @@ export class AiProcessingProcessor extends WorkerHost {
     });
 
     const prompt = this.buildPatternAnalysisPrompt(tradeRows);
-    const response = await this.callOpenRouter(prompt);
+    const response = await this.callCloud(userId, prompt);
     const insights = this.parseInsights(response);
 
     this.logger.log(`Pattern analysis complete: ${insights.length} insights`);
@@ -204,25 +208,23 @@ export class AiProcessingProcessor extends WorkerHost {
     };
   }
 
-  private async callOpenRouter(prompt: string): Promise<string> {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+  private async callCloud(userId: string, prompt: string): Promise<string> {
+    const creds = await this.userSettings.getDecryptedApiKey(userId);
+    const apiKey = creds?.key;
     if (!apiKey) {
-      throw new Error('OPENROUTER_API_KEY not configured');
+      throw new Error(
+        'No API key configured for this user. Add one in Settings.',
+      );
     }
 
-    const baseUrl =
-      process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1';
-    const model =
-      process.env.OPENROUTER_DEFAULT_MODEL ?? 'openai/gpt-oss-120b:free';
+    const baseUrl = creds?.baseUrl ?? 'https://openrouter.ai/api/v1';
+    const model = process.env.CLOUD_DEFAULT_MODEL ?? 'openai/gpt-4o-mini';
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer':
-          process.env.OPENROUTER_HTTP_REFERER ?? 'http://localhost:3000',
-        'X-Title': process.env.OPENROUTER_APP_TITLE ?? 'TradeZen',
       },
       body: JSON.stringify({
         model,
@@ -234,7 +236,7 @@ export class AiProcessingProcessor extends WorkerHost {
 
     if (!response.ok) {
       throw new Error(
-        `OpenRouter API error: ${response.status} ${response.statusText}`,
+        `Cloud API error: ${response.status} ${response.statusText}`,
       );
     }
 
