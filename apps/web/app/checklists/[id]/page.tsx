@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   getChecklist,
@@ -13,17 +13,38 @@ import {
 import { useToast } from "@/components/Toast";
 import { useAuth } from "@/lib/auth-context";
 
+interface ChecklistItem {
+  id: string;
+  title: string;
+  isCritical?: boolean;
+}
+
+interface ChecklistTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  items?: ChecklistItem[];
+}
+
+interface ChecklistRunSummary {
+  id: string;
+  createdAt: string;
+  checkedCount?: number;
+  totalCount?: number;
+  tradeId?: string | null;
+}
+
 export default function ChecklistDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
   const { addToast } = useToast();
   const { loading: authLoading } = useAuth();
-  const [template, setTemplate] = useState<any>(null);
-  const [runs, setRuns] = useState<any[]>([]);
+  const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
+  const [runs, setRuns] = useState<ChecklistRunSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
-  function load() {
+  const load = useCallback(() => {
     Promise.all([getChecklist(id), getChecklistRuns(id)])
       .then(([t, r]) => {
         setTemplate(t);
@@ -31,18 +52,18 @@ export default function ChecklistDetailPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }
+  }, [id]);
 
   useEffect(() => {
     if (!authLoading) load();
-  }, [id, authLoading]);
+  }, [load, authLoading]);
 
   async function handleClone() {
     try {
       const cloned = await cloneChecklist(id);
       addToast("success", "Checklist cloned");
       router.push(`/checklists/${cloned.id}`);
-    } catch (err) {
+    } catch (_err) {
       addToast("error", "Failed to clone");
     }
   }
@@ -53,7 +74,7 @@ export default function ChecklistDetailPage() {
       await deleteChecklist(id);
       addToast("success", "Checklist deleted");
       router.push("/checklists");
-    } catch (err) {
+    } catch (_err) {
       addToast("error", "Failed to delete");
     }
   }
@@ -62,7 +83,7 @@ export default function ChecklistDetailPage() {
     try {
       const run = await createChecklistRun({ checklistId: id });
       router.push(`/checklists/runs/${run.id}`);
-    } catch (err) {
+    } catch (_err) {
       addToast("error", "Failed to start run");
     }
   }
@@ -72,7 +93,7 @@ export default function ChecklistDetailPage() {
     try {
       await deleteChecklistRun(runId);
       load();
-    } catch (err) {
+    } catch (_err) {
       addToast("error", "Failed to delete run");
     }
   }
@@ -139,7 +160,7 @@ export default function ChecklistDetailPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {template.items.map((item: any, i: number) => (
+            {template.items.map((item: ChecklistItem, i: number) => (
               <div
                 key={item.id}
                 className="flex items-center gap-3 p-2"
@@ -178,11 +199,11 @@ export default function ChecklistDetailPage() {
         <div className="label-caps mb-4">PAST RUNS</div>
         {runs.length === 0 ? (
           <div style={{ color: "var(--text-dim)", fontSize: 12 }}>
-            No runs yet. Click "Start Run" to begin.
+            No runs yet. Click &quot;Start Run&quot; to begin.
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {runs.map((run: any) => (
+            {runs.map((run: ChecklistRunSummary) => (
               <div
                 key={run.id}
                 className="flex items-center justify-between p-3 cursor-pointer"

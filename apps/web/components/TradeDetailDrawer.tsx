@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Trade } from "@tradezen/types";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -101,7 +102,8 @@ export default function TradeDetailDrawer({
   const isWin = trade.pnl >= 0;
   const isLong = trade.direction === "buy";
   const imageUrl =
-    trade.previewImage?.url ?? (trade.chartImage ? `${API}${trade.chartImage}` : null);
+    trade.previewImage?.url ??
+    (trade.chartImage ? `${API}${trade.chartImage}` : null);
   const session = getTradingSession(trade.tradeDate ?? trade.createdAt);
 
   function startEdit() {
@@ -126,10 +128,7 @@ export default function TradeDetailDrawer({
     setImages([]);
     setSelectedTags([]);
     setEditLoading(true);
-    Promise.all([
-      getTradeImages(trade.id),
-      getTagsForTrade(trade.id),
-    ])
+    Promise.all([getTradeImages(trade.id), getTagsForTrade(trade.id)])
       .then(([imgs, tags]) => {
         setImages(imgs);
         setSelectedTags(tags);
@@ -146,7 +145,10 @@ export default function TradeDetailDrawer({
   async function handleImageUpload(file: File) {
     try {
       const img = await uploadTradeImage(trade.id, file);
-      setImages((prev) => [...prev, { ...img, width: null, height: null, displayOrder: prev.length }]);
+      setImages((prev) => [
+        ...prev,
+        { ...img, width: null, height: null, displayOrder: prev.length },
+      ]);
     } catch {
       setSaveError("Failed to upload screenshot.");
     }
@@ -182,7 +184,9 @@ export default function TradeDetailDrawer({
         stop_loss: form.stopLoss ? parseFloat(form.stopLoss) : undefined,
         take_profit: form.takeProfit ? parseFloat(form.takeProfit) : undefined,
         commission: form.commission ? parseFloat(form.commission) : undefined,
-        trade_date: form.tradeDate ? new Date(form.tradeDate).toISOString() : null,
+        trade_date: form.tradeDate
+          ? new Date(form.tradeDate).toISOString()
+          : null,
         strategy: form.strategy.trim() || undefined,
         notes: form.notes.trim() || undefined,
         fomo_check: form.fomoCheck,
@@ -190,7 +194,9 @@ export default function TradeDetailDrawer({
         vengeance_trade: form.vengeanceTrade,
       });
       const currentIds = new Set(selectedTags.map((t) => t.id));
-      const toAdd = selectedTags.filter((t) => !initialTagIdsRef.current.has(t.id));
+      const toAdd = selectedTags.filter(
+        (t) => !initialTagIdsRef.current.has(t.id),
+      );
       const toRemove = Array.from(initialTagIdsRef.current).filter(
         (id) => !currentIds.has(id),
       );
@@ -349,11 +355,14 @@ export default function TradeDetailDrawer({
                   style={{ border: "1px solid var(--border)" }}
                   onClick={() => setLightboxOpen(true)}
                 >
-                  <img
+                  <Image
                     src={imageUrl}
                     alt="Trade chart"
                     className="w-full object-cover"
                     style={{ maxHeight: 240 }}
+                    width={1200}
+                    height={675}
+                    unoptimized
                   />
                 </div>
               )}
@@ -366,14 +375,20 @@ export default function TradeDetailDrawer({
                     border: "1px solid var(--accent-loss)",
                   }}
                 >
-                  <div className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  <div
+                    className="text-xs"
+                    style={{ color: "var(--text-muted)" }}
+                  >
                     Permanently delete this trade?
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setConfirming(false)}
                       className="btn-glass text-xs"
-                      style={{ color: "var(--text-muted)", borderColor: "var(--border)" }}
+                      style={{
+                        color: "var(--text-muted)",
+                        borderColor: "var(--border)",
+                      }}
                     >
                       CANCEL
                     </button>
@@ -398,7 +413,9 @@ export default function TradeDetailDrawer({
                 />
                 <Field
                   label="TAKE PROFIT"
-                  value={trade.takeProfit != null ? String(trade.takeProfit) : "--"}
+                  value={
+                    trade.takeProfit != null ? String(trade.takeProfit) : "--"
+                  }
                   mono
                 />
               </div>
@@ -419,10 +436,15 @@ export default function TradeDetailDrawer({
               <div className="grid grid-cols-2 gap-3">
                 <Field
                   label="R:R"
-                  value={trade.riskReward != null ? String(trade.riskReward) : "--"}
+                  value={
+                    trade.riskReward != null ? String(trade.riskReward) : "--"
+                  }
                   mono
                 />
-                <Field label="SESSION" value={session === "--" ? "--" : session} />
+                <Field
+                  label="SESSION"
+                  value={session === "--" ? "--" : session}
+                />
               </div>
 
               {trade.strategy && (
@@ -454,7 +476,10 @@ export default function TradeDetailDrawer({
                   <div className="label-caps mb-1">NOTES</div>
                   <p
                     className="text-sm leading-relaxed"
-                    style={{ color: "var(--text-muted)", whiteSpace: "pre-wrap" }}
+                    style={{
+                      color: "var(--text-muted)",
+                      whiteSpace: "pre-wrap",
+                    }}
                   >
                     {trade.notes}
                   </p>
@@ -469,7 +494,9 @@ export default function TradeDetailDrawer({
         <ImageLightbox
           tradeId={trade.id}
           previewImage={{ url: imageUrl }}
-          imageCount={editing ? Math.max(images.length, 1) : trade.imageCount ?? 1}
+          imageCount={
+            editing ? Math.max(images.length, 1) : (trade.imageCount ?? 1)
+          }
           open={lightboxOpen}
           onClose={() => setLightboxOpen(false)}
         />
@@ -544,7 +571,9 @@ function EditForm({
               ? "var(--accent-profit)"
               : "var(--accent-warn)"
             : "var(--border)",
-          background: active ? "color-mix(in srgb, currentColor 10%, transparent)" : "transparent",
+          background: active
+            ? "color-mix(in srgb, currentColor 10%, transparent)"
+            : "transparent",
         }}
       >
         {label}
@@ -601,17 +630,27 @@ function EditForm({
               <div
                 key={img.id}
                 className="relative rounded overflow-hidden cursor-zoom-in group"
-                style={{ border: "1px solid var(--border)", aspectRatio: "16/9" }}
+                style={{
+                  border: "1px solid var(--border)",
+                  aspectRatio: "16/9",
+                }}
                 onClick={onOpenLightbox}
               >
-                <img
+                <Image
                   src={img.thumbnailUrl || img.url}
                   alt="Trade screenshot"
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  unoptimized
                 />
                 {i === 0 && (
-                  <span className="absolute top-1 left-1 text-[8px] font-bold tracking-widest px-1 py-0.5 rounded"
-                    style={{ background: "rgba(0,0,0,0.7)", color: "var(--accent)" }}
+                  <span
+                    className="absolute top-1 left-1 text-[8px] font-bold tracking-widest px-1 py-0.5 rounded"
+                    style={{
+                      background: "rgba(0,0,0,0.7)",
+                      color: "var(--accent)",
+                    }}
                   >
                     THUMB
                   </span>
@@ -624,10 +663,20 @@ function EditForm({
                   }}
                   aria-label="Delete screenshot"
                   className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ background: "rgba(0,0,0,0.7)", color: "var(--accent-loss)" }}
+                  style={{
+                    background: "rgba(0,0,0,0.7)",
+                    color: "var(--accent-loss)",
+                  }}
                 >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  >
                     <path d="M18 6 6 18" />
                     <path d="m6 6 12 12" />
                   </svg>
@@ -657,9 +706,18 @@ function EditForm({
               onClick={() => set("direction", "LONG")}
               className="btn-glass text-xs flex-1"
               style={{
-                color: form.direction === "LONG" ? "var(--accent-profit)" : "var(--text-muted)",
-                borderColor: form.direction === "LONG" ? "var(--accent-profit)" : "var(--border)",
-                background: form.direction === "LONG" ? "color-mix(in srgb, var(--accent-profit) 12%, transparent)" : "transparent",
+                color:
+                  form.direction === "LONG"
+                    ? "var(--accent-profit)"
+                    : "var(--text-muted)",
+                borderColor:
+                  form.direction === "LONG"
+                    ? "var(--accent-profit)"
+                    : "var(--border)",
+                background:
+                  form.direction === "LONG"
+                    ? "color-mix(in srgb, var(--accent-profit) 12%, transparent)"
+                    : "transparent",
               }}
             >
               LONG
@@ -669,9 +727,18 @@ function EditForm({
               onClick={() => set("direction", "SHORT")}
               className="btn-glass text-xs flex-1"
               style={{
-                color: form.direction === "SHORT" ? "var(--accent-loss)" : "var(--text-muted)",
-                borderColor: form.direction === "SHORT" ? "var(--accent-loss)" : "var(--border)",
-                background: form.direction === "SHORT" ? "color-mix(in srgb, var(--accent-loss) 12%, transparent)" : "transparent",
+                color:
+                  form.direction === "SHORT"
+                    ? "var(--accent-loss)"
+                    : "var(--text-muted)",
+                borderColor:
+                  form.direction === "SHORT"
+                    ? "var(--accent-loss)"
+                    : "var(--border)",
+                background:
+                  form.direction === "SHORT"
+                    ? "color-mix(in srgb, var(--accent-loss) 12%, transparent)"
+                    : "transparent",
               }}
             >
               SHORT
@@ -684,27 +751,57 @@ function EditForm({
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div>
           <div className="label-caps mb-1">ENTRY</div>
-          <NumberInput step="any" value={form.entry} onChange={(e) => set("entry", e.target.value)} placeholder="1.0850" />
+          <NumberInput
+            step="any"
+            value={form.entry}
+            onChange={(e) => set("entry", e.target.value)}
+            placeholder="1.0850"
+          />
         </div>
         <div>
           <div className="label-caps mb-1">EXIT</div>
-          <NumberInput step="any" value={form.exit} onChange={(e) => set("exit", e.target.value)} placeholder="1.0900" />
+          <NumberInput
+            step="any"
+            value={form.exit}
+            onChange={(e) => set("exit", e.target.value)}
+            placeholder="1.0900"
+          />
         </div>
         <div>
           <div className="label-caps mb-1">LOT SIZE</div>
-          <NumberInput step="any" value={form.lotSize} onChange={(e) => set("lotSize", e.target.value)} placeholder="0.10" />
+          <NumberInput
+            step="any"
+            value={form.lotSize}
+            onChange={(e) => set("lotSize", e.target.value)}
+            placeholder="0.10"
+          />
         </div>
         <div>
           <div className="label-caps mb-1">STOP LOSS</div>
-          <NumberInput step="any" value={form.stopLoss} onChange={(e) => set("stopLoss", e.target.value)} placeholder="1.0800" />
+          <NumberInput
+            step="any"
+            value={form.stopLoss}
+            onChange={(e) => set("stopLoss", e.target.value)}
+            placeholder="1.0800"
+          />
         </div>
         <div>
           <div className="label-caps mb-1">TAKE PROFIT</div>
-          <NumberInput step="any" value={form.takeProfit} onChange={(e) => set("takeProfit", e.target.value)} placeholder="1.0950" />
+          <NumberInput
+            step="any"
+            value={form.takeProfit}
+            onChange={(e) => set("takeProfit", e.target.value)}
+            placeholder="1.0950"
+          />
         </div>
         <div>
           <div className="label-caps mb-1">COMMISSION</div>
-          <NumberInput step="any" value={form.commission} onChange={(e) => set("commission", e.target.value)} placeholder="0" />
+          <NumberInput
+            step="any"
+            value={form.commission}
+            onChange={(e) => set("commission", e.target.value)}
+            placeholder="0"
+          />
         </div>
       </div>
 
@@ -735,9 +832,22 @@ function EditForm({
       <div>
         <div className="label-caps mb-2">PSYCHOLOGY</div>
         <div className="flex flex-wrap gap-2">
-          {togglePill(form.fomoCheck, () => set("fomoCheck", !form.fomoCheck), "FOMO ENTRY")}
-          {togglePill(form.trendAlignment, () => set("trendAlignment", !form.trendAlignment), "TREND ALIGNED", true)}
-          {togglePill(form.vengeanceTrade, () => set("vengeanceTrade", !form.vengeanceTrade), "VENGEANCE TRADE")}
+          {togglePill(
+            form.fomoCheck,
+            () => set("fomoCheck", !form.fomoCheck),
+            "FOMO ENTRY",
+          )}
+          {togglePill(
+            form.trendAlignment,
+            () => set("trendAlignment", !form.trendAlignment),
+            "TREND ALIGNED",
+            true,
+          )}
+          {togglePill(
+            form.vengeanceTrade,
+            () => set("vengeanceTrade", !form.vengeanceTrade),
+            "VENGEANCE TRADE",
+          )}
         </div>
       </div>
 
@@ -758,9 +868,7 @@ function EditForm({
         />
       </div>
 
-      {saving && (
-        <div className="text-xs text-text-dim">Saving...</div>
-      )}
+      {saving && <div className="text-xs text-text-dim">Saving...</div>}
     </div>
   );
 }

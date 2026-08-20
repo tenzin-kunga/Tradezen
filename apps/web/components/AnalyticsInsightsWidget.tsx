@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { WidgetShell } from "@/components/design-system";
 import { getAnalytics, getAdvancedAnalytics } from "@/lib/api";
-import type { AiInsight } from "@/lib/api";
+import type {
+  TradeAnalytics,
+  AdvancedAnalytics,
+  StrategyMetric,
+} from "@/lib/api";
 
 type CategoryKey = "performance" | "discipline" | "risk" | "consistency";
 
@@ -51,8 +55,8 @@ function MetricRow({
 
 function renderMetrics(
   category: CategoryKey,
-  analytics: any,
-  advanced: any,
+  analytics: TradeAnalytics,
+  advanced: AdvancedAnalytics,
 ): React.ReactNode[] {
   const rows: React.ReactNode[] = [];
   let key = 0;
@@ -72,7 +76,7 @@ function renderMetrics(
     case "performance": {
       const byStrategy = analytics.byStrategy ?? [];
       const sorted = [...byStrategy].sort(
-        (a: any, b: any) => (b.pnl ?? 0) - (a.pnl ?? 0),
+        (a: StrategyMetric, b: StrategyMetric) => (b.pnl ?? 0) - (a.pnl ?? 0),
       );
       for (const s of sorted) {
         const wr = s.trades > 0 ? Math.round((s.wins / s.trades) * 100) : 0;
@@ -82,7 +86,7 @@ function renderMetrics(
       break;
     }
     case "discipline": {
-      const behavioral = analytics.behavioralStats ?? {};
+      const behavioral = analytics.behavioralStats;
       const totalTrades = analytics.totalTrades ?? 0;
       const fomoPct =
         behavioral.fomoCount && totalTrades
@@ -143,7 +147,7 @@ function renderMetrics(
       );
       const byDay = analytics.byDayOfWeek ?? [];
       const sortedDays = [...byDay].sort(
-        (a: any, b: any) => (b.winRate ?? 0) - (a.winRate ?? 0),
+        (a, b) => (b.winRate ?? 0) - (a.winRate ?? 0),
       );
       for (const d of sortedDays) {
         const raw = d.winRate ?? 0;
@@ -159,8 +163,8 @@ function renderMetrics(
 }
 
 export default function AnalyticsInsightsWidget() {
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [advanced, setAdvanced] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<TradeAnalytics | null>(null);
+  const [advanced, setAdvanced] = useState<AdvancedAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -13,6 +13,7 @@ import {
   type Thread,
   type ChatMessageDto,
   type WorkspaceAction,
+  type ContextRequest,
 } from "@/lib/api/assistant";
 import {
   loadChatModel,
@@ -54,6 +55,10 @@ export interface ChatMessage {
     tokenUsage?: { prompt: number; completion: number };
     model?: string;
     latency?: number;
+    toolName?: string;
+    toolStatus?: string;
+    toolSuccess?: boolean;
+    toolLatencyMs?: number;
   };
   actions?: WorkspaceAction[];
 }
@@ -69,7 +74,7 @@ interface UseChatReturn {
   status: ChatStatus;
   selectedModel: string;
   error: string | null;
-  lastContextRequest: Record<string, any> | null;
+  lastContextRequest: ContextRequest | null;
   selectThread: (id: string) => Promise<void>;
   createThread: (title?: string) => Promise<string>;
   deleteThread: (id: string) => Promise<void>;
@@ -77,7 +82,7 @@ interface UseChatReturn {
   searchThreads: (query: string) => Promise<void>;
   send: (
     content: string,
-    contextRequest?: Record<string, any>,
+    contextRequest?: ContextRequest,
     intent?: string,
     model?: string,
   ) => Promise<void>;
@@ -138,7 +143,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   const liveStreamThreadRef = useRef<string | null>(null);
   const initialContextRef = useRef(options?.initialContext);
   initialContextRef.current = options?.initialContext;
-  const lastContextRequestRef = useRef<Record<string, any> | null>(null);
+  const lastContextRequestRef = useRef<ContextRequest | null>(null);
 
   // Load threads on mount
   const refreshThreads = useCallback(async () => {
@@ -346,7 +351,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     saveChatModel(model);
   }, []);
 
-const abort = useCallback(() => {
+  const abort = useCallback(() => {
     const threadId = threadIdRef.current;
     abortRef.current?.abort();
     abortRef.current = null;
@@ -360,7 +365,7 @@ const abort = useCallback(() => {
   const send = useCallback(
     async (
       content: string,
-      contextRequest?: Record<string, any>,
+      contextRequest?: ContextRequest,
       intent?: string,
       model?: string,
     ) => {
@@ -487,7 +492,7 @@ const abort = useCallback(() => {
           messages: apiMessages,
           model: model || selectedModel || undefined,
           signal: controller.signal,
-          contextRequest,
+          contextRequest: contextRequest as unknown as Record<string, unknown>,
           intent,
           threadId: activeThread?.id,
           onToken: (token) => {
@@ -513,7 +518,7 @@ const abort = useCallback(() => {
                 metadata: {
                   toolName: event.name,
                   toolStatus: "started",
-                } as any,
+                },
               });
             } else {
               upsertToolMessage(event.id, {
@@ -524,7 +529,7 @@ const abort = useCallback(() => {
                   toolStatus: event.status,
                   toolSuccess: event.success,
                   toolLatencyMs: event.latencyMs,
-                } as any,
+                },
               });
             }
           },

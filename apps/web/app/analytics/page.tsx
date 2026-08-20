@@ -9,6 +9,14 @@ import {
   getStrategyAnalytics,
   getStrategyPerformance,
   getRiskAnalytics,
+  type TradeAnalytics,
+  type AdvancedAnalytics,
+  type DailyPnlEntry,
+  type StrategyAnalyticsResponse,
+  type StrategyMetric,
+  type StrategySummary,
+  type StrategyPerformanceResponse,
+  type RiskAnalytics,
 } from "@/lib/api";
 import {
   BarChart,
@@ -46,13 +54,18 @@ function getSeverity(count: number): { label: string; color: string } {
 
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
-  const [stats, setStats] = useState<any>(null);
-  const [advanced, setAdvanced] = useState<any>(null);
-  const [dailyPnl, setDailyPnl] = useState<any[]>([]);
-  const [strategyAnalytics, setStrategyAnalytics] = useState<any>(null);
-  const [strategyTrendSeries, setStrategyTrendSeries] = useState<any[]>([]);
+  const [stats, setStats] = useState<TradeAnalytics | null>(null);
+  const [advanced, setAdvanced] = useState<AdvancedAnalytics | null>(null);
+  const [dailyPnl, setDailyPnl] = useState<DailyPnlEntry[]>([]);
+  const [strategyAnalytics, setStrategyAnalytics] =
+    useState<StrategyAnalyticsResponse | null>(null);
+  const [strategyTrendSeries, setStrategyTrendSeries] = useState<
+    { strategy: string; monthly: StrategyPerformanceResponse["monthly"] }[]
+  >([]);
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
-  const [riskAnalytics, setRiskAnalytics] = useState<any>(null);
+  const [riskAnalytics, setRiskAnalytics] = useState<RiskAnalytics | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,7 +89,7 @@ export default function AnalyticsPage() {
           const strategies = stratRes?.byStrategy ?? [];
           if (strategies.length > 0) {
             return Promise.all(
-              strategies.map((s: any) => getStrategyPerformance(s.strategy)),
+              strategies.map((s) => getStrategyPerformance(s.strategy)),
             ).then((results) => {
               setStrategyTrendSeries(
                 results.map((r, i) => ({
@@ -131,7 +144,7 @@ export default function AnalyticsPage() {
   const equityCurve = advanced?.equityCurve ?? [];
   const hasEquityData = equityCurve.length > 1;
 
-  const now = new Date();
+  const now = useMemo(() => new Date(), []);
   const currentYear = now.getFullYear();
 
   const weekDayData = useMemo(() => {
@@ -156,7 +169,7 @@ export default function AnalyticsPage() {
     });
 
     return result;
-  }, [dailyPnl]);
+  }, [dailyPnl, now]);
 
   const yearMonthData = useMemo(() => {
     const months = [
@@ -390,7 +403,7 @@ export default function AnalyticsPage() {
               className="text-xs tracking-widest mb-1"
               style={{ color: "var(--text-muted)" }}
             >
-              THIS WEEK'S PERFORMANCE
+              THIS WEEK&apos;S PERFORMANCE
             </div>
             <div
               className="text-[10px] mb-4"
@@ -608,7 +621,7 @@ export default function AnalyticsPage() {
 
   function StrategyTab() {
     const stratRaw = strategyAnalytics?.byStrategy ?? safeStats.byStrategy;
-    const stratData = stratRaw.map((s: any) => ({
+    const stratData: StrategySummary[] = stratRaw.map((s: StrategyMetric) => ({
       strategy: s.strategy ?? s.name ?? "Unknown",
       totalTrades: s.totalTrades ?? s.trades ?? 0,
       winRate: s.winRate ?? 0,
@@ -627,7 +640,9 @@ export default function AnalyticsPage() {
         {stratData.length > 1 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             {[best, worst].filter(Boolean).map((name) => {
-              const s = stratData.find((x: any) => x.strategy === name);
+              const s = stratData.find(
+                (x: StrategySummary) => x.strategy === name,
+              );
               if (!s) return null;
               const isBest = name === best && name !== worst;
               return (
@@ -677,7 +692,7 @@ export default function AnalyticsPage() {
 
         {/* Bar charts */}
         <StrategyBarCharts
-          strategies={stratData.map((s: any) => ({
+          strategies={stratData.map((s: StrategySummary) => ({
             strategy: s.strategy,
             winRate: s.winRate,
             profitFactor: s.profitFactor,
@@ -702,7 +717,7 @@ export default function AnalyticsPage() {
             </div>
             {(advanced?.topSymbols ?? []).length > 0 ? (
               <div className="flex flex-col gap-1.5">
-                {(advanced?.topSymbols ?? []).slice(0, 5).map((s: any) => (
+                {(advanced?.topSymbols ?? []).slice(0, 5).map((s) => (
                   <div
                     key={s.symbol}
                     className="flex justify-between items-center py-0.5"
@@ -741,7 +756,7 @@ export default function AnalyticsPage() {
             </div>
             {(advanced?.bottomSymbols ?? []).length > 0 ? (
               <div className="flex flex-col gap-1.5">
-                {(advanced?.bottomSymbols ?? []).slice(0, 5).map((s: any) => (
+                {(advanced?.bottomSymbols ?? []).slice(0, 5).map((s) => (
                   <div
                     key={s.symbol}
                     className="flex justify-between items-center py-0.5"
@@ -786,7 +801,7 @@ export default function AnalyticsPage() {
         {selectedStrategy &&
           (() => {
             const s = stratData.find(
-              (x: any) => x.strategy === selectedStrategy,
+              (x: StrategySummary) => x.strategy === selectedStrategy,
             );
             if (!s) return null;
             return (
@@ -810,8 +825,7 @@ export default function AnalyticsPage() {
   }
 
   function RiskTab() {
-    const hasRiskData = riskAnalytics?.distribution?.length > 0;
-    const ra = riskAnalytics || {};
+    const ra = (riskAnalytics ?? {}) as RiskAnalytics;
 
     const riskCards = [
       {
@@ -943,7 +957,7 @@ export default function AnalyticsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ra.byStrategy.map((s: any) => (
+                  {ra.byStrategy.map((s) => (
                     <tr
                       key={s.strategy}
                       style={{ borderBottom: "1px solid var(--border-subtle)" }}
@@ -1268,14 +1282,17 @@ export default function AnalyticsPage() {
           </>
         )}
 
-        {!loading && !error && safeStats.totalTrades === 0 && activeTab !== "calculator" && (
-          <EmptyState
-            title="NO TRADE DATA AVAILABLE"
-            description="Start journaling your trades to unlock advanced protocol analytics, equity curves, and strategy breakdowns."
-            actionLabel="NEW TRADE"
-            actionHref="/trades/new"
-          />
-        )}
+        {!loading &&
+          !error &&
+          safeStats.totalTrades === 0 &&
+          activeTab !== "calculator" && (
+            <EmptyState
+              title="NO TRADE DATA AVAILABLE"
+              description="Start journaling your trades to unlock advanced protocol analytics, equity curves, and strategy breakdowns."
+              actionLabel="NEW TRADE"
+              actionHref="/trades/new"
+            />
+          )}
 
         {!loading && !error && safeStats.totalTrades > 0 && (
           <>

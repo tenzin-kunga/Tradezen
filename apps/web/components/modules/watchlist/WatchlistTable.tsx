@@ -234,7 +234,7 @@ export default function WatchlistTable({
               fontSize: 13,
             }}
           >
-            No symbols yet. Click "Add Symbol" to start tracking.
+            No symbols yet. Click &quot;Add Symbol&quot; to start tracking.
           </div>
         ) : (
           <table

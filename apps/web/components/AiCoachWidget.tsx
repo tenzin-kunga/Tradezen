@@ -2,7 +2,6 @@
 
 import { WidgetShell } from "@/components/design-system";
 import { useAiInsights } from "@/hooks/useAiInsights";
-import type { AiInsight } from "@/lib/api";
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   performance: { bg: "rgba(34, 197, 94, 0.12)", text: "rgb(34, 197, 94)" },
@@ -105,7 +104,6 @@ export default function AiCoachWidget() {
           ))}
         </div>
       )}
-
     </WidgetShell>
   );
 }

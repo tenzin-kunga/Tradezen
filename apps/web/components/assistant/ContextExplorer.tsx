@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { BuiltContext, ContextBlock } from "@/lib/api/assistant/context";
+import type { BuiltContext, ContextRequest } from "@/lib/api/assistant/context";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
@@ -37,7 +37,7 @@ const TABS: { id: Tab; label: string }[] = [
 export default function ContextExplorer({
   contextRequest,
 }: {
-  contextRequest?: Record<string, any> | null;
+  contextRequest?: ContextRequest | null;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("context");
   const [context, setContext] = useState<BuiltContext | null>(null);
@@ -47,7 +47,7 @@ export default function ContextExplorer({
     setLoading(true);
     try {
       const params = contextRequest
-        ? `?${new URLSearchParams(contextRequest as Record<string, string>).toString()}`
+        ? `?${new URLSearchParams(contextRequest as unknown as Record<string, string>).toString()}`
         : "";
       const res = await authFetch(`${API}/chat/context-preview${params}`);
       if (res.ok) setContext(await res.json());
@@ -539,7 +539,7 @@ function RetrievalTab({
 }
 
 function DataSourceTab({ source }: { source: string }) {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getChecklists } from "@/lib/api";
+import { getChecklists, type ChecklistSummary } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import DashboardShell from "@/components/DashboardShell";
 
 export default function ChecklistsPage() {
   const router = useRouter();
   const { loading: authLoading } = useAuth();
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<ChecklistSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function ChecklistsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-fade">
-          {templates.map((t: any) => (
+          {templates.map((t) => (
             <div
               key={t.id}
               className="glass-card p-4 cursor-pointer transition-all hover:opacity-80"

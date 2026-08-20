@@ -13,7 +13,7 @@ import { searchResearch, type ResearchProject } from "@/lib/api/research";
 
 export function createResearchSearchProvider(): SearchProvider {
   const toResult = (p: ResearchProject): SearchResult => ({
-    resource: createResource("research_project" as any, p.id, p.title, {
+    resource: createResource("research", p.id, p.title, {
       ticker: p.ticker,
       status: p.status,
     }),

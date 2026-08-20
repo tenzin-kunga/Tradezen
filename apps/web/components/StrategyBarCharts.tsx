@@ -9,12 +9,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-interface StrategyMetric {
-  name: string;
-  value: number;
-  pnl: number;
-}
-
 const METRICS = [
   {
     key: "winRate",
@@ -121,15 +115,19 @@ export default function StrategyBarCharts({
                     fontSize: "11px",
                   }}
                   cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                  formatter={(value: number, _name: string, props: any) => {
+                  formatter={(
+                    value: number,
+                    _name: string,
+                    entry: { payload: { name: string; pnl: number } },
+                  ) => {
                     const prefix =
                       m.key === "maxDrawdown" ? "-$" : (m.prefix ?? "");
                     const suffix = m.suffix ?? "";
                     const label = `${prefix}${value.toFixed(2)}${suffix}`;
-                    const pnlStr = props.payload.pnl >= 0 ? "+" : "";
+                    const pnlStr = entry.payload.pnl >= 0 ? "+" : "";
                     return [
                       label,
-                      `${props.payload.name} (${pnlStr}$${props.payload.pnl.toFixed(2)})`,
+                      `${entry.payload.name} (${pnlStr}$${entry.payload.pnl.toFixed(2)})`,
                     ];
                   }}
                 />

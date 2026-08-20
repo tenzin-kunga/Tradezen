@@ -6,7 +6,7 @@ import { IconGear } from "./icons";
 
 export default function ToolCard({ message }: { message: ChatMessage }) {
   const [expanded, setExpanded] = useState(false);
-  const meta = message.metadata as any;
+  const meta = message.metadata;
 
   const toolName = meta?.toolName ?? "tool";
   const status = meta?.toolStatus;

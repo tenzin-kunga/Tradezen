@@ -16,10 +16,12 @@ export default function MessageViewport({
 }: MessageViewportProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
+  const lastContent = messages[messages.length - 1]?.content;
+
   // Auto-scroll on new messages or content changes
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, messages[messages.length - 1]?.content]);
+  }, [messages, lastContent]);
 
   if (messages.length === 0) return null;
 

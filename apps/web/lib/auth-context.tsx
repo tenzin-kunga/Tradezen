@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const me = await getMe();
             setUser(me);
             return;
-          } catch (err: any) {
+          } catch {
             // Token expired — try refresh
             const refreshed = await refreshToken();
             if (refreshed) {
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         window.localStorage.removeItem("tradezen_access_token");
         setAccessToken(null);
-      } catch (err: any) {
+      } catch {
         window.localStorage.removeItem("tradezen_access_token");
         setAccessToken(null);
       } finally {

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useChat } from "@/hooks/useChat";
 import type { WorkspaceAction } from "@/lib/api/assistant";
-import { IconChart, IconJournal, IconResearch } from "./icons";
 import ConversationSidebar from "./ConversationSidebar";
 import ConversationCanvas from "./ConversationCanvas";
 import ChatInput from "./ChatInput";
@@ -14,6 +13,7 @@ import {
   buildReviewRequest,
   buildResearchRequest,
   buildExplainRequest,
+  type ContextRequest,
 } from "@/lib/api/assistant";
 
 export default function AssistantWorkspace() {
@@ -34,7 +34,7 @@ export default function AssistantWorkspace() {
   } = useChat();
 
   const [slashOpen, setSlashOpen] = useState(false);
-  const [slashFilter, setSlashFilter] = useState("");
+  const [slashFilter] = useState("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -67,24 +67,19 @@ export default function AssistantWorkspace() {
           spaceIdx === -1 ? content.slice(1) : content.slice(1, spaceIdx);
         const args = spaceIdx === -1 ? "" : content.slice(spaceIdx + 1).trim();
 
-        let contextRequest: Record<string, any> | undefined;
+        let contextRequest: ContextRequest | undefined;
         let intent: string | undefined;
         switch (cmd) {
           case "review":
-            contextRequest = buildReviewRequest() as Record<string, any>;
+            contextRequest = buildReviewRequest();
             intent = "review";
             break;
           case "research":
-            if (args)
-              contextRequest = buildResearchRequest(args) as Record<
-                string,
-                any
-              >;
+            if (args) contextRequest = buildResearchRequest(args);
             intent = "research";
             break;
           case "explain":
-            if (args)
-              contextRequest = buildExplainRequest(args) as Record<string, any>;
+            if (args) contextRequest = buildExplainRequest(args);
             intent = "explain";
             break;
         }
@@ -96,15 +91,6 @@ export default function AssistantWorkspace() {
     },
     [send],
   );
-
-  const handleInputChange = useCallback((value: string) => {
-    if (value.startsWith("/")) {
-      setSlashOpen(true);
-      setSlashFilter(value.slice(1));
-    } else {
-      setSlashOpen(false);
-    }
-  }, []);
 
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>

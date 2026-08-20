@@ -45,7 +45,7 @@ export default function MemoryPlaceholder() {
           lineHeight: 1.6,
         }}
       >
-        Your AI's memory of your trading style, recurring mistakes, lessons
+        Your AI&apos;s memory of your trading style, recurring mistakes, lessons
         learned, and best setups will be browsable and editable here. The
         semantic search engine is already built — the UI is coming soon.
       </p>

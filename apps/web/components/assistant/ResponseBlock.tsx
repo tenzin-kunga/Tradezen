@@ -185,7 +185,7 @@ function TypingIndicator() {
   );
 }
 
-function extractSources(metadata: any): Source[] {
+function extractSources(_metadata: ChatMessage["metadata"]): Source[] {
   // Extract source information from metadata if available
   // This is a placeholder — real implementation would parse retrieval data
   return [];

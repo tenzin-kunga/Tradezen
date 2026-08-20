@@ -117,7 +117,7 @@ export function AIProviderSection() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   // Load status + providers
   const loadStatus = useCallback(async () => {

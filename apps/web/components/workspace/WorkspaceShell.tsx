@@ -7,15 +7,8 @@ import { IconButton } from "@/components/primitives/IconButton";
 import { useWorkspace } from "@/lib/workspace/workspace-context";
 
 function WorkspaceContent({ children }: { children?: React.ReactNode }) {
-  const {
-    resourceManager,
-    activeResource,
-    open,
-    back,
-    forward,
-    canGoBack,
-    canGoForward,
-  } = useWorkspace();
+  const { activeResource, back, forward, canGoBack, canGoForward } =
+    useWorkspace();
 
   return (
     <>

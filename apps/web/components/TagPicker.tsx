@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { getTags, createTag, tagTrade, untagTrade } from "@/lib/api";
+import { getTags, createTag } from "@/lib/api";
 
 type Tag = {
   id: string;
@@ -76,7 +76,9 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
       });
       setTags([...tags, tag]);
       onChange([...selectedTags, tag]);
-    } catch {}
+    } catch {
+      // ignore creation errors
+    }
   }
 
   async function handleCreate() {
@@ -92,7 +94,9 @@ export default function TagPicker({ selectedTags, onChange }: TagPickerProps) {
       onChange([...selectedTags, tag]);
       setNewName("");
       setShowCreate(false);
-    } catch {}
+    } catch {
+      // ignore creation errors
+    }
   }
 
   return (

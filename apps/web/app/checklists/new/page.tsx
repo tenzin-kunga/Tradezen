@@ -29,7 +29,7 @@ export default function NewChecklistPage() {
 
   function updateItem(i: number, field: keyof Item, value: string | boolean) {
     const next = [...items];
-    (next[i] as any)[field] = value;
+    next[i] = { ...next[i], [field]: value };
     setItems(next);
   }
 

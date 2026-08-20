@@ -33,16 +33,6 @@ const TYPE_ICONS: Record<
   general: IconChat,
 };
 
-const TYPE_LABELS: Record<ConversationType, string> = {
-  daily_review: "Daily Review",
-  journal: "Journal",
-  research: "Research",
-  portfolio: "Portfolio",
-  risk: "Risk Audit",
-  coaching: "Coaching",
-  general: "General",
-};
-
 type FilterType = "all" | ConversationType;
 
 const FILTERS: { id: FilterType; label: string }[] = [
