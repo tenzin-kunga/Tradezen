@@ -27,6 +27,7 @@ import { JournalIntelligenceService } from '../ai/journal-intelligence.service';
 import { CoachingEngineService } from '../ai/coaching-engine.service';
 import { NotificationService } from '../common/services/notification.service';
 import { ContextBuilderService } from '../ai/context/context-builder.service';
+import type { ContextRequest } from '../ai/context/context-provider';
 import { SemanticMetricsService } from '../ai/context/semantic/semantic-metrics.service';
 import { TradesGateway } from '../gateway/trades.gateway';
 
@@ -170,7 +171,10 @@ export class ChatController {
 
   @Get('context-preview')
   @ApiOperation({ summary: 'Preview what context the AI would receive' })
-  async contextPreview(@CurrentUser('id') userId: string, @Query() query: any) {
+  async contextPreview(
+    @CurrentUser('id') userId: string,
+    @Query() query: ContextRequest,
+  ) {
     return this.contextBuilder.previewContext(userId, query);
   }
 
@@ -256,7 +260,7 @@ export class ChatController {
 
   @Post('stream/cancel')
   @ApiOperation({ summary: 'Cancel an in-flight chat generation for a thread' })
-  async cancelStream(
+  cancelStream(
     @CurrentUser('id') userId: string,
     @Body('threadId') threadId: string,
   ) {

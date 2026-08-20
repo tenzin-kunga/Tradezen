@@ -172,4 +172,4 @@ async function bootstrap() {
     `🚀 TradeZen API running on port ${port} (NODE_ENV=${process.env.NODE_ENV || 'development'})`,
   );
 }
-bootstrap();
+void bootstrap();

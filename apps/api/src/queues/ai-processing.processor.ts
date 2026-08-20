@@ -18,6 +18,10 @@ interface PatternAnalysisJobData {
   days: number;
 }
 
+interface ChatCompletionResponse {
+  choices?: { message?: { content?: string | null } }[];
+}
+
 @Processor('ai-processing')
 export class AiProcessingProcessor extends WorkerHost {
   private readonly logger = new Logger('AiProcessingProcessor');
@@ -162,7 +166,9 @@ export class AiProcessingProcessor extends WorkerHost {
     return result;
   }
 
-  private buildSummarizationPrompt(journalRows: any[]): string {
+  private buildSummarizationPrompt(
+    journalRows: (typeof journals)['$inferSelect'][],
+  ): string {
     const content = journalRows
       .map(
         (j) =>
@@ -173,12 +179,14 @@ export class AiProcessingProcessor extends WorkerHost {
     return `You are a trading journal analyst. Summarize the following journal entries into key insights, patterns, and actionable recommendations. Keep it concise (max 500 words).\n\n${content}`;
   }
 
-  private buildPatternAnalysisPrompt(tradeRows: any[]): string {
+  private buildPatternAnalysisPrompt(
+    tradeRows: (typeof trades)['$inferSelect'][],
+  ): string {
     const stats = this.calculateTradeStats(tradeRows);
     return `You are a trading performance analyst. Analyze the following trading statistics and provide insights on patterns, strengths, weaknesses, and areas for improvement.\n\n${JSON.stringify(stats, null, 2)}`;
   }
 
-  private calculateTradeStats(tradeRows: any[]) {
+  private calculateTradeStats(tradeRows: (typeof trades)['$inferSelect'][]) {
     const wins = tradeRows.filter((t) => Number(t.pnl) > 0);
     const losses = tradeRows.filter((t) => Number(t.pnl) <= 0);
     const totalPnl = tradeRows.reduce((sum, t) => sum + Number(t.pnl), 0);
@@ -240,8 +248,8 @@ export class AiProcessingProcessor extends WorkerHost {
       );
     }
 
-    const data = await response.json();
-    return data.choices[0]?.message?.content ?? 'No response generated.';
+    const data = (await response.json()) as unknown as ChatCompletionResponse;
+    return data.choices?.[0]?.message?.content ?? 'No response generated.';
   }
 
   private parseInsights(response: string): string[] {

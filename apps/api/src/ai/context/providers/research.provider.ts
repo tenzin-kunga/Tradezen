@@ -90,7 +90,7 @@ export class ResearchProvider implements ContextProvider {
       .limit(limit);
 
     const lines = rows.map(
-      (r: any) => `- ${r.title} [${r.status}] conviction=${r.conviction}`,
+      (r) => `- ${r.title} [${r.status}] conviction=${r.conviction}`,
     );
 
     const content = [`Research Projects (${rows.length})`, ...lines].join('\n');

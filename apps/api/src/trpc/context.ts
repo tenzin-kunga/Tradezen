@@ -24,10 +24,12 @@ export function createContext({
       const parts = token.split('.');
       if (parts.length === 3) {
         // Decode payload (second part)
-        const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+        const payload = JSON.parse(
+          Buffer.from(parts[1], 'base64').toString(),
+        ) as { sub?: string; id?: string };
         userId = payload.sub || payload.id;
         // Attach to req for backward compatibility with protectedProcedure check
-        (req as any).user = { id: userId };
+        (req as { user?: { id?: string } }).user = { id: userId };
       }
     }
   } catch {

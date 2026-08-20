@@ -23,7 +23,10 @@ export class CursorPagination {
 
   static decodeCursor(cursor: string): { id: string; sortValue: string } {
     try {
-      return JSON.parse(Buffer.from(cursor, 'base64').toString());
+      return JSON.parse(Buffer.from(cursor, 'base64').toString()) as {
+        id: string;
+        sortValue: string;
+      };
     } catch {
       throw new Error('Invalid cursor');
     }

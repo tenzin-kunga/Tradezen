@@ -23,13 +23,14 @@ function fakeThreadService() {
     },
   ];
   const addMessage = jest.fn(
-    async (
+    (
       threadId: string,
       role: string,
       content: string,
       metadata?: Record<string, unknown>,
     ) => {
       appended.push({ threadId, role, content, metadata });
+      return Promise.resolve();
     },
   );
   const svc = {

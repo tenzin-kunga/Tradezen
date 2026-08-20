@@ -8,6 +8,7 @@ import { PortfolioProvider } from './providers/portfolio.provider';
 import { NewsProvider } from './providers/news.provider';
 import { MemoryProvider } from './semantic/memory-provider';
 import { QueryPlanner } from './query-planner';
+import type { ContextRequest } from './context-provider';
 
 jest.mock('../../db/drizzle', () => ({
   db: {
@@ -36,7 +37,7 @@ function makeProvider(id: string, priority: number, content: string) {
       .fn()
       .mockReturnValue({ provider: id, score: 0.5, reasons: ['test'] }),
     dataCompleteness: jest.fn().mockReturnValue(0.5),
-    supports: jest.fn().mockImplementation((req: any) => {
+    supports: jest.fn().mockImplementation((req: ContextRequest) => {
       if (req.providers && !req.providers.includes(id)) return false;
       return true;
     }),

@@ -20,7 +20,7 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
 
     this.subClient.on('message', (channel, message) => {
       try {
-        const data = JSON.parse(message);
+        const data = JSON.parse(message) as unknown;
         this.handleEvent(channel, data);
       } catch (error) {
         this.logger.error(

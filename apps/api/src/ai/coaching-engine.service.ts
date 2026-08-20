@@ -32,8 +32,8 @@ export class CoachingEngineService {
     const behavioral = await this.behavioralService.analyzeBehavior(userId);
 
     const combinedAnalytics = {
-      ...(analytics as Record<string, unknown>),
-      ...(advanced as Record<string, unknown>),
+      ...(analytics as unknown as Record<string, unknown>),
+      ...(advanced as unknown as Record<string, unknown>),
     };
     const scores = {
       fomoScore: behavioral.fomo.fomoScore,

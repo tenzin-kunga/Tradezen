@@ -336,7 +336,11 @@ export class ResearchService {
     const stored = await this.assetsService.upload(file, userId, 'manual');
     const [link] = await db
       .insert(researchAssets)
-      .values({ projectId, assetId: stored.id, category: category as any })
+      .values({
+        projectId,
+        assetId: stored.id,
+        category: category as (typeof researchAssets.$inferInsert)['category'],
+      })
       .returning();
     await this.logActivity(projectId, 'asset_added', {
       category,

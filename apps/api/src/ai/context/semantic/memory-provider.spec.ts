@@ -96,7 +96,7 @@ describe('MemoryProvider', () => {
     expect(mockRetrievalClient.search).toHaveBeenCalledWith('u1', {
       query: 'AAPL analysis',
       intent: RetrievalIntent.CHAT,
-      requestId: expect.any(String),
+      requestId: expect.any(String) as string,
     });
     expect(block.content).toContain('AAPL');
   });
@@ -134,14 +134,14 @@ describe('MemoryProvider', () => {
     expect(block.content).toContain('Bought AAPL');
     expect(block.content).not.toContain('New path content');
     expect(mockMetricsService.recordShadowComparison).toHaveBeenCalledWith({
-      oldLatencyMs: expect.any(Number),
-      newLatencyMs: expect.any(Number),
+      oldLatencyMs: expect.any(Number) as number,
+      newLatencyMs: expect.any(Number) as number,
       oldCount: 1,
       newCount: 1,
       oldAvgScore: 0.85,
       newAvgScore: 0.95,
-      oldTokens: expect.any(Number),
-      newTokens: expect.any(Number),
+      oldTokens: expect.any(Number) as number,
+      newTokens: expect.any(Number) as number,
       degraded: false,
     });
   });

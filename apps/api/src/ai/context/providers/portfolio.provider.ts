@@ -98,8 +98,8 @@ export class PortfolioProvider implements ContextProvider {
     const wins = Number(s.wins ?? 0);
 
     const symbolLines = rowsOf(symbolsRes).map(
-      (r: any) =>
-        `- ${r.symbol}: ${Number(r.pnl) >= 0 ? '+' : ''}${Number(r.pnl).toFixed(2)} (${r.trades} trades)`,
+      (r) =>
+        `- ${String(r.symbol)}: ${Number(r.pnl) >= 0 ? '+' : ''}${Number(r.pnl).toFixed(2)} (${Number(r.trades)} trades)`,
     );
 
     const content = [

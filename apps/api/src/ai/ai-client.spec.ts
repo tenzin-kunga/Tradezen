@@ -1,4 +1,5 @@
 import { AIClient } from './ai-client';
+import { AiMetricsService } from './ai-metrics.service';
 
 describe('AIClient context-owned passthrough (Slice 7)', () => {
   const SAVED_URL = process.env.AI_SERVICE_URL;
@@ -25,13 +26,16 @@ describe('AIClient context-owned passthrough (Slice 7)', () => {
           const encoder = new TextEncoder();
           let i = 0;
           return {
-            read: async () => {
+            read: () => {
               if (i < chunks.length) {
-                return { done: false, value: encoder.encode(chunks[i++]) };
+                return Promise.resolve({
+                  done: false,
+                  value: encoder.encode(chunks[i++]),
+                });
               }
-              return { done: true, value: undefined };
+              return Promise.resolve({ done: true, value: undefined });
             },
-            cancel: async () => undefined,
+            cancel: () => Promise.resolve(undefined),
           };
         },
       },
@@ -41,7 +45,7 @@ describe('AIClient context-owned passthrough (Slice 7)', () => {
 
   it('sends x-context-owned-by-nestjs when contextOwned is true', async () => {
     const fetchMock = mockStreamFetch();
-    const client = new AIClient({} as any);
+    const client = new AIClient({} as unknown as AiMetricsService);
     const out: string[] = [];
     for await (const t of client.stream([{ role: 'user', content: 'hi' }], {
       model: 'm',
@@ -50,16 +54,15 @@ describe('AIClient context-owned passthrough (Slice 7)', () => {
       out.push(t);
     }
     expect(out.join('')).toBe('hi');
-    const headers = fetchMock.mock.calls[0][1].headers as Record<
-      string,
-      string
-    >;
+    const headers = (
+      fetchMock.mock.calls[0] as [unknown, { headers: Record<string, string> }]
+    )[1].headers;
     expect(headers['x-context-owned-by-nestjs']).toBe('true');
   });
 
   it('omits the header when contextOwned is false', async () => {
     const fetchMock = mockStreamFetch();
-    const client = new AIClient({} as any);
+    const client = new AIClient({} as unknown as AiMetricsService);
     const out: string[] = [];
     for await (const t of client.stream([{ role: 'user', content: 'hi' }], {
       model: 'm',
@@ -67,10 +70,9 @@ describe('AIClient context-owned passthrough (Slice 7)', () => {
       out.push(t);
     }
     expect(out.join('')).toBe('hi');
-    const headers = fetchMock.mock.calls[0][1].headers as Record<
-      string,
-      string
-    >;
+    const headers = (
+      fetchMock.mock.calls[0] as [unknown, { headers: Record<string, string> }]
+    )[1].headers;
     expect(headers['x-context-owned-by-nestjs']).toBeUndefined();
   });
 });

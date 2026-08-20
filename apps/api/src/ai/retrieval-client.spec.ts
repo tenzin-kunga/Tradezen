@@ -90,7 +90,7 @@ describe('RetrievalClient', () => {
         method: 'POST',
         headers: expect.objectContaining({
           'x-internal-api-key': 'sekret',
-        }),
+        }) as object,
         body: JSON.stringify({
           query: 'AAPL',
           intent: 'chat',
@@ -109,7 +109,7 @@ describe('RetrievalClient', () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: false,
       status: 500,
-      text: async () => 'boom',
+      text: () => Promise.resolve('boom'),
     });
     const client = new RetrievalClient();
     const result = await client.search('u1', {
@@ -124,7 +124,7 @@ describe('RetrievalClient', () => {
     process.env.RETRIEVAL_CLIENT_ENABLED = 'true';
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ requestId: 'r3', notDocuments: true }),
+      json: () => Promise.resolve({ requestId: 'r3', notDocuments: true }),
     });
     const client = new RetrievalClient();
     const result = await client.search('u1', {
@@ -139,16 +139,18 @@ describe('RetrievalClient', () => {
   it('returns empty result on timeout', async () => {
     process.env.RETRIEVAL_CLIENT_ENABLED = 'true';
     process.env.RETRIEVAL_CLIENT_TIMEOUT_MS = '50';
-    global.fetch = jest.fn().mockImplementation((_url, opts) => {
-      const signal = opts.signal;
-      return new Promise((_resolve, reject) => {
-        signal.addEventListener('abort', () => {
-          const err = new Error('aborted');
-          err.name = 'AbortError';
-          reject(err);
+    global.fetch = jest
+      .fn()
+      .mockImplementation((_url: unknown, opts: { signal: AbortSignal }) => {
+        const signal = opts.signal;
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => {
+            const err = new Error('aborted');
+            err.name = 'AbortError';
+            reject(err);
+          });
         });
       });
-    });
     const client = new RetrievalClient();
     const result = await client.search('u1', {
       query: 'q',

@@ -12,7 +12,7 @@ export class EventPublisherService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger('EventPublisher');
   private pubClient: Redis;
 
-  async onModuleInit() {
+  onModuleInit() {
     this.pubClient = new Redis(getRedisConnection());
     this.pubClient.on('error', (err) => {
       this.logger.error(`Redis pub error: ${err.message}`);

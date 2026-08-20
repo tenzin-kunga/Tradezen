@@ -37,9 +37,8 @@ jest.mock('../db/drizzle', () => ({
 describe('KnowledgeEnrichmentService generateSummary', () => {
   let service: KnowledgeEnrichmentService;
   const pipeline = { enqueue: jest.fn().mockResolvedValue(undefined) };
-  const aiClient = {
-    complete: jest.fn().mockResolvedValue({ content: 'A summary.' }),
-  };
+  const completeMock = jest.fn().mockResolvedValue({ content: 'A summary.' });
+  const aiClient = { complete: completeMock };
   const warn = jest.fn();
 
   beforeEach(async () => {
@@ -58,8 +57,18 @@ describe('KnowledgeEnrichmentService generateSummary', () => {
     service = module.get<KnowledgeEnrichmentService>(
       KnowledgeEnrichmentService,
     );
-    (service as any).logger = { warn };
+    (service as unknown as { logger: { warn: jest.Mock } }).logger = { warn };
   });
+
+  const userContent = () => {
+    const messages = (
+      completeMock.mock.calls[0] as unknown as [
+        Array<{ role: string; content: string }>,
+        unknown,
+      ]
+    )[0];
+    return messages.find((m) => m.role === 'user')!.content;
+  };
 
   it('truncates content to 6000 chars and warns when too long', async () => {
     const long = 'x'.repeat(7000);
@@ -67,10 +76,7 @@ describe('KnowledgeEnrichmentService generateSummary', () => {
     await service.enrichDocument('u1', 'doc1', long);
 
     expect(warn).toHaveBeenCalled();
-    const userContent = aiClient.complete.mock.calls[0][0].find(
-      (m: any) => m.role === 'user',
-    ).content;
-    expect(userContent).toHaveLength(6000);
+    expect(userContent()).toHaveLength(6000);
   });
 
   it('does not warn when content fits within the limit', async () => {
@@ -79,9 +85,6 @@ describe('KnowledgeEnrichmentService generateSummary', () => {
     await service.enrichDocument('u1', 'doc1', short);
 
     expect(warn).not.toHaveBeenCalled();
-    const userContent = aiClient.complete.mock.calls[0][0].find(
-      (m: any) => m.role === 'user',
-    ).content;
-    expect(userContent).toBe(short);
+    expect(userContent()).toBe(short);
   });
 });

@@ -14,7 +14,8 @@ jest.mock('../db/drizzle', () => ({
 }));
 
 import { db } from '../db/drizzle';
-const execute = db.execute as jest.Mock;
+// eslint-disable-next-line @typescript-eslint/unbound-method -- jest mock, no `this`
+const execute = db.execute as unknown as jest.Mock;
 
 describe('CorpusBaselineService', () => {
   const service = new CorpusBaselineService();

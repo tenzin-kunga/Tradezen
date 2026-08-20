@@ -206,8 +206,11 @@ export class AuthService {
         secret: refreshSecret,
       });
       console.log('[Auth:refresh] Token verified, sub:', payload.sub);
-    } catch (err: any) {
-      console.log('[Auth:refresh] Token verification failed:', err?.message);
+    } catch (err: unknown) {
+      console.log(
+        '[Auth:refresh] Token verification failed:',
+        (err as { message?: string } | null)?.message,
+      );
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -358,13 +361,13 @@ export class AuthService {
   async saveLayout(userId: string, dto: SaveLayoutDto) {
     const [user] = await db
       .update(users)
-      .set({ dashboardLayout: dto as any })
+      .set({ dashboardLayout: dto })
       .where(eq(users.id, userId))
       .returning({ layout: users.dashboardLayout });
     return user?.layout;
   }
 
-  async logout(response: Response) {
+  logout(response: Response) {
     response.clearCookie('refresh_token', { path: '/' });
     return { message: 'Logged out' };
   }

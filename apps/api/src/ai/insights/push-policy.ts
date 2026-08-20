@@ -49,7 +49,9 @@ export class CoachingPushPolicy {
       )
       .orderBy(desc(aiInsights.createdAt));
 
-    const recent = rows.find((r) => (r.metadata as any)?.ruleId === ruleId);
+    const recent = rows.find(
+      (r) => (r.metadata as { ruleId?: string } | null)?.ruleId === ruleId,
+    );
     if (!recent) return false;
     const age = Date.now() - new Date(recent.createdAt ?? 0).getTime();
     return age < COACHING_DEDUPE_MS;

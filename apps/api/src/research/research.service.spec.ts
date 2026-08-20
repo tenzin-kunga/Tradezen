@@ -10,15 +10,24 @@ jest.mock('../db/drizzle', () => {
   // that resolves to the currently configured rows.
   const rows: Record<string, any[]> = { data: [] };
   const makeChain = () => {
-    const c: any = {};
     const resolve = () => Promise.resolve(rows['__select__'] ?? []);
-    c.from = () => c;
-    c.where = () => c;
-    c.orderBy = () => c;
-    c.limit = () => c;
-    c.offset = () => c;
-    c.then = (res: any) => resolve().then(res);
-    c.catch = (rej: any) => resolve().catch(rej);
+    const c: {
+      from: () => typeof c;
+      where: () => typeof c;
+      orderBy: () => typeof c;
+      limit: () => typeof c;
+      offset: () => typeof c;
+      then: <T>(res: (value: any[]) => T) => Promise<T>;
+      catch: <T>(rej: (reason: unknown) => T) => Promise<T | any[]>;
+    } = {
+      from: () => c,
+      where: () => c,
+      orderBy: () => c,
+      limit: () => c,
+      offset: () => c,
+      then: (res) => resolve().then(res),
+      catch: (rej) => resolve().catch(rej),
+    };
     return c;
   };
   return {
@@ -44,8 +53,14 @@ jest.mock('../db/drizzle', () => {
   };
 });
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { db } = require('../db/drizzle');
+import { db } from '../db/drizzle';
+
+const mockedDb = db as unknown as {
+  __setRows: (rows: any[]) => void;
+  insert: jest.Mock;
+  select: jest.Mock;
+  update: jest.Mock;
+};
 
 describe('ResearchService', () => {
   let service: ResearchService;
@@ -83,7 +98,7 @@ describe('ResearchService', () => {
   });
 
   it('throws NotFoundException for a missing project', async () => {
-    db.__setRows([]); // getProject select returns nothing
+    mockedDb.__setRows([]); // getProject select returns nothing
     await expect(service.getProject('u1', 'missing')).rejects.toThrow(
       NotFoundException,
     );
@@ -91,7 +106,7 @@ describe('ResearchService', () => {
 
   it('rejects notes update on optimistic-lock conflict', async () => {
     // getProject resolves a project...
-    db.__setRows([
+    mockedDb.__setRows([
       {
         id: 'p1',
         userId: 'u1',
@@ -108,7 +123,7 @@ describe('ResearchService', () => {
       },
     ]);
     // ...then researchNotes select returns version 2
-    db.__setRows([{ content: 'old', version: 2 }]);
+    mockedDb.__setRows([{ content: 'old', version: 2 }]);
 
     await expect(
       service.updateNotes('u1', 'p1', { content: 'new', base_version: 1 }),
@@ -116,7 +131,7 @@ describe('ResearchService', () => {
   });
 
   it('uploadAsset delegates to AssetsService after ownership check', async () => {
-    db.__setRows([
+    mockedDb.__setRows([
       {
         id: 'p1',
         userId: 'u1',
@@ -141,7 +156,7 @@ describe('ResearchService', () => {
       status: 'active',
     });
     // researchAssets insert returns the link with createdAt
-    (db.insert as jest.Mock).mockReturnValueOnce({
+    mockedDb.insert.mockReturnValueOnce({
       values: () => ({
         returning: () =>
           Promise.resolve([{ createdAt: new Date('2026-01-01') }]),
@@ -167,7 +182,7 @@ describe('ResearchService', () => {
   });
 
   it('deleteAsset marks DELETING and removes the link (async lifecycle)', async () => {
-    db.__setRows([
+    mockedDb.__setRows([
       {
         id: 'p1',
         userId: 'u1',
@@ -184,7 +199,7 @@ describe('ResearchService', () => {
       },
     ]);
     // researchAssets select for the link
-    (db.select as jest.Mock).mockReturnValueOnce({
+    mockedDb.select.mockReturnValueOnce({
       from: () => ({
         where: () => ({
           limit: () => Promise.resolve([{ projectId: 'p1', assetId: 'a1' }]),
@@ -195,7 +210,7 @@ describe('ResearchService', () => {
     await service.deleteAsset('u1', 'p1', 'a1');
 
     // enqueueAssetDeletion updates assets.status -> 'deleting'
-    expect(db.update).toHaveBeenCalled();
+    expect(mockedDb.update).toHaveBeenCalled();
     expect(assetsService.deleteStorageObject).not.toHaveBeenCalled();
   });
 });

@@ -32,10 +32,10 @@ export class TradesGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify<{ sub?: string }>(token);
       const userId = payload.sub;
-      client.data.userId = userId;
-      client.join(`user:${userId}`);
+      (client.data as { userId?: string }).userId = userId;
+      await client.join(`user:${userId}`);
       this.logger.log(`Client connected: user ${userId}`);
     } catch {
       this.logger.warn('Connection rejected: invalid JWT');

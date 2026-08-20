@@ -242,14 +242,16 @@ export class ReconciliationService {
       GROUP BY source_id
     `);
     for (const r of rowsOf(res)) {
-      const v = r.updated_at ? new Date(String(r.updated_at)).getTime() : 0;
+      const v = r.updated_at
+        ? new Date(r.updated_at as string | number | Date).getTime()
+        : 0;
       corpusUp.set(String(r.source_id), v);
     }
 
     const stale: string[] = [];
-    for (const row of rows as Row[]) {
+    for (const row of rows) {
       const updated = row.updatedAt
-        ? new Date(String(row.updatedAt)).getTime()
+        ? new Date(row.updatedAt as string | number | Date).getTime()
         : null;
       if (updated !== null && updated > (corpusUp.get(String(row.id)) ?? 0)) {
         const formatter = this.formatterRegistry.get(

@@ -6,6 +6,11 @@ jest.mock('../../db/drizzle', () => ({
   db: { select: jest.fn(), insert: jest.fn() },
 }));
 
+// eslint-disable-next-line @typescript-eslint/unbound-method -- jest mock, no `this`
+const insert = db.insert as unknown as jest.Mock;
+// eslint-disable-next-line @typescript-eslint/unbound-method -- jest mock, no `this`
+const select = db.select as unknown as jest.Mock;
+
 function selectChain(rows: any[]) {
   return {
     from: jest.fn().mockReturnThis(),
@@ -61,25 +66,25 @@ describe('CoachingPushPolicy', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (db as any).insert.mockReturnValue({
+    insert.mockReturnValue({
       values: jest.fn().mockResolvedValue(undefined),
     });
     policy = new CoachingPushPolicy();
   });
 
   it('evaluates to a push and records a dedupe row when not recently pushed', async () => {
-    (db as any).select.mockReturnValue(selectChain([]));
+    select.mockReturnValue(selectChain([]));
     const cands = [candidate(1, false), candidate(2, true, 'top')];
 
     const push = await policy.evaluate('u', cands);
 
     expect(push).not.toBeNull();
     expect(push!.ruleId).toBe('top');
-    expect((db as any).insert).toHaveBeenCalled();
+    expect(insert).toHaveBeenCalled();
   });
 
   it('suppresses the push within the dedupe window', async () => {
-    (db as any).select.mockReturnValue(
+    select.mockReturnValue(
       selectChain([
         {
           insightType: 'coaching_push',
@@ -94,6 +99,6 @@ describe('CoachingPushPolicy', () => {
     const push = await policy.evaluate('u', cands);
 
     expect(push).toBeNull();
-    expect((db as any).insert).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
   });
 });

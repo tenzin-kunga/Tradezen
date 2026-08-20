@@ -8,7 +8,8 @@ jest.mock('../db/drizzle', () => ({
 }));
 
 import { db } from '../db/drizzle';
-const execute = db.execute as jest.Mock;
+// eslint-disable-next-line @typescript-eslint/unbound-method -- jest mock, no `this`
+const execute = db.execute as unknown as jest.Mock;
 
 const mkBaseline = (over: Partial<CorpusBaseline> = {}): CorpusBaseline => ({
   userId: 'u1',
@@ -109,13 +110,17 @@ describe('ReconciliationService', () => {
   it('prunes orphaned and duplicate rows only when prune is authorized', async () => {
     execute.mockResolvedValue([]);
     await service.run();
-    const noPrune = JSON.stringify(execute.mock.calls.map((c) => c[0]));
+    const noPrune = JSON.stringify(
+      execute.mock.calls.map((c) => (c as unknown[])[0] as string),
+    );
     expect(noPrune).not.toContain('DELETE FROM embeddings');
 
     jest.clearAllMocks();
     execute.mockResolvedValue([]);
     await service.run({ prune: true });
-    const pruned = JSON.stringify(execute.mock.calls.map((c) => c[0]));
+    const pruned = JSON.stringify(
+      execute.mock.calls.map((c) => (c as unknown[])[0] as string),
+    );
     expect(pruned).toContain('DELETE FROM embeddings');
   });
 });

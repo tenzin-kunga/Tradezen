@@ -78,7 +78,7 @@ export class TwoFactorService {
       columns: { twoFactorBackupCodes: true },
     });
     const codes: string[] = Array.isArray(user?.twoFactorBackupCodes)
-      ? user.twoFactorBackupCodes
+      ? (user.twoFactorBackupCodes as string[])
       : [];
     const index = codes.indexOf(code);
     if (index === -1) return false;

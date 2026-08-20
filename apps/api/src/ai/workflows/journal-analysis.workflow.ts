@@ -20,12 +20,23 @@ function extractText(content: unknown): string {
   return String(content);
 }
 
+interface JournalAnalysisResult {
+  sentiment: string;
+  patterns: string[];
+  insights: string[];
+  summary: string;
+}
+
+interface CompiledJournalWorkflow {
+  invoke(input: Record<string, unknown>): Promise<JournalAnalysisResult>;
+}
+
 const JournalAnalysisState = Annotation.Root({
   userId: Annotation<string>,
   dateFrom: Annotation<string>,
   dateTo: Annotation<string>,
-  journalEntries: Annotation<any[]>,
-  tradeData: Annotation<any[]>,
+  journalEntries: Annotation<(typeof journals.$inferSelect)[]>,
+  tradeData: Annotation<(typeof trades.$inferSelect)[]>,
   sentiment: Annotation<string>,
   patterns: Annotation<string[]>,
   insights: Annotation<string[]>,
@@ -35,15 +46,15 @@ const JournalAnalysisState = Annotation.Root({
 @Injectable()
 export class JournalAnalysisWorkflow {
   private readonly logger = new Logger('JournalAnalysisWorkflow');
-  private graph: any;
+  private graph: CompiledJournalWorkflow;
 
   constructor() {
     const workflow = new StateGraph(JournalAnalysisState)
-      .addNode('fetch_data', this.fetchData.bind(this))
-      .addNode('analyze_sentiment', this.analyzeSentiment.bind(this))
-      .addNode('detect_patterns', this.detectPatterns.bind(this))
-      .addNode('generate_insights', this.generateInsights.bind(this))
-      .addNode('compile_summary', this.compileSummary.bind(this))
+      .addNode('fetch_data', (state) => this.fetchData(state))
+      .addNode('analyze_sentiment', (state) => this.analyzeSentiment(state))
+      .addNode('detect_patterns', (state) => this.detectPatterns(state))
+      .addNode('generate_insights', (state) => this.generateInsights(state))
+      .addNode('compile_summary', (state) => this.compileSummary(state))
       .addEdge('__start__', 'fetch_data')
       .addEdge('fetch_data', 'analyze_sentiment')
       .addEdge('analyze_sentiment', 'detect_patterns')
@@ -148,7 +159,7 @@ export class JournalAnalysisWorkflow {
 
     let patterns: string[] = [];
     try {
-      patterns = JSON.parse(extractText(response.content));
+      patterns = JSON.parse(extractText(response.content)) as string[];
     } catch {
       patterns = extractText(response.content)
         .split('\n')
@@ -177,7 +188,7 @@ Total PnL: ${this.calculateTotalPnl(state.tradeData)}
 
     let insights: string[] = [];
     try {
-      insights = JSON.parse(extractText(response.content));
+      insights = JSON.parse(extractText(response.content)) as string[];
     } catch {
       insights = extractText(response.content)
         .split('\n')
@@ -205,15 +216,15 @@ Insights: ${state.insights.join('; ')}
     return { ...state, summary: extractText(response.content) };
   }
 
-  private calculateWinRate(trades: any[]): number {
-    if (trades.length === 0) return 0;
-    const wins = trades.filter((t) => Number(t.pnl) > 0).length;
-    return Math.round((wins / trades.length) * 100);
+  private calculateWinRate(rows: (typeof trades.$inferSelect)[]): number {
+    if (rows.length === 0) return 0;
+    const wins = rows.filter((t) => Number(t.pnl) > 0).length;
+    return Math.round((wins / rows.length) * 100);
   }
 
-  private calculateTotalPnl(trades: any[]): number {
+  private calculateTotalPnl(rows: (typeof trades.$inferSelect)[]): number {
     return (
-      Math.round(trades.reduce((sum, t) => sum + Number(t.pnl), 0) * 100) / 100
+      Math.round(rows.reduce((sum, t) => sum + Number(t.pnl), 0) * 100) / 100
     );
   }
 }

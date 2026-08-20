@@ -94,6 +94,9 @@ export class AnalyticsProvider implements ContextProvider {
     const wins = Number(s.wins ?? 0);
     const grossProfit = Number(s.gross_profit ?? 0);
     const grossLoss = Number(s.gross_loss ?? 0);
+    const fomo = Number(s.fomo ?? 0);
+    const revenge = Number(s.revenge ?? 0);
+    const aligned = Number(s.aligned ?? 0);
 
     const lines = [
       `Analytics Summary`,
@@ -103,7 +106,7 @@ export class AnalyticsProvider implements ContextProvider {
       total > 0
         ? `Profit factor: ${grossLoss ? (grossProfit / grossLoss).toFixed(2) : '∞'}`
         : '',
-      `FOMO trades: ${s.fomo ?? 0} | Revenge trades: ${s.revenge ?? 0} | Trend aligned: ${s.aligned ?? 0}`,
+      `FOMO trades: ${fomo} | Revenge trades: ${revenge} | Trend aligned: ${aligned}`,
     ].filter(Boolean);
 
     return {

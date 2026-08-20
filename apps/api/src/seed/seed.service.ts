@@ -153,7 +153,8 @@ function generateSeedTrades(): SeedTrade[] {
       8 + Math.floor(Math.random() * 10),
       Math.floor(Math.random() * 60),
     );
-    const contractSize = CONTRACT_SIZES[symbol] ?? 100000;
+    const contractSize: number =
+      (CONTRACT_SIZES as Record<string, number | undefined>)[symbol] ?? 100000;
     const rawPnl =
       direction === 'buy'
         ? (exitPrice - entryPrice) * lotSize * contractSize
@@ -265,7 +266,7 @@ export class SeedService {
       .returning();
 
     const generatedTrades = generateSeedTrades();
-    const insertedTradeRows: any[] = [];
+    const insertedTradeRows: (typeof trades.$inferSelect)[] = [];
     const batchSize = 10;
 
     for (let i = 0; i < generatedTrades.length; i += batchSize) {

@@ -50,7 +50,7 @@ export class AiIngestionProcessor extends WorkerHost {
       );
     }
 
-    const result = await resp.json();
+    const result = (await resp.json()) as unknown;
     this.logger.log(
       `Ingested ${action} ${sourceType}:${sourceId}: ${JSON.stringify(result)}`,
     );

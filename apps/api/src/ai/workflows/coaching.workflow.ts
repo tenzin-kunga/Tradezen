@@ -17,6 +17,26 @@ function extractText(content: unknown): string {
   return String(content);
 }
 
+interface CoachingAnalytics {
+  winRate: number;
+  totalTrades: number;
+  profitFactor: number;
+  currentStreak?: { type: string; count: number };
+  behavioralStats?: { fomoCount: number };
+  sharpeRatio: number;
+  totalPnl: number;
+}
+
+interface CoachingResult {
+  triggers: string[];
+  coachingMessage: string;
+  severity: string;
+}
+
+interface CompiledCoachingWorkflow {
+  invoke(input: Record<string, unknown>): Promise<CoachingResult>;
+}
+
 const CoachingState = Annotation.Root({
   userId: Annotation<string>,
   analytics: Annotation<Record<string, unknown>>,
@@ -29,13 +49,13 @@ const CoachingState = Annotation.Root({
 @Injectable()
 export class CoachingWorkflow {
   private readonly logger = new Logger('CoachingWorkflow');
-  private graph: any;
+  private graph: CompiledCoachingWorkflow;
 
   constructor() {
     const workflow = new StateGraph(CoachingState)
-      .addNode('evaluate_triggers', this.evaluateTriggers.bind(this))
-      .addNode('assess_severity', this.assessSeverity.bind(this))
-      .addNode('generate_message', this.generateMessage.bind(this))
+      .addNode('evaluate_triggers', (state) => this.evaluateTriggers(state))
+      .addNode('assess_severity', (state) => this.assessSeverity(state))
+      .addNode('generate_message', (state) => this.generateMessage(state))
       .addEdge('__start__', 'evaluate_triggers')
       .addEdge('evaluate_triggers', 'assess_severity')
       .addEdge('assess_severity', 'generate_message')
@@ -64,36 +84,33 @@ export class CoachingWorkflow {
     };
   }
 
-  private async evaluateTriggers(state: typeof CoachingState.State) {
+  private evaluateTriggers(state: typeof CoachingState.State) {
     const triggers: string[] = [];
-    const a = state.analytics;
+    const a = state.analytics as unknown as CoachingAnalytics;
 
-    if ((a as any).winRate < 40 && (a as any).totalTrades > 20) {
+    if (a.winRate < 40 && a.totalTrades > 20) {
       triggers.push(
         'Win rate below 40% with 20+ trades — strategy review needed',
       );
     }
-    if ((a as any).profitFactor < 1.0) {
+    if (a.profitFactor < 1.0) {
       triggers.push('Profit factor below 1.0 — losses exceed gains');
     }
-    if (
-      (a as any).currentStreak?.type === 'loss' &&
-      (a as any).currentStreak?.count >= 5
-    ) {
+    const currentStreak = a.currentStreak;
+    if (currentStreak?.type === 'loss' && currentStreak.count >= 5) {
       triggers.push(
-        `5+ trade losing streak (${(a as any).currentStreak.count}) — consider taking a break`,
+        `5+ trade losing streak (${currentStreak.count}) — consider taking a break`,
       );
     }
     if (
-      (a as any).behavioralStats?.fomoCount /
-        Math.max((a as any).totalTrades, 1) >
+      (a.behavioralStats?.fomoCount ?? 0) / Math.max(a.totalTrades, 1) >
       0.3
     ) {
       triggers.push(
         '30%+ of trades are FOMO entries — emotional trading detected',
       );
     }
-    if ((a as any).sharpeRatio < 0) {
+    if (a.sharpeRatio < 0) {
       triggers.push('Negative Sharpe ratio — risk-adjusted returns are poor');
     }
 
@@ -108,7 +125,7 @@ export class CoachingWorkflow {
     return { ...state, triggers };
   }
 
-  private async assessSeverity(state: typeof CoachingState.State) {
+  private assessSeverity(state: typeof CoachingState.State) {
     const count = state.triggers.length;
     let severity = 'low';
     if (count >= 4) severity = 'critical';
@@ -120,6 +137,7 @@ export class CoachingWorkflow {
 
   private async generateMessage(state: typeof CoachingState.State) {
     const llm = createLLM(undefined, 0.7);
+    const a = state.analytics as unknown as CoachingAnalytics;
 
     const context = `
 Triggers:
@@ -128,9 +146,9 @@ ${state.triggers.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 Severity: ${state.severity}
 
 Analytics Summary:
-- Win Rate: ${(state.analytics as any).winRate}%
-- Total PnL: ${(state.analytics as any).totalPnl}
-- Profit Factor: ${(state.analytics as any).profitFactor}
+- Win Rate: ${a.winRate}%
+- Total PnL: ${a.totalPnl}
+- Profit Factor: ${a.profitFactor}
 - FOMO Score: ${state.behavioralScores.fomoScore}/100
 - Discipline Score: ${state.behavioralScores.discipline}/100
     `;

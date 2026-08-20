@@ -23,7 +23,6 @@ import { WatchlistModule } from '../../watchlist/watchlist.module';
 import { KnowledgeModule } from '../../knowledge/knowledge.module';
 import { JournalMood } from '../../journals/dto';
 import { ChatModule } from '../../chat/chat.module';
-import type { WorkspaceAction } from '../context/context-provider';
 
 function json(value: unknown, meta: PartialToolMetadata = {}): ToolResult {
   return {
@@ -197,23 +196,21 @@ export class ToolRegistryFactory {
         },
       },
       executor: {
-        execute: async () => {
-          const actions: WorkspaceAction[] = [
-            {
-              version: 1,
-              kind: 'navigate',
-              module: 'journal',
-              params: {},
-              label: 'Open Journal',
-            },
-          ];
-          return {
+        execute: () =>
+          Promise.resolve({
             content: 'Journal opened.',
             success: true,
             metadata: { source: 'tool', latencyMs: 0 },
-            suggestedActions: actions,
-          };
-        },
+            suggestedActions: [
+              {
+                version: 1,
+                kind: 'navigate',
+                module: 'journal',
+                params: {},
+                label: 'Open Journal',
+              },
+            ],
+          }),
       },
     });
 
@@ -303,20 +300,21 @@ export class ToolRegistryFactory {
         },
       },
       executor: {
-        execute: async () => ({
-          content: 'Watchlist opened.',
-          success: true,
-          metadata: { source: 'tool', latencyMs: 0 },
-          suggestedActions: [
-            {
-              version: 1,
-              kind: 'navigate',
-              module: 'watchlist',
-              params: {},
-              label: 'Open Watchlist',
-            },
-          ],
-        }),
+        execute: () =>
+          Promise.resolve({
+            content: 'Watchlist opened.',
+            success: true,
+            metadata: { source: 'tool', latencyMs: 0 },
+            suggestedActions: [
+              {
+                version: 1,
+                kind: 'navigate',
+                module: 'watchlist',
+                params: {},
+                label: 'Open Watchlist',
+              },
+            ],
+          }),
       },
     });
 
@@ -400,20 +398,21 @@ export class ToolRegistryFactory {
         },
       },
       executor: {
-        execute: async () => ({
-          content: 'Knowledge base opened.',
-          success: true,
-          metadata: { source: 'tool', latencyMs: 0 },
-          suggestedActions: [
-            {
-              version: 1,
-              kind: 'navigate',
-              module: 'knowledge',
-              params: {},
-              label: 'Open Knowledge',
-            },
-          ],
-        }),
+        execute: () =>
+          Promise.resolve({
+            content: 'Knowledge base opened.',
+            success: true,
+            metadata: { source: 'tool', latencyMs: 0 },
+            suggestedActions: [
+              {
+                version: 1,
+                kind: 'navigate',
+                module: 'knowledge',
+                params: {},
+                label: 'Open Knowledge',
+              },
+            ],
+          }),
       },
     });
 

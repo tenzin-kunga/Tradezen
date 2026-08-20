@@ -1,4 +1,6 @@
 import { AiIngestionProcessor } from './ai-ingestion.processor';
+import { Job } from 'bullmq';
+import type { IngestionJobData } from './ingestion-enqueuer.service';
 
 describe('AiIngestionProcessor', () => {
   const originalUrl = process.env.AI_SERVICE_URL;
@@ -17,7 +19,9 @@ describe('AiIngestionProcessor', () => {
     process.env.INGESTION_CLIENT_TIMEOUT_MS = originalTimeout;
   });
 
-  function makeJob(overrides = {}) {
+  function makeJob(
+    overrides: Record<string, unknown> = {},
+  ): Job<IngestionJobData> {
     return {
       name: 'ingest:upsert',
       data: {
@@ -30,18 +34,18 @@ describe('AiIngestionProcessor', () => {
         metadata: { symbol: 'AAPL' },
         ...overrides,
       },
-    };
+    } as unknown as Job<IngestionJobData>;
   }
 
   it('POSTs the event to Python /ingest/document', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ status: 'upserted' }),
-    } as any);
-    global.fetch = fetchMock as any;
+      json: () => Promise.resolve({ status: 'upserted' }),
+    });
+    globalThis.fetch = fetchMock;
 
     const processor = new AiIngestionProcessor();
-    const result = await processor.process(makeJob() as any);
+    const result = await processor.process(makeJob());
 
     expect(fetchMock).toHaveBeenCalledWith(
       'http://ai:8000/ingest/document',
@@ -69,12 +73,12 @@ describe('AiIngestionProcessor', () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: false,
       status: 503,
-      text: async () => 'unavailable',
-    } as any);
-    global.fetch = fetchMock as any;
+      text: () => Promise.resolve('unavailable'),
+    });
+    globalThis.fetch = fetchMock;
 
     const processor = new AiIngestionProcessor();
-    await expect(processor.process(makeJob() as any)).rejects.toThrow(
+    await expect(processor.process(makeJob())).rejects.toThrow(
       '503 unavailable',
     );
   });
@@ -82,9 +86,9 @@ describe('AiIngestionProcessor', () => {
   it('sends delete payload without content fields', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ status: 'deleted', deleted: 1 }),
-    } as any);
-    global.fetch = fetchMock as any;
+      json: () => Promise.resolve({ status: 'deleted', deleted: 1 }),
+    });
+    globalThis.fetch = fetchMock;
 
     const processor = new AiIngestionProcessor();
     await processor.process(
@@ -93,10 +97,14 @@ describe('AiIngestionProcessor', () => {
         title: undefined,
         content: undefined,
         metadata: undefined,
-      }) as any,
+      }),
     );
 
-    const body = JSON.parse(fetchMock.mock.calls[0][1]!.body as string);
+    const callArgs = fetchMock.mock.calls[0] as unknown as [
+      string,
+      { body: string },
+    ];
+    const body = JSON.parse(callArgs[1].body) as Record<string, unknown>;
     expect(body).toEqual({
       action: 'delete',
       user_id: 'u1',

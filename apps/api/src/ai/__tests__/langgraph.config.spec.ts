@@ -1,6 +1,6 @@
 // Mock @langchain/openai to avoid ESM import issues in Jest
 jest.mock('@langchain/openai', () => ({
-  ChatOpenAI: jest.fn().mockImplementation((config) => config),
+  ChatOpenAI: jest.fn().mockImplementation((config: unknown) => config),
 }));
 
 import { normalizeAiBaseUrl } from '../langgraph.config';

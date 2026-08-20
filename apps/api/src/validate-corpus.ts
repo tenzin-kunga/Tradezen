@@ -45,6 +45,6 @@ main()
     process.exit(1);
   })
   .finally(() => {
-    client.end();
-    pool.end();
+    void client.end();
+    void pool.end();
   });

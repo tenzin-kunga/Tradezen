@@ -86,7 +86,7 @@ export class TradesProvider implements ContextProvider {
   async build(userId: string, request: ContextRequest): Promise<ContextBlock> {
     const limit = request.limit ?? 10;
 
-    let rows: any[];
+    let rows: (typeof trades.$inferSelect)[];
     if (request.tradeIds && request.tradeIds.length > 0) {
       rows = await db
         .select()
@@ -108,10 +108,10 @@ export class TradesProvider implements ContextProvider {
     }
 
     const total = rows.length;
-    const wins = rows.filter((r: any) => Number(r.pnl) > 0).length;
-    const totalPnl = rows.reduce((s: number, r: any) => s + Number(r.pnl), 0);
+    const wins = rows.filter((r) => Number(r.pnl) > 0).length;
+    const totalPnl = rows.reduce((s, r) => s + Number(r.pnl), 0);
 
-    const lines = rows.map((r: any) => {
+    const lines = rows.map((r) => {
       const dir = r.direction === 'long' ? 'L' : 'S';
       const pnl = Number(r.pnl);
       const sign = pnl >= 0 ? '+' : '';

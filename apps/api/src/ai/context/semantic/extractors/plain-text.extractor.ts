@@ -10,13 +10,13 @@ export class PlainTextExtractor implements TextExtractor {
     );
   }
 
-  async extract(file: Buffer): Promise<ExtractionResult> {
+  extract(file: Buffer): Promise<ExtractionResult> {
     const text = normalize(file.toString('utf-8'));
-    return {
+    return Promise.resolve({
       text,
       wordCount: text.split(/\s+/).filter(Boolean).length,
       language: 'en',
       warnings: [],
-    };
+    });
   }
 }

@@ -63,7 +63,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       request.url?.startsWith('/auth/github/callback')
     ) {
       const webUrl = process.env.WEB_URL ?? 'http://localhost:3000';
-      const errorMsg = Array.isArray(message) ? message[0] : message;
+      const errorMsg = Array.isArray(message)
+        ? (message[0] as string)
+        : message;
       response.redirect(
         `${webUrl}/auth/callback?error=${encodeURIComponent(errorMsg)}`,
       );

@@ -9,7 +9,7 @@ import {
 
 export const disciplineRules: InsightSource = {
   generate(ctx: InsightContext): InsightCandidate[] {
-    const analytics = ctx.analytics as any;
+    const analytics = ctx.analytics;
     const totalTrades = analytics.totalTrades ?? 0;
     const candidates: InsightCandidate[] = [];
 

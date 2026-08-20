@@ -39,7 +39,9 @@ export class EmbeddingService {
       throw new Error(`Embedding API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as {
+      data: Array<{ embedding: number[] }>;
+    };
     return data.data[0].embedding;
   }
 

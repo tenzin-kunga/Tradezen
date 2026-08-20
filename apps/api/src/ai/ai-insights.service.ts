@@ -10,7 +10,11 @@ import {
   buildInsightContext,
   InsightContext,
 } from './insights/insight-context';
-import { InsightCard, InsightCandidate } from './insights/insight-source';
+import {
+  InsightCard,
+  InsightCandidate,
+  InsightSourceId,
+} from './insights/insight-source';
 import { RULES } from './insights/rules';
 import { CoachingPushPolicy, PushCandidate } from './insights/push-policy';
 import {
@@ -36,6 +40,13 @@ interface CandidateCacheEntry {
   expiresAt: number;
 }
 
+interface InsightMetadata {
+  ruleId?: string;
+  title?: string;
+  pushable?: boolean;
+  source?: InsightSourceId;
+}
+
 @Injectable()
 export class AiInsightsService {
   private readonly logger = new Logger('AiInsightsService');
@@ -59,7 +70,7 @@ export class AiInsightsService {
 
     const { ctx, candidates } = await this.buildCandidates(userId);
 
-    const totalTrades = (ctx.analytics as any).totalTrades ?? 0;
+    const totalTrades = ctx.analytics.totalTrades ?? 0;
     if (totalTrades < MIN_TOTAL_TRADES) {
       return {
         insights: [],
@@ -125,17 +136,20 @@ export class AiInsightsService {
     const newest = new Date(cardRows[0].createdAt ?? 0).getTime();
     if (Date.now() - newest >= CACHE_TTL_MS) return null;
 
-    const cards: InsightCard[] = cardRows.slice(0, MAX_INSIGHTS).map((r) => ({
-      id: r.id,
-      ruleId: (r.metadata as any)?.ruleId ?? '',
-      category: (r.insightType as InsightCard['category']) || 'performance',
-      title: (r.metadata as any)?.title ?? '',
-      message: r.content,
-      metrics: (r.metadata ?? {}) as Record<string, unknown>,
-      pushable: (r.metadata as any)?.pushable ?? false,
-      source: (r.metadata as any)?.source ?? 'analytics',
-      createdAt: (r.createdAt ?? new Date()).toISOString(),
-    }));
+    const cards: InsightCard[] = cardRows.slice(0, MAX_INSIGHTS).map((r) => {
+      const md = r.metadata as InsightMetadata | null;
+      return {
+        id: r.id,
+        ruleId: md?.ruleId ?? '',
+        category: (r.insightType as InsightCard['category']) || 'performance',
+        title: md?.title ?? '',
+        message: r.content,
+        metrics: (r.metadata ?? {}) as Record<string, unknown>,
+        pushable: md?.pushable ?? false,
+        source: md?.source ?? 'analytics',
+        createdAt: (r.createdAt ?? new Date()).toISOString(),
+      };
+    });
 
     const generatedAt = cardRows.reduce(
       (latest, r) => Math.max(latest, new Date(r.createdAt ?? 0).getTime()),

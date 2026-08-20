@@ -23,7 +23,7 @@ jest.mock('../db/drizzle', () => ({
     }),
     delete: () => ({ where: () => Promise.resolve([]) }),
     execute: () => Promise.resolve([]),
-    transaction: (fn: (tx: any) => any) =>
+    transaction: (fn: (tx: unknown) => unknown) =>
       fn({
         insert: () => ({ values: () => ({}) }),
       }),

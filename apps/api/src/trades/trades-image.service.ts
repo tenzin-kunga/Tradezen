@@ -271,7 +271,9 @@ export class TradeImageService {
     return Number(result[0]?.maxOrder ?? -1) + 1;
   }
 
-  private formatImageResponse(image: any): ImageResponseDto {
+  private formatImageResponse(
+    image: typeof tradeImages.$inferSelect,
+  ): ImageResponseDto {
     return {
       id: image.id,
       url: this.storageProvider.getOriginalUrl(
@@ -287,7 +289,7 @@ export class TradeImageService {
       format: image.format,
       bytes: image.bytes,
       displayOrder: image.displayOrder,
-      metadata: image.metadata,
+      metadata: image.metadata as Record<string, unknown>,
     };
   }
 }
