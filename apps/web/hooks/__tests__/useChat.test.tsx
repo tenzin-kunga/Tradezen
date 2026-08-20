@@ -4,13 +4,19 @@ import { createRoot, type Root } from "react-dom/client";
 import { act } from "react-dom/test-utils";
 import type { UseChatReturn } from "../useChat";
 import { getReadyThreads } from "@/lib/chat/activity";
+import type {
+  Thread,
+  ThreadMessage,
+  StreamChatParams,
+} from "@/lib/api/assistant";
 
 // ─── Minimal DOM for React 18 createRoot under bun ──────────────────────────
 
-(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
-(globalThis as any).window = globalThis;
-(globalThis as any).self = globalThis;
-(globalThis as any).navigator = { userAgent: "bun" };
+const g = globalThis as unknown as Record<string, unknown>;
+g.IS_REACT_ACT_ENVIRONMENT = true;
+g.window = globalThis;
+g.self = globalThis;
+g.navigator = { userAgent: "bun" };
 for (const name of [
   "Element",
   "Node",
@@ -33,26 +39,46 @@ for (const name of [
   "HTMLButtonElement",
   "HTMLFormElement",
 ]) {
-  if (!(globalThis as any)[name]) (globalThis as any)[name] = class {};
+  if (!g[name]) g[name] = class {};
 }
 
-function makeFakeEl(): any {
-  const children: any[] = [];
+interface FakeElement {
+  nodeType: number;
+  nodeName: string;
+  tagName: string;
+  ownerDocument: unknown;
+  appendChild: (c: FakeElement) => FakeElement;
+  removeChild: (c: FakeElement) => FakeElement;
+  insertBefore: (c: FakeElement) => FakeElement;
+  addEventListener: () => void;
+  removeEventListener: () => void;
+  setAttribute: () => void;
+  removeAttribute: () => void;
+  getAttribute: () => string | null;
+  style: Record<string, unknown>;
+  childNodes: FakeElement[];
+  firstChild: null;
+  textContent: string;
+  innerHTML: string;
+}
+
+function makeFakeEl(): FakeElement {
+  const children: FakeElement[] = [];
   return {
     nodeType: 1,
     nodeName: "DIV",
     tagName: "DIV",
-    ownerDocument: (globalThis as any).document,
-    appendChild: (c: any) => {
+    ownerDocument: g.document,
+    appendChild: (c: FakeElement) => {
       children.push(c);
       return c;
     },
-    removeChild: (c: any) => {
+    removeChild: (c: FakeElement) => {
       const i = children.indexOf(c);
       if (i >= 0) children.splice(i, 1);
       return c;
     },
-    insertBefore: (c: any) => {
+    insertBefore: (c: FakeElement) => {
       children.push(c);
       return c;
     },
@@ -69,7 +95,7 @@ function makeFakeEl(): any {
   };
 }
 
-(globalThis as any).document = {
+g.document = {
   nodeType: 9,
   createElement: () => makeFakeEl(),
   createTextNode: () => makeFakeEl(),
@@ -83,7 +109,7 @@ function makeFakeEl(): any {
 
 function deferred<T>() {
   let resolve!: (v: T) => void;
-  let reject!: (e: any) => void;
+  let reject!: (e: unknown) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -92,13 +118,19 @@ function deferred<T>() {
 }
 
 const state: {
-  threads: any[];
+  threads: Array<Partial<Thread> & { id: string }>;
   lastThread: string | null;
-  createCalls: { title: string | undefined; d: ReturnType<typeof deferred<{ id: string }>> }[];
-  msgCalls: { id: string; d: ReturnType<typeof deferred<any[]>> }[];
-  streamCalls: { params: any; d: ReturnType<typeof deferred<void>> }[];
+  createCalls: {
+    title: string | undefined;
+    d: ReturnType<typeof deferred<{ id: string }>>;
+  }[];
+  msgCalls: { id: string; d: ReturnType<typeof deferred<ThreadMessage[]>> }[];
+  streamCalls: {
+    params: StreamChatParams;
+    d: ReturnType<typeof deferred<void>>;
+  }[];
   titleCalls: [string, string][];
-  msgFixture: Record<string, any[]>;
+  msgFixture: Record<string, ThreadMessage[]>;
 } = {
   threads: [],
   lastThread: null,
@@ -129,7 +161,7 @@ mock.module("@/lib/api/assistant", () => ({
   },
   deleteThread: async () => {},
   getThreadMessages: (id: string) => {
-    const d = deferred<any[]>();
+    const d = deferred<ThreadMessage[]>();
     state.msgCalls.push({ id, d });
     return d.promise;
   },
@@ -137,7 +169,7 @@ mock.module("@/lib/api/assistant", () => ({
     state.titleCalls.push([id, title]);
   },
   togglePinThread: async () => ({ pinned: false }),
-  streamChat: (params: any) => {
+  streamChat: (params: StreamChatParams) => {
     const d = deferred<void>();
     state.streamCalls.push({ params, d });
     return d.promise;
@@ -193,7 +225,7 @@ function renderHook() {
     return null;
   };
   act(() => {
-    root = createRoot(container);
+    root = createRoot(container as unknown as Element);
     root.render(React.createElement(Harness));
   });
   return {
@@ -216,7 +248,7 @@ async function ticks(n = 10) {
   for (let i = 0; i < n; i++) await Promise.resolve();
 }
 
-function resolveMsgLoads(fixture: Record<string, any[]> = {}) {
+function resolveMsgLoads(fixture: Record<string, ThreadMessage[]> = {}) {
   for (const c of state.msgCalls) {
     c.d.resolve(fixture[c.id] ?? []);
   }
@@ -255,7 +287,9 @@ test("pending '+' create followed by quick send resolves to exactly one thread",
   expect(state.titleCalls[0][0]).toBe("T1");
   expect(state.lastThread).toBe("T1");
   expect(h.h().api.thread?.id).toBe("T1");
-  expect(h.h().api.messages.some((m) => m.role === "user" && m.content === "hello")).toBe(true);
+  expect(
+    h.h().api.messages.some((m) => m.role === "user" && m.content === "hello"),
+  ).toBe(true);
 });
 
 test("normal send with no active thread creates one thread and uses its id", async () => {
@@ -284,7 +318,12 @@ test("history for a newly created thread never leaks the previous conversation",
   state.threads = [{ id: "T1", title: "First" }];
   state.lastThread = "T1";
   state.msgFixture["T1"] = [
-    { id: "m1", role: "assistant", content: "old history", createdAt: "2026-01-01T00:00:00.000Z" },
+    {
+      role: "assistant",
+      content: "old history",
+      metadata: null,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    },
   ];
   await getUseChat();
   const h = renderHook();
@@ -378,7 +417,9 @@ test("an active stream is not wiped by an unrelated thread-list restore", async 
     await h.h().refreshThreads();
   });
   await settle();
-  expect(h.h().api.messages.find((m) => m.role === "assistant")?.content).toBe("partial");
+  expect(h.h().api.messages.find((m) => m.role === "assistant")?.content).toBe(
+    "partial",
+  );
 
   // Finish the stream cleanly.
   await act(async () => {
@@ -407,7 +448,12 @@ test("stale load for an inactive thread can never overwrite current messages", a
   // T1's load resolves AFTER the switch — the guard must discard it.
   await act(async () => {
     state.msgCalls[0].d.resolve([
-      { id: "stale", role: "assistant", content: "STALE", createdAt: "2026-01-01T00:00:00.000Z" },
+      {
+        role: "assistant",
+        content: "STALE",
+        metadata: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
     ]);
     await Promise.resolve();
   });
@@ -417,7 +463,12 @@ test("stale load for an inactive thread can never overwrite current messages", a
   // T2's load (current thread) still lands.
   await act(async () => {
     state.msgCalls[1].d.resolve([
-      { id: "fresh", role: "assistant", content: "FRESH", createdAt: "2026-01-01T00:00:00.000Z" },
+      {
+        role: "assistant",
+        content: "FRESH",
+        metadata: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+      },
     ]);
     await Promise.resolve();
   });
@@ -489,7 +540,9 @@ test("older background stream finishing cannot clear a newer stream's state", as
     state.streamCalls[1].params.onToken("FROM_A");
   });
   await settle();
-  expect(h.h().api.messages.some((m) => m.content.includes("FROM_A"))).toBe(false);
+  expect(h.h().api.messages.some((m) => m.content.includes("FROM_A"))).toBe(
+    false,
+  );
 
   // A thread-list change while A is still active must not wipe T1's view.
   await act(async () => {
@@ -536,7 +589,9 @@ test("selectThread on the already-active streaming thread is a no-op", async () 
     await h.h().selectThread("T1");
   });
   await settle();
-  expect(h.h().api.messages.find((m) => m.role === "assistant")?.content).toBe("flow");
+  expect(h.h().api.messages.find((m) => m.role === "assistant")?.content).toBe(
+    "flow",
+  );
 
   await act(async () => {
     state.streamCalls[0].params.onDone();

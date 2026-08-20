@@ -136,7 +136,7 @@ describe('source builders (formatter registry)', () => {
 
     for (const c of cases) {
       const formatter = registry.get(c.sourceType)!;
-      const doc = formatter.format(c.entity as never, 'u1');
+      const doc = formatter.format(c.entity, 'u1');
       expect(doc.title).toBe(c.expectTitle);
       expect(doc.content).toBe(c.expectContent);
       expect(doc.provenance).toBeDefined();

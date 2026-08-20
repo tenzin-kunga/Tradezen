@@ -107,7 +107,7 @@ export default function StrategyComparisonTable({
                   cursor: "pointer",
                   transition: "background-color 0.15s",
                 }}
-                className="hover-row"
+                className="hover:bg-white/[0.03]"
               >
                 <td
                   className="py-2.5 pr-3 font-bold tracking-wide whitespace-nowrap"
@@ -171,24 +171,18 @@ export default function StrategyComparisonTable({
                   className="py-2.5 pr-3 font-mono"
                   style={{
                     color:
-                      (s as any).totalPnl >= 0
+                      s.totalPnl >= 0
                         ? "var(--accent-profit)"
                         : "var(--accent-loss)",
                   }}
                 >
-                  {(s as any).totalPnl >= 0 ? "+" : ""}$
-                  {fmt((s as any).totalPnl)}
+                  {s.totalPnl >= 0 ? "+" : ""}${fmt(s.totalPnl)}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <style jsx>{`
-        .hover-row:hover {
-          background-color: rgba(255, 255, 255, 0.03);
-        }
-      `}</style>
     </div>
   );
 }

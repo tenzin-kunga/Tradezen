@@ -41,7 +41,7 @@ export default function StrategyTrendChart({
   ].sort();
 
   const combined = allMonths.map((month) => {
-    const row: Record<string, any> = { month };
+    const row: Record<string, number | string | null> = { month };
     for (const s of series) {
       const entry = s.monthly.find((m) => m.month === month);
       row[s.strategy] = entry ? entry.pnl : null;

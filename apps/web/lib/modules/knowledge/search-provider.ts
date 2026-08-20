@@ -20,7 +20,7 @@ export function createKnowledgeSearchProvider(): SearchProvider {
         const results = await semanticSearch(query, "fast");
 
         return results.map((r) => ({
-          resource: createResource("knowledge_document" as any, r.id, r.title, {
+          resource: createResource("knowledge_document", r.id, r.title, {
             score: r.score,
             evidence: r.evidence,
           }),
@@ -39,7 +39,7 @@ export function createKnowledgeSearchProvider(): SearchProvider {
         const docs = await getKnowledgeDocuments();
 
         return docs.slice(0, 5).map((d) => ({
-          resource: createResource("knowledge_document" as any, d.id, d.title, {
+          resource: createResource("knowledge_document", d.id, d.title, {
             content: d.content,
             docType: d.docType,
           }),

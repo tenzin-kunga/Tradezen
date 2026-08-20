@@ -1,7 +1,253 @@
 ﻿import type { DashboardLayout } from "@/lib/layout-types";
 import { useQuery } from "@tanstack/react-query";
+import type { Trade } from "@tradezen/types";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  created_at: string;
+  initial_capital: number;
+  default_lot_size: number;
+  timezone: string;
+  theme: string;
+}
+
+export interface Journal {
+  id: string;
+  date: string;
+  mood: string | null;
+  preMarket: string | null;
+  postMarket: string | null;
+  lessons: string | null;
+  marketConditions?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  category: string;
+  userId?: string;
+  createdAt?: string;
+  tradeCount?: number;
+}
+
+export interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface StrategyMetric {
+  strategy?: string;
+  name?: string;
+  totalTrades?: number;
+  trades?: number;
+  wins?: number;
+  winRate?: number;
+  profitFactor?: number;
+  expectancy?: number;
+  avgRr?: number;
+  maxDrawdown?: number;
+  totalPnl?: number;
+  pnl?: number;
+}
+
+export interface StrategySummary {
+  strategy: string;
+  totalTrades: number;
+  winRate: number;
+  profitFactor: number;
+  expectancy: number;
+  avgRr: number;
+  maxDrawdown: number;
+  totalPnl: number;
+}
+
+export interface TradeAnalytics {
+  totalTrades: number;
+  totalPnl: number;
+  winRate: number;
+  profitFactor: number;
+  avgWin: number;
+  avgLoss: number;
+  expectancy: number;
+  maxConsecutiveWins: number;
+  maxConsecutiveLosses: number;
+  maxDrawdown: number;
+  bestTrade: number;
+  worstTrade: number;
+  avgRR: number;
+  byStrategy: StrategyMetric[];
+  byDayOfWeek: { day: string; trades: number; winRate: number; pnl: number }[];
+  byMonth: { month: string; trades: number; winRate: number; pnl: number }[];
+  behavioralStats: {
+    fomoCount: number;
+    vengeanceCount: number;
+    trendAlignedCount: number;
+  };
+}
+
+export interface SymbolPerformance {
+  symbol: string;
+  pnl: number;
+  trades: number;
+}
+
+export interface AdvancedAnalytics {
+  sharpeRatio: number;
+  sortinoRatio: number;
+  calmarRatio: number;
+  currentStreak: { type: "win" | "loss" | "none"; count: number };
+  equityCurve: { date: string; value: number }[];
+  topSymbols: SymbolPerformance[];
+  bottomSymbols: SymbolPerformance[];
+  winRateByDirection: {
+    buy: { rate: number; count: number };
+    sell: { rate: number; count: number };
+  };
+}
+
+export interface StrategyMonthly {
+  month: string;
+  trades: number;
+  pnl: number;
+  winRate: number;
+}
+
+export interface StrategyPerformanceResponse {
+  strategy: string;
+  monthly: StrategyMonthly[];
+}
+
+export interface StrategyAnalyticsResponse {
+  byStrategy: Array<StrategyMetric & { strategy: string }>;
+  bestStrategy: string;
+  worstStrategy: string;
+}
+
+export interface RiskAnalytics {
+  avgRiskPerTrade: number;
+  maxRiskPerTrade: number;
+  avgRMultiple: number;
+  riskEfficiency: number;
+  var95: number;
+  distribution: { bucket: string; count: number; totalPnl: number }[];
+  byStrategy: {
+    strategy: string;
+    avgRisk: number;
+    maxRisk: number;
+    count: number;
+    winRate: number;
+    avgR: number;
+  }[];
+  byWeek: {
+    week: string;
+    totalRisk: number;
+    totalPnl: number;
+    tradeCount: number;
+    maxRisk: number;
+  }[];
+  riskByDirection: {
+    long: { avgRisk: number; count: number; winRate: number };
+    short: { avgRisk: number; count: number; winRate: number };
+  };
+}
+
+export interface DailyPnlEntry {
+  date: Date | string;
+  totalPnl?: number;
+  pnl?: number;
+  tradeCount?: number;
+  wins?: number;
+  losses?: number;
+}
+
+export interface ChecklistItem {
+  id: string;
+  checklistId: string;
+  title: string;
+  isCritical: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface ChecklistDetail {
+  id: string;
+  userId: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: ChecklistItem[];
+}
+
+export interface ChecklistSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  itemCount: number;
+  criticalCount: number;
+  lastRunAt: string | null;
+}
+
+export interface ChecklistRun {
+  id: string;
+  checklistId: string;
+  tradeId: string | null;
+  note: string | null;
+  createdAt: string;
+  checkedCount: number;
+  totalCount: number;
+}
+
+export interface ChecklistRunItem {
+  id: string;
+  runId: string;
+  itemId: string;
+  checked: boolean;
+  checkedAt: string | null;
+  title?: string;
+  isCritical?: boolean;
+  sortOrder?: number;
+}
+
+export interface ChecklistRunDetail {
+  id: string;
+  checklistId: string;
+  tradeId: string | null;
+  note: string | null;
+  createdAt: string;
+  runItems: ChecklistRunItem[];
+}
+
+export interface WeeklyReport {
+  period: string;
+  summary: {
+    totalTrades: number;
+    totalPnl: number;
+    winRate: number;
+    profitFactor: number;
+    expectancy: number;
+  };
+  behavioral: {
+    fomoScore: number;
+    discipline: number;
+    consistency: number;
+  };
+  coaching: { message: string; severity: string } | null;
+  topInsights: string[];
+}
 
 let accessToken: string | null = null;
 let refreshPromise: Promise<boolean> | null = null;
@@ -75,7 +321,7 @@ export async function register(data: {
     body: JSON.stringify(data),
     credentials: "include",
   });
-  const body = await handleResponse<{ access_token: string; user: any }>(res);
+  const body = await handleResponse<{ access_token: string; user: User }>(res);
   setAccessToken(body.access_token);
   return body;
 }
@@ -87,7 +333,7 @@ export async function googleLogin(credential: string) {
     body: JSON.stringify({ credential }),
     credentials: "include",
   });
-  const body = await handleResponse<{ access_token: string; user: any }>(res);
+  const body = await handleResponse<{ access_token: string; user: User }>(res);
   setAccessToken(body.access_token);
   return body;
 }
@@ -103,7 +349,7 @@ export async function login(data: {
     body: JSON.stringify(data),
     credentials: "include",
   });
-  const body = await handleResponse<{ access_token: string; user: any }>(res);
+  const body = await handleResponse<{ access_token: string; user: User }>(res);
   setAccessToken(body.access_token);
   return body;
 }
@@ -216,7 +462,7 @@ export const createTrade = async (data: {
     method: "POST",
     body: JSON.stringify(data),
   });
-  return handleResponse<any>(res);
+  return handleResponse<Trade>(res);
 };
 
 export const getTrades = async (params?: {
@@ -240,22 +486,25 @@ export const getTrades = async (params?: {
   const qs = query.toString();
   const res = await authFetch(`${API}/trades${qs ? `?${qs}` : ""}`);
   return handleResponse<{
-    data: any[];
+    data: Trade[];
     meta: { total: number; page: number; limit: number; totalPages: number };
   }>(res);
 };
 
 export const getTrade = async (id: string) => {
   const res = await authFetch(`${API}/trades/${id}`);
-  return handleResponse<any>(res);
+  return handleResponse<Trade>(res);
 };
 
-export const updateTrade = async (id: string, data: Record<string, any>) => {
+export const updateTrade = async (
+  id: string,
+  data: Record<string, unknown>,
+) => {
   const res = await authFetch(`${API}/trades/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
-  return handleResponse<any>(res);
+  return handleResponse<Trade>(res);
 };
 
 export const deleteTrade = async (id: string) => {
@@ -307,9 +556,9 @@ export const deleteTradeImage = async (tradeId: string, imageId: string) => {
 
 // ─── Analytics ─────────────────────────────────────
 
-export const getAnalytics = async () => {
+export const getAnalytics = async (): Promise<TradeAnalytics> => {
   const res = await authFetch(`${API}/trades/analytics`);
-  return handleResponse<any>(res);
+  return handleResponse<TradeAnalytics>(res);
 };
 
 export interface DashboardData {
@@ -350,41 +599,47 @@ export const getDashboardData = async (): Promise<DashboardData> => {
   return handleResponse<DashboardData>(res);
 };
 
-export const getJournalLatest = async () => {
+export const getJournalLatest = async (): Promise<Journal | null> => {
   const res = await authFetch(`${API}/journals?limit=1`);
-  const data = await handleResponse<{ data: any[]; total: number }>(res);
+  const data = await handleResponse<{ data: Journal[]; total: number }>(res);
   return data.data[0] || null;
 };
 
-export const getStrategyAnalytics = async () => {
-  const res = await authFetch(`${API}/trades/analytics/strategy`);
-  return handleResponse<any>(res);
-};
+export const getStrategyAnalytics =
+  async (): Promise<StrategyAnalyticsResponse> => {
+    const res = await authFetch(`${API}/trades/analytics/strategy`);
+    return handleResponse<StrategyAnalyticsResponse>(res);
+  };
 
-export const getStrategyPerformance = async (name: string) => {
+export const getStrategyPerformance = async (
+  name: string,
+): Promise<StrategyPerformanceResponse> => {
   const res = await authFetch(
     `${API}/trades/analytics/strategy/${encodeURIComponent(name)}/performance`,
   );
-  return handleResponse<any>(res);
+  return handleResponse<StrategyPerformanceResponse>(res);
 };
 
-export const getAdvancedAnalytics = async () => {
+export const getAdvancedAnalytics = async (): Promise<AdvancedAnalytics> => {
   const res = await authFetch(`${API}/trades/analytics/advanced`);
-  return handleResponse<any>(res);
+  return handleResponse<AdvancedAnalytics>(res);
 };
 
-export const getRiskAnalytics = async () => {
+export const getRiskAnalytics = async (): Promise<RiskAnalytics> => {
   const res = await authFetch(`${API}/trades/analytics/risk`);
-  return handleResponse<any>(res);
+  return handleResponse<RiskAnalytics>(res);
 };
 
-export const getDailyPnl = async (from?: string, to?: string) => {
+export const getDailyPnl = async (
+  from?: string,
+  to?: string,
+): Promise<DailyPnlEntry[]> => {
   const query = new URLSearchParams();
   if (from) query.set("from", from);
   if (to) query.set("to", to);
   const qs = query.toString();
   const res = await authFetch(`${API}/trades/daily-pnl${qs ? `?${qs}` : ""}`);
-  return handleResponse<any[]>(res);
+  return handleResponse<DailyPnlEntry[]>(res);
 };
 
 export const exportCsv = async () => {
@@ -424,32 +679,35 @@ export const getImportJobStatus = async (
 
 // ─── Journals ──────────────────────────────────────
 
-export const createJournal = async (data: Record<string, any>) => {
+export const createJournal = async (data: Record<string, unknown>) => {
   const res = await authFetch(`${API}/journals`, {
     method: "POST",
     body: JSON.stringify(data),
   });
-  return handleResponse<any>(res);
+  return handleResponse<Journal>(res);
 };
 
 export const getJournals = async (limit = 30, offset = 0) => {
   const res = await authFetch(
     `${API}/journals?limit=${limit}&offset=${offset}`,
   );
-  return handleResponse<{ data: any[]; total: number }>(res);
+  return handleResponse<{ data: Journal[]; total: number }>(res);
 };
 
 export const getJournalByDate = async (date: string) => {
   const res = await authFetch(`${API}/journals/date/${date}`);
-  return handleResponse<any>(res);
+  return handleResponse<Journal | null>(res);
 };
 
-export const updateJournal = async (id: string, data: Record<string, any>) => {
+export const updateJournal = async (
+  id: string,
+  data: Record<string, unknown>,
+) => {
   const res = await authFetch(`${API}/journals/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
-  return handleResponse<any>(res);
+  return handleResponse<Journal>(res);
 };
 
 export const deleteJournal = async (id: string) => {
@@ -528,20 +786,20 @@ export const createTag = async (data: {
     method: "POST",
     body: JSON.stringify(data),
   });
-  return handleResponse<any>(res);
+  return handleResponse<Tag>(res);
 };
 
-export const getTags = async () => {
+export const getTags = async (): Promise<Tag[]> => {
   const res = await authFetch(`${API}/tags`);
-  return handleResponse<any[]>(res);
+  return handleResponse<Tag[]>(res);
 };
 
-export const updateTag = async (id: string, data: Record<string, any>) => {
+export const updateTag = async (id: string, data: Record<string, unknown>) => {
   const res = await authFetch(`${API}/tags/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
-  return handleResponse<any>(res);
+  return handleResponse<Tag>(res);
 };
 
 export const deleteTag = async (id: string) => {
@@ -553,19 +811,19 @@ export const tagTrade = async (tagId: string, tradeId: string) => {
   const res = await authFetch(`${API}/tags/${tagId}/trades/${tradeId}`, {
     method: "POST",
   });
-  return handleResponse<any>(res);
+  return handleResponse<{ tagged: boolean }>(res);
 };
 
 export const untagTrade = async (tagId: string, tradeId: string) => {
   const res = await authFetch(`${API}/tags/${tagId}/trades/${tradeId}`, {
     method: "DELETE",
   });
-  return handleResponse<any>(res);
+  return handleResponse<{ untagged: boolean }>(res);
 };
 
-export const getTagsForTrade = async (tradeId: string) => {
+export const getTagsForTrade = async (tradeId: string): Promise<Tag[]> => {
   const res = await authFetch(`${API}/tags/trade/${tradeId}`);
-  return handleResponse<any[]>(res);
+  return handleResponse<Tag[]>(res);
 };
 
 // ─── Chat ──────────────────────────────────────────
@@ -724,9 +982,9 @@ export async function streamChat(params: StreamChatParams): Promise<void> {
 
 // ─── Notifications ──────────────────────────────────
 
-export async function getNotifications(limit = 10) {
+export async function getNotifications(limit = 10): Promise<Notification[]> {
   const res = await authFetch(`${API}/chat/notifications?limit=${limit}`);
-  return handleResponse<any[]>(res);
+  return handleResponse<Notification[]>(res);
 }
 
 export async function getNotificationCount() {
@@ -805,36 +1063,39 @@ export async function deleteSampleData() {
 
 // ─── Checklists ─────────────────────────────────────
 
-export async function getChecklists() {
+export async function getChecklists(): Promise<ChecklistSummary[]> {
   const res = await authFetch(`${API}/trpc/checklists.list`);
-  return handleResponse<any[]>(res);
+  return handleResponse<ChecklistSummary[]>(res);
 }
 
-export async function getChecklist(id: string) {
+export async function getChecklist(id: string): Promise<ChecklistDetail> {
   const res = await authFetch(
     `${API}/trpc/checklists.get?input=${encodeURIComponent(JSON.stringify({ id }))}`,
   );
-  return handleResponse<any>(res);
+  return handleResponse<ChecklistDetail>(res);
 }
 
 export async function createChecklist(data: {
   name: string;
   description?: string;
   items: { title: string; isCritical?: boolean }[];
-}) {
+}): Promise<ChecklistDetail> {
   const res = await authFetch(`${API}/trpc/checklists.create`, {
     method: "POST",
     body: JSON.stringify(data),
   });
-  return handleResponse<any>(res);
+  return handleResponse<ChecklistDetail>(res);
 }
 
-export async function updateChecklist(id: string, data: Record<string, any>) {
+export async function updateChecklist(
+  id: string,
+  data: Record<string, unknown>,
+): Promise<ChecklistDetail> {
   const res = await authFetch(`${API}/trpc/checklists.update`, {
     method: "POST",
     body: JSON.stringify({ id, ...data }),
   });
-  return handleResponse<any>(res);
+  return handleResponse<ChecklistDetail>(res);
 }
 
 export async function deleteChecklist(id: string) {
@@ -845,50 +1106,52 @@ export async function deleteChecklist(id: string) {
   return handleResponse<{ deleted: boolean }>(res);
 }
 
-export async function cloneChecklist(id: string) {
+export async function cloneChecklist(id: string): Promise<ChecklistDetail> {
   const res = await authFetch(`${API}/trpc/checklists.clone`, {
     method: "POST",
     body: JSON.stringify({ id }),
   });
-  return handleResponse<any>(res);
+  return handleResponse<ChecklistDetail>(res);
 }
 
-export async function getChecklistRuns(checklistId: string) {
+export async function getChecklistRuns(
+  checklistId: string,
+): Promise<ChecklistRun[]> {
   const res = await authFetch(
     `${API}/trpc/checklists.runs.list?input=${encodeURIComponent(JSON.stringify({ checklistId }))}`,
   );
-  return handleResponse<any[]>(res);
+  return handleResponse<ChecklistRun[]>(res);
 }
 
 export async function createChecklistRun(data: {
   checklistId: string;
   tradeId?: string | null;
   note?: string | null;
-}) {
+}): Promise<ChecklistRunDetail> {
   const res = await authFetch(`${API}/trpc/checklists.runs.create`, {
     method: "POST",
     body: JSON.stringify(data),
   });
-  return handleResponse<any>(res);
+  return handleResponse<ChecklistRunDetail>(res);
 }
 
-export async function getChecklistRun(id: string) {
+export async function getChecklistRun(id: string): Promise<ChecklistRunDetail> {
   const res = await authFetch(
     `${API}/trpc/checklists.runs.get?input=${encodeURIComponent(JSON.stringify({ id }))}`,
   );
-  return handleResponse<any>(res);
+  return handleResponse<ChecklistRunDetail>(res);
 }
 
 export async function updateChecklistRunItem(
   runId: string,
   itemId: string,
   checked: boolean,
-) {
+): Promise<ChecklistRunItem> {
   const res = await authFetch(`${API}/trpc/checklists.runs.updateItem`, {
     method: "POST",
     body: JSON.stringify({ runId, itemId, checked }),
   });
-  return handleResponse<any>(res);
+  return handleResponse<ChecklistRunItem>(res);
 }
 
 export async function deleteChecklistRun(id: string) {
@@ -928,9 +1191,9 @@ export const getMarketNews = async (
 
 // ─── Reports ────────────────────────────────────────
 
-export async function getWeeklyReport() {
+export async function getWeeklyReport(): Promise<WeeklyReport> {
   const res = await authFetch(`${API}/reports/weekly`);
-  return handleResponse<any>(res);
+  return handleResponse<WeeklyReport>(res);
 }
 
 export async function downloadCSV(): Promise<Blob> {

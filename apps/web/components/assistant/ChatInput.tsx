@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatStatus } from "@/hooks/useChat";
 import {
   getChatModels,
-  removeProvider,
   type ChatModels,
   type ModelInfo,
 } from "@/lib/api/assistant";
@@ -44,7 +43,7 @@ export default function ChatInput({
   );
   const [catalog, setCatalog] = useState<ChatModels | null>(null);
   const [activeModels, setActiveModels] = useState<string[]>([]);
-  const [apiKeyStatus, setApiKeyStatus] = useState<ApiKeyStatus | null>(null);
+  const [, setApiKeyStatus] = useState<ApiKeyStatus | null>(null);
   const [modelOpen, setModelOpen] = useState(false);
   const [addProviderOpen, setAddProviderOpen] = useState(false);
   const [modelBrowserOpen, setModelBrowserOpen] = useState(false);
@@ -84,8 +83,8 @@ export default function ChatInput({
       setActiveModels(active);
       // Default to the backend's working default (a cloud model when Ollama is
       // unavailable, else the local model), preferring it over the first match.
-      const allIds = (data.providers ?? []).flatMap((p: any) =>
-        p.models.map((m: any) => m.id),
+      const allIds = (data.providers ?? []).flatMap((p) =>
+        p.models.map((m) => m.id),
       );
       const fallback = data.defaultModel;
       const initial = allIds.includes(fallback)
@@ -199,7 +198,7 @@ export default function ChatInput({
                 }
                 setModelOpen(!modelOpen);
               }}
-               style={{
+              style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 5,
@@ -258,7 +257,7 @@ export default function ChatInput({
               >
                 {/* All available models, grouped by provider */}
                 <div style={{ padding: "4px 0" }}>
-                  {(catalog?.providers ?? []).map((p: any, idx: number) => {
+                  {(catalog?.providers ?? []).map((p, idx: number) => {
                     if (!p.models) p.models = [];
                     return (
                       <div key={p.id}>
@@ -283,7 +282,7 @@ export default function ChatInput({
                         >
                           {p.name}
                         </div>
-                        {p.models.map((m: any) => {
+                        {p.models.map((m) => {
                           const modelId = m.id;
                           const name =
                             m.displayName ??
@@ -329,7 +328,9 @@ export default function ChatInput({
                                 </span>
                               )}
                               {isSelected && (
-                                <span style={{ color: "var(--accent, #3b82f6)" }}>
+                                <span
+                                  style={{ color: "var(--accent, #3b82f6)" }}
+                                >
                                   ✓
                                 </span>
                               )}
@@ -339,8 +340,7 @@ export default function ChatInput({
                       </div>
                     );
                   })}
-                  {(!catalog ||
-                    (catalog?.providers ?? []).length === 0) && (
+                  {(!catalog || (catalog?.providers ?? []).length === 0) && (
                     <div
                       style={{
                         padding: "8px 12px",
@@ -355,7 +355,10 @@ export default function ChatInput({
 
                 {/* Divider */}
                 <div
-                  style={{ height: 1, background: "var(--border-soft, #23252d)" }}
+                  style={{
+                    height: 1,
+                    background: "var(--border-soft, #23252d)",
+                  }}
                 />
 
                 {/* Add provider button */}
@@ -548,21 +551,78 @@ function AddProviderModal({
   const [error, setError] = useState("");
 
   const KNOWN_PROVIDERS = [
-    { id: "openai", name: "OpenAI", baseUrl: "https://api.openai.com/v1", placeholder: "sk-..." },
-    { id: "anthropic", name: "Anthropic", baseUrl: "https://api.anthropic.com/v1", placeholder: "sk-ant-..." },
-    { id: "google", name: "Google Gemini", baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/", placeholder: "AIza..." },
-    { id: "openrouter", name: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", placeholder: "sk-or-v1-..." },
-    { id: "mistral", name: "Mistral AI", baseUrl: "https://api.mistral.ai/v1", placeholder: "..." },
-    { id: "groq", name: "Groq", baseUrl: "https://api.groq.com/openai/v1", placeholder: "gsk_..." },
-    { id: "together", name: "Together AI", baseUrl: "https://api.together.xyz/v1", placeholder: "..." },
-    { id: "deepseek", name: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", placeholder: "..." },
-    { id: "xai", name: "xAI (Grok)", baseUrl: "https://api.x.ai/v1", placeholder: "..." },
-    { id: "perplexity", name: "Perplexity", baseUrl: "https://api.perplexity.ai", placeholder: "pplx-..." },
-    { id: "fireworks", name: "Fireworks AI", baseUrl: "https://api.fireworks.ai/inference/v1", placeholder: "..." },
+    {
+      id: "openai",
+      name: "OpenAI",
+      baseUrl: "https://api.openai.com/v1",
+      placeholder: "sk-...",
+    },
+    {
+      id: "anthropic",
+      name: "Anthropic",
+      baseUrl: "https://api.anthropic.com/v1",
+      placeholder: "sk-ant-...",
+    },
+    {
+      id: "google",
+      name: "Google Gemini",
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
+      placeholder: "AIza...",
+    },
+    {
+      id: "openrouter",
+      name: "OpenRouter",
+      baseUrl: "https://openrouter.ai/api/v1",
+      placeholder: "sk-or-v1-...",
+    },
+    {
+      id: "mistral",
+      name: "Mistral AI",
+      baseUrl: "https://api.mistral.ai/v1",
+      placeholder: "...",
+    },
+    {
+      id: "groq",
+      name: "Groq",
+      baseUrl: "https://api.groq.com/openai/v1",
+      placeholder: "gsk_...",
+    },
+    {
+      id: "together",
+      name: "Together AI",
+      baseUrl: "https://api.together.xyz/v1",
+      placeholder: "...",
+    },
+    {
+      id: "deepseek",
+      name: "DeepSeek",
+      baseUrl: "https://api.deepseek.com/v1",
+      placeholder: "...",
+    },
+    {
+      id: "xai",
+      name: "xAI (Grok)",
+      baseUrl: "https://api.x.ai/v1",
+      placeholder: "...",
+    },
+    {
+      id: "perplexity",
+      name: "Perplexity",
+      baseUrl: "https://api.perplexity.ai",
+      placeholder: "pplx-...",
+    },
+    {
+      id: "fireworks",
+      name: "Fireworks AI",
+      baseUrl: "https://api.fireworks.ai/inference/v1",
+      placeholder: "...",
+    },
     { id: "custom", name: "Custom Provider", baseUrl: "", placeholder: "" },
   ] as const;
 
-  const currentProvider = KNOWN_PROVIDERS.find((p) => p.id === selectedProvider);
+  const currentProvider = KNOWN_PROVIDERS.find(
+    (p) => p.id === selectedProvider,
+  );
   const isCustom = selectedProvider === "custom";
   const baseUrl = isCustom ? customBaseUrl : (currentProvider?.baseUrl ?? "");
 

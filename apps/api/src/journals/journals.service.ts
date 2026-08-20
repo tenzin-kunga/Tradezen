@@ -154,7 +154,9 @@ export class JournalsService {
       )
       SELECT COALESCE(MAX(len), 0)::int AS longest FROM runs
     `);
-    const longestStreak = (longestResult[0] as any)?.longest ?? 0;
+    const longestStreak =
+      (longestResult[0] as unknown as { longest?: number } | undefined)
+        ?.longest ?? 0;
 
     const currentResult = await db.execute(sql`
       WITH distinct_days AS (
@@ -177,7 +179,9 @@ export class JournalsService {
           ELSE COALESCE((SELECT len FROM run_lengths WHERE grp = (SELECT grp FROM last_grp)), 0)
         END::int AS current_streak
     `);
-    const currentStreak = (currentResult[0] as any)?.current_streak ?? 0;
+    const currentStreak =
+      (currentResult[0] as unknown as { current_streak?: number } | undefined)
+        ?.current_streak ?? 0;
 
     return { currentStreak, longestStreak, totalEntries };
   }

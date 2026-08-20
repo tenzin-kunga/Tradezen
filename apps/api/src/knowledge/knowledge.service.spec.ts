@@ -3,19 +3,42 @@ import { KnowledgeService } from './knowledge.service';
 import { KnowledgeEnrichmentService } from './knowledge-enrichment.service';
 import { AssetsService } from '../assets/assets.service';
 import { NotFoundException } from '@nestjs/common';
+import type { KnowledgeDocument } from '@tradezen/db';
+
+type DbRow = Record<string, unknown>;
+
+interface QueryChain extends PromiseLike<DbRow[]> {
+  from: () => QueryChain;
+  where: () => QueryChain;
+  orderBy: () => QueryChain;
+  limit: () => QueryChain;
+  offset: () => QueryChain;
+  catch: (onrejected?: (reason: unknown) => unknown) => Promise<unknown>;
+}
+
+interface MockDb {
+  select: jest.Mock;
+  insert: jest.Mock;
+  update: jest.Mock;
+  delete: jest.Mock;
+  __setRows: (rows: DbRow[]) => void;
+}
 
 jest.mock('../db/drizzle', () => {
-  const rows: Record<string, any[]> = {};
-  const makeChain = () => {
-    const c: any = {};
+  const rows: Record<string, DbRow[]> = {};
+  const makeChain = (): QueryChain => {
     const resolve = () => Promise.resolve(rows['__select__'] ?? []);
-    c.from = () => c;
-    c.where = () => c;
-    c.orderBy = () => c;
-    c.limit = () => c;
-    c.offset = () => c;
-    c.then = (res: any) => resolve().then(res);
-    c.catch = (rej: any) => resolve().catch(rej);
+    const c: QueryChain = {
+      from: () => c,
+      where: () => c,
+      orderBy: () => c,
+      limit: () => c,
+      offset: () => c,
+      then: (onfulfilled?: (value: DbRow[]) => unknown) =>
+        resolve().then(onfulfilled),
+      catch: (onrejected?: (reason: unknown) => unknown) =>
+        resolve().catch(onrejected),
+    } as unknown as QueryChain;
     return c;
   };
   return {
@@ -34,7 +57,7 @@ jest.mock('../db/drizzle', () => {
         })),
       })),
       delete: jest.fn(() => ({ where: jest.fn(() => Promise.resolve([])) })),
-      __setRows: (r: any[]) => {
+      __setRows: (r: DbRow[]) => {
         rows['__select__'] = r;
       },
     },
@@ -42,7 +65,7 @@ jest.mock('../db/drizzle', () => {
 });
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { db } = require('../db/drizzle');
+const { db } = require('../db/drizzle') as { db: MockDb };
 
 describe('KnowledgeService enrichment', () => {
   let service: KnowledgeService;
@@ -74,7 +97,7 @@ describe('KnowledgeService enrichment', () => {
   });
 
   it('dispatches enrichment on create with content', async () => {
-    (db.insert as jest.Mock).mockReturnValue({
+    db.insert.mockReturnValue({
       values: () => ({
         returning: () => Promise.resolve([{ id: 'doc1', currentVersion: 1 }]),
       }),
@@ -93,7 +116,7 @@ describe('KnowledgeService enrichment', () => {
   });
 
   it('does not dispatch enrichment on create without content', async () => {
-    (db.insert as jest.Mock).mockReturnValue({
+    db.insert.mockReturnValue({
       values: () => ({
         returning: () => Promise.resolve([{ id: 'doc1', currentVersion: 1 }]),
       }),
@@ -106,12 +129,12 @@ describe('KnowledgeService enrichment', () => {
 
   it('dispatches enrichment on update when content actually changes', async () => {
     db.__setRows([{ id: 'doc1', currentVersion: 1, content: 'old content' }]);
-    (db.insert as jest.Mock).mockReturnValue({
+    db.insert.mockReturnValue({
       values: () => ({
         returning: () => Promise.resolve([{ id: 'v1', version: 2 }]),
       }),
     });
-    (db.update as jest.Mock).mockReturnValue({
+    db.update.mockReturnValue({
       set: () => ({
         where: () => ({
           returning: () => Promise.resolve([{ id: 'doc1', currentVersion: 2 }]),
@@ -188,7 +211,7 @@ describe('KnowledgeService delete authorization', () => {
     db.__setRows([{ id: 'asset1', documentId: 'd-other' }]);
     const getDoc = jest
       .spyOn(service, 'getDocument')
-      .mockResolvedValue(null as any);
+      .mockResolvedValue(null as unknown as KnowledgeDocument);
 
     await expect(service.deleteAsset('u1', 'asset1')).rejects.toThrow(
       NotFoundException,
@@ -200,7 +223,7 @@ describe('KnowledgeService delete authorization', () => {
     db.__setRows([{ id: 'asset1', documentId: 'd1' }]);
     const getDoc = jest
       .spyOn(service, 'getDocument')
-      .mockResolvedValue({ id: 'd1' } as any);
+      .mockResolvedValue({ id: 'd1' } as KnowledgeDocument);
 
     await service.deleteAsset('u1', 'asset1');
 
@@ -220,7 +243,7 @@ describe('KnowledgeService delete authorization', () => {
     db.__setRows([{ id: 'link1', sourceDocumentId: 'd-other' }]);
     const getDoc = jest
       .spyOn(service, 'getDocument')
-      .mockResolvedValue(null as any);
+      .mockResolvedValue(null as unknown as KnowledgeDocument);
 
     await expect(service.deleteLink('u1', 'link1')).rejects.toThrow(
       NotFoundException,
@@ -232,7 +255,7 @@ describe('KnowledgeService delete authorization', () => {
     db.__setRows([{ id: 'link1', sourceDocumentId: 'd1' }]);
     const getDoc = jest
       .spyOn(service, 'getDocument')
-      .mockResolvedValue({ id: 'd1' } as any);
+      .mockResolvedValue({ id: 'd1' } as KnowledgeDocument);
 
     await service.deleteLink('u1', 'link1');
 

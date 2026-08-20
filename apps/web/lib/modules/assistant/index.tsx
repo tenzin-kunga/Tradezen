@@ -3,7 +3,6 @@
 import { Sparkles } from "lucide-react";
 import type {
   WorkspaceModule,
-  RouteCapability,
   ContextCapability,
   CommandCapability,
 } from "@/lib/workspace/types";

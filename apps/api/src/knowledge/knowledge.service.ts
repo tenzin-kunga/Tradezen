@@ -15,7 +15,7 @@ import {
   CreateLinkDto,
 } from './dto';
 import { KnowledgeEnrichmentService } from './knowledge-enrichment.service';
-import { AssetsService } from '../assets/assets.service';
+import { AssetsService, type StoredAsset } from '../assets/assets.service';
 
 @Injectable()
 export class KnowledgeService {
@@ -232,7 +232,7 @@ export class KnowledgeService {
           provider: 'cloudinary',
           providerKey: a.storageKey,
           mimeType: a.mimeType,
-        } as any,
+        } as unknown as StoredAsset,
         'original',
       ),
     }));
@@ -273,7 +273,7 @@ export class KnowledgeService {
           provider: 'cloudinary',
           providerKey: asset.storageKey,
           mimeType: asset.mimeType,
-        } as any,
+        } as unknown as StoredAsset,
         'original',
       ),
     };

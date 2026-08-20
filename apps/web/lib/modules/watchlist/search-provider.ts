@@ -7,7 +7,6 @@ import type {
 import { createWatchlistResource } from "@/lib/workspace/resource";
 
 const STORAGE_KEY = "tradezen_search_watchlist_recents";
-const MAX_RECENTS = 10;
 
 function getRecents(): string[] {
   if (typeof window === "undefined") return [];
@@ -17,16 +16,6 @@ function getRecents(): string[] {
   } catch {
     return [];
   }
-}
-
-function addRecent(query: string) {
-  if (typeof window === "undefined") return;
-  const recents = getRecents().filter((r) => r !== query);
-  recents.unshift(query);
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(recents.slice(0, MAX_RECENTS)),
-  );
 }
 
 export function createWatchlistSearchProvider(): SearchProvider {

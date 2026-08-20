@@ -1,16 +1,24 @@
-import { ChatService } from './chat.service';
+import { ChatService, StreamHandlers } from './chat.service';
 import { Logger } from '@nestjs/common';
 import { ChatRole } from './dto/chat-message.dto';
+import { AIClient } from '../ai/ai-client';
+import { ConversationPersistenceService } from './conversation/conversation-persistence.service';
+import { UserSettingsService } from '../user-settings/user-settings.service';
+
+type ServiceProbe = {
+  modelsCacheTtlMs: number;
+  contextOwnedEnabled: boolean;
+};
 
 const makeService = () =>
   new ChatService(
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    {} as never,
   );
 
 // Long plain prose (3+ paragraphs, no Markdown) so finalizeAssistant detects
@@ -35,27 +43,35 @@ describe('ChatService models cache TTL', () => {
 
   it('defaults to 300000 when env unset', () => {
     delete process.env.MODELS_CACHE_TTL_MS;
-    expect((makeService() as any).modelsCacheTtlMs).toBe(300000);
+    expect((makeService() as unknown as ServiceProbe).modelsCacheTtlMs).toBe(
+      300000,
+    );
   });
 
   it('uses MODELS_CACHE_TTL_MS when set', () => {
     process.env.MODELS_CACHE_TTL_MS = '1000';
-    expect((makeService() as any).modelsCacheTtlMs).toBe(1000);
+    expect((makeService() as unknown as ServiceProbe).modelsCacheTtlMs).toBe(
+      1000,
+    );
   });
 
   it('falls back to default for non-numeric value', () => {
     process.env.MODELS_CACHE_TTL_MS = 'abc';
-    expect((makeService() as any).modelsCacheTtlMs).toBe(300000);
+    expect((makeService() as unknown as ServiceProbe).modelsCacheTtlMs).toBe(
+      300000,
+    );
   });
 
   it('allows 0 (cache disabled)', () => {
     process.env.MODELS_CACHE_TTL_MS = '0';
-    expect((makeService() as any).modelsCacheTtlMs).toBe(0);
+    expect((makeService() as unknown as ServiceProbe).modelsCacheTtlMs).toBe(0);
   });
 
   it('falls back to default for negative value', () => {
     process.env.MODELS_CACHE_TTL_MS = '-1';
-    expect((makeService() as any).modelsCacheTtlMs).toBe(300000);
+    expect((makeService() as unknown as ServiceProbe).modelsCacheTtlMs).toBe(
+      300000,
+    );
   });
 });
 
@@ -69,12 +85,16 @@ describe('ChatService context-owned cutover (Slice 7)', () => {
 
   it('disables the cutover marker by default', () => {
     delete process.env.RETRIEVAL_CLIENT_ENABLED;
-    expect((makeService() as any).contextOwnedEnabled).toBe(false);
+    expect((makeService() as unknown as ServiceProbe).contextOwnedEnabled).toBe(
+      false,
+    );
   });
 
   it('enables the cutover marker when flag is on', () => {
     process.env.RETRIEVAL_CLIENT_ENABLED = 'true';
-    expect((makeService() as any).contextOwnedEnabled).toBe(true);
+    expect((makeService() as unknown as ServiceProbe).contextOwnedEnabled).toBe(
+      true,
+    );
   });
 });
 
@@ -96,27 +116,61 @@ describe('ChatService response formatter (finalizeAssistant)', () => {
     process.env.AI_FORMAT_PIPELINE = '1';
   });
 
-  const makeClient = (complete: any) => ({
-    stream: jest.fn().mockImplementation(async function* () {
+  interface CompleteResult {
+    content: string;
+    model: string;
+    usage: { prompt_tokens: number; completion_tokens: number };
+  }
+
+  type CompleteArgs = [
+    { role: string; content: string }[],
+    {
+      model: string;
+      temperature?: number;
+      providerContext?: {
+        provider?: string;
+        apiKey?: string;
+        baseUrl?: string;
+      };
+      contextOwned?: boolean;
+    },
+  ];
+
+  type CompleteMock = jest.Mock<Promise<CompleteResult>, CompleteArgs>;
+
+  const DEFAULT_COMPLETE_RESULT: CompleteResult = {
+    content: FORMATTED,
+    model: 'default-model-x',
+    usage: { prompt_tokens: 0, completion_tokens: 0 },
+  };
+
+  const makeComplete = (over: Partial<CompleteResult> = {}): CompleteMock =>
+    jest.fn<Promise<CompleteResult>, CompleteArgs>().mockResolvedValue({
+      ...DEFAULT_COMPLETE_RESULT,
+      ...over,
+    });
+
+  const makeClient = (complete: CompleteMock) => ({
+    stream: jest.fn().mockImplementation(function* () {
       yield PROSE;
     }),
     complete,
   });
 
   const runStreamChat = async (
-    aiClient: any,
-    persistence: any,
-    userSettings: any,
-    handlers: any,
+    aiClient: { stream: jest.Mock; complete: CompleteMock },
+    persistence: { persistAssistant: jest.Mock; persistUser: jest.Mock },
+    userSettings: { getDecryptedApiKey: jest.Mock },
+    handlers: StreamHandlers,
   ) => {
     const service = new ChatService(
-      aiClient,
-      {} as any,
-      {} as any,
-      {} as any,
-      {} as any,
-      persistence,
-      userSettings,
+      aiClient as unknown as AIClient,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      persistence as unknown as ConversationPersistenceService,
+      userSettings as unknown as UserSettingsService,
     );
     await service.streamChat(
       'user-1',
@@ -147,11 +201,7 @@ describe('ChatService response formatter (finalizeAssistant)', () => {
   it('uses AI_FORMAT_MODEL when configured', async () => {
     process.env.AI_MODEL = 'default-model-x';
     process.env.AI_FORMAT_MODEL = 'formatter-model-x';
-    const complete = jest.fn().mockResolvedValue({
-      content: FORMATTED,
-      model: 'formatter-model-x',
-      usage: { prompt_tokens: 0, completion_tokens: 0 },
-    });
+    const complete = makeComplete({ model: 'formatter-model-x' });
     const handlers = { onToken: jest.fn(), onDone: jest.fn() };
     await runStreamChat(
       makeClient(complete),
@@ -166,11 +216,7 @@ describe('ChatService response formatter (finalizeAssistant)', () => {
   it('falls back to defaultModel when AI_FORMAT_MODEL is unset', async () => {
     process.env.AI_MODEL = 'default-model-x';
     delete process.env.AI_FORMAT_MODEL;
-    const complete = jest.fn().mockResolvedValue({
-      content: FORMATTED,
-      model: 'default-model-x',
-      usage: { prompt_tokens: 0, completion_tokens: 0 },
-    });
+    const complete = makeComplete();
     const handlers = { onToken: jest.fn(), onDone: jest.fn() };
     await runStreamChat(
       makeClient(complete),
@@ -184,11 +230,7 @@ describe('ChatService response formatter (finalizeAssistant)', () => {
 
   it('passes the user providerContext to the formatter', async () => {
     process.env.AI_MODEL = 'default-model-x';
-    const complete = jest.fn().mockResolvedValue({
-      content: FORMATTED,
-      model: 'default-model-x',
-      usage: { prompt_tokens: 0, completion_tokens: 0 },
-    });
+    const complete = makeComplete();
     const handlers = { onToken: jest.fn(), onDone: jest.fn() };
     await runStreamChat(
       makeClient(complete),
@@ -206,11 +248,7 @@ describe('ChatService response formatter (finalizeAssistant)', () => {
   it('routes the formatter request as a context-owned passthrough', async () => {
     process.env.AI_MODEL = 'default-model-x';
     delete process.env.AI_FORMAT_MODEL;
-    const complete = jest.fn().mockResolvedValue({
-      content: FORMATTED,
-      model: 'default-model-x',
-      usage: { prompt_tokens: 0, completion_tokens: 0 },
-    });
+    const complete = makeComplete();
     const handlers = { onToken: jest.fn(), onDone: jest.fn() };
     await runStreamChat(
       makeClient(complete),
@@ -227,11 +265,7 @@ describe('ChatService response formatter (finalizeAssistant)', () => {
 
   it('does not log provider credentials', async () => {
     process.env.AI_MODEL = 'default-model-x';
-    const complete = jest.fn().mockResolvedValue({
-      content: FORMATTED,
-      model: 'default-model-x',
-      usage: { prompt_tokens: 0, completion_tokens: 0 },
-    });
+    const complete = makeComplete();
     const debugSpy = jest.spyOn(Logger.prototype, 'debug');
     const logSpy = jest.spyOn(Logger.prototype, 'log');
     const warnSpy = jest.spyOn(Logger.prototype, 'warn');
@@ -259,11 +293,7 @@ describe('ChatService response formatter (finalizeAssistant)', () => {
 
   it('persists and emits the reformatted reply via response_reformatted', async () => {
     process.env.AI_MODEL = 'default-model-x';
-    const complete = jest.fn().mockResolvedValue({
-      content: FORMATTED,
-      model: 'default-model-x',
-      usage: { prompt_tokens: 0, completion_tokens: 0 },
-    });
+    const complete = makeComplete();
     const persistence = makePersistence();
     const onReformatted = jest.fn();
     await runStreamChat(makeClient(complete), persistence, makeUserSettings(), {
@@ -281,7 +311,9 @@ describe('ChatService response formatter (finalizeAssistant)', () => {
 
   it('keeps the original response when the formatter throws', async () => {
     process.env.AI_MODEL = 'default-model-x';
-    const complete = jest.fn().mockRejectedValue(new Error('formatter down'));
+    const complete = jest
+      .fn<Promise<CompleteResult>, CompleteArgs>()
+      .mockRejectedValue(new Error('formatter down'));
     const persistence = makePersistence();
     const onDone = jest.fn();
     await expect(

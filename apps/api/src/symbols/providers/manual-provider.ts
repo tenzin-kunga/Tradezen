@@ -4,16 +4,16 @@ export class ManualProvider implements SymbolProvider {
   name = 'manual';
   priority = 100; // lowest priority — fallback only
 
-  async lookup(ticker: string, exchange?: string): Promise<SymbolData | null> {
+  lookup(ticker: string, exchange?: string): Promise<SymbolData | null> {
     // Manual provider returns minimal data — just the ticker
-    return {
+    return Promise.resolve({
       ticker: ticker.toUpperCase(),
       exchange: exchange?.toUpperCase(),
-    };
+    });
   }
 
-  async search(_query: string): Promise<SymbolData[]> {
+  search(_query: string): Promise<SymbolData[]> {
     // Manual provider can't search — returns empty
-    return [];
+    return Promise.resolve([]);
   }
 }

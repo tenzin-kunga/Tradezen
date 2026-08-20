@@ -1,5 +1,8 @@
 import { HttpException } from '@nestjs/common';
 import { UserSettingsController } from './user-settings.controller';
+import type { UserSettingsService } from './user-settings.service';
+
+const fetchMock = jest.fn();
 
 describe('UserSettingsController API key validation', () => {
   let controller: UserSettingsController;
@@ -9,14 +12,16 @@ describe('UserSettingsController API key validation', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new UserSettingsController(service as any);
-    (global as any).fetch = jest.fn();
+    (globalThis as { fetch: unknown }).fetch = fetchMock;
+    controller = new UserSettingsController(
+      service as unknown as UserSettingsService,
+    );
   });
 
   const dto = (provider: string, apiKey: string) => ({ provider, apiKey });
 
   it('validateApiKey returns valid for a valid key', async () => {
-    (global as any).fetch.mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ data: [{ id: 'a' }, { id: 'b' }] }),
     });
@@ -27,7 +32,7 @@ describe('UserSettingsController API key validation', () => {
   });
 
   it('validateApiKey returns 400 for an invalid key', async () => {
-    (global as any).fetch.mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: false,
       json: () => Promise.resolve({}),
     });
@@ -45,7 +50,7 @@ describe('UserSettingsController API key validation', () => {
   });
 
   it('validateApiKey validates a custom provider against its baseUrl', async () => {
-    (global as any).fetch.mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ data: [{ id: 'a' }] }),
     });
@@ -57,7 +62,10 @@ describe('UserSettingsController API key validation', () => {
     });
 
     expect(result).toEqual({ valid: true, modelCount: 1 });
-    const [url, init] = (global as any).fetch.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0] as [
+      string,
+      { headers: Record<string, string> },
+    ];
     expect(url).toBe('https://integrate.api.nvidia.com/v1/models');
     expect(init.headers).toEqual({ Authorization: 'Bearer k' });
   });
@@ -72,19 +80,22 @@ describe('UserSettingsController API key validation', () => {
   });
 
   it('validateApiKey uses x-api-key header for anthropic', async () => {
-    (global as any).fetch.mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ data: [] }),
     });
 
     await controller.validateApiKey('u1', dto('anthropic', 'k'));
 
-    const [, init] = (global as any).fetch.mock.calls[0];
+    const [, init] = fetchMock.mock.calls[0] as [
+      string,
+      { headers: Record<string, string> },
+    ];
     expect(init.headers).toEqual({ 'x-api-key': 'k' });
   });
 
   it('setApiKey validates then stores when key is valid', async () => {
-    (global as any).fetch.mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ data: [{ id: 'a' }] }),
     });
@@ -103,7 +114,7 @@ describe('UserSettingsController API key validation', () => {
   });
 
   it('setApiKey does not store when key is invalid', async () => {
-    (global as any).fetch.mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: false,
       json: () => Promise.resolve({}),
     });

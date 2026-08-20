@@ -38,7 +38,9 @@ function addRecent(term: string) {
       RECENT_KEY,
       JSON.stringify(items.slice(0, MAX_RECENT)),
     );
-  } catch {}
+  } catch {
+    // ignore storage failures
+  }
 }
 
 function Truncated({ text, max }: { text: string; max: number }) {
@@ -376,6 +378,10 @@ export default function CommandPalette({
   const [activeIndex, setActiveIndex] = useState(0);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
+  const close = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Refresh recent searches when palette opens
@@ -436,7 +442,7 @@ export default function CommandPalette({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, close, router]);
 
   // Build flat items list
   const items = useMemo(() => {
@@ -626,7 +632,7 @@ export default function CommandPalette({
     }
 
     return list;
-  }, [query, results, registryItems, recentSearches, router, onOpenChange]);
+  }, [query, results, registryItems, recentSearches, router, close]);
 
   // Scroll active item into view
   useEffect(() => {
@@ -636,10 +642,6 @@ export default function CommandPalette({
     );
     active?.scrollIntoView({ block: "nearest" });
   }, [activeIndex]);
-
-  const close = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
 
   const hasResults = items.length > 0;
 

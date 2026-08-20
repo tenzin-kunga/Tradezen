@@ -9,7 +9,13 @@ export class PdfExtractor implements TextExtractor {
   async extract(file: Buffer): Promise<ExtractionResult> {
     try {
       // Dynamic import to avoid hard dependency at module load time
-      const pdfParse = (await import('pdf-parse')).default;
+      const pdfParse = (
+        (await import('pdf-parse')) as unknown as {
+          default: (
+            buffer: Buffer,
+          ) => Promise<{ text: string; numpages: number }>;
+        }
+      ).default;
       const result = await pdfParse(file);
       const text = normalize(result.text);
       return {

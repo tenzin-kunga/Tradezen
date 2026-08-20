@@ -3,13 +3,6 @@ import type {
   ModuleMetadata,
   WorkspaceCapability,
   RouteCapability,
-  SearchCapability,
-  ContextCapability,
-  ToolCapability,
-  CommandCapability,
-  ShortcutCapability,
-  ActionCapability,
-  WidgetCapability,
 } from "./types";
 
 class ModuleRegistryImpl {

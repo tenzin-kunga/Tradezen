@@ -396,8 +396,8 @@ function ResearchProjectView({
         version || undefined,
       );
       setVersion(res.version);
-    } catch (e: any) {
-      if (e.message?.includes("modified")) {
+    } catch (e) {
+      if (e instanceof Error && e.message.includes("modified")) {
         setSaveError("Notes changed elsewhere — reload to see latest.");
       } else {
         setSaveError("Failed to save notes.");

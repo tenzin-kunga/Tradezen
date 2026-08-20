@@ -42,7 +42,9 @@ export function useDashboardLayout() {
           setSections(mergeSections(stored.sections));
           setPreset(stored.preset ?? "default");
         }
-      } catch {}
+      } catch {
+        // ignore malformed stored layout
+      }
     }
     getLayout()
       .then((apiLayout) => {

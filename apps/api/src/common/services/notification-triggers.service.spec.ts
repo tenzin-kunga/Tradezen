@@ -1,29 +1,36 @@
 import { NotificationTriggersService } from './notification-triggers.service';
+import { NotificationService } from './notification.service';
+import { TradesService } from '../../trades/trades.service';
+import { BehavioralService } from '../../analytics/behavioral.service';
+import { JournalsService } from '../../journals/journals.service';
+import { AiInsightsService } from '../../ai/ai-insights.service';
 
 describe('NotificationTriggersService', () => {
   let service: NotificationTriggersService;
-  let notificationService: any;
-  let aiInsightsService: any;
+  const notificationService = {
+    isTypeEnabled: jest.fn().mockResolvedValue(true),
+    create: jest.fn().mockResolvedValue(undefined),
+  };
+  const aiInsightsService = {
+    getCoachingPush: jest.fn().mockResolvedValue(null),
+  };
 
   beforeEach(() => {
-    notificationService = {
-      isTypeEnabled: jest.fn().mockResolvedValue(true),
-      create: jest.fn().mockResolvedValue(undefined),
-    };
-    aiInsightsService = {
-      getCoachingPush: jest.fn().mockResolvedValue(null),
-    };
-
+    jest.clearAllMocks();
     service = new NotificationTriggersService(
-      notificationService,
-      { getAnalytics: jest.fn().mockResolvedValue({ maxDrawdown: 0 }) } as any,
+      notificationService as unknown as NotificationService,
+      {
+        getAnalytics: jest.fn().mockResolvedValue({ maxDrawdown: 0 }),
+      } as unknown as TradesService,
       {
         analyzeBehavior: jest.fn().mockResolvedValue({
           fomo: { fomoScore: 0 },
         }),
-      } as any,
-      { getStreak: jest.fn().mockResolvedValue({ currentStreak: 5 }) } as any,
-      aiInsightsService,
+      } as unknown as BehavioralService,
+      {
+        getStreak: jest.fn().mockResolvedValue({ currentStreak: 5 }),
+      } as unknown as JournalsService,
+      aiInsightsService as unknown as AiInsightsService,
     );
   });
 

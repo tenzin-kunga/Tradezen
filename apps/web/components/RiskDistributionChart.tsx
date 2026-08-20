@@ -60,7 +60,7 @@ export default function RiskDistributionChart({
                 fontSize: 12,
               }}
               cursor={{ fill: "transparent" }}
-              formatter={(value: any) => [`${value} trades`, "Count"]}
+              formatter={(value: number) => [`${value} trades`, "Count"]}
               labelFormatter={(label) => `R-Multiple: ${label}`}
             />
             <Bar dataKey="count" radius={[3, 3, 0, 0]}>

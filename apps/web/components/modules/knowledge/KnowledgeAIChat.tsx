@@ -40,10 +40,12 @@ export default function KnowledgeAIChat({
   const abortRef = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
+  const lastContent = messages[messages.length - 1]?.content;
+
   // Auto-scroll on new messages
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, messages[messages.length - 1]?.content]);
+  }, [messages, lastContent]);
 
   const send = useCallback(
     async (content: string) => {

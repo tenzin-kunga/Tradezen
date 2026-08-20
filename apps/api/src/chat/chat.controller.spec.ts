@@ -22,7 +22,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import { APP_GUARD } from '@nestjs/core';
-import passport from 'passport';
+import passportModule from 'passport';
 import request from 'supertest';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
@@ -38,25 +38,31 @@ import { TradesGateway } from '../gateway/trades.gateway';
 
 const gatewayMock = { emitToUser: jest.fn() };
 
+const passport = passportModule as unknown as {
+  use: (name: string, strategy: unknown) => unknown;
+};
+
 const UUID = '11111111-1111-1111-1111-111111111111';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 describe('ChatController routes', () => {
-  let app: INestApplication;
+  let app: INestApplication<Parameters<typeof request>[0]>;
 
   const searchThreads = jest
     .fn()
     .mockResolvedValue([{ id: 't1', title: 'Tesla' }]);
   const getThread = jest
-    .fn()
+    .fn<Promise<{ id: string; title: string }>, [userId: string, id: string]>()
     .mockImplementation((_userId: string, id: string) => {
       if (!UUID_RE.test(id)) {
         return Promise.reject(new NotFoundException('Thread not found'));
       }
       return Promise.resolve({ id, title: 'My Thread' });
     });
-  const getMessages = jest.fn().mockResolvedValue([]);
+  const getMessages = jest
+    .fn<Promise<unknown[]>, [userId: string, threadId: string]>()
+    .mockResolvedValue([]);
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -125,16 +131,20 @@ describe('ChatController routes', () => {
 });
 
 describe('ChatController provider auth', () => {
-  let app: INestApplication;
+  let app: INestApplication<Parameters<typeof request>[0]>;
 
   class MockJwtStrategy {
     name = 'jwt';
-    authenticate(req: any) {
+    authenticate(req: { headers?: { authorization?: string } }) {
       const auth = req.headers?.authorization ?? '';
+      const strategy = this as unknown as {
+        success: (user: { id: string }) => void;
+        fail: (message: string, status: number) => void;
+      };
       if (auth === 'Bearer valid-token') {
-        (this as any).success({ id: 'u1' });
+        strategy.success({ id: 'u1' });
       } else {
-        (this as any).fail('Unauthorized', 401);
+        strategy.fail('Unauthorized', 401);
       }
     }
   }
@@ -228,30 +238,42 @@ describe('ChatController provider auth', () => {
 });
 
 describe('ChatController stream usage event', () => {
-  let app: INestApplication;
+  let app: INestApplication<Parameters<typeof request>[0]>;
 
   class MockJwtStrategy {
     name = 'jwt';
-    authenticate(req: any) {
+    authenticate(req: { headers?: { authorization?: string } }) {
       const auth = req.headers?.authorization ?? '';
+      const strategy = this as unknown as {
+        success: (user: { id: string }) => void;
+        fail: (message: string, status: number) => void;
+      };
       if (auth === 'Bearer valid-token') {
-        (this as any).success({ id: 'u1' });
+        strategy.success({ id: 'u1' });
       } else {
-        (this as any).fail('Unauthorized', 401);
+        strategy.fail('Unauthorized', 401);
       }
     }
   }
 
   const streamChat = jest.fn(
-    async (
+    (
       _userId: string,
-      _dto: any,
+      _dto: unknown,
       _signal: AbortSignal | undefined,
-      handlers: any,
+      handlers: {
+        onToken: (token: string) => void;
+        onUsage: (usage: {
+          promptTokens: number;
+          completionTokens: number;
+        }) => void;
+        onDone: () => void;
+      },
     ) => {
       handlers.onToken('hello');
       handlers.onUsage({ promptTokens: 10, completionTokens: 5 });
       handlers.onDone();
+      return Promise.resolve();
     },
   );
 

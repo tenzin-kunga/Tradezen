@@ -143,7 +143,9 @@ export class RetrievalPipeline {
         blocks.push(result.value.block);
       } else {
         const reason =
-          result.status === 'rejected' ? result.reason : result.value.error;
+          result.status === 'rejected'
+            ? (result.reason as Error)
+            : result.value.error;
         warnings.push(
           `${provider.id}: ${reason instanceof Error ? reason.message : String(reason)}`,
         );

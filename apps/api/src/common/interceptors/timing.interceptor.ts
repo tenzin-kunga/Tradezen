@@ -8,13 +8,23 @@ import {
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 
+interface RequestMeta {
+  method?: string;
+  url?: string;
+  id?: string;
+}
+
+interface ResponseMeta {
+  statusCode?: number;
+}
+
 @Injectable()
 export class TimingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('TimingInterceptor');
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const req = context.switchToHttp().getRequest();
-    const res = context.switchToHttp().getResponse();
+    const req = context.switchToHttp().getRequest<RequestMeta>();
+    const res = context.switchToHttp().getResponse<ResponseMeta>();
     const start = process.hrtime.bigint();
 
     return next.handle().pipe(

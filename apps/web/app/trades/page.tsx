@@ -18,6 +18,7 @@ import TradeCard from "@/components/TradeCard";
 import TradeDetailDrawer from "@/components/TradeDetailDrawer";
 import DateRangePicker from "@/components/DateRangePicker";
 import type { Trade } from "@tradezen/types";
+import { type Tag } from "@/components/TagPicker";
 
 function fmt(n: number) {
   const abs = Math.abs(n).toLocaleString("en-US", {
@@ -25,13 +26,6 @@ function fmt(n: number) {
     maximumFractionDigits: 2,
   });
   return n >= 0 ? `+$${abs}` : `-$${abs}`;
-}
-
-function fmtDate(d: string | null | undefined) {
-  if (!d) return "--";
-  const dt = new Date(d);
-  if (isNaN(dt.getTime())) return "--";
-  return dt.toISOString().replace("T", " ").slice(0, 16);
 }
 
 import { getTradingSession } from "@/lib/session";
@@ -48,7 +42,7 @@ export default function TradeLog() {
   const [assetFilter, setAssetFilter] = useState("ALL ASSETS");
   const [strategyFilter, setStrategyFilter] = useState("ANY STRATEGY");
   const [tagFilter, setTagFilter] = useState("");
-  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [resultFilter, setResultFilter] = useState("ALL");
   const [page, setPage] = useState(1);
@@ -78,14 +72,14 @@ export default function TradeLog() {
     const tag = searchParams.get("tag");
     if (tag) {
       const match = availableTags.find(
-        (t: any) => t.name.toLowerCase() === tag.toLowerCase(),
+        (t: Tag) => t.name.toLowerCase() === tag.toLowerCase(),
       );
       if (match) setTagFilter(match.id);
       else setPendingTagName(tag);
     }
   }, [searchParams, availableTags]);
 
-  const [pendingTagName, setPendingTagName] = useState<string | null>(null);
+  const [, setPendingTagName] = useState<string | null>(null);
 
   useEffect(() => {
     importJobIdRef.current = importJobId;
@@ -210,7 +204,7 @@ export default function TradeLog() {
       await deleteTrade(id);
       addToast("success", "Trade deleted");
       fetchTrades();
-    } catch (err) {
+    } catch (_err) {
       addToast("error", "Failed to delete trade");
     }
   }
@@ -446,7 +440,7 @@ export default function TradeLog() {
             className="select-glass text-xs"
           >
             <option value="">ALL TAGS</option>
-            {availableTags.map((t: any) => (
+            {availableTags.map((t: Tag) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>

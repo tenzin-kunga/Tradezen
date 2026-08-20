@@ -25,6 +25,9 @@ export default function KnowledgeInspector({
   onToggle,
   assetRefreshToken = 0,
 }: KnowledgeInspectorProps) {
+  const [linkRefresh, setLinkRefresh] = useState(0);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+
   if (collapsed) {
     return (
       <div
@@ -55,20 +58,17 @@ export default function KnowledgeInspector({
     );
   }
 
-  const [linkRefresh, setLinkRefresh] = useState(0);
-  const [showLinkDialog, setShowLinkDialog] = useState(false);
-
   return (
     <div
-        style={{
-          width: 280,
-          borderLeft: "1px solid var(--border-soft, #23252d)",
-          background: "var(--bg-sidebar, #0c0c0f)",
-          display: "flex",
-          flexDirection: "column",
-          flexShrink: 0,
-          overflow: "hidden",
-        }}
+      style={{
+        width: 280,
+        borderLeft: "1px solid var(--border-soft, #23252d)",
+        background: "var(--bg-sidebar, #0c0c0f)",
+        display: "flex",
+        flexDirection: "column",
+        flexShrink: 0,
+        overflow: "hidden",
+      }}
     >
       {/* Header */}
       <div

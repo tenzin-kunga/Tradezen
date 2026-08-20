@@ -3,6 +3,9 @@ import { buildInsightContext } from './insight-context';
 import { CoachingPushPolicy } from './push-policy';
 import { db } from '../../db/drizzle';
 import type { InsightContext } from './insight-context';
+import type { TradesService } from '../../trades/trades.service';
+import type { BehavioralService } from '../../analytics/behavioral.service';
+import type { AIClient } from '../ai-client';
 import {
   CONCENTRATION_PCT,
   MIN_SYMBOL_TRADES,
@@ -17,6 +20,11 @@ jest.mock('../../db/drizzle', () => {
 jest.mock('./insight-context', () => ({
   buildInsightContext: jest.fn(),
 }));
+
+// eslint-disable-next-line @typescript-eslint/unbound-method -- jest mock, no `this`
+const select = db.select as unknown as jest.Mock;
+// eslint-disable-next-line @typescript-eslint/unbound-method -- jest mock, no `this`
+const insert = db.insert as unknown as jest.Mock;
 
 function selectChain(rows: any[]) {
   return {
@@ -44,16 +52,19 @@ function makeCtx(overrides: Record<string, any> = {}): InsightContext {
 
 describe('AiInsightsService', () => {
   let service: AiInsightsService;
-  let tradesService: any;
-  let behavioralService: any;
-  let portfolioService: any;
-  let aiClient: any;
+  let tradesService: {
+    getAnalytics: jest.Mock;
+    getAdvancedAnalytics: jest.Mock;
+  };
+  let behavioralService: { analyzeBehavior: jest.Mock };
+  let portfolioService: { getPortfolio: jest.Mock };
+  let aiClient: { complete: jest.Mock };
   let pushPolicy: CoachingPushPolicy;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (db as any).select.mockReturnValue(selectChain([]));
-    (db as any).insert.mockReturnValue({
+    select.mockReturnValue(selectChain([]));
+    insert.mockReturnValue({
       values: jest.fn().mockResolvedValue(undefined),
     });
 
@@ -73,10 +84,10 @@ describe('AiInsightsService', () => {
     pushPolicy = new CoachingPushPolicy();
 
     service = new AiInsightsService(
-      tradesService,
-      behavioralService,
+      tradesService as unknown as TradesService,
+      behavioralService as unknown as BehavioralService,
       portfolioService,
-      aiClient,
+      aiClient as unknown as AIClient,
       pushPolicy,
     );
   });
@@ -98,7 +109,7 @@ describe('AiInsightsService', () => {
         createdAt: new Date(),
       },
     ];
-    (db as any).select.mockReturnValue(selectChain(cachedRows));
+    select.mockReturnValue(selectChain(cachedRows));
 
     const result = await service.getInsights('u');
 
@@ -142,7 +153,7 @@ describe('AiInsightsService', () => {
     expect(result.insights.length).toBeGreaterThan(0);
     expect(result.narrative).toBe('Narrative text');
     // cards + narrative row
-    expect((db as any).insert.mock.calls.length).toBeGreaterThanOrEqual(
+    expect(insert.mock.calls.length).toBeGreaterThanOrEqual(
       result.insights.length,
     );
   });
@@ -185,7 +196,7 @@ describe('AiInsightsService', () => {
     const result = await service.getInsights('u');
 
     expect(result.insights).toHaveLength(0);
-    expect((db as any).insert).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
   });
 
   it('selects top 3 and caps risk at 2 cards', async () => {
@@ -268,7 +279,7 @@ describe('AiInsightsService', () => {
     expect(push).not.toBeNull();
     expect(push!.ruleId).toBe('portfolio.concentration:AAPL');
     // records a coaching_push dedupe row
-    expect((db as any).insert).toHaveBeenCalled();
+    expect(insert).toHaveBeenCalled();
   });
 
   it('getCoachingPush returns null when only non-pushable candidates exist', async () => {

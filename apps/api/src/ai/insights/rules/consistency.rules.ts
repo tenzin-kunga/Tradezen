@@ -5,7 +5,7 @@ import { WIN_STREAK_MIN, LOSS_STREAK_MIN } from '../thresholds';
 
 export const consistencyRules: InsightSource = {
   generate(ctx: InsightContext): InsightCandidate[] {
-    const advanced = ctx.advanced as any;
+    const advanced = ctx.advanced;
     const candidates: InsightCandidate[] = [];
 
     const streak = advanced?.currentStreak;

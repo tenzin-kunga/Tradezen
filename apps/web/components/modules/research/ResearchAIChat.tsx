@@ -37,9 +37,11 @@ export default function ResearchAIChat({ project }: ResearchAIChatProps) {
   const abortRef = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
+  const lastContent = messages[messages.length - 1]?.content;
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, messages[messages.length - 1]?.content]);
+  }, [messages, lastContent]);
 
   const send = useCallback(
     async (content: string) => {
@@ -147,7 +149,11 @@ export default function ResearchAIChat({ project }: ResearchAIChatProps) {
             variant="danger"
             size="sm"
             onClick={() => abortRef.current?.abort()}
-            style={{ background: "var(--accent-loss)", color: "#fff", border: "none" }}
+            style={{
+              background: "var(--accent-loss)",
+              color: "#fff",
+              border: "none",
+            }}
           >
             Stop
           </Button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   getChecklistRun,
@@ -10,36 +10,55 @@ import {
 import { useToast } from "@/components/Toast";
 import { useAuth } from "@/lib/auth-context";
 
+interface ChecklistRunItem {
+  itemId: string;
+  title: string;
+  checked: boolean;
+  isCritical?: boolean;
+}
+
+interface ChecklistRunDetail {
+  checklistName?: string;
+  createdAt: string;
+  tradeId?: string | null;
+  note?: string | null;
+  items?: ChecklistRunItem[];
+}
+
 export default function RunViewPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
   const { addToast } = useToast();
   const { loading: authLoading } = useAuth();
-  const [run, setRun] = useState<any>(null);
+  const [run, setRun] = useState<ChecklistRunDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  function load() {
+  const load = useCallback(() => {
     getChecklistRun(id)
       .then(setRun)
       .catch(console.error)
       .finally(() => setLoading(false));
-  }
+  }, [id]);
 
   useEffect(() => {
     if (!authLoading) load();
-  }, [id, authLoading]);
+  }, [load, authLoading]);
 
   async function handleToggle(itemId: string, checked: boolean) {
     try {
       await updateChecklistRunItem(id, itemId, checked);
-      setRun((prev: any) => ({
-        ...prev,
-        items: prev.items.map((it: any) =>
-          it.itemId === itemId ? { ...it, checked } : it,
-        ),
-      }));
-    } catch (err) {
+      setRun((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items?.map((it) =>
+                it.itemId === itemId ? { ...it, checked } : it,
+              ),
+            }
+          : prev,
+      );
+    } catch (_err) {
       addToast("error", "Failed to update");
     }
   }
@@ -50,7 +69,7 @@ export default function RunViewPage() {
       await deleteChecklistRun(id);
       addToast("success", "Run deleted");
       router.push("/checklists");
-    } catch (err) {
+    } catch (_err) {
       addToast("error", "Failed to delete");
     }
   }
@@ -72,7 +91,7 @@ export default function RunViewPage() {
       </div>
     );
 
-  const checkedCount = run.items?.filter((it: any) => it.checked).length ?? 0;
+  const checkedCount = run.items?.filter((it) => it.checked).length ?? 0;
   const totalCount = run.items?.length ?? 0;
   const allChecked = totalCount > 0 && checkedCount === totalCount;
 
@@ -149,7 +168,7 @@ export default function RunViewPage() {
       </div>
 
       <div className="flex flex-col gap-2">
-        {run.items?.map((item: any) => (
+        {run.items?.map((item) => (
           <label
             key={item.itemId}
             className="glass-card p-3 flex items-center gap-3 cursor-pointer transition-all hover:opacity-80"

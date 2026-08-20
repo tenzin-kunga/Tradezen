@@ -16,6 +16,18 @@ interface DayData {
   trades: number;
 }
 
+interface CalendarTrade {
+  id: string;
+  symbol: string;
+  pnl: number | string;
+  direction: string;
+  entry_price?: number | string;
+  exit_price?: number | string;
+  strategy?: string | null;
+  trade_date?: string | Date;
+  created_at?: string;
+}
+
 function getMonthDays(year: number, month: number): (DayData | null)[] {
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -71,9 +83,9 @@ export default function CalendarPage() {
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [dailyData, setDailyData] = useState<DayData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
-  const [dayTrades, setDayTrades] = useState<any[]>([]);
+  const [dayTrades, setDayTrades] = useState<CalendarTrade[]>([]);
   const [news, setNews] = useState<MarketNewsEvent[]>([]);
 
   useEffect(() => {
@@ -86,8 +98,9 @@ export default function CalendarPage() {
       getTrades({ from: firstDay, to: `${lastDayStr}T23:59:59`, limit: 1000 }),
     ])
       .then(([dailyRes, tradesRes]) => {
-        const dayMap: Record<string, { pnl: number; trades: any[] }> = {};
-        tradesRes.data.forEach((t: any) => {
+        const dayMap: Record<string, { pnl: number; trades: CalendarTrade[] }> =
+          {};
+        tradesRes.data.forEach((t: CalendarTrade) => {
           const rawDate = t.trade_date || t.created_at;
           const date =
             rawDate instanceof Date
@@ -142,7 +155,9 @@ export default function CalendarPage() {
         setNews(
           data
             .filter((e) => !isPastEvent(e) && !isSpeech(e.title))
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            )
             .slice(0, 10),
         );
       })
@@ -395,10 +410,16 @@ export default function CalendarPage() {
                   </div>
                   <div className="hidden md:flex gap-4 text-xs text-text-dim shrink-0">
                     <span>
-                      FCST <span className="text-text-primary">{event.forecast || "—"}</span>
+                      FCST{" "}
+                      <span className="text-text-primary">
+                        {event.forecast || "—"}
+                      </span>
                     </span>
                     <span>
-                      PREV <span className="text-text-primary">{event.previous || "—"}</span>
+                      PREV{" "}
+                      <span className="text-text-primary">
+                        {event.previous || "—"}
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -469,7 +490,7 @@ function DayDetailHeader({
 }: {
   selectedDay: DayData;
   onClose: () => void;
-  dayTrades: any[];
+  dayTrades: CalendarTrade[];
   desktop?: boolean;
 }) {
   return (

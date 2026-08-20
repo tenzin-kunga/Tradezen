@@ -86,7 +86,7 @@ function ToolRow({
 }
 
 export default function ToolCallBlock({ message }: { message: ChatMessage }) {
-  const meta = message.metadata as any;
+  const meta = message.metadata;
   return (
     <div
       style={{

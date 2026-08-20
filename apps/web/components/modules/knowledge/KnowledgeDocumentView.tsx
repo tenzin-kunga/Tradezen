@@ -25,7 +25,7 @@ interface KnowledgeDocumentViewProps {
 export default function KnowledgeDocumentView({
   document: doc,
   onUpdate,
-  onDelete,
+  onDelete: _onDelete,
   onAssetUploaded,
 }: KnowledgeDocumentViewProps) {
   const [content, setContent] = useState(doc.content || "");
@@ -35,9 +35,8 @@ export default function KnowledgeDocumentView({
   const [showChat, setShowChat] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
   const [versions, setVersions] = useState<KnowledgeVersion[]>([]);
-  const [selectedVersion, setSelectedVersion] = useState<KnowledgeVersion | null>(
-    null,
-  );
+  const [selectedVersion, setSelectedVersion] =
+    useState<KnowledgeVersion | null>(null);
   const assetInputRef = useRef<HTMLInputElement>(null);
 
   // Sync when document changes
@@ -146,7 +145,11 @@ export default function KnowledgeDocumentView({
           </Badge>
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          <Button variant="ghost" size="sm" onClick={() => assetInputRef.current?.click()}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => assetInputRef.current?.click()}
+          >
             📎 Attach
           </Button>
           <input
@@ -176,7 +179,12 @@ export default function KnowledgeDocumentView({
           >
             Versions
           </Button>
-          <Button variant="primary" size="sm" disabled={saving} onClick={handleSave}>
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={saving}
+            onClick={handleSave}
+          >
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>
@@ -355,14 +363,14 @@ export default function KnowledgeDocumentView({
               )
             ) : (
               <div>
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   onClick={() => setSelectedVersion(null)}
-                   style={{ marginBottom: 8 }}
-                 >
-                   ← Back to versions
-                 </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedVersion(null)}
+                  style={{ marginBottom: 8 }}
+                >
+                  ← Back to versions
+                </Button>
                 <div
                   style={{
                     fontSize: 11,
@@ -389,14 +397,14 @@ export default function KnowledgeDocumentView({
                     {selectedVersion.content}
                   </ReactMarkdown>
                 </div>
-                 <Button
-                   variant="primary"
-                   size="sm"
-                   onClick={() => handleRestore(selectedVersion)}
-                   style={{ marginTop: 12, width: "100%" }}
-                 >
-                   Restore this version
-                 </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleRestore(selectedVersion)}
+                  style={{ marginTop: 12, width: "100%" }}
+                >
+                  Restore this version
+                </Button>
               </div>
             )}
           </div>

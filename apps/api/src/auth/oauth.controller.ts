@@ -10,7 +10,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-import { OAuthService } from './oauth.service';
+import { OAuthService, OAuthProfile, OAuthUserResponse } from './oauth.service';
 import { GoogleLoginDto } from './dto';
 import { Public } from './public.decorator';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -31,11 +31,11 @@ export class OAuthController {
   @Get('google/callback')
   @ApiOperation({ summary: 'Handle Google OAuth callback' })
   @UseGuards(AuthGuard('google'))
-  async googleCallback(
+  googleCallback(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = req.user as any;
+    const user = req.user as unknown as OAuthUserResponse;
     const tokens = this.oauthService.setOAuthTokens(res, user);
 
     const webUrl = process.env.WEB_URL ?? 'http://localhost:3000';
@@ -62,11 +62,11 @@ export class OAuthController {
   @Get('github/callback')
   @ApiOperation({ summary: 'Handle GitHub OAuth callback' })
   @UseGuards(AuthGuard('github'))
-  async githubCallback(
+  githubCallback(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = req.user as any;
+    const user = req.user as unknown as OAuthUserResponse;
     const tokens = this.oauthService.setOAuthTokens(res, user);
 
     const webUrl = process.env.WEB_URL ?? 'http://localhost:3000';
@@ -77,7 +77,7 @@ export class OAuthController {
   @ApiOperation({ summary: 'Link OAuth account to current user' })
   @UseGuards(JwtAuthGuard)
   async linkAccount(@CurrentUser('id') userId: string, @Req() req: Request) {
-    const profile = req.user as any;
+    const profile = req.user as unknown as OAuthProfile;
     await this.oauthService.linkAccount(userId, profile);
     return { message: 'Account linked successfully' };
   }
@@ -86,7 +86,7 @@ export class OAuthController {
   @ApiOperation({ summary: 'Unlink OAuth account from current user' })
   @UseGuards(JwtAuthGuard)
   async unlinkAccount(@CurrentUser('id') userId: string, @Req() req: Request) {
-    const { provider } = req.body;
+    const { provider } = req.body as { provider: string };
     await this.oauthService.unlinkAccount(userId, provider);
     return { message: 'Account unlinked successfully' };
   }

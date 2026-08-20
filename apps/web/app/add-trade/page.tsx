@@ -11,7 +11,10 @@ import {
   getJournalStreak,
   uploadTradeImage,
 } from "@/lib/api";
-import { searchSymbols, type Symbol as TickerSymbol } from "@/lib/api/watchlist";
+import {
+  searchSymbols,
+  type Symbol as TickerSymbol,
+} from "@/lib/api/watchlist";
 import { Button } from "@/components/primitives/Button";
 import { IconButton } from "@/components/primitives/IconButton";
 import { NumberInput } from "@/components/primitives/NumberInput";
@@ -167,7 +170,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function RequiredMark() {
   return (
-    <span style={{ color: "var(--accent-loss)", marginLeft: 3, fontWeight: 700 }}>
+    <span
+      style={{ color: "var(--accent-loss)", marginLeft: 3, fontWeight: 700 }}
+    >
       *
     </span>
   );
@@ -187,8 +192,8 @@ export default function AddTradePage() {
   const [takeProfit, setTakeProfit] = useState("");
   const [commission, setCommission] = useState("");
   const [strategy, setStrategy] = useState("");
-  const [tradeDate, setTradeDate] = useState(
-    () => new Date().toISOString().slice(0, 10),
+  const [tradeDate, setTradeDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
   );
   const [notes, setNotes] = useState("");
   const [fomoCheck, setFomoCheck] = useState(false);
@@ -209,7 +214,9 @@ export default function AddTradePage() {
   const [attempted, setAttempted] = useState(false);
   const [chartFile, setChartFile] = useState<File | null>(null);
   const [chartPreview, setChartPreview] = useState<string | null>(null);
-  const [symbolContractSize, setSymbolContractSize] = useState<number | null>(null);
+  const [symbolContractSize, setSymbolContractSize] = useState<number | null>(
+    null,
+  );
   const [customMode, setCustomMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -220,8 +227,8 @@ export default function AddTradePage() {
 
   // ── Symbol autocomplete ──
   const [symbolQuery, setSymbolQuery] = useState("");
-  const [symbolResults, setSymbolResults] = useState<TickerSymbol[]>([]);
-  const [symbolOpen, setSymbolOpen] = useState(false);
+  const [, setSymbolResults] = useState<TickerSymbol[]>([]);
+  const [, setSymbolOpen] = useState(false);
   const symbolBoxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -269,7 +276,10 @@ export default function AddTradePage() {
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (symbolBoxRef.current && !symbolBoxRef.current.contains(e.target as Node)) {
+      if (
+        symbolBoxRef.current &&
+        !symbolBoxRef.current.contains(e.target as Node)
+      ) {
         setSymbolOpen(false);
       }
     }
@@ -315,16 +325,39 @@ export default function AddTradePage() {
         try {
           localStorage.setItem(
             DRAFT_KEY,
-            JSON.stringify({ ...draft, chartPreview: undefined, chartFileName: undefined }),
+            JSON.stringify({
+              ...draft,
+              chartPreview: undefined,
+              chartFileName: undefined,
+            }),
           );
-        } catch {}
+        } catch {
+          // ignore
+        }
       }
     }, 400);
     return () => clearTimeout(t);
   }, [
-    symbol, direction, entry, exit, quantity, stopLoss, takeProfit, commission,
-    strategy, tradeDate, notes, fomoCheck, trendAlignment, vengeanceTrade,
-    symbolContractSize, mood, preMarket, postMarket, lessons, chartPreview,
+    symbol,
+    direction,
+    entry,
+    exit,
+    quantity,
+    stopLoss,
+    takeProfit,
+    commission,
+    strategy,
+    tradeDate,
+    notes,
+    fomoCheck,
+    trendAlignment,
+    vengeanceTrade,
+    symbolContractSize,
+    mood,
+    preMarket,
+    postMarket,
+    lessons,
+    chartPreview,
     chartFile,
   ]);
 
@@ -361,7 +394,10 @@ export default function AddTradePage() {
       if (draft.chartPreview) {
         setChartPreview(draft.chartPreview);
         setChartFile(
-          dataURLToFile(draft.chartPreview, draft.chartFileName ?? "trade-chart.png"),
+          dataURLToFile(
+            draft.chartPreview,
+            draft.chartFileName ?? "trade-chart.png",
+          ),
         );
       }
       setDraftRestored(true);
@@ -390,7 +426,8 @@ export default function AddTradePage() {
     const initialRisk = riskPerUnit * q * cs;
     const reward = rewardPerUnit * q * cs;
     const rMult = initialRisk > 0 ? net / initialRisk : 0;
-    const rr = riskPerUnit > 0 && rewardPerUnit > 0 ? rewardPerUnit / riskPerUnit : 0;
+    const rr =
+      riskPerUnit > 0 && rewardPerUnit > 0 ? rewardPerUnit / riskPerUnit : 0;
     return {
       valid,
       gross,
@@ -405,7 +442,16 @@ export default function AddTradePage() {
       hasTP: tp > 0,
       cs,
     };
-  }, [entry, exit, quantity, commission, stopLoss, takeProfit, direction, symbolContractSize]);
+  }, [
+    entry,
+    exit,
+    quantity,
+    commission,
+    stopLoss,
+    takeProfit,
+    direction,
+    symbolContractSize,
+  ]);
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
@@ -460,7 +506,9 @@ export default function AddTradePage() {
   function clearDraft() {
     try {
       localStorage.removeItem(DRAFT_KEY);
-    } catch {}
+    } catch {
+      // ignore
+    }
     setDraftRestored(false);
     resetTradeFields();
   }
@@ -491,7 +539,7 @@ export default function AddTradePage() {
         trade_date: tradeDate,
         contract_size: symbolContractSize,
       });
-      const tradeId = (created as any)?.id;
+      const tradeId = (created as { id?: string })?.id;
       if (tradeId) {
         await Promise.all(selectedTags.map((t) => tagTrade(t.id, tradeId)));
         if (chartFile) await uploadTradeImage(tradeId, chartFile);
@@ -507,11 +555,11 @@ export default function AddTradePage() {
           postMarket: postMarket.trim() || undefined,
           lessons: lessons.trim() || undefined,
         };
-        await createJournal(journalData as any).catch((err: any) => {
+        await createJournal(journalData).catch((err) => {
           // ponytail: backend enforces one journal per date — upsert on 409
           if (String(err?.message ?? "").includes("409")) {
-            return getJournalByDate(tradeDate).then((ex: any) =>
-              updateJournal(ex.id, journalData as any),
+            return getJournalByDate(tradeDate).then((ex) =>
+              updateJournal(ex.id, journalData),
             );
           }
         });
@@ -520,7 +568,9 @@ export default function AddTradePage() {
       addToast("success", "Trade committed");
       try {
         localStorage.removeItem(DRAFT_KEY);
-      } catch {}
+      } catch {
+        // ignore
+      }
       setDraftRestored(false);
       if (addAnother) {
         resetTradeFields();
@@ -549,7 +599,9 @@ export default function AddTradePage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-primary)" }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto", padding: "28px 24px 120px" }}>
+      <div
+        style={{ maxWidth: 1120, margin: "0 auto", padding: "28px 24px 120px" }}
+      >
         <header
           style={{
             display: "flex",
@@ -573,7 +625,13 @@ export default function AddTradePage() {
             >
               NEW TRADE
             </h1>
-            <p style={{ color: "var(--text-dim)", fontSize: 13, margin: "4px 0 0" }}>
+            <p
+              style={{
+                color: "var(--text-dim)",
+                fontSize: 13,
+                margin: "4px 0 0",
+              }}
+            >
               Log the execution and capture the mindset behind it.
             </p>
           </div>
@@ -601,7 +659,10 @@ export default function AddTradePage() {
           )}
         </header>
 
-        <form onSubmit={(e) => e.preventDefault()} onKeyDown={handleFormKeyDown}>
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          onKeyDown={handleFormKeyDown}
+        >
           <div
             style={{
               display: "grid",
@@ -651,12 +712,20 @@ export default function AddTradePage() {
               )}
 
               {/* Symbol + direction */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 160px", gap: 12, marginBottom: 16 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 160px",
+                  gap: 12,
+                  marginBottom: 16,
+                }}
+              >
                 <div ref={symbolBoxRef} style={{ position: "relative" }}>
                   <label style={labelStyle}>
-                    Instrument<RequiredMark />
+                    Instrument
+                    <RequiredMark />
                   </label>
-                                    <select
+                  <select
                     className="tz-input"
                     value={customMode ? CUSTOM_SENTINEL : symbol}
                     onChange={(e) => {
@@ -672,7 +741,8 @@ export default function AddTradePage() {
                     }}
                     style={{
                       appearance: "none",
-                      backgroundImage: "url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D24%20height%3D24%20viewBox%3D0%200%2024%2024%20fill%3Dnone%20stroke%3D%23666%20strokeWidth%3D2%20strokeLinecap%3Dround%3E%3Cpath%20d%3D%22M6%209l6%206%20-6%206%22%20/%3E%3C/svg%3E')",
+                      backgroundImage:
+                        "url('data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D24%20height%3D24%20viewBox%3D0%200%2024%2024%20fill%3Dnone%20stroke%3D%23666%20strokeWidth%3D2%20strokeLinecap%3Dround%3E%3Cpath%20d%3D%22M6%209l6%206%20-6%206%22%20/%3E%3C/svg%3E')",
                       backgroundRepeat: "no-repeat",
                       backgroundPosition: "right 12px center",
                       paddingRight: 30,
@@ -696,12 +766,20 @@ export default function AddTradePage() {
                       onChange={(e) => {
                         const val = e.target.value.toUpperCase();
                         setSymbol(val);
-                        if (CONTRACT_SIZES[val]) setSymbolContractSize(CONTRACT_SIZES[val]);
+                        if (CONTRACT_SIZES[val])
+                          setSymbolContractSize(CONTRACT_SIZES[val]);
                       }}
                     />
                   )}
-{attempted && errors.symbol && (
-                    <span style={{ color: "var(--accent-loss)", fontSize: 11, marginTop: 4, display: "block" }}>
+                  {attempted && errors.symbol && (
+                    <span
+                      style={{
+                        color: "var(--accent-loss)",
+                        fontSize: 11,
+                        marginTop: 4,
+                        display: "block",
+                      }}
+                    >
                       {errors.symbol}
                     </span>
                   )}
@@ -713,7 +791,9 @@ export default function AddTradePage() {
                     {(["LONG", "SHORT"] as const).map((d) => {
                       const active = direction === d;
                       const color =
-                        d === "LONG" ? "var(--accent-profit)" : "var(--accent-loss)";
+                        d === "LONG"
+                          ? "var(--accent-profit)"
+                          : "var(--accent-loss)";
                       return (
                         <button
                           key={d}
@@ -741,10 +821,18 @@ export default function AddTradePage() {
               </div>
 
               {/* Prices */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 12,
+                  marginBottom: 16,
+                }}
+              >
                 <div>
                   <label style={labelStyle}>
-                    Entry<RequiredMark />
+                    Entry
+                    <RequiredMark />
                   </label>
                   <NumberInput
                     step="any"
@@ -753,12 +841,15 @@ export default function AddTradePage() {
                     onChange={(e) => setEntry(e.target.value)}
                   />
                   {attempted && errors.entry && (
-                    <span style={{ color: "var(--accent-loss)", fontSize: 11 }}>{errors.entry}</span>
+                    <span style={{ color: "var(--accent-loss)", fontSize: 11 }}>
+                      {errors.entry}
+                    </span>
                   )}
                 </div>
                 <div>
                   <label style={labelStyle}>
-                    Exit<RequiredMark />
+                    Exit
+                    <RequiredMark />
                   </label>
                   <NumberInput
                     step="any"
@@ -767,12 +858,15 @@ export default function AddTradePage() {
                     onChange={(e) => setExit(e.target.value)}
                   />
                   {attempted && errors.exit && (
-                    <span style={{ color: "var(--accent-loss)", fontSize: 11 }}>{errors.exit}</span>
+                    <span style={{ color: "var(--accent-loss)", fontSize: 11 }}>
+                      {errors.exit}
+                    </span>
                   )}
                 </div>
                 <div>
                   <label style={labelStyle}>
-                    Quantity<RequiredMark />
+                    Quantity
+                    <RequiredMark />
                   </label>
                   <NumberInput
                     step="any"
@@ -781,7 +875,9 @@ export default function AddTradePage() {
                     onChange={(e) => setQuantity(e.target.value)}
                   />
                   {attempted && errors.quantity && (
-                    <span style={{ color: "var(--accent-loss)", fontSize: 11 }}>{errors.quantity}</span>
+                    <span style={{ color: "var(--accent-loss)", fontSize: 11 }}>
+                      {errors.quantity}
+                    </span>
                   )}
                 </div>
                 <div>
@@ -789,14 +885,25 @@ export default function AddTradePage() {
                   <NumberInput
                     step="any"
                     value={symbolContractSize?.toString() || ""}
-                    onChange={(e) => setSymbolContractSize(e.target.value ? parseFloat(e.target.value) : null)}
+                    onChange={(e) =>
+                      setSymbolContractSize(
+                        e.target.value ? parseFloat(e.target.value) : null,
+                      )
+                    }
                     placeholder="auto (from symbol)"
                   />
                 </div>
               </div>
 
               {/* SL / TP / Commission */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 12,
+                  marginBottom: 16,
+                }}
+              >
                 <div>
                   <label style={labelStyle}>Stop Loss</label>
                   <NumberInput
@@ -827,7 +934,14 @@ export default function AddTradePage() {
               </div>
 
               {/* Strategy + date */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 180px", gap: 12, marginBottom: 16 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 180px",
+                  gap: 12,
+                  marginBottom: 16,
+                }}
+              >
                 <div>
                   <label style={labelStyle}>Strategy</label>
                   <input
@@ -853,9 +967,27 @@ export default function AddTradePage() {
                 <label style={labelStyle}>Discipline Check</label>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {[
-                    { key: "fomo", label: "FOMO", on: fomoCheck, set: setFomoCheck, color: "var(--accent-loss)" },
-                    { key: "revenge", label: "REVENGE", on: vengeanceTrade, set: setVengeanceTrade, color: "var(--accent-loss)" },
-                    { key: "trend", label: "TREND ALIGNED", on: trendAlignment, set: setTrendAlignment, color: "var(--accent-profit)" },
+                    {
+                      key: "fomo",
+                      label: "FOMO",
+                      on: fomoCheck,
+                      set: setFomoCheck,
+                      color: "var(--accent-loss)",
+                    },
+                    {
+                      key: "revenge",
+                      label: "REVENGE",
+                      on: vengeanceTrade,
+                      set: setVengeanceTrade,
+                      color: "var(--accent-loss)",
+                    },
+                    {
+                      key: "trend",
+                      label: "TREND ALIGNED",
+                      on: trendAlignment,
+                      set: setTrendAlignment,
+                      color: "var(--accent-profit)",
+                    },
                   ].map((p) => (
                     <button
                       key={p.key}
@@ -924,7 +1056,14 @@ export default function AddTradePage() {
                       }}
                       aria-label="Remove chart"
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                      >
                         <path d="M18 6 6 18M6 6l12 12" />
                       </svg>
                     </IconButton>
@@ -961,12 +1100,23 @@ export default function AddTradePage() {
               {/* Tags */}
               <div>
                 <label style={labelStyle}>Tags</label>
-                <TagPicker selectedTags={selectedTags} onChange={setSelectedTags} />
+                <TagPicker
+                  selectedTags={selectedTags}
+                  onChange={setSelectedTags}
+                />
               </div>
             </div>
 
             {/* ── RIGHT: SUMMARY + JOURNAL ── */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 24, position: "sticky", top: 16 }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 24,
+                position: "sticky",
+                top: 16,
+              }}
+            >
               {/* Live P&L */}
               <div style={panelStyle}>
                 <SectionTitle>Live Outcome</SectionTitle>
@@ -1017,7 +1167,14 @@ export default function AddTradePage() {
                         </div>
                       )}
                     </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        flexWrap: "wrap",
+                        marginBottom: 16,
+                      }}
+                    >
                       <Badge tone={pnlTone}>
                         {pnl.retPct >= 0 ? "+" : ""}
                         {pnl.retPct.toFixed(2)}% return
@@ -1027,13 +1184,28 @@ export default function AddTradePage() {
                         <Badge tone="accent">R:R {pnl.rr.toFixed(2)}</Badge>
                       )}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 10,
+                      }}
+                    >
                       <Metric label="Gross" value={fmtMoney(pnl.gross)} />
-                      <Metric label="Commission" value={fmtMoney(parseFloat(commission) || 0)} />
+                      <Metric
+                        label="Commission"
+                        value={fmtMoney(parseFloat(commission) || 0)}
+                      />
                       <Metric label="Notional" value={fmtMoney(pnl.notional)} />
-                      <Metric label="Contract Size" value={pnl.cs.toLocaleString("en-US")} />
+                      <Metric
+                        label="Contract Size"
+                        value={pnl.cs.toLocaleString("en-US")}
+                      />
                       {pnl.hasSL && (
-                        <Metric label="Initial Risk" value={fmtMoney(pnl.initialRisk)} />
+                        <Metric
+                          label="Initial Risk"
+                          value={fmtMoney(pnl.initialRisk)}
+                        />
                       )}
                       {pnl.hasTP && (
                         <Metric label="Reward" value={fmtMoney(pnl.reward)} />
@@ -1076,8 +1248,8 @@ export default function AddTradePage() {
                         lineHeight: 1.5,
                       }}
                     >
-                      Enter entry, exit and quantity to preview your P&amp;L, R-multiple
-                      and risk:reward.
+                      Enter entry, exit and quantity to preview your P&amp;L,
+                      R-multiple and risk:reward.
                     </div>
                   </div>
                 )}
@@ -1177,10 +1349,18 @@ export default function AddTradePage() {
                 </span>
               )}
             </div>
-            <Button variant="subtle" onClick={() => submitTrade(true)} disabled={submitting}>
+            <Button
+              variant="subtle"
+              onClick={() => submitTrade(true)}
+              disabled={submitting}
+            >
               SAVE &amp; ADD ANOTHER
             </Button>
-            <Button variant="primary" onClick={() => submitTrade(false)} disabled={submitting}>
+            <Button
+              variant="primary"
+              onClick={() => submitTrade(false)}
+              disabled={submitting}
+            >
               {submitting ? "COMMITTING…" : "COMMIT TRADE"}
             </Button>
           </div>
@@ -1207,10 +1387,24 @@ function Metric({ label, value }: { label: string; value: string }) {
         padding: "8px 10px",
       }}
     >
-      <div style={{ fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-dim)" }}>
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: "var(--text-dim)",
+        }}
+      >
         {label}
       </div>
-      <div style={{ fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+      <div
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "var(--text-primary)",
+        }}
+      >
         {value}
       </div>
     </div>

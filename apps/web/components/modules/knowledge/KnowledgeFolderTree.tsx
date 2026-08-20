@@ -21,10 +21,23 @@ interface FolderNode extends KnowledgeFolder {
   expanded: boolean;
 }
 
+function buildTree(
+  all: KnowledgeFolder[],
+  parentId: string | null,
+): FolderNode[] {
+  return all
+    .filter((f) => f.parentId === parentId)
+    .map((f) => ({
+      ...f,
+      children: buildTree(all, f.id),
+      expanded: true,
+    }));
+}
+
 export default function KnowledgeFolderTree({
   activeFolderId,
   onSelectFolder,
-  onSelectDocument,
+  onSelectDocument: _onSelectDocument,
   refreshTrigger,
 }: KnowledgeFolderTreeProps) {
   const [folders, setFolders] = useState<FolderNode[]>([]);
@@ -46,19 +59,6 @@ export default function KnowledgeFolderTree({
   useEffect(() => {
     loadFolders().finally(() => setLoading(false));
   }, [loadFolders, refreshTrigger]);
-
-  function buildTree(
-    all: KnowledgeFolder[],
-    parentId: string | null,
-  ): FolderNode[] {
-    return all
-      .filter((f) => f.parentId === parentId)
-      .map((f) => ({
-        ...f,
-        children: buildTree(all, f.id),
-        expanded: true,
-      }));
-  }
 
   const handleCreate = useCallback(async () => {
     const trimmed = newFolderName.trim();
@@ -134,7 +134,11 @@ export default function KnowledgeFolderTree({
         >
           Knowledge
         </span>
-        <IconButton size={24} title="New folder" onClick={() => setIsCreating(true)}>
+        <IconButton
+          size={24}
+          title="New folder"
+          onClick={() => setIsCreating(true)}
+        >
           <svg
             width="12"
             height="12"

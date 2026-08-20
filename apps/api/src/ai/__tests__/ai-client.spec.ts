@@ -4,7 +4,7 @@ import { AIServiceUnavailableError } from '../ai-errors';
 
 // Mock fetch globally
 const mockFetch = jest.fn();
-global.fetch = mockFetch as any;
+global.fetch = mockFetch;
 
 // These tests involve real retry delays (100-900ms each × 4 attempts)
 jest.setTimeout(30_000);
@@ -121,10 +121,10 @@ describe('AIClient stream usage', () => {
     ];
     const body = {
       getReader: () => ({
-        async read() {
+        read() {
           return chunks.length
-            ? { done: false as const, value: chunks.shift()! }
-            : { done: true as const, value: undefined };
+            ? Promise.resolve({ done: false as const, value: chunks.shift()! })
+            : Promise.resolve({ done: true as const, value: undefined });
         },
         async cancel() {},
       }),

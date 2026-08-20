@@ -29,6 +29,12 @@ export interface OAuthUserResponse {
   refreshToken: string;
 }
 
+interface TokenUser {
+  id: string;
+  email: string;
+  username: string;
+}
+
 @Injectable()
 export class OAuthService {
   constructor(private readonly jwt: JwtService) {}
@@ -339,7 +345,7 @@ export class OAuthService {
       .where(eq(accounts.id, accountId));
   }
 
-  private generateTokens(user: any): OAuthUserResponse {
+  private generateTokens(user: TokenUser): OAuthUserResponse {
     const payload = {
       sub: user.id,
       email: user.email,

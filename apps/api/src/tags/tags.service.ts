@@ -23,7 +23,7 @@ export class TagsService {
         })
         .returning();
       return result[0];
-    } catch (err) {
+    } catch (err: unknown) {
       if (
         err &&
         typeof err === 'object' &&
@@ -111,7 +111,7 @@ export class TagsService {
 
     try {
       await db.insert(tradeTags).values({ tradeId, tagId });
-    } catch (err) {
+    } catch (err: unknown) {
       if (
         err &&
         typeof err === 'object' &&

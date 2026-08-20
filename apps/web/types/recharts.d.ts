@@ -9,14 +9,16 @@ declare module "recharts" {
   export function ResponsiveContainer(
     props: ResponsiveContainerProps,
   ): React.ReactElement;
-  export function BarChart(props: any): React.ReactElement;
-  export function AreaChart(props: any): React.ReactElement;
-  export function LineChart(props: any): React.ReactElement;
-  export function XAxis(props: any): React.ReactElement;
-  export function YAxis(props: any): React.ReactElement;
-  export function CartesianGrid(props: any): React.ReactElement;
-  export function Tooltip(props: any): React.ReactElement;
-  export function Bar(props: any): React.ReactElement;
-  export function Area(props: any): React.ReactElement;
-  export function Line(props: any): React.ReactElement;
+  export function BarChart(props: Record<string, unknown>): React.ReactElement;
+  export function AreaChart(props: Record<string, unknown>): React.ReactElement;
+  export function LineChart(props: Record<string, unknown>): React.ReactElement;
+  export function XAxis(props: Record<string, unknown>): React.ReactElement;
+  export function YAxis(props: Record<string, unknown>): React.ReactElement;
+  export function CartesianGrid(
+    props: Record<string, unknown>,
+  ): React.ReactElement;
+  export function Tooltip(props: Record<string, unknown>): React.ReactElement;
+  export function Bar(props: Record<string, unknown>): React.ReactElement;
+  export function Area(props: Record<string, unknown>): React.ReactElement;
+  export function Line(props: Record<string, unknown>): React.ReactElement;
 }

@@ -42,6 +42,23 @@ export interface Portfolio {
   byDirection: { long: number; short: number };
 }
 
+interface SymbolRow {
+  symbol: string;
+  trades: number;
+  wins: number;
+  realized_pnl: number;
+  avg_pnl: number;
+  longs: number;
+  shorts: number;
+}
+
+interface StrategyRow {
+  strategy: string;
+  trades: number;
+  realized_pnl: number;
+  wins: number;
+}
+
 @Injectable()
 export class PortfolioService {
   async getPortfolio(userId: string): Promise<Portfolio> {
@@ -115,7 +132,7 @@ export class PortfolioService {
       vengeanceTrades: Number(s.vengeance_count ?? 0),
     };
 
-    const symbolRows = rowsOf(symbolsRes) as any[];
+    const symbolRows = rowsOf(symbolsRes) as unknown as SymbolRow[];
     const totalAbsPnl = symbolRows.reduce(
       (acc, r) => acc + Math.abs(Number(r.realized_pnl ?? 0)),
       0,
@@ -137,7 +154,7 @@ export class PortfolioService {
       };
     });
 
-    const strategyRows = rowsOf(strategiesRes) as any[];
+    const strategyRows = rowsOf(strategiesRes) as unknown as StrategyRow[];
     const strategies: StrategyAttribution[] = strategyRows.map((r) => {
       const trades = Number(r.trades ?? 0);
       const wins = Number(r.wins ?? 0);

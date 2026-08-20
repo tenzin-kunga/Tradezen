@@ -65,9 +65,9 @@ export async function runMigrations() {
       );
       await client.query('COMMIT');
       console.log(`[migrations] ✓ ${file}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       await client.query('ROLLBACK');
-      if (err?.code === '42P07') {
+      if ((err as { code?: string } | null)?.code === '42P07') {
         console.log(`[migrations] ⚠ ${file} skipped (object already exists)`);
         await pool.query(
           'INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING',
@@ -82,7 +82,7 @@ export async function runMigrations() {
     }
   }
 
-  const tradesTableExists = await pool.query(
+  const tradesTableExists = await pool.query<{ exists: boolean }>(
     `SELECT EXISTS (
       SELECT 1 FROM information_schema.tables
       WHERE table_schema = 'public' AND table_name = 'trades'

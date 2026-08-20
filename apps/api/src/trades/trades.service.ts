@@ -28,6 +28,102 @@ import type { Response } from 'express';
 
 const CSV_EXPORT_CHUNK = 500;
 
+interface AnalyticsSummaryRow {
+  total_trades: number;
+  total_pnl: number;
+  win_count: number;
+  loss_count: number;
+  gross_profit: number;
+  gross_loss: number;
+  best_trade: number;
+  worst_trade: number;
+  avg_win: number;
+  avg_loss: number;
+  fomo_count: number;
+  vengeance_count: number;
+  trend_aligned_count: number;
+}
+interface PnlRow {
+  pnl: number;
+}
+interface MaxDrawdownRow {
+  max_drawdown: number;
+}
+interface AvgRrRow {
+  avg_rr: number;
+}
+interface StrategyRow {
+  name: string;
+  trades: number;
+  wins: number;
+  pnl: number;
+}
+interface DayOfWeekRow {
+  dow: number;
+  trades: number;
+  wins: number;
+  pnl: number;
+}
+interface MonthRow {
+  month: string;
+  trades: number;
+  wins: number;
+  pnl: number;
+}
+interface AdvancedTradeRow {
+  pnl: number;
+  symbol: string;
+  direction: string;
+  trade_date: string;
+  created_at: string;
+}
+interface StrategyMonthlyRow {
+  month: string;
+  trades: number;
+  pnl: number;
+  win_rate: number;
+}
+
+export interface TradeAnalytics {
+  totalTrades: number;
+  totalPnl: number;
+  winRate: number;
+  profitFactor: number;
+  avgWin: number;
+  avgLoss: number;
+  expectancy: number;
+  maxConsecutiveWins: number;
+  maxConsecutiveLosses: number;
+  maxDrawdown: number;
+  bestTrade: number;
+  worstTrade: number;
+  avgRR: number;
+  byStrategy: {
+    name: string;
+    trades: number;
+    wins: number;
+    winRate: number;
+    pnl: number;
+  }[];
+  byDayOfWeek: {
+    day: string;
+    trades: number;
+    winRate: number;
+    pnl: number;
+  }[];
+  byMonth: {
+    month: string;
+    trades: number;
+    winRate: number;
+    pnl: number;
+  }[];
+  behavioralStats: {
+    fomoCount: number;
+    vengeanceCount: number;
+    trendAlignedCount: number;
+  };
+}
+
 export interface StrategyPerformance {
   strategy: string;
   totalTrades: number;
@@ -171,7 +267,7 @@ function computeMaxConsecutive(pnls: number[]) {
 export class TradesService {
   private analyticsCache = new Map<
     string,
-    { data: unknown; expiresAt: number }
+    { data: TradeAnalytics; expiresAt: number }
   >();
   private readonly csvUtils = new CsvUtils();
 
@@ -577,7 +673,7 @@ export class TradesService {
     return result;
   }
 
-  async getAnalytics(userId: string) {
+  async getAnalytics(userId: string): Promise<TradeAnalytics> {
     const cacheKey = `analytics:${userId}`;
     const cached = this.analyticsCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
@@ -666,7 +762,7 @@ export class TradesService {
       `),
     ]);
 
-    const s = summaryRes[0] as any;
+    const s = summaryRes[0] as unknown as AnalyticsSummaryRow;
     const totalTrades = Number(s?.total_trades ?? 0);
     if (totalTrades === 0) {
       return {
@@ -704,11 +800,17 @@ export class TradesService {
     const avgLoss = Number(s.avg_loss);
     const expectancy = winRateRatio * avgWin - (1 - winRateRatio) * avgLoss;
 
-    const pnls = pnlSeriesRes.map((r: any) => Number(r.pnl));
+    const pnls = (pnlSeriesRes as unknown as PnlRow[]).map((r) =>
+      Number(r.pnl),
+    );
     const { maxConsWins, maxConsLosses } = computeMaxConsecutive(pnls);
 
-    const maxDrawdown = Number((maxDdRes[0] as any)?.max_drawdown ?? 0);
-    const avgRR = Number((avgRrRes[0] as any)?.avg_rr ?? 0);
+    const maxDrawdown = Number(
+      (maxDdRes[0] as unknown as MaxDrawdownRow | undefined)?.max_drawdown ?? 0,
+    );
+    const avgRR = Number(
+      (avgRrRes[0] as unknown as AvgRrRow | undefined)?.avg_rr ?? 0,
+    );
 
     const dayNames = [
       'Sunday',
@@ -719,19 +821,20 @@ export class TradesService {
       'Friday',
       'Saturday',
     ];
-    const byStrategy = (strategyRes as any[]).map((r: any) => ({
+    const byStrategy = (strategyRes as unknown as StrategyRow[]).map((r) => ({
       name: r.name,
       trades: Number(r.trades),
+      wins: Number(r.wins),
       winRate: Number(r.trades) > 0 ? Number(r.wins) / Number(r.trades) : 0,
       pnl: Number(r.pnl),
     }));
-    const byDayOfWeek = (dowRes as any[]).map((r: any) => ({
+    const byDayOfWeek = (dowRes as unknown as DayOfWeekRow[]).map((r) => ({
       day: dayNames[Number(r.dow) % 7],
       trades: Number(r.trades),
       winRate: Number(r.trades) > 0 ? Number(r.wins) / Number(r.trades) : 0,
       pnl: Number(r.pnl),
     }));
-    const byMonth = (monthRes as any[]).map((r: any) => ({
+    const byMonth = (monthRes as unknown as MonthRow[]).map((r) => ({
       month: r.month,
       trades: Number(r.trades),
       winRate: Number(r.trades) > 0 ? Number(r.wins) / Number(r.trades) : 0,
@@ -798,7 +901,7 @@ export class TradesService {
       `),
     ]);
 
-    const allTrades = tradesRes as any[];
+    const allTrades = tradesRes as unknown as AdvancedTradeRow[];
     if (allTrades.length === 0) {
       return {
         sharpeRatio: 0,
@@ -817,7 +920,9 @@ export class TradesService {
 
     const pnls = allTrades.map((t) => Number(t.pnl));
     const totalPnl = pnls.reduce((a, b) => a + b, 0);
-    const maxDrawdown = Number((maxDdRes[0] as any)?.max_drawdown ?? 0);
+    const maxDrawdown = Number(
+      (maxDdRes[0] as unknown as MaxDrawdownRow | undefined)?.max_drawdown ?? 0,
+    );
 
     const dailyReturns = pnls.map((pnl) => {
       const prevEquity = pnls
@@ -1046,12 +1151,14 @@ export class TradesService {
       ORDER BY month ASC
     `);
 
-    const monthly = (monthlyRes as any[]).map((r: any) => ({
-      month: r.month,
-      trades: Number(r.trades),
-      pnl: Math.round(Number(r.pnl) * 100) / 100,
-      winRate: Number(r.win_rate),
-    }));
+    const monthly = (monthlyRes as unknown as StrategyMonthlyRow[]).map(
+      (r) => ({
+        month: r.month,
+        trades: Number(r.trades),
+        pnl: Math.round(Number(r.pnl) * 100) / 100,
+        winRate: Number(r.win_rate),
+      }),
+    );
 
     return { strategy: strategyName, monthly };
   }

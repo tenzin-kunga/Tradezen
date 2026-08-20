@@ -125,9 +125,9 @@ describe('portfolio.rules', () => {
           byDirection: { long: 10, short: 10 },
         },
       });
-      const strat = (ctx as any).portfolio.strategies[0];
+      const strat = ctx.portfolio.strategies[0];
       strat.trades = MIN_STRATEGY_TRADES + 10;
-      (ctx as any).portfolio.summary.totalTrades = MIN_STRATEGY_TRADES + 10;
+      ctx.portfolio.summary.totalTrades = MIN_STRATEGY_TRADES + 10;
 
       const cards = portfolioRules.generate(ctx);
       expect(

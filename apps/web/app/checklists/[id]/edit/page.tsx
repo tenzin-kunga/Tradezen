@@ -25,7 +25,7 @@ export default function EditChecklistPage() {
         setName(t.name);
         setDescription(t.description ?? "");
         setItems(
-          t.items.map((it: any) => ({
+          t.items.map((it) => ({
             title: it.title,
             isCritical: it.isCritical,
           })),
@@ -43,7 +43,7 @@ export default function EditChecklistPage() {
   }
   function updateItem(i: number, field: keyof Item, value: string | boolean) {
     const next = [...items];
-    (next[i] as any)[field] = value;
+    next[i] = { ...next[i], [field]: value };
     setItems(next);
   }
   function moveItem(i: number, dir: -1 | 1) {

@@ -20,11 +20,12 @@ function makeCatalog(): ToolCatalog {
       },
     },
     executor: {
-      execute: async () => ({
-        content: '{"winRate":0.5}',
-        success: true,
-        metadata: { latencyMs: 1, source: 'test' },
-      }),
+      execute: () =>
+        Promise.resolve({
+          content: '{"winRate":0.5}',
+          success: true,
+          metadata: { latencyMs: 1, source: 'test' },
+        }),
     },
   };
   catalog.register(spec);
@@ -65,7 +66,7 @@ describe('Planner', () => {
       model: 'm',
       usage: { prompt_tokens: 1, completion_tokens: 1 },
     };
-    const d = planner.decide(resp, 3) as any;
+    const d = planner.decide(resp, 3);
     expect(d.kind).toBe('max_iterations');
   });
 });
@@ -121,7 +122,7 @@ describe('AgentRuntime', () => {
   function fakeClient(responses: ChatResponse[]): AIClient {
     let i = 0;
     return {
-      complete: async () => responses[Math.min(i++, responses.length - 1)],
+      complete: () => responses[Math.min(i++, responses.length - 1)],
     } as unknown as AIClient;
   }
 

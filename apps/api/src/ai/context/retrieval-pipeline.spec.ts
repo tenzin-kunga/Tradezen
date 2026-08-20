@@ -24,14 +24,15 @@ function makeProvider(
     }),
     dataCompleteness: () => 0.5,
     supports: () => true,
-    build: async (): Promise<ContextBlock> => ({
-      source: id,
-      title: id,
-      priority: 10,
-      freshness: new Date(),
-      tokens: 10,
-      content: `${id} data`,
-    }),
+    build: (): Promise<ContextBlock> =>
+      Promise.resolve({
+        source: id,
+        title: id,
+        priority: 10,
+        freshness: new Date(),
+        tokens: 10,
+        content: `${id} data`,
+      }),
     ...overrides,
   };
 }
@@ -180,7 +181,7 @@ describe('RetrievalPipeline', () => {
 
     it('handles provider errors gracefully', async () => {
       const p = makeProvider('a', {
-        build: async () => {
+        build: () => {
           throw new Error('db timeout');
         },
       });
@@ -193,7 +194,7 @@ describe('RetrievalPipeline', () => {
 
     it('trims blocks that exceed budget', async () => {
       const p = makeProvider('a', {
-        build: async () => makeBlock('a', 500),
+        build: () => Promise.resolve(makeBlock('a', 500)),
         score: () => ({ provider: 'a', score: 0.5, reasons: [] }),
       });
       // Budget of 100 tokens — block is 500
@@ -246,7 +247,7 @@ describe('RetrievalPipeline', () => {
   describe('buildTrace (via execute)', () => {
     it('includes budget allocated and used', async () => {
       const p = makeProvider('a', {
-        build: async () => makeBlock('a', 50),
+        build: () => Promise.resolve(makeBlock('a', 50)),
         score: () => ({ provider: 'a', score: 1.0, reasons: ['match'] }),
       });
       const pipeline = new RetrievalPipeline([p], 1000);

@@ -6,6 +6,16 @@ import { rowsOf } from '../../corpus-baseline.service';
 import type { SemanticDocument, EmbeddingRecord } from './types';
 import type { Chunk } from './chunker';
 
+interface SearchRow {
+  id: string;
+  sourceType: string;
+  sourceId: string;
+  chunkIndex: number;
+  content: string;
+  similarity: number | string;
+  metadata: string | Record<string, unknown>;
+}
+
 export interface ModelInfo {
   model: string;
   version: number;
@@ -86,7 +96,8 @@ export class PostgresEmbeddingRepository implements EmbeddingRepository {
       LIMIT ${limit}
     `);
 
-    return rowsOf(results).map((r: any) => ({
+    const rows = rowsOf(results) as unknown as SearchRow[];
+    return rows.map((r) => ({
       id: r.id,
       sourceType: r.sourceType,
       sourceId: r.sourceId,
@@ -94,7 +105,9 @@ export class PostgresEmbeddingRepository implements EmbeddingRepository {
       content: r.content,
       similarity: Number(r.similarity),
       metadata:
-        typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata,
+        typeof r.metadata === 'string'
+          ? (JSON.parse(r.metadata) as Record<string, unknown>)
+          : r.metadata,
     }));
   }
 

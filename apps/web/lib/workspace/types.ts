@@ -67,7 +67,7 @@ export interface WorkspaceCapability {
 
 export interface RouteConfig {
   path: string;
-  component: React.ComponentType;
+  component: React.ComponentType<{ resource: WorkspaceResource }>;
   title?: string;
 }
 

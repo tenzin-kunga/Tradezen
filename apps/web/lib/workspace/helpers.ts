@@ -1,11 +1,11 @@
 import type { ComponentType } from "react";
 import type { RouteConfig, WorkspaceModule } from "./types";
+import type { WorkspaceResource } from "./types";
 import { RouteCapability } from "./types";
 import { getModuleRegistry } from "./module-registry";
 
 export interface ResolvedModule {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  component: ComponentType<any>;
+  component: ComponentType<{ resource: WorkspaceResource }>;
   route: RouteConfig;
   module: WorkspaceModule;
 }
@@ -28,9 +28,8 @@ export function resolveModuleComponent(
   const route = getDefaultRoute(mod);
   if (!route) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return {
-    component: route.component as ComponentType<any>,
+    component: route.component,
     route,
     module: mod,
   };

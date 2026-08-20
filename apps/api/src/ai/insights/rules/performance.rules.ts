@@ -5,11 +5,11 @@ import { SESSION_GAP_WR } from '../thresholds';
 
 export const performanceRules: InsightSource = {
   generate(ctx: InsightContext): InsightCandidate[] {
-    const analytics = ctx.analytics as any;
+    const analytics = ctx.analytics;
     const candidates: InsightCandidate[] = [];
 
     const byStrategy = analytics.byStrategy ?? [];
-    const validStrategies = byStrategy.filter((s: any) => s.trades >= 5);
+    const validStrategies = byStrategy.filter((s) => s.trades >= 5);
     if (validStrategies.length > 0) {
       const best = validStrategies[0];
       const wr =
@@ -39,7 +39,7 @@ export const performanceRules: InsightSource = {
 
     const sessions = ctx.behavior.timePatterns?.bySession ?? [];
     if (sessions.length >= 2) {
-      sessions.sort((a: any, b: any) => b.trades - a.trades);
+      sessions.sort((a, b) => b.trades - a.trades);
       const top = sessions[0];
       const bottom = sessions[sessions.length - 1];
       if (top.trades >= 5 && bottom.trades >= 3) {
@@ -73,11 +73,11 @@ export const performanceRules: InsightSource = {
 
     const bestDay = analytics.byDayOfWeek
       ?.slice()
-      ?.sort((a: any, b: any) => b.pnl - a.pnl)[0];
+      ?.sort((a, b) => b.pnl - a.pnl)[0];
     if (bestDay && bestDay.trades >= 5) {
       const worstDay = analytics.byDayOfWeek
         ?.slice()
-        ?.sort((a: any, b: any) => a.pnl - b.pnl)[0];
+        ?.sort((a, b) => a.pnl - b.pnl)[0];
       candidates.push({
         priority: 9,
         card: {

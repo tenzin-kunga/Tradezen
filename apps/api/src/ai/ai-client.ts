@@ -51,6 +51,27 @@ export interface ChatResponse {
   usage: { prompt_tokens: number; completion_tokens: number };
 }
 
+interface ChatCompletionToolCall {
+  id?: string;
+  function?: { name?: string; arguments?: string };
+}
+
+interface ChatCompletionResponse {
+  choices?: {
+    message?: {
+      content?: string | null;
+      tool_calls?: ChatCompletionToolCall[];
+    };
+  }[];
+  model?: string;
+  usage?: { prompt_tokens?: number; completion_tokens?: number };
+}
+
+interface StreamChunk {
+  usage?: { prompt_tokens?: number; completion_tokens?: number };
+  choices?: { delta?: { content?: string } }[];
+}
+
 const RETRYABLE_STATUSES = new Set([502, 503, 504]);
 
 const enum CircuitState {
@@ -139,7 +160,7 @@ export class AIClient {
           throw new AIServiceResponseError(resp.status, body);
         }
 
-        const data = await resp.json();
+        const data = (await resp.json()) as unknown as ChatCompletionResponse;
         const msg = data.choices?.[0]?.message;
         if (!msg) {
           throw new AIServiceResponseError(
@@ -147,17 +168,16 @@ export class AIClient {
             `Empty response from AI service (choices: ${JSON.stringify(data.choices ?? [])})`,
           );
         }
-        const toolCalls: ToolCall[] | undefined =
-          msg.tool_calls
-            ?.filter((tc: any) => tc.id && tc.function?.name)
-            .map((tc: any) => ({
-              id: tc.id as string,
-              type: 'function' as const,
-              function: {
-                name: tc.function.name as string,
-                arguments: tc.function?.arguments ?? '{}',
-              },
-            })) ?? undefined;
+        const toolCalls: ToolCall[] | undefined = msg.tool_calls
+          ?.filter((tc) => !!tc.id && !!tc.function?.name)
+          .map((tc) => ({
+            id: tc.id as string,
+            type: 'function' as const,
+            function: {
+              name: tc.function?.name as string,
+              arguments: tc.function?.arguments ?? '{}',
+            },
+          }));
 
         return {
           content: msg.content ?? '',
@@ -409,7 +429,7 @@ export class AIClient {
           if (payload === '[DONE]') return;
 
           try {
-            const parsed = JSON.parse(payload);
+            const parsed = JSON.parse(payload) as unknown as StreamChunk;
             const usage = parsed?.usage;
             if (usage && typeof usage.prompt_tokens === 'number') {
               onUsage?.({

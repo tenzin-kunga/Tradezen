@@ -23,7 +23,7 @@ export class NotificationTriggersService {
       const behavioral = await this.behavioralService.analyzeBehavior(userId);
 
       // Drawdown alert
-      if ((analytics as any).maxDrawdown > 1000) {
+      if (analytics.maxDrawdown > 1000) {
         const enabled = await this.notificationService.isTypeEnabled(
           userId,
           'drawdown_alert',
@@ -33,8 +33,8 @@ export class NotificationTriggersService {
             userId,
             'drawdown_alert',
             'Significant Drawdown Detected',
-            `Your maximum drawdown is $${(analytics as any).maxDrawdown.toFixed(2)}. Consider reviewing your risk management.`,
-            { maxDrawdown: (analytics as any).maxDrawdown },
+            `Your maximum drawdown is $${analytics.maxDrawdown.toFixed(2)}. Consider reviewing your risk management.`,
+            { maxDrawdown: analytics.maxDrawdown },
           );
         }
       }
@@ -83,7 +83,7 @@ export class NotificationTriggersService {
 
       // Journal reminder (no journal in 3 days)
       const streak = await this.journalsService.getStreak(userId);
-      if ((streak as any).currentStreak === 0) {
+      if (streak.currentStreak === 0) {
         const enabled = await this.notificationService.isTypeEnabled(
           userId,
           'journal_reminder',

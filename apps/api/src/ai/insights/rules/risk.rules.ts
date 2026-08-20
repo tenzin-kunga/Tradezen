@@ -5,7 +5,7 @@ import { REWARD_RISK_THRESHOLD } from '../thresholds';
 
 export const riskRules: InsightSource = {
   generate(ctx: InsightContext): InsightCandidate[] {
-    const analytics = ctx.analytics as any;
+    const analytics = ctx.analytics;
     const candidates: InsightCandidate[] = [];
 
     const avgRR = analytics.avgRR ?? 0;

@@ -23,7 +23,9 @@ jest.mock('../db/drizzle', () => ({
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { db } = require('../db/drizzle');
+const { db } = require('../db/drizzle') as {
+  db: { insert: jest.Mock; select: jest.Mock; update: jest.Mock };
+};
 
 describe('AssetsService', () => {
   let service: AssetsService;
@@ -58,7 +60,7 @@ describe('AssetsService', () => {
       format: 'pdf',
       bytes: 10,
     });
-    (db.insert as jest.Mock).mockReturnValue({
+    db.insert.mockReturnValue({
       values: () => ({
         returning: () =>
           Promise.resolve([
@@ -95,7 +97,7 @@ describe('AssetsService', () => {
   });
 
   it('retryDeletions deletes storage and marks DELETED on success', async () => {
-    (db.select as jest.Mock).mockReturnValue({
+    db.select.mockReturnValue({
       from: () => ({
         where: () => ({
           limit: () =>
@@ -126,7 +128,7 @@ describe('AssetsService', () => {
   });
 
   it('retryDeletions marks FAILED when storage delete throws', async () => {
-    (db.select as jest.Mock).mockReturnValue({
+    db.select.mockReturnValue({
       from: () => ({
         where: () => ({
           limit: () =>

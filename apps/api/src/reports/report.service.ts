@@ -26,6 +26,18 @@ export interface WeeklyReport {
   topInsights: string[];
 }
 
+interface CsvTradeRow {
+  tradeDate: Date | string | null;
+  symbol: string;
+  direction: string;
+  entry?: number | string;
+  exit?: number | string;
+  lot?: number | string;
+  pnl: number | string;
+  strategy?: string | null;
+  notes?: string | null;
+}
+
 @Injectable()
 export class ReportService {
   private readonly logger = new Logger('ReportService');
@@ -49,11 +61,11 @@ export class ReportService {
     return {
       period: `${weekAgo.toLocaleDateString()} - ${now.toLocaleDateString()}`,
       summary: {
-        totalTrades: (analytics as any).totalTrades,
-        totalPnl: (analytics as any).totalPnl,
-        winRate: (analytics as any).winRate,
-        profitFactor: (analytics as any).profitFactor,
-        expectancy: (analytics as any).expectancy,
+        totalTrades: analytics.totalTrades,
+        totalPnl: analytics.totalPnl,
+        winRate: analytics.winRate,
+        profitFactor: analytics.profitFactor,
+        expectancy: analytics.expectancy,
       },
       behavioral: {
         fomoScore: behavioral.fomo.fomoScore,
@@ -62,11 +74,11 @@ export class ReportService {
       },
       coaching: coaching,
       topInsights: [
-        `Win rate: ${(analytics as any).winRate}%`,
-        `Best trade: $${(analytics as any).bestTrade}`,
-        `Worst trade: $${(analytics as any).worstTrade}`,
-        `Current streak: ${(advanced as any).currentStreak?.count || 0} ${(advanced as any).currentStreak?.type || 'none'}`,
-        `Sharpe ratio: ${(advanced as any).sharpeRatio}`,
+        `Win rate: ${analytics.winRate}%`,
+        `Best trade: $${analytics.bestTrade}`,
+        `Worst trade: $${analytics.worstTrade}`,
+        `Current streak: ${advanced.currentStreak?.count || 0} ${advanced.currentStreak?.type || 'none'}`,
+        `Sharpe ratio: ${advanced.sharpeRatio}`,
       ],
     };
   }
@@ -120,7 +132,7 @@ export class ReportService {
       page: 1,
       limit: 10000,
     });
-    const items = (trades as any).data || trades;
+    const items = (trades.data ?? trades) as unknown as CsvTradeRow[];
 
     const headers = [
       'Date',
@@ -133,7 +145,7 @@ export class ReportService {
       'Strategy',
       'Notes',
     ];
-    const rows = items.map((t: any) => [
+    const rows = items.map((t) => [
       t.tradeDate,
       t.symbol,
       t.direction,
@@ -147,7 +159,7 @@ export class ReportService {
 
     const csvContent = [
       headers.join(','),
-      ...rows.map((r: any[]) => r.map((v) => `"${v}"`).join(',')),
+      ...rows.map((r) => r.map((v) => `"${String(v)}"`).join(',')),
     ].join('\n');
     return csvContent;
   }

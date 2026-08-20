@@ -32,7 +32,7 @@ describe('classifyError', () => {
 
   it('classifies ECONNREFUSED as AIServiceUnavailableError', () => {
     const connError = new Error('connect ECONNREFUSED 127.0.0.1:8000');
-    (connError as any).code = 'ECONNREFUSED';
+    (connError as { code?: string }).code = 'ECONNREFUSED';
     const classified = classifyError(connError, baseUrl, timeoutMs);
     expect(classified).toBeInstanceOf(AIServiceUnavailableError);
     expect(classified.message).toContain(baseUrl);
@@ -40,14 +40,14 @@ describe('classifyError', () => {
 
   it('classifies ECONNRESET as AIServiceUnavailableError', () => {
     const resetError = new Error('read ECONNRESET');
-    (resetError as any).code = 'ECONNRESET';
+    (resetError as { code?: string }).code = 'ECONNRESET';
     const classified = classifyError(resetError, baseUrl, timeoutMs);
     expect(classified).toBeInstanceOf(AIServiceUnavailableError);
   });
 
   it('classifies ENOTFOUND as AIServiceUnavailableError', () => {
     const dnsError = new Error('getaddrinfo ENOTFOUND ai-service');
-    (dnsError as any).code = 'ENOTFOUND';
+    (dnsError as { code?: string }).code = 'ENOTFOUND';
     const classified = classifyError(dnsError, baseUrl, timeoutMs);
     expect(classified).toBeInstanceOf(AIServiceUnavailableError);
   });
@@ -66,7 +66,7 @@ describe('classifyError', () => {
 
   it('preserves original cause chain', () => {
     const original = new Error('connection refused');
-    (original as any).code = 'ECONNREFUSED';
+    (original as { code?: string }).code = 'ECONNREFUSED';
     const classified = classifyError(original, baseUrl, timeoutMs);
     expect(classified.cause).toBe(original);
   });

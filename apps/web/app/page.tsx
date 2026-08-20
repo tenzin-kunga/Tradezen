@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type ComponentProps } from "react";
 import {
   getDashboardData,
   getJournalLatest,
   getTrades,
   type DashboardData,
+  type Journal,
 } from "@/lib/api";
+import type { Trade } from "@tradezen/types";
 import DashboardShell from "@/components/DashboardShell";
 import DashboardHero from "@/components/DashboardHero";
 import LiveSessionIndicator from "@/components/LiveSessionIndicator";
@@ -123,8 +125,8 @@ function PerformanceStrip({
 
 export default function Dashboard() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [journalEntry, setJournalEntry] = useState<any>(null);
-  const [recentTrades, setRecentTrades] = useState<any[]>([]);
+  const [journalEntry, setJournalEntry] = useState<Journal | null>(null);
+  const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -196,7 +198,11 @@ export default function Dashboard() {
         case "recent-trades":
           return (
             <RecentTradesWidget
-              trades={recentTrades}
+              trades={
+                recentTrades as unknown as ComponentProps<
+                  typeof RecentTradesWidget
+                >["trades"]
+              }
               onDelete={loadData}
               loading={loading}
             />

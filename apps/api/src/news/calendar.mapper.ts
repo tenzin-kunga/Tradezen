@@ -12,26 +12,51 @@ function normalizeTitle(title: string): string {
     .trim();
 }
 
-export function mapEntry(raw: any): EconomicEvent {
-  const title = raw.title ?? raw.Name ?? raw.name ?? 'Unknown';
-  const country = raw.country ?? raw.Currency ?? '';
-  const currency = raw.currency ?? '';
-  const impact = (
-    raw.impact ??
-    raw.Impact ??
-    'low'
+interface RawCalendarEntry {
+  title?: unknown;
+  Name?: unknown;
+  name?: unknown;
+  country?: unknown;
+  Currency?: unknown;
+  currency?: unknown;
+  impact?: unknown;
+  Impact?: unknown;
+  date?: unknown;
+  Date?: unknown;
+  actual?: unknown;
+  Actual?: unknown;
+  forecast?: unknown;
+  Forecast?: unknown;
+  previous?: unknown;
+  Previous?: unknown;
+}
+
+function str(v: unknown): string {
+  if (typeof v === 'string') return v;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  return '';
+}
+
+export function mapEntry(raw: RawCalendarEntry): EconomicEvent {
+  const title = str(raw.title ?? raw.Name ?? raw.name ?? 'Unknown');
+  const country = str(raw.country ?? raw.Currency ?? '');
+  const currency = str(raw.currency ?? '');
+  const impact = str(
+    raw.impact ?? raw.Impact ?? 'low',
   ).toLowerCase() as EconomicEvent['impact'];
-  let date = raw.date ?? raw.Date ?? '';
+  let date = str(raw.date ?? raw.Date ?? '');
 
   if (/^\d{4}\.\d{2}\.\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(date)) {
     date = date.replace(/(\d{4})\.(\d{2})\.(\d{2})\s+/, '$1-$2-$3T');
   }
 
-  const actual = raw.actual ?? (raw.Actual != null ? String(raw.Actual) : '');
-  const forecast =
-    raw.forecast ?? (raw.Forecast != null ? String(raw.Forecast) : '');
-  const previous =
-    raw.previous ?? (raw.Previous != null ? String(raw.Previous) : '');
+  const actual = str(raw.actual ?? (raw.Actual != null ? raw.Actual : ''));
+  const forecast = str(
+    raw.forecast ?? (raw.Forecast != null ? raw.Forecast : ''),
+  );
+  const previous = str(
+    raw.previous ?? (raw.Previous != null ? raw.Previous : ''),
+  );
 
   let timestamp = '';
   let timeShort = '';
@@ -78,7 +103,7 @@ export async function fetchCalendarEvents(): Promise<EconomicEvent[]> {
       return [];
     }
 
-    const raw = (await res.json()) as any[];
+    const raw = (await res.json()) as RawCalendarEntry[];
     logger.log(`Fetched ${raw.length} raw events from calendar API`);
 
     const events = raw

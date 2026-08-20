@@ -6,7 +6,7 @@ export class MarkdownExtractor implements TextExtractor {
     return mimeType === 'text/markdown' || mimeType === 'text/x-markdown';
   }
 
-  async extract(file: Buffer): Promise<ExtractionResult> {
+  extract(file: Buffer): Promise<ExtractionResult> {
     const raw = file.toString('utf-8');
     // Strip markdown syntax: headers, links, emphasis, code blocks, images
     const text = normalize(
@@ -21,11 +21,11 @@ export class MarkdownExtractor implements TextExtractor {
         .replace(/^>\s+/gm, '')
         .replace(/^---+$/gm, ''),
     );
-    return {
+    return Promise.resolve({
       text,
       wordCount: text.split(/\s+/).filter(Boolean).length,
       language: 'en',
       warnings: [],
-    };
+    });
   }
 }

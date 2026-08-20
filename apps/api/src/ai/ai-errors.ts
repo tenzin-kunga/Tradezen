@@ -65,7 +65,7 @@ export function classifyError(
     return new AITimeoutError(timeoutMs, cause);
   }
 
-  const code = (cause as any).code ?? '';
+  const code = (cause as Error & { code?: string }).code ?? '';
   if (RETRYABLE_CODES.includes(code)) {
     return new AIServiceUnavailableError(baseUrl, cause);
   }

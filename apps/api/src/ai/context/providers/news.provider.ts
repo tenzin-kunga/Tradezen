@@ -67,11 +67,8 @@ export class NewsProvider implements ContextProvider {
     return true;
   }
 
-  async build(
-    _userId: string,
-    _request: ContextRequest,
-  ): Promise<ContextBlock> {
-    return {
+  build(_userId: string, _request: ContextRequest): Promise<ContextBlock> {
+    return Promise.resolve({
       source: 'news',
       title: 'Economic News',
       priority: this.priority,
@@ -79,6 +76,6 @@ export class NewsProvider implements ContextProvider {
       tokens: 20,
       content:
         'Economic calendar: no events loaded (news service pending integration)',
-    };
+    });
   }
 }
