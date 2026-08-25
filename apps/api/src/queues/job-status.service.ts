@@ -26,10 +26,20 @@ export class JobStatusService {
   async getJobStatus(
     queueName: string,
     jobId: string,
+    userId?: string,
   ): Promise<JobStatus | null> {
     const queue = queueName === 'csv-import' ? this.csvQueue : this.aiQueue;
     const job = await queue.getJob(jobId);
     if (!job) return null;
+
+    // Cross-tenant guard: only the job owner may inspect it.
+    if (
+      userId &&
+      (job.data as Record<string, unknown>)?.userId &&
+      (job.data as Record<string, unknown>).userId !== userId
+    ) {
+      return null;
+    }
 
     const state = await job.getState();
     return {
@@ -45,10 +55,14 @@ export class JobStatusService {
     };
   }
 
-  async getJobHistory(queueName: string, limit = 10): Promise<JobStatus[]> {
+  async getJobHistory(
+    queueName: string,
+    userId?: string,
+    limit = 10,
+  ): Promise<JobStatus[]> {
     const queue = queueName === 'csv-import' ? this.csvQueue : this.aiQueue;
     const jobs = await queue.getJobs(['completed', 'failed'], 0, limit - 1);
-    return Promise.all(
+    const statuses = await Promise.all(
       jobs.map(async (job) => {
         const state = await job.getState();
         return {
@@ -64,5 +78,8 @@ export class JobStatusService {
         };
       }),
     );
+    // Cross-tenant guard: hide jobs that don't belong to the caller.
+    if (!userId) return statuses;
+    return statuses.filter((s) => s.data?.userId === userId);
   }
 }

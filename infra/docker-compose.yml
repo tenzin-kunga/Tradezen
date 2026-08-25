@@ -114,7 +114,7 @@ services:
       GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-http://localhost:3001/auth/github/callback}
       SENTRY_DSN: ${SENTRY_DSN:-}
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8000}
-      AI_SERVICE_API_KEY: ${NESTJS_INTERNAL_API_KEY:-tradezen-internal}
+      AI_SERVICE_API_KEY: ${NESTJS_INTERNAL_API_KEY:?NESTJS_INTERNAL_API_KEY is required}
       AI_MODEL: ${AI_MODEL:-qwen3:latest}
     depends_on:
       postgres:
@@ -143,13 +143,17 @@ services:
     volumes:
       - ../scripts/db:/scripts:ro
       - ../backups:/backups
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - RETENTION_DAYS=30
+      - DB_HOST=postgres
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
+      - DB_NAME=${DB_NAME:-tradezen}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        echo "0 2 * * * /scripts/backup.sh /backups" > /etc/crontabs/root
+        apk add --no-cache postgresql-client >/dev/null 2>&1
+        echo "0 2 * * * /scripts/backup.sh /backups >> /backups/backup.log 2>&1" > /etc/crontabs/root
         crond -f -l 2
     depends_on:
       postgres:
@@ -210,7 +214,7 @@ services:
       DEFAULT_MODEL: ${DEFAULT_MODEL:-qwen3:4b}
       OLLAMA_HOST: http://ollama:11434
       AUTH_SECRET: ${JWT_SECRET}
-      NESTJS_INTERNAL_API_KEY: ${NESTJS_INTERNAL_API_KEY:-tradezen-internal}
+      NESTJS_INTERNAL_API_KEY: ${NESTJS_INTERNAL_API_KEY:?NESTJS_INTERNAL_API_KEY is required}
       MAX_CONCURRENT_OLLAMA: ${MAX_CONCURRENT_OLLAMA:-4}
       DAILY_COST_BUDGET: ${DAILY_COST_BUDGET:-20.0}
     depends_on:

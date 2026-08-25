@@ -1,78 +1,83 @@
-# TradeZen — Carbon Ledger
+# TradeZen
 
-A professional trading journal web app with a Glass Depth design system. Track trades, analyze performance, maintain a daily journal, and tag trades for organization — with AI-powered coaching and insights.
+A professional trading journal and analytics platform — log trades, track behavior, journal daily, and get AI-powered coaching and insights.
 
-**Live:** [tradezen-tampered-sins-projects.vercel.app](https://tradezen-tampered-sins-projects.vercel.app)
-
-[![CI/CD Pipeline](https://github.com/tampered-sin/Tradezen/actions/workflows/ci.yml/badge.svg)](https://github.com/tampered-sin/Tradezen/actions/workflows/ci.yml)
+[![CI](https://github.com/tenzin-kunga/Tradezen/actions/workflows/ci.yml/badge.svg)](https://github.com/tenzin-kunga/Tradezen/actions/workflows/ci.yml)
 
 ## Tech Stack
 
-| Layer          | Technology                                                                  |
-| -------------- | --------------------------------------------------------------------------- |
-| **Frontend**   | Next.js 14.2, React 18.2, Tailwind CSS v3.4, shadcn/ui, Recharts            |
-| **Backend**    | NestJS 11, tRPC, Socket.IO, Passport JWT + OAuth (Google/GitHub)             |
-| **Database**   | PostgreSQL 16 + pgvector, Drizzle ORM, Redis 7, BullMQ                       |
-| **AI**         | LangChain/LangGraph (OpenRouter) + Python FastAPI service (Ollama optional)  |
-| **Monorepo**   | Bun workspaces + Turborepo                                                  |
-| **Deployment** | Vercel (web) + Render (API) + Neon (DB) / Docker Compose (local)             |
+| Layer        | Technology                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| **Frontend** | Next.js 14.2, React 18.2, Tailwind CSS v3, shadcn/ui, Recharts, lightweight-charts, tRPC client   |
+| **Backend**  | NestJS 11, tRPC, Socket.IO, BullMQ, Passport JWT + OAuth (Google/GitHub)                          |
+| **Database** | PostgreSQL 16 + pgvector, Drizzle ORM, Redis 7                                                    |
+| **AI**       | LangChain / LangGraph (API) + Python FastAPI ai-service; per-user API keys; optional local Ollama |
+| **Monorepo** | Bun workspaces + Turborepo                                                                        |
 
 ## Features
 
-- **Authentication** — JWT access tokens + HTTP-only refresh cookies, OAuth (Google/GitHub)
-- **Trade Logging** — Full CRUD with symbol, direction, entry/exit, lot size, stop loss, take profit, strategy, notes
-- **Behavioral Tracking** — FOMO check, trend alignment, vengeance trade flags
-- **Analytics Dashboard** — Win rate, profit factor, expectancy, max drawdown, Sharpe ratio, day-of-week performance, equity curve
-- **Daily Journal** — Pre/post market notes, mood tracking, market conditions, lessons learned, streak tracking
+- **Authentication** — JWT access tokens + HTTP-only refresh cookies, OAuth (Google/GitHub), and TOTP two-factor authentication
+- **Trade logging** — Full CRUD with symbol, direction, entry/exit, lot size, stop loss, take profit, strategy, notes
+- **Behavioral tracking** — FOMO check and revenge-trade flags, behavioral analytics
+- **Analytics** — Win rate, profit factor, expectancy, drawdown, Sharpe ratio, day-of-week performance, equity curve, dashboard snapshots
+- **CSV import/export** — Bulk export and async CSV import (BullMQ)
+- **Daily journal** — Pre/post-market notes, mood, market conditions, lessons learned, streak tracking
 - **Tags** — Color-coded tags with categories, attach to trades for filtering
-- **CSV Export** — Export trades to CSV
-- **AI Chat** — OpenRouter integration for trade analysis assistance
-- **AI Insights** — Deterministic coaching cards across Performance / Discipline / Risk / Consistency, plus an AI-generated portfolio narrative and proactive coaching delivery via real-time notifications
-- **Glass Depth UI** — Modern glass morphism design with cyan/emerald accents
-- **Swagger Docs** — Interactive API docs at `/api/docs` (dev only)
+- **Reports** — PDF reports (generated with `@react-pdf/renderer`)
+- **Calendar** — Trade and journal entries by date
+- **Checklists** — Reusable trading checklists
+- **Position size calculator** — Risk-based sizing
+- **AI assistant** — Streaming chat with per-user provider/model configuration
+- **AI insights & coaching** — Deterministic behavioral coaching cards plus proactive real-time notifications
+- **Knowledge base** — Document ingestion, RAG retrieval, memory (via ai-service)
+- **Research** — AI-assisted research reports
+- **Watchlist** — Track symbols of interest
+- **News** — Symbol/economic-news events feed
+- **Workspace system** — Modular workspace (`knowledge`, `memory`, `research`, `watchlist`)
+- **Glass Depth UI** — Glass-morphism design system with cyan/emerald accents
+- **Swagger** — Interactive API docs at `/api/docs` (dev only)
 
 ## Project Structure
 
 ```
 tradezen/
 ├── apps/
-│   ├── api/          # NestJS backend (auth, trades, journals, tags, chat, WebSocket, tRPC)
-│   ├── web/          # Next.js frontend (dashboard, trade log, analytics, journal, calendar)
-│   └── ai-service/   # Python FastAPI AI service (agents, retrieval, prompts)
+│   ├── api/          # NestJS backend (auth, trades, analytics, chat, AI, WebSocket, tRPC, BullMQ)
+│   ├── web/          # Next.js frontend (dashboard, trade log, analytics, journal, workspace)
+│   └── ai-service/   # Python FastAPI AI service (chat, coaching, research, RAG, OpenAI-compat)
 ├── packages/
 │   ├── db/           # @tradezen/db — Drizzle schema + connection + types
 │   ├── types/        # Shared TypeScript types
 │   ├── ui/           # Shared UI components
 │   ├── eslint-config/# ESLint configs
 │   └── typescript-config/ # TSConfig presets
-├── docs/             # Project documentation
-├── infra/            # Docker Compose (PostgreSQL, Redis, Ollama)
-├── scripts/          # Dev orchestrator, utility scripts
+├── docs/             # Project documentation (architecture, decisions, planning, specs)
+├── infra/            # Docker Compose (Postgres, Redis, API, Web, AI service, Ollama)
+├── scripts/          # Dev orchestrator, DB backup, utility scripts
 ├── .githooks/        # Git hooks (pre-commit secret scanning)
-└── .env.docker.example # Environment template
+├── .env.docker.example # Docker Compose environment template
+├── .env.dev.example  # Dev launcher overrides template
+└── bun.lock          # Authoritative lockfile
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- **Bun 1.3+** — see [Gotchas](#gotchas), lockfile is `bun.lock`
+- **Bun 1.3+** — package manager; lockfile is `bun.lock` (see [Gotchas](#gotchas))
 - Docker Desktop (for local PostgreSQL + Redis)
 
 ### Quick Start
 
 ```sh
 bun install
-bun run doctor      # verify your environment (Bun, Docker, Postgres, Redis, venv, ...)
+bun run doctor      # verify your environment (Bun, Docker, Postgres, Redis, Python venv, ...)
 bun run dev:all     # launch API (3001) + Web (3000) + AI (8000) with hot reload
 ```
 
-`bun run dev:all` is the one-command, cross-platform launcher. It ensures Docker is up,
-starts infrastructure with health checks, builds `@tradezen/db`, and opens each service
-in its **own terminal window** (API, Web, AI) so their output stays separate. Close a
-window to stop that service; the database and Redis keep running between sessions.
+`bun run dev:all` is the one-command, cross-platform launcher. It ensures Docker is up, starts infrastructure with health checks, builds `@tradezen/db`, and opens each service in its **own terminal window**. Close a window to stop that service; the database and Redis keep running between sessions.
 
-The Windows `scripts/dev/start.bat` is now just a thin wrapper that calls `bun run dev:all`.
+The Windows `scripts/dev/start.bat` is a thin wrapper that calls `bun run dev:all`.
 
 ### Individual commands
 
@@ -86,198 +91,195 @@ bun run dev:ai        # run only the AI service (needs its Python venv)
 bun run dev:all       # run everything
 ```
 
-To enable the local Ollama LLM, copy `.env.dev.example` to `.env.dev` and set
-`ENABLE_OLLAMA=true`. Set `AUTO_PULL_OLLAMA=true` to have the launcher pull the
-default model (`qwen3:4b`) automatically; otherwise it prints the pull command.
+### Ollama (optional, local LLM)
+
+Copy `.env.dev.example` to `.env.dev` and set `ENABLE_OLLAMA=true` to start the local Ollama LLM via the `ai` Docker Compose profile (needs ~4GB RAM+). Set `AUTO_PULL_OLLAMA=true` to have the launcher pull the default model (`qwen3:4b`) automatically; otherwise it prints the pull command. When disabled, the app uses cloud providers via per-user keys.
 
 ### Manual Setup (Docker only)
 
 ```sh
-# Configure environment
-cp .env.docker.example .env.docker
-# Edit .env.docker with your values
-
-# Start infrastructure
+cp .env.docker.example .env.docker   # then edit with your values
 docker compose --file infra/docker-compose.yml --env-file .env.docker up -d postgres redis
-
-# Start both apps
 bun run dev
 ```
 
-### Environment Variables
+## Environment Variables
 
-**Docker** (`.env.docker`) — copy from `.env.docker.example`:
+### `.env.docker` (Docker Compose) — copy from `.env.docker.example`
 
-| Variable             | Default                 | Description                         |
-| -------------------- | ----------------------- | ----------------------------------- |
-| `DB_PASSWORD`        | _(required)_            | PostgreSQL password                 |
-| `JWT_SECRET`         | _(required)_            | JWT signing secret (min 64 chars)   |
-| `JWT_REFRESH_SECRET` | _(required)_            | Refresh token secret (min 64 chars) |
-| `WEB_URL`            | `http://localhost:3000` | Frontend URL (CORS origin)          |
+| Variable                                             | Required | Description                                                       |
+| ---------------------------------------------------- | -------- | ----------------------------------------------------------------- |
+| `DB_PASSWORD`                                        | yes      | PostgreSQL password                                               |
+| `JWT_SECRET`                                         | yes      | JWT signing secret (min 64 chars)                                 |
+| `JWT_REFRESH_SECRET`                                 | yes      | Refresh-token secret (min 64 chars)                               |
+| `KEY_ENCRYPTION_SECRET`                              | yes      | 64-hex-char key for encrypting per-user AI keys at rest           |
+| `WEB_URL`                                            | local    | Frontend URL (CORS origin)                                        |
+| `DATABASE_URL`                                       | opt      | Full connection string (takes precedence over individual DB vars) |
+| `AI_PROVIDER`                                        | local    | AI provider (`ollama` or cloud)                                   |
+| `DEFAULT_MODEL`                                      | local    | Default model name                                                |
+| `OLLAMA_HOST`                                        | local    | Ollama endpoint (compose sets `http://ollama:11434`)              |
+| `NESTJS_INTERNAL_API_KEY`                            | local    | Internal auth key between API and ai-service                      |
+| `MAX_CONCURRENT_OLLAMA`                              | local    | Concurrent Ollama requests                                        |
+| `DAILY_COST_BUDGET`                                  | local    | Daily AI spend budget (USD)                                       |
+| `CLOUDINARY_*`                                       | opt      | Image storage credentials (Cloudinary)                            |
+| `FINNHUB_API_KEY`                                    | opt      | Market-data/news provider key                                     |
+| `GOOGLE_CLIENT_ID/SECRET`, `GITHUB_CLIENT_ID/SECRET` | opt      | OAuth credentials + callback URLs                                 |
 
-**API** (`apps/api/.env`) — development defaults:
+> Cloud AI keys are per-user (set in the Settings UI, encrypted in the DB) — no server-side key is required.
 
-| Variable   | Default       | Description      |
-| ---------- | ------------- | ---------------- |
-| `DB_HOST`  | `localhost`   | Database host    |
-| `DB_PORT`  | `5432`        | Database port    |
-| `DB_USER`  | `postgres`    | Database user    |
-| `DB_NAME`  | `tradezen`    | Database name    |
-| `NODE_ENV` | `development` | Environment mode |
+### `.env.dev` (dev launcher) — copy from `.env.dev.example`
 
-**Web** (`apps/web/`):
+| Variable           | Default | Description                                     |
+| ------------------ | ------- | ----------------------------------------------- |
+| `ENABLE_OLLAMA`    | `false` | Start local Ollama via the `ai` compose profile |
+| `AUTO_PULL_OLLAMA` | unset   | Auto-pull the default Ollama model on launch    |
 
-| Variable              | Default                 | Description     |
-| --------------------- | ----------------------- | --------------- |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:3001` | Backend API URL |
+### API (`apps/api/.env`)
 
-> AI API keys are per-user (set in the Settings UI, encrypted in DB) — no server-side key.
+| Variable                                                                | Default                 | Description                          |
+| ----------------------------------------------------------------------- | ----------------------- | ------------------------------------ |
+| `DATABASE_URL`                                                          | _(unset)_               | Full connection string (prod)        |
+| `DB_HOST`                                                               | `localhost`             | Database host                        |
+| `DB_PORT`                                                               | `5432`                  | Database port                        |
+| `DB_USER`                                                               | `postgres`              | Database user                        |
+| `DB_PASSWORD`                                                           | —                       | Database password                    |
+| `DB_NAME`                                                               | `tradezen`              | Database name                        |
+| `JWT_SECRET`                                                            | —                       | JWT signing secret (min 64 chars)    |
+| `JWT_REFRESH_SECRET`                                                    | —                       | Refresh-token secret (min 64 chars)  |
+| `KEY_ENCRYPTION_SECRET`                                                 | —                       | Key-encryption secret (64 hex chars) |
+| `PORT`                                                                  | `3001`                  | API listen port                      |
+| `WEB_URL`                                                               | `http://localhost:3000` | Allowed CORS origin                  |
+| `AI_SERVICE_URL`                                                        | `http://localhost:8000` | AI service base URL                  |
+| `NODE_ENV`                                                              | `development`           | Environment mode                     |
+| `GOOGLE_CLIENT_*`, `GITHUB_CLIENT_*`, `CLOUDINARY_*`, `FINNHUB_API_KEY` | —                       | Optional service credentials         |
+
+### Web (`apps/web/.env`)
+
+| Variable                       | Default                 | Description            |
+| ------------------------------ | ----------------------- | ---------------------- |
+| `NEXT_PUBLIC_API_URL`          | `http://localhost:3001` | Backend API URL        |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | —                       | Google OAuth client ID |
+
+### AI service (`apps/ai-service/.env.example`)
+
+| Variable                                                   | Default                       | Description                                                             |
+| ---------------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------- |
+| `AI_PROVIDER`                                              | `ollama`                      | Provider (ollama or cloud)                                              |
+| `DEFAULT_MODEL`                                            | `qwen3:latest`                | Default model                                                           |
+| `OLLAMA_HOST`                                              | `http://localhost:11434`      | Ollama endpoint                                                         |
+| `CLOUD_BASE_URL` / `CLOUD_API_KEY` / `CLOUD_PROVIDER_NAME` | —                             | Optional OpenAI-compatible cloud provider (OpenRouter, NVIDIA, Groq, …) |
+| `DATABASE_URL`                                             | _(unset)_                     | Postgres for RAG features (optional, graceful degradation)              |
+| `EMBEDDING_*`                                              | `ollama` / `nomic-embed-text` | Embedding provider/model for retrieval                                  |
+| `AUTH_SECRET`                                              | —                             | JWT verification secret (NestJS forwards JWT)                           |
+| `NESTJS_INTERNAL_API_KEY`                                  | —                             | Internal auth key from the API                                          |
+| `CHAT/RESEARCH/COACHING/EMBEDDING_RATE_LIMIT`              | —                             | Per-endpoint rate limits                                                |
+| `MAX_*`                                                    | —                             | Concurrency, prompt size, tool-call limits                              |
+| `ENABLE_RAG/MEMORY/TOOLS/STREAMING/CACHE`                  | `true`                        | Feature flags                                                           |
+| `DAILY_COST_BUDGET`                                        | `20.0`                        | Daily AI spend budget                                                   |
+
+> The AI service also reads per-request provider context forwarded by the API via `x-ai-provider`, `x-ai-provider-key`, and `x-ai-provider-base-url` headers.
 
 ## Docker Infrastructure
 
-The `infra/docker-compose.yml` provides a production-ready local stack:
+`infra/docker-compose.yml` provides the full local stack on the `tradezen-net` bridge network:
 
-| Service    | Image              | Port | Health Check     |
-| ---------- | ------------------ | ---- | ---------------- |
-| `postgres` | postgres:16-alpine | 5432 | `pg_isready`     |
-| `redis`    | redis:7-alpine     | 6379 | `redis-cli ping` |
-| `api`      | Built from source  | 3001 | HTTP endpoint    |
-| `web`      | Built from source  | 3000 | HTTP endpoint    |
+| Service      | Image / Build                | Ports             | Health Check       |
+| ------------ | ---------------------------- | ----------------- | ------------------ |
+| `postgres`   | `pgvector/pgvector:pg16`     | `127.0.0.1:5432`  | `pg_isready`       |
+| `redis`      | `redis:7-alpine`             | `127.0.0.1:6379`  | `redis-cli ping`   |
+| `api`        | `apps/api/Dockerfile`        | internal (3001)   | —                  |
+| `web`        | `apps/web/Dockerfile`        | `127.0.0.1:3000`  | HTTP GET `/`       |
+| `ai-service` | `apps/ai-service/Dockerfile` | internal (8000)   | HTTP GET `/health` |
+| `ollama`     | `ollama/ollama:latest`       | `127.0.0.1:11434` | `ollama list`      |
+| `backup`     | `alpine:latest`              | —                 | —                  |
 
-**Features:**
+Notes:
 
-- Custom bridge network (`tradezen-net`) with static IPs
-- Named volumes for data persistence (`pgdata`, `redisdata`)
-- Resource limits (CPU/memory) per service
-- Non-root container users
-- Multi-stage builds with security hardening
+- `ollama` runs under the `ai` profile — only started when `ENABLE_OLLAMA=true`.
+- `api` and `ai-service` expose no host ports by default (communicate over the internal network); `web` is the entry point.
+- `backup` runs a cron-based Postgres dump into `../backups` (retention: 30 days) via `scripts/db/backup.sh`.
+- Named volumes (`pgdata`, `redisdata`, `ollama_data`) and per-service CPU/memory limits are configured.
+- Internal network uses static IPs (`172.28.1.x`); API connects to Postgres/Redis over the network, not `localhost`.
 
-## Security
+## AI Architecture
 
-- **JWT Validation**: Secrets validated at startup, no fallback defaults
-- **Container Hardening**: Non-root users, minimal base images, `dumb-init` signal handling
-- **Secret Management**: `.env.docker.example` template, rotation scripts, pre-commit hooks
-- **Production Mode**: Swagger disabled, env validation enforced
-- **CI/CD Security**: Trivy scanning, `bun pm audit`, secret detection
+Two AI layers work together:
 
-See [SECURITY.md](docs/SECURITY.md) for full hardening guide.
+- **API-side LangChain/LangGraph** (`apps/api/src/ai`) — chat workflows, journal analysis, coaching triggers, formatting pipeline, reconciliation backstop. Uses `@langchain/core`, `@langchain/langgraph`, `@langchain/openai`. BullMQ queues handle AI processing and nightly analytics snapshots.
+- **Python FastAPI ai-service** (`apps/ai-service`) — LLM orchestration, streaming chat, coaching, research, journal analysis, and RAG (retrieval-augmented generation) over the knowledge base. Exposes:
+  - `POST /chat`, `/chat/coach`, `/chat/research`, `/chat/journal` — streaming generation
+  - `POST /ingest` — knowledge-base document ingestion
+  - `POST /retrieval` — semantic retrieval
+  - `/v1/...` — OpenAI-compatible endpoints + model listing
+  - `/health`, `/traces` — health and trace observability
+- **Per-user AI keys** — users configure their own provider/model in the Settings UI; keys are encrypted in the DB and forwarded per-request to the AI service. No server-side cloud key required.
+- **Optional Ollama** — run a local model (`qwen3:4b` default) via the `ai` Docker Compose profile for fully local inference.
 
-## API Endpoints
+## API Surfaces
 
-| Method   | Endpoint               | Description                                        |
-| -------- | ---------------------- | -------------------------------------------------- |
-| `POST`   | `/auth/register`       | Register new user                                  |
-| `POST`   | `/auth/login`          | Login                                              |
-| `POST`   | `/auth/refresh`        | Refresh access token                               |
-| `POST`   | `/auth/logout`         | Logout                                             |
-| `GET`    | `/auth/me`             | Get current user                                   |
-| `GET`    | `/auth/google`         | OAuth login with Google                            |
-| `GET`    | `/auth/github`         | OAuth login with GitHub                            |
-| `POST`   | `/auth/oauth/link`     | Link OAuth account to existing user                |
-| `POST`   | `/auth/oauth/unlink`   | Unlink OAuth account                               |
-| `GET`    | `/auth/oauth/accounts` | List linked OAuth accounts                         |
-| `POST`   | `/trades`              | Create trade                                       |
-| `GET`    | `/trades`              | List trades (paginated)                            |
-| `GET`    | `/trades/analytics`    | Trade analytics                                    |
-| `GET`    | `/trades/export/csv`   | Export CSV                                         |
-| `GET`    | `/trades/:id`          | Get trade                                          |
-| `PUT`    | `/trades/:id`          | Update trade                                       |
-| `DELETE` | `/trades/:id`          | Delete trade                                       |
-| `POST`   | `/journals`            | Create/upsert journal entry                        |
-| `GET`    | `/journals`            | List journal entries                               |
-| `GET`    | `/journals/streak`     | Get journal streak stats                           |
-| `GET`    | `/journals/date/:date` | Get entry by date                                  |
-| `POST`   | `/tags`                | Create tag                                         |
-| `GET`    | `/tags`                | List tags                                          |
-| `PUT`    | `/tags/:id`            | Update tag                                         |
-| `DELETE` | `/tags/:id`            | Delete tag                                         |
-| `POST`   | `/chat`                | AI chat message                                    |
-| `GET`    | `/ai/insights`         | Trading insights + portfolio narrative (cached 6h) |
+- **REST** — NestJS controllers for auth (register, login, refresh, OAuth, 2FA), trades (CRUD, analytics, CSV export/import), journals, tags, chat, knowledge, research, reports, watchlist, news, symbols, portfolio, and user settings. Representative endpoints: `POST /auth/login`, `GET /trades`, `GET /trades/analytics`, `GET /trades/export/csv`, `POST /chat`.
+- **tRPC** — mounted at `/trpc` via Express middleware; web imports `api/trpc` for end-to-end typed calls.
+- **WebSocket** — Socket.IO gateway (`apps/api/src/gateway`) for real-time notifications.
+- **Swagger/OpenAPI** — at `/api/docs`, enabled only when `NODE_ENV !== 'production'`.
 
-Additional surfaces: tRPC (`/trpc`), WebSocket (Socket.IO gateway), Swagger at `/api/docs` (development only).
+## Testing
 
-## CI/CD Pipeline
+| App            | Runner   | Command                         | Notes                                                                       |
+| -------------- | -------- | ------------------------------- | --------------------------------------------------------------------------- |
+| **API**        | Jest     | `bun run --filter=api test`     | Unit specs (`*.spec.ts` in `src/`); full suite needs Postgres/Redis running |
+| **API (E2E)**  | Jest     | `bun run --filter=api test:e2e` | E2E specs (`test/`, config `test/jest-e2e.json`)                            |
+| **Web**        | Bun test | `cd apps/web && bun run test`   | Unit tests for lib utilities                                                |
+| **AI service** | pytest   | `cd apps/ai-service && pytest`  | Python test suite in `tests/` (configured via `[tool.pytest.ini_options]`)  |
 
-Defined in `.github/workflows/ci.yml`. Two environments, gated by branch:
+> CI currently runs lint, typecheck, and build only — it does **not** run the test suites (see [CI/CD](#cicd)).
 
-| Branch    | Deploys to                                                     | Trigger                                                |
-| --------- | -------------------------------------------------------------- | ------------------------------------------------------ |
-| `develop` | `deploy-staging` env (Render preview service + Vercel preview) | auto on push                                           |
-| `main`    | `deploy-prod` env (Render + Vercel)                            | auto on push, requires approval via GitHub Environment |
+## CI/CD
 
-> The env names `deploy-staging` / `deploy-prod` are scoped away from Vercel's auto-created `Production`/`Preview` envs to avoid settings collisions.
+Defined in `.github/workflows/ci.yml` (workflow name `CI`), triggered on push/PR to `main` and `develop`:
 
-### Pipeline jobs
+1. **changes** — `dorny/paths-filter` detects which apps changed (api vs web)
+2. **lint** — `bun install --frozen-lockfile`, build `@tradezen/db`, ESLint (`bun run lint`), TypeScript check (`bun run check-types`)
+3. **build** — `bun run --filter=api build` / `bun run --filter=web build`, skipped per changed-path filter
 
-1. **changes** — `dorny/paths-filter` to detect which apps changed; downstream jobs skip when irrelevant
-2. **security** — `bun pm audit`, Trivy filesystem scan (CRITICAL/HIGH), hardcoded-secret grep
-3. **lint** — ESLint + TypeScript type check
-4. **test** — unit tests with Postgres+Redis sidecars, coverage → Codecov
-5. **e2e** — full NestJS E2E suite against Postgres+Redis
-6. **build-api / build-web** — multi-arch (amd64+arm64) Docker images pushed to `ghcr.io/$repo/{api,web}`, Trivy image scan on API
-7. **deploy-staging** — Render API + Vercel preview; polls deploy status, then smoke-tests `/health` and web URL
-8. **deploy-prod** — same, on Render prod + Vercel prod; **auto-rollback** via Render API if smoke tests fail
+`deploy.yml` is **disabled** (manual trigger only) and kept as reference for self-hosted Docker Compose deploys. There is no automated deployment in CI.
 
-### Concurrency
+### Branch workflow
 
-- `cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}` — cancels stale runs on PRs and develop, never on main
-- `concurrency: deploy-prod` and `concurrency: deploy-staging` — only one deploy runs at a time per env
-
-### Required GitHub Secrets
-
-Set in repo **Settings → Secrets and variables → Actions**:
-
-| Secret                                                 | Scope                | Purpose                                                           |
-| ------------------------------------------------------ | -------------------- | ----------------------------------------------------------------- |
-| `GITHUB_TOKEN`                                         | auto                 | GHCR push, SARIF upload                                           |
-| `CODECOV_TOKEN`                                        | repo                 | upload coverage on main                                           |
-| `RENDER_API_KEY`                                       | both envs            | Render API authentication                                         |
-| `RENDER_STAGING_SERVICE_ID`                            | `deploy-staging` env | staging Render service                                            |
-| `STAGING_API_URL`                                      | `deploy-staging` env | e.g. `https://api-staging.tradezen.app` — for staging smoke tests |
-| `RENDER_SERVICE_ID`                                    | `deploy-prod` env    | production Render service                                         |
-| `PRODUCTION_API_URL`                                   | `deploy-prod` env    | e.g. `https://api.tradezen.app` — for prod smoke tests            |
-| `VERCEL_TOKEN` / `VERCEL_PROJECT_ID` / `VERCEL_ORG_ID` | both envs            | Vercel deploy                                                     |
-
-> **Required reviewer on `deploy-prod`**: must be set via the GitHub web UI (Settings → Environments → deploy-prod → Required reviewers). GitHub's API doesn't expose a way to enable the Required Reviewers rule programmatically.
-
-### Local validation
-
-```bash
-# Install actionlint to check workflow syntax locally
-curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash
-./actionlint .github/workflows/*.yml
-```
-
-## Gotchas
-
-- **`bun run dev` auto-runs migrations** — `main.ts:144` calls `runMigrations()` on startup. There is no separate migration step in local dev.
-- **@tradezen/db must be built first** — root `dev` script explicitly runs `bun run build --filter=@tradezen/db` before turbo.
-- **JWT secrets must be 64+ chars** — validated at startup in production. Dev mode skips validation.
-- **tRPC:** API mounts `/trpc` via Express middleware. Web imports `api/trpc` for end-to-end types.
-- **Swagger** at `/api/docs` — dev only, disabled in production.
-- **No web tests** configured — only API has Jest.
-- **Bun required** — packageManager is `bun@1.3.13`. Lockfile is `bun.lock`.
-
-## Documentation
-
-| File                                        | Purpose                       |
-| ------------------------------------------- | ----------------------------- |
-| [SECURITY.md](docs/SECURITY.md)             | Security hardening guide      |
-| [DEPLOYMENT.md](docs/DEPLOYMENT.md)         | Production deployment steps   |
-| [DEV_QUICKSTART.md](docs/DEV_QUICKSTART.md) | 5-minute developer onboarding |
-| [AUDIT-REPORT.md](docs/AUDIT-REPORT.md)     | Infrastructure audit results  |
-| [decisions/](docs/decisions/)               | Architecture Decision Records |
+- Work starts from `develop`
+- Feature/task PRs target `develop`
+- `main` is protected; changes reach it via a promotion PR (`develop` → `main`)
 
 ## Deployment
 
-| Service                      | Purpose               |
-| ---------------------------- | --------------------- |
-| [Vercel](https://vercel.com) | Frontend (`apps/web`) |
-| [Render](https://render.com) | Backend (`apps/api`)  |
-| [Neon](https://neon.tech)    | PostgreSQL database   |
+Deployment is currently **manual / self-hosted**, not automated by CI.
 
-Auto-deploys on push to `main` (prod) and `develop` (staging) — see [CI/CD Pipeline](#cicd-pipeline).
+- **Docker Compose** — the supported local/container stack; `infra/docker-compose.yml` runs the full API + Web + AI service + Postgres + Redis stack.
+- **Intended cloud targets** (see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) — Vercel for the Next.js frontend, Render/Railway for the API, and Neon for hosted PostgreSQL. These are documented options, not wired into CI.
+
+## Gotchas
+
+- **`bun run dev` auto-runs migrations** — `apps/api/src/main.ts` calls `runMigrations()` on startup. There is no separate migration step in local dev.
+- **`@tradezen/db` must be built first** — the root `dev` script explicitly runs `bun run build --filter=@tradezen/db` before `turbo run dev`. The CI `lint`/`build` jobs do the same.
+- **JWT secrets must be 64+ chars** — validated at startup in production (`main.ts`). Dev mode skips validation.
+- **`bun.lock` is authoritative** — the package manager is `bun@1.3.13`; use `bun install` (CI uses `--frozen-lockfile`).
+- **Swagger** at `/api/docs` — dev only, disabled in production.
+- **tRPC** — API mounts `/trpc` via Express middleware; web imports `api/trpc` for end-to-end types.
+- **Per-user AI keys** — there is no server-side AI key; keys are set per-user in the Settings UI and encrypted in the DB (`KEY_ENCRYPTION_SECRET`).
+- **API tests need live services** — the full Jest suite and E2E suite require PostgreSQL and Redis; targeted specs can run without them.
+
+## Documentation
+
+| File                                                                          | Purpose                          |
+| ----------------------------------------------------------------------------- | -------------------------------- |
+| [Architecture.md](docs/Architecture.md) + [architecture/](docs/architecture/) | System design and design docs    |
+| [decisions/](docs/decisions/)                                                 | Architecture Decision Records    |
+| [SECURITY.md](docs/SECURITY.md)                                               | Security hardening guide         |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md)                                           | Deployment options               |
+| [DEV_QUICKSTART.md](docs/DEV_QUICKSTART.md)                                   | 5-minute developer onboarding    |
+| [DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)                             | Development guide                |
+| [AUDIT-REPORT.md](docs/AUDIT-REPORT.md)                                       | Infrastructure audit results     |
+| [planning/](docs/planning/) and [specs/](docs/specs/)                         | Planning docs and specifications |
 
 ## License
 
-UNLICENSED — Private project.
+Licensed under the [MIT License](./LICENSE).

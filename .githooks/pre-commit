@@ -26,8 +26,8 @@ for file in $STAGED_FILES; do
     continue
   fi
 
-  # Only check text files
-  if file "$file" | grep -q "text"; then
+  # Only check text files (skip binaries); grep -I exits non-zero on binary.
+  if grep -Iq . "$file" 2>/dev/null; then
     for pattern in "${SECRET_PATTERNS[@]}"; do
       if grep -nE "$pattern" "$file" > /dev/null 2>&1; then
         echo "⛔ Potential secret found in $file:"

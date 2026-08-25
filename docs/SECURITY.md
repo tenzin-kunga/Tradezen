@@ -64,24 +64,23 @@ All changes are **backward-compatible** and can be adopted incrementally.
 
 ### 3. CI/CD Pipeline (`.github/workflows/ci.yml`)
 
-**Expanded from 1 job to 6 specialized jobs:**
+The pipeline is a **path-filtered** workflow (only runs jobs relevant to the
+changed paths). Current jobs:
 
-| Job          | Purpose                                                            | Triggers         |
-| ------------ | ------------------------------------------------------------------ | ---------------- |
-| **security** | `bun pm audit`, Trivy vulnerability scan, secret pattern detection | Every push/PR    |
-| **lint**     | ESLint + TypeScript type checking                                  | Every push/PR    |
-| **test**     | Unit tests with coverage (Node 18/20/22 matrix)                    | Every push/PR    |
-| **e2e**      | Integration tests with Postgres + Redis                            | After unit tests |
-| **build**    | Multi-platform Docker build + push (main branch only)              | Push to `main`   |
-| **deploy**   | Trigger Render (API) + Vercel (Web) deployments                    | Push to `main`   |
+| Job       | Purpose                                          | Triggers              |
+| --------- | ------------------------------------------------ | --------------------- |
+| **changes** | Detect which packages changed (api/web)        | Every push/PR         |
+| **lint**  | ESLint + `tsc --noEmit` per package              | Every push/PR         |
+| **build** | `turbo run build` (api/web)                      | Every push/PR         |
 
-**New Features:**
+Notes:
 
-- Docker Buildx caching for faster rebuilds
-- SARIF uploads to GitHub Security tab
-- Code coverage reporting (Codecov)
-- Multi-platform builds (amd64 + arm64)
-- Post-build image scanning with Trivy
+- There is **no `security`, `test`, or `e2e` job** in this workflow. API unit
+  tests run via `bun run test` locally / in `apps/api`; web has no test suite.
+- The `deploy` job is **disabled** (no active deployment from CI).
+- `permissions: contents: read` and `pull_request` (not `_target`) scopes keep
+  the token least-privilege.
+- Pin third-party actions by commit SHA where feasible and avoid `latest`.
 
 ### 4. Application Code Hardening
 

@@ -8,7 +8,6 @@ import {
   Res,
   HttpCode,
   HttpStatus,
-  All,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -47,17 +46,11 @@ export class AuthController {
   }
 
   @Public()
-  @All('refresh')
+  @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token using HTTP-only cookie' })
   refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const token = req.cookies?.refresh_token as string | undefined;
-    console.log(
-      '[AuthController:refresh] Cookie present:',
-      !!token,
-      'cookie keys:',
-      Object.keys(req.cookies ?? {}),
-    );
     return this.authService.refresh(token ?? '', res);
   }
 

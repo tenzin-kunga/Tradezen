@@ -231,10 +231,17 @@ function showToast(notification: Notification) {
     "fixed top-4 right-4 rounded-lg p-4 shadow-xl z-50 animate-slide-in";
   toast.style.background = "var(--bg-surface)";
   toast.style.border = "1px solid var(--border)";
-  toast.innerHTML = `
-    <div class="font-medium text-sm" style="color: var(--text-primary)">${notification.title}</div>
-    <div class="text-xs mt-1" style="color: var(--text-muted)">${notification.message}</div>
-  `;
+
+  const titleEl = document.createElement("div");
+  titleEl.className = "font-medium text-sm";
+  titleEl.style.color = "var(--text-primary)";
+  titleEl.textContent = notification.title;
+  const messageEl = document.createElement("div");
+  messageEl.className = "text-xs mt-1";
+  messageEl.style.color = "var(--text-muted)";
+  messageEl.textContent = notification.message;
+
+  toast.append(titleEl, messageEl);
   document.body.appendChild(toast);
 
   setTimeout(() => {

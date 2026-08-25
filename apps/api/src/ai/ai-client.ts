@@ -98,7 +98,7 @@ export class AIClient {
   constructor(private readonly metrics: AiMetricsService) {
     this.baseUrl =
       (process.env.AI_SERVICE_URL ?? 'http://localhost:8000') + '/v1';
-    this.apiKey = process.env.AI_SERVICE_API_KEY ?? 'tradezen-internal';
+    this.apiKey = process.env.AI_SERVICE_API_KEY ?? '';
     this.maxRetries = 3;
     this.defaultTimeoutMs = 30_000;
   }

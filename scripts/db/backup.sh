@@ -15,8 +15,12 @@ mkdir -p "$BACKUP_DIR"
 echo "Starting database backup..."
 echo "Backup file: $BACKUP_FILE"
 
-# Run pg_dump inside the container
-docker exec tradezen-db pg_dump -U postgres -d tradezen --clean --if-exists | gzip > "$BACKUP_FILE"
+# Run pg_dump over the network (no Docker socket required)
+PGPASSWORD="${DB_PASSWORD:-postgres}" pg_dump \
+  -h "${DB_HOST:-postgres}" \
+  -U "${DB_USER:-postgres}" \
+  -d "${DB_NAME:-tradezen}" \
+  --clean --if-exists | gzip > "$BACKUP_FILE"
 
 # Verify backup
 if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then

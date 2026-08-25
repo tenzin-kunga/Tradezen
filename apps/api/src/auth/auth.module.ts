@@ -7,7 +7,6 @@ import { JwtStrategy } from './jwt.strategy';
 import { BruteForceService } from '../common/services/brute-force.service';
 import { AuditService } from '../common/services/audit.service';
 import { SuspiciousLoginService } from '../common/services/suspicious-login.service';
-import { TwoFactorService } from './services/two-factor.service';
 import { OAuthService } from './oauth.service';
 import { OAuthController } from './oauth.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
@@ -25,7 +24,6 @@ import { GithubStrategy } from './strategies/github.strategy';
     BruteForceService,
     AuditService,
     SuspiciousLoginService,
-    TwoFactorService,
     OAuthService,
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [GoogleStrategy]
@@ -39,7 +37,6 @@ import { GithubStrategy } from './strategies/github.strategy';
     BruteForceService,
     AuditService,
     SuspiciousLoginService,
-    TwoFactorService,
     OAuthService,
   ],
 })

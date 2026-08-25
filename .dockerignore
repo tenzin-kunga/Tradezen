@@ -1,0 +1,59 @@
+# ── Dependencies ───────────────────────────────
+node_modules
+**/node_modules
+
+# ── Environment & secrets ──────────────────────
+.env
+.env.*
+!.env.example
+!.env.docker.example
+!.env.dev.example
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+
+# ── Git ────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.gitmodules
+
+# ── Build outputs ──────────────────────────────
+dist
+build
+out
+.next
+coverage
+.turbo
+*.tsbuildinfo
+*.tsbuildinfo.state
+
+# ── Python ─────────────────────────────────────
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+
+# ── Local/IDE/temp ────────────────────────────
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.log
+logs
+backups
+tmp
+temp
+.opencode
+.planning
+.vercel
+
+# ── Uploads / data ────────────────────────────
+uploads
+apps/api/uploads
+backups
+screenshots
+*.dump
+*.sql

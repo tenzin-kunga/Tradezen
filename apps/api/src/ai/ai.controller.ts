@@ -24,9 +24,12 @@ export class AiController {
 
   @Get('reconciliation')
   @ApiOperation({
-    summary: 'Run corpus reconciliation (missing/stale/orphaned/duplicate)',
+    summary:
+      'Run corpus reconciliation for the current user (missing/stale/orphaned/duplicate)',
   })
-  reconciliation(): Promise<ReconciliationReport[]> {
-    return this.reconciliationService.run();
+  reconciliation(
+    @CurrentUser('id') userId: string,
+  ): Promise<ReconciliationReport[]> {
+    return this.reconciliationService.run({ userId });
   }
 }

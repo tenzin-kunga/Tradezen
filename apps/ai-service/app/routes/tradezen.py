@@ -11,12 +11,12 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 @router.post("")
 async def chat(request: Request):
     body = await request.json()
-    user_id = body.get("user_id", "")
+    session = request.state.session
     messages = [Message(**m) for m in body.get("messages", [])]
     stream = body.get("stream", True)
 
     chat_req = ChatRequest(
-        user_id=user_id,
+        user_id=session.user_id,
         conversation_id=body.get("conversation_id"),
         messages=messages,
         model=body.get("model"),
@@ -24,7 +24,6 @@ async def chat(request: Request):
         stream=stream,
     )
 
-    session = request.state.session
     container = request.app.state.container
 
     if stream:
@@ -41,10 +40,9 @@ async def chat(request: Request):
 async def coach(request: Request):
     body = await request.json()
     messages = [Message(**m) for m in body.get("messages", [])]
-    user_id = body.get("user_id", "")
-
-    chat_req = ChatRequest(user_id=user_id, messages=messages, stream=False)
     session = request.state.session
+
+    chat_req = ChatRequest(user_id=session.user_id, messages=messages, stream=False)
     container = request.app.state.container
 
     response = await container.chat_service.handle(chat_req, session)
@@ -55,10 +53,9 @@ async def coach(request: Request):
 async def research(request: Request):
     body = await request.json()
     messages = [Message(**m) for m in body.get("messages", [])]
-    user_id = body.get("user_id", "")
-
-    chat_req = ChatRequest(user_id=user_id, messages=messages, stream=False)
     session = request.state.session
+
+    chat_req = ChatRequest(user_id=session.user_id, messages=messages, stream=False)
     container = request.app.state.container
 
     response = await container.chat_service.handle(chat_req, session)
@@ -69,10 +66,9 @@ async def research(request: Request):
 async def journal(request: Request):
     body = await request.json()
     messages = [Message(**m) for m in body.get("messages", [])]
-    user_id = body.get("user_id", "")
-
-    chat_req = ChatRequest(user_id=user_id, messages=messages, stream=False)
     session = request.state.session
+
+    chat_req = ChatRequest(user_id=session.user_id, messages=messages, stream=False)
     container = request.app.state.container
 
     response = await container.chat_service.handle(chat_req, session)

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { db } from '../../db/drizzle';
 import { knowledgeDocumentLinks, knowledgeDocuments } from '@tradezen/db';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { EmbeddingService } from '../../ai/embedding.service';
 import type { EmbeddingRepository } from '../../ai/context/semantic/embedding-repository';
 
@@ -162,54 +162,79 @@ export class KnowledgeRetrievalService {
       RETRIEVAL_PROFILES[profileName] || RETRIEVAL_PROFILES.inspector;
     const results: RelatedResult[] = [];
 
-    // 1. Explicit links
-    if (profile.includeExplicit) {
-      const links = await db
-        .select()
-        .from(knowledgeDocumentLinks)
-        .where(eq(knowledgeDocumentLinks.sourceDocumentId, resourceId));
+    // 1. Explicit links — verify both the source document and each linked
+    // target document belong to the current user (knowledgeDocumentLinks has
+    // no user column, so scope via the documents).
+    if (profile.includeExplicit && userId) {
+      const source = await db
+        .select({ id: knowledgeDocuments.id })
+        .from(knowledgeDocuments)
+        .where(
+          and(
+            eq(knowledgeDocuments.id, resourceId),
+            eq(knowledgeDocuments.userId, userId),
+          ),
+        )
+        .limit(1);
 
-      for (const link of links) {
-        const doc = await db
-          .select({
-            id: knowledgeDocuments.id,
-            title: knowledgeDocuments.title,
-          })
-          .from(knowledgeDocuments)
-          .where(eq(knowledgeDocuments.id, link.targetDocumentId))
-          .limit(1);
+      if (source.length > 0) {
+        const links = await db
+          .select()
+          .from(knowledgeDocumentLinks)
+          .where(eq(knowledgeDocumentLinks.sourceDocumentId, resourceId));
 
-        if (doc.length > 0) {
-          results.push({
-            id: doc[0].id,
-            type: 'knowledge_document',
-            title: doc[0].title,
-            score: 0.9,
-            evidence: [
-              {
-                source: 'explicit',
-                score: 0.9,
-                reason: `Linked: ${link.relationshipType}`,
-                matchedChunks: [],
-                highlights: [link.relationshipType],
-              },
-            ],
-          });
+        for (const link of links) {
+          const doc = await db
+            .select({
+              id: knowledgeDocuments.id,
+              title: knowledgeDocuments.title,
+            })
+            .from(knowledgeDocuments)
+            .where(
+              and(
+                eq(knowledgeDocuments.id, link.targetDocumentId),
+                eq(knowledgeDocuments.userId, userId),
+              ),
+            )
+            .limit(1);
+
+          if (doc.length > 0) {
+            results.push({
+              id: doc[0].id,
+              type: 'knowledge_document',
+              title: doc[0].title,
+              score: 0.9,
+              evidence: [
+                {
+                  source: 'explicit',
+                  score: 0.9,
+                  reason: `Linked: ${link.relationshipType}`,
+                  matchedChunks: [],
+                  highlights: [link.relationshipType],
+                },
+              ],
+            });
+          }
         }
       }
     }
 
-    // 2. Semantic similarity
-    if (profile.includeSemantic) {
+    // 2. Semantic similarity — only for the user's own resource
+    if (profile.includeSemantic && userId) {
       const doc = await db
         .select({ content: knowledgeDocuments.content })
         .from(knowledgeDocuments)
-        .where(eq(knowledgeDocuments.id, resourceId))
+        .where(
+          and(
+            eq(knowledgeDocuments.id, resourceId),
+            eq(knowledgeDocuments.userId, userId),
+          ),
+        )
         .limit(1);
 
       if (doc.length > 0 && doc[0].content) {
         const semanticResults = await this.semanticSearch(
-          userId ?? 'system',
+          userId,
           doc[0].content.slice(0, 500),
           'fast',
         );
@@ -236,7 +261,12 @@ export class KnowledgeRetrievalService {
     const doc = await db
       .select()
       .from(knowledgeDocuments)
-      .where(eq(knowledgeDocuments.id, documentId))
+      .where(
+        and(
+          eq(knowledgeDocuments.id, documentId),
+          eq(knowledgeDocuments.userId, userId),
+        ),
+      )
       .limit(1);
 
     if (doc.length === 0) return null;

@@ -24,7 +24,7 @@ export default function KeyboardShortcutProvider({
 }) {
   const router = useRouter();
   const gPending = useRef(false);
-  const gTimer = useRef<ReturnType<typeof setTimeout>>();
+  const gTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

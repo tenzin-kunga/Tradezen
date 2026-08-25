@@ -25,11 +25,18 @@ class FakeIngestionService:
         return self.delete_result
 
 
-def make_app(ingestion_service):
+def make_app(ingestion_service, user_id="u1"):
     app = FastAPI()
     app.state.container = type(
         "Container", (), {"ingestion_service": ingestion_service}
     )()
+
+    @app.middleware("http")
+    async def _set_session(request, call_next):
+        session = type("Session", (), {"user_id": user_id})()
+        request.state.session = session
+        return await call_next(request)
+
     app.include_router(router)
     return app
 

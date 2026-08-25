@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { eq, sql, count } from 'drizzle-orm';
+import { sql, count } from 'drizzle-orm';
 import { db } from '../../db/drizzle';
 import { loginAttempts } from '@tradezen/db';
 
@@ -38,7 +38,7 @@ export class BruteForceService {
     }
   }
 
-  async isLockedOut(identifier: string): Promise<boolean> {
+  async isLockedOut(identifier: string, ip: string): Promise<boolean> {
     const tableExists = await this.checkTableExists();
     if (!tableExists) {
       this.logger.warn(
@@ -51,7 +51,7 @@ export class BruteForceService {
         .select({ attempts: count() })
         .from(loginAttempts)
         .where(
-          sql`${loginAttempts.identifier} = ${identifier} AND ${loginAttempts.createdAt} > NOW() - INTERVAL '15 minutes'`,
+          sql`${loginAttempts.identifier} = ${identifier} AND ${loginAttempts.ip} = ${ip} AND ${loginAttempts.createdAt} > NOW() - INTERVAL '15 minutes'`,
         );
       return result[0].attempts >= this.MAX_ATTEMPTS;
     } catch (error) {
@@ -62,7 +62,7 @@ export class BruteForceService {
     }
   }
 
-  async clearAttempts(identifier: string): Promise<void> {
+  async clearAttempts(identifier: string, ip: string): Promise<void> {
     const tableExists = await this.checkTableExists();
     if (!tableExists) {
       this.logger.warn(
@@ -73,7 +73,9 @@ export class BruteForceService {
     try {
       await db
         .delete(loginAttempts)
-        .where(eq(loginAttempts.identifier, identifier));
+        .where(
+          sql`${loginAttempts.identifier} = ${identifier} AND ${loginAttempts.ip} = ${ip}`,
+        );
     } catch (error) {
       this.logger.error(
         `Failed to clear login attempts: ${(error as Error).message}`,

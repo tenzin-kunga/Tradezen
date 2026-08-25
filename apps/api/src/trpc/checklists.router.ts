@@ -10,7 +10,7 @@ import {
   checklistRunItems,
 } from '@tradezen/db';
 import { z } from 'zod';
-import { and, eq, desc, sql } from 'drizzle-orm';
+import { and, eq, desc, sql, inArray } from 'drizzle-orm';
 
 const updateChecklistInput = z.object({
   id: z.string().uuid(),
@@ -323,7 +323,7 @@ export const checklistsRouter = router({
 
     updateItem: protectedProcedure
       .input(updateChecklistRunItemSchema)
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
         const db = getDb();
         const [runItem] = await db
           .update(checklistRunItems)
@@ -335,6 +335,13 @@ export const checklistsRouter = router({
             and(
               eq(checklistRunItems.runId, input.runId),
               eq(checklistRunItems.itemId, input.itemId),
+              inArray(
+                checklistRunItems.runId,
+                db
+                  .select({ id: checklistRuns.id })
+                  .from(checklistRuns)
+                  .where(eq(checklistRuns.userId, ctx.userId)),
+              ),
             ),
           )
           .returning();

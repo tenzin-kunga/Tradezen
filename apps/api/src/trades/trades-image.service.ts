@@ -165,7 +165,14 @@ export class TradeImageService {
     });
   }
 
-  async getImages(tradeId: string): Promise<ImageResponseDto[]> {
+  async getImages(
+    tradeId: string,
+    userId: string,
+  ): Promise<ImageResponseDto[]> {
+    // Validate trade ownership
+    const trade = await this.findTradeWithOwnership(tradeId, userId);
+    if (!trade) throw new ForbiddenException();
+
     const images = await db.query.tradeImages.findMany({
       where: eq(tradeImages.tradeId, tradeId),
       orderBy: [asc(tradeImages.displayOrder)],

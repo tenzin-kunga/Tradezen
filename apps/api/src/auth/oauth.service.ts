@@ -9,6 +9,7 @@ import { eq, or, and } from 'drizzle-orm';
 import { db } from '../db/drizzle';
 import { users, accounts } from '@tradezen/db';
 import type { Response } from 'express';
+import { encryptToken } from '../common/crypto.util';
 
 export interface OAuthProfile {
   provider: 'google' | 'github';
@@ -89,8 +90,8 @@ export class OAuthService {
           providerId: profile.providerId,
           providerEmail: profile.email,
           providerUsername: profile.username,
-          accessToken: profile.accessToken,
-          refreshToken: profile.refreshToken,
+          accessToken: encryptToken(profile.accessToken),
+          refreshToken: encryptToken(profile.refreshToken),
         })
         .returning({ id: accounts.id });
 
@@ -125,8 +126,8 @@ export class OAuthService {
       providerId: profile.providerId,
       providerEmail: profile.email,
       providerUsername: profile.username,
-      accessToken: profile.accessToken,
-      refreshToken: profile.refreshToken,
+      accessToken: encryptToken(profile.accessToken),
+      refreshToken: encryptToken(profile.refreshToken),
     });
 
     return this.generateTokens(newUser);
@@ -163,8 +164,8 @@ export class OAuthService {
           providerId: profile.providerId,
           providerEmail: profile.email,
           providerUsername: profile.username,
-          accessToken: profile.accessToken,
-          refreshToken: profile.refreshToken,
+          accessToken: encryptToken(profile.accessToken),
+          refreshToken: encryptToken(profile.refreshToken),
         })
         .where(eq(accounts.id, existingUserAccount.id));
       return;
@@ -176,8 +177,8 @@ export class OAuthService {
       providerId: profile.providerId,
       providerEmail: profile.email,
       providerUsername: profile.username,
-      accessToken: profile.accessToken,
-      refreshToken: profile.refreshToken,
+      accessToken: encryptToken(profile.accessToken),
+      refreshToken: encryptToken(profile.refreshToken),
     });
 
     await db
@@ -339,8 +340,11 @@ export class OAuthService {
     await db
       .update(accounts)
       .set({
-        accessToken,
-        refreshToken: refreshToken ?? accounts.refreshToken,
+        accessToken: encryptToken(accessToken),
+        refreshToken:
+          refreshToken != null
+            ? encryptToken(refreshToken)
+            : accounts.refreshToken,
       })
       .where(eq(accounts.id, accountId));
   }

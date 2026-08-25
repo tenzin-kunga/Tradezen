@@ -31,7 +31,7 @@ export function useDashboardLayout() {
   const [sections, setSections] = useState<SectionLayout[]>(DEFAULT_SECTIONS);
   const [preset, setPreset] = useState<string>("default");
   const [loaded, setLoaded] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(LAYOUT_KEY);

@@ -39,10 +39,11 @@ def create_app() -> FastAPI:
     # Store container
     app.state.container = container
 
-    # CORS
+    # CORS — the AI service is server-to-server only (NestJS); it is not called
+    # from browsers. Default to same-origin (no cross-origin allowance).
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=config.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -12,7 +12,6 @@ function CallbackHandler() {
     const token = searchParams.get("token");
     if (token) {
       setAccessToken(token);
-      window.localStorage.setItem("tradezen_access_token", token);
     }
     router.replace("/");
   }, [searchParams, router]);

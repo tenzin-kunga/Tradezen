@@ -13,7 +13,7 @@ export class AiIngestionProcessor extends WorkerHost {
   constructor() {
     super();
     this.baseUrl = process.env.AI_SERVICE_URL ?? 'http://localhost:8000';
-    this.apiKey = process.env.AI_SERVICE_API_KEY ?? 'tradezen-internal';
+    this.apiKey = process.env.AI_SERVICE_API_KEY ?? '';
     this.timeoutMs = Number(process.env.INGESTION_CLIENT_TIMEOUT_MS ?? 10_000);
   }
 

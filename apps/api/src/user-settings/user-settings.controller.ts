@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { UserSettingsService } from './user-settings.service';
+import { assertPublicUrl } from '../common/ssrf.util';
 import { UpdateUserSettingsDto } from './dto/update-user-settings.dto';
 import { ValidateApiKeyDto } from './dto/validate-api-key.dto';
 
@@ -129,6 +130,14 @@ export class UserSettingsController {
     endpoint: string,
     headers: Record<string, string>,
   ) {
+    try {
+      await assertPublicUrl(endpoint);
+    } catch {
+      throw new HttpException(
+        'Provider URL is not allowed',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
     try {
       const res = await fetch(endpoint, {
         headers,

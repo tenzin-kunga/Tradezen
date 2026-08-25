@@ -229,15 +229,22 @@ export class TradesController {
 
   @Get('import/jobs/:jobId')
   @ApiOperation({ summary: 'Get CSV import job status' })
-  async getImportJobStatus(@Param('jobId') jobId: string) {
-    return this.jobStatusService.getJobStatus('csv-import', jobId);
+  async getImportJobStatus(
+    @CurrentUser('id') userId: string,
+    @Param('jobId') jobId: string,
+  ) {
+    return this.jobStatusService.getJobStatus('csv-import', jobId, userId);
   }
 
   @Get('import/jobs')
   @ApiOperation({ summary: 'Get CSV import job history' })
-  async getImportJobHistory(@Query('limit') limit?: string) {
+  async getImportJobHistory(
+    @CurrentUser('id') userId: string,
+    @Query('limit') limit?: string,
+  ) {
     return this.jobStatusService.getJobHistory(
       'csv-import',
+      userId,
       limit ? parseInt(limit) : 10,
     );
   }

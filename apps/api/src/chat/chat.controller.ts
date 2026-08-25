@@ -78,8 +78,9 @@ export class ChatController {
   }
 
   @Post('models/providers')
-  @ApiOperation({ summary: 'Add a custom model provider' })
+  @ApiOperation({ summary: 'Add a custom model provider (owner-scoped)' })
   async addProvider(
+    @CurrentUser('id') userId: string,
     @Body()
     body: {
       name: string;
@@ -88,13 +89,13 @@ export class ChatController {
       models: string[];
     },
   ) {
-    return this.chatService.addProvider(body);
+    return this.chatService.addProvider(body, userId);
   }
 
   @Delete('models/providers/:id')
-  @ApiOperation({ summary: 'Remove a custom model provider' })
-  removeProvider(@Param('id') id: string) {
-    return this.chatService.removeProvider(id);
+  @ApiOperation({ summary: 'Remove a custom model provider (owner-scoped)' })
+  removeProvider(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.chatService.removeProvider(id, userId);
   }
 
   @Post('threads')
@@ -320,15 +321,22 @@ export class ChatController {
 
   @Get('jobs/:jobId')
   @ApiOperation({ summary: 'Get AI job status by ID' })
-  async getJobStatus(@Param('jobId') jobId: string) {
-    return this.jobStatusService.getJobStatus('ai-processing', jobId);
+  async getJobStatus(
+    @CurrentUser('id') userId: string,
+    @Param('jobId') jobId: string,
+  ) {
+    return this.jobStatusService.getJobStatus('ai-processing', jobId, userId);
   }
 
   @Get('jobs')
   @ApiOperation({ summary: 'Get AI job history' })
-  async getJobHistory(@Query('limit') limit?: string) {
+  async getJobHistory(
+    @CurrentUser('id') userId: string,
+    @Query('limit') limit?: string,
+  ) {
     return this.jobStatusService.getJobHistory(
       'ai-processing',
+      userId,
       parseInt(limit ?? '10') || 10,
     );
   }

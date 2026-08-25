@@ -3,10 +3,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { db } from './db/drizzle';
 
+// Verify the DB TLS certificate by default. Only disable (self-signed dev DBs)
+// with an explicit opt-in, never as the default.
+const dbSslRejectUnauthorized =
+  process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
+
 export const pool = process.env.DATABASE_URL
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: dbSslRejectUnauthorized },
     })
   : new Pool({
       user: process.env.DB_USER ?? 'postgres',
@@ -14,6 +19,7 @@ export const pool = process.env.DATABASE_URL
       database: process.env.DB_NAME ?? 'tradezen',
       password: process.env.DB_PASSWORD ?? 'postgres',
       port: Number(process.env.DB_PORT ?? 5432),
+      ssl: { rejectUnauthorized: dbSslRejectUnauthorized },
     });
 
 export { db };

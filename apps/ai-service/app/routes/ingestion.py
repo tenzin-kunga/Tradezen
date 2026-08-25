@@ -23,15 +23,21 @@ async def ingest_document(request: Request, payload: IngestDocumentRequest):
     if not container.ingestion_service:
         raise HTTPException(status_code=503, detail="Ingestion service unavailable (no database)")
 
+    # user_id must come from the verified principal, never the client payload.
+    session = getattr(request.state, "session", None)
+    user_id = session.user_id if session else ""
+    if not user_id or user_id == "unknown":
+        raise HTTPException(status_code=400, detail="user_id required (trusted server-side auth)")
+
     if payload.action == "delete":
         result = await container.ingestion_service.delete_document(
-            payload.user_id, payload.source_type, payload.source_id,
+            user_id, payload.source_type, payload.source_id,
         )
     else:
         if not payload.content:
             raise HTTPException(status_code=400, detail="content required for upsert")
         result = await container.ingestion_service.upsert_document(
-            payload.user_id,
+            user_id,
             payload.source_type,
             payload.source_id,
             payload.content,
@@ -105,13 +111,10 @@ async def ingest_status(request: Request):
 
 
 def _get_user_id(request: Request) -> str:
-    body = getattr(request, "_body", None)
-    if body:
-        uid = body.get("user_id")
-        if uid:
-            return uid
-    # Fallback: query param
-    uid = request.query_params.get("user_id")
-    if uid:
-        return uid
-    raise HTTPException(status_code=400, detail="user_id required (body or query param)")
+    # user_id comes from the verified principal (set by the auth middleware),
+    # never from client-supplied body/query values.
+    session = getattr(request.state, "session", None)
+    uid = session.user_id if session else ""
+    if not uid or uid == "unknown":
+        raise HTTPException(status_code=400, detail="user_id required (trusted server-side auth)")
+    return uid

@@ -366,7 +366,6 @@ export async function refreshToken(): Promise<boolean> {
       if (!res.ok) return false;
       const body = await res.json();
       setAccessToken(body.access_token);
-      window.localStorage.setItem("tradezen_access_token", body.access_token);
       return true;
     } catch {
       return false;

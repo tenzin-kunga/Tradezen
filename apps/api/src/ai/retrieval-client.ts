@@ -23,7 +23,7 @@ export class RetrievalClient {
       (process.env.RETRIEVAL_CLIENT_SHADOW ?? 'false').toLowerCase() === 'true';
     // /retrieval lives at the root of the AI service, not under /v1.
     this.baseUrl = process.env.AI_SERVICE_URL ?? 'http://localhost:8000';
-    this.apiKey = process.env.AI_SERVICE_API_KEY ?? 'tradezen-internal';
+    this.apiKey = process.env.AI_SERVICE_API_KEY ?? '';
     this.timeoutMs = Number(process.env.RETRIEVAL_CLIENT_TIMEOUT_MS ?? 5000);
   }
 

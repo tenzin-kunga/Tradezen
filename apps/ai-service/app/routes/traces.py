@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from ..telemetry.memory_store import InMemoryTracesStore
 from ..telemetry.latency_report import LatencyReporter
+from ..telemetry.repository import TraceQuery
 
 router = APIRouter(prefix="/traces", tags=["traces"])
 
@@ -17,10 +18,16 @@ def init(store: InMemoryTracesStore):
 
 
 @router.get("/recent")
-async def get_recent_traces(limit: int = Query(default=50, le=200)):
+async def get_recent_traces(
+    request: Request,
+    limit: int = Query(default=50, le=200),
+):
     if not _store:
         return {"traces": [], "total": 0}
-    traces = await _store.query(limit=limit)
+    user_id = request.state.session.user_id
+    traces = await _store.query(
+        filters=TraceQuery(user_id=user_id, limit=limit)
+    )
     return {
         "traces": [
             {
@@ -39,11 +46,11 @@ async def get_recent_traces(limit: int = Query(default=50, le=200)):
 
 
 @router.get("/{request_id}")
-async def get_trace(request_id: str):
+async def get_trace(request: Request, request_id: str):
     if not _store:
         return {"error": "Trace store not available"}
     trace = await _store.get(request_id)
-    if not trace:
+    if not trace or trace.user_id != request.state.session.user_id:
         return {"error": "Trace not found", "request_id": request_id}
     return {
         "request_id": trace.request_id,
@@ -67,8 +74,14 @@ async def get_trace(request_id: str):
 
 
 @router.get("/stats/latency")
-async def get_latency_stats(limit: int = Query(default=100, le=500)):
+async def get_latency_stats(
+    request: Request,
+    limit: int = Query(default=100, le=500),
+):
     if not _store:
         return {"error": "Trace store not available"}
-    traces = await _store.query(limit=limit)
+    user_id = request.state.session.user_id
+    traces = await _store.query(
+        filters=TraceQuery(user_id=user_id, limit=limit)
+    )
     return _reporter.report(traces)

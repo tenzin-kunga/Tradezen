@@ -20,6 +20,7 @@ import { ConversationPersistenceService } from './conversation/conversation-pers
 import { ConversationHistoryPolicy } from './conversation/conversation-history';
 import { ToolLifecycleStatus } from '../ai/tools/tool-lifecycle';
 import { UserSettingsService } from '../user-settings/user-settings.service';
+import { assertPublicUrl } from '../common/ssrf.util';
 import {
   runFormattingPipeline,
   isUnstructuredProse,
@@ -98,6 +99,7 @@ export class ChatService {
     (process.env.RETRIEVAL_CLIENT_ENABLED ?? 'false').toLowerCase() === 'true';
   private customProviders: Array<{
     id: string;
+    ownerId: string;
     name: string;
     baseUrl: string;
     apiKey?: string;
@@ -119,16 +121,16 @@ export class ChatService {
    * AND no cached catalog exists. The AI service is the source of truth; this
    * just guarantees the dropdown is never empty.
    */
-  private getModelsFallback(): ModelsPayload {
+  private getModelsFallback(userId?: string): ModelsPayload {
     const models = [this.defaultModel];
-    const providers: ModelsPayload['providers'] = this.customProviders.map(
-      (p) => ({
+    const providers: ModelsPayload['providers'] = this.customProviders
+      .filter((p) => !userId || p.ownerId === userId)
+      .map((p) => ({
         id: p.id,
         name: p.name,
         baseUrl: p.baseUrl,
         models: p.models.map((m) => ({ id: `${p.id}/${m}` })),
-      }),
-    );
+      }));
     return { defaultModel: this.defaultModel, models, providers };
   }
 
@@ -147,7 +149,7 @@ export class ChatService {
     try {
       const base =
         (process.env.AI_SERVICE_URL ?? 'http://localhost:8000') + '/v1';
-      const key = process.env.AI_SERVICE_API_KEY ?? 'tradezen-internal';
+      const key = process.env.AI_SERVICE_API_KEY ?? '';
 
       // If user has a saved provider, forward it so AI service can discover its models.
       const providerHeaders: Record<string, string> = {};
@@ -235,7 +237,9 @@ export class ChatService {
       }
 
       // Merge locally-registered custom providers (not known to the AI service).
-      for (const cp of this.customProviders) {
+      for (const cp of this.customProviders.filter(
+        (p) => !userId || p.ownerId === userId,
+      )) {
         const prefixedModels = cp.models.map((m) => ({
           id: `${cp.id}/${m}`,
         }));
@@ -257,7 +261,7 @@ export class ChatService {
       return payload;
     } catch {
       if (this.modelsCache) return this.modelsCache.data;
-      return this.getModelsFallback();
+      return this.getModelsFallback(userId);
     }
   }
 
@@ -284,7 +288,7 @@ export class ChatService {
   async getProviderHealth(): Promise<ProviderHealth[]> {
     const base =
       (process.env.AI_SERVICE_URL ?? 'http://localhost:8000') + '/v1';
-    const key = process.env.AI_SERVICE_API_KEY ?? 'tradezen-internal';
+    const key = process.env.AI_SERVICE_API_KEY ?? '';
     const res = await fetch(`${base}/providers`, {
       headers: { 'x-internal-api-key': key },
       signal: AbortSignal.timeout(5000),
@@ -297,7 +301,7 @@ export class ChatService {
   async refreshModels(): Promise<{ status: string; providers: string[] }> {
     const base =
       (process.env.AI_SERVICE_URL ?? 'http://localhost:8000') + '/v1';
-    const key = process.env.AI_SERVICE_API_KEY ?? 'tradezen-internal';
+    const key = process.env.AI_SERVICE_API_KEY ?? '';
     const res = await fetch(`${base}/models/refresh`, {
       method: 'POST',
       headers: { 'x-internal-api-key': key },
@@ -308,17 +312,25 @@ export class ChatService {
     return (await res.json()) as { status: string; providers: string[] };
   }
 
-  async addProvider(provider: {
-    name: string;
-    baseUrl: string;
-    apiKey?: string;
-    models: string[];
-  }): Promise<{ id: string; models: string[] }> {
+  async addProvider(
+    provider: {
+      name: string;
+      baseUrl: string;
+      apiKey?: string;
+      models: string[];
+    },
+    userId: string,
+  ): Promise<{ id: string; models: string[] }> {
     const id = provider.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
 
     // Discover models from the provider's /v1/models endpoint
     let discoveredModels: string[] = [];
     if (provider.baseUrl && provider.apiKey) {
+      try {
+        await assertPublicUrl(`${provider.baseUrl}/models`);
+      } catch {
+        throw new Error('Provider baseUrl is not allowed');
+      }
       try {
         const headers: Record<string, string> = {};
         // Anthropic uses x-api-key header
@@ -369,13 +381,15 @@ export class ChatService {
       this.modelsCache = null;
       return { id, models };
     }
-    this.customProviders.push({ id, ...provider, models });
+    this.customProviders.push({ id, ownerId: userId, ...provider, models });
     this.modelsCache = null;
     return { id, models };
   }
 
-  removeProvider(id: string): boolean {
-    const idx = this.customProviders.findIndex((p) => p.id === id);
+  removeProvider(id: string, userId: string): boolean {
+    const idx = this.customProviders.findIndex(
+      (p) => p.id === id && p.ownerId === userId,
+    );
     if (idx === -1) return false;
     this.customProviders.splice(idx, 1);
     return true;

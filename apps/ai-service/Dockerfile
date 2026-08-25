@@ -4,10 +4,13 @@ WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-COPY pyproject.toml .
+COPY apps/ai-service/pyproject.toml apps/ai-service/uv.lock ./
 RUN uv pip install --system --no-cache .
 
-COPY . .
+COPY apps/ai-service/app ./app
+COPY apps/ai-service/prompts ./prompts
+COPY apps/ai-service/scripts ./scripts
+COPY apps/ai-service/migration.sql ./
 
 EXPOSE 8000
 

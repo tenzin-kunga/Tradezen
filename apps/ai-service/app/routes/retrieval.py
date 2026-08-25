@@ -27,7 +27,7 @@ async def retrieve(request: Request):
 
     body = await request.json()
     session = getattr(request.state, "session", None)
-    user_id = body.get("user_id") or (session.user_id if session else "")
+    user_id = session.user_id if session else ""
     if not user_id or user_id == "unknown":
         raise HTTPException(status_code=400, detail="user_id required (trusted server-side auth)")
 

@@ -19,7 +19,7 @@ All modifications are optional for local development but recommended for product
 | ----------- | ----------------------------------------------------------- | --------------------------------------------- |
 | **Docker**  | Multi-stage builds, non-root users, health checks           | Smaller images, better security, self-healing |
 | **Compose** | Network isolation, resource limits, restart policies        | Improved isolation, stability, reliability    |
-| **CI/CD**   | Expanded pipeline with security scanning, tests, deployment | Higher quality, automated releases            |
+| **CI/CD**   | Path-filtered lint + build pipeline (no security/test/deploy jobs) | Faster feedback on changed paths |
 | **Secrets** | Runtime injection, validation, rotation tools               | Reduced exposure risk, easier key management  |
 | **Web**     | Dockerfile added (was missing)                              | Consistent deployment, containerization       |
 | **Docs**    | Comprehensive guides for deployment, security, onboarding   | Faster onboarding, fewer configuration errors |
@@ -103,48 +103,25 @@ All modifications are optional for local development but recommended for product
 
 ### CI/CD Pipeline
 
-**Expanded from basic build to full deployment pipeline:**
+**Path-filtered workflow (`.github/workflows/ci.yml`) — only runs jobs whose
+paths changed:**
 
-#### Job 1: Security Audit
+- **changes** — detects which packages (api/web) changed via `dorny/paths-filter`.
+- **lint** — ESLint + `tsc --noEmit` per package (api, web, db, ui).
+- **build** — `turbo run build` (api/web).
 
-- `bun pm audit` for dependency vulnerabilities
-- Trivy filesystem scan (OS packages, Bun deps)
-- Pattern-based secret leak detection
-- Results uploaded to GitHub Security tab (SARIF)
+Notes:
 
-#### Job 2: Lint & Type Check
+- There is **no `security`, `test`, `e2e`, or `deploy` job** in this workflow.
+  API unit tests run locally via `bun run test`; the web package has no test
+  suite. The `deploy` job is disabled.
+- `permissions: contents: read`; pull-request trigger uses `pull_request` (not
+  `pull_request_target`), keeping the GITHUB_TOKEN least-privilege.
+- Pin third-party actions by commit SHA where feasible; avoid `latest`.
 
-- ESLint with auto-fix
-- TypeScript type checking (`tsc --noEmit`)
-- Fails fast on quality issues
-
-#### Job 3: Unit Tests
-
-- Matrix across Node 18, 20, 22
-- Coverage collection and upload (Codecov)
-- Artifacts retained for debugging
-
-#### Job 4: E2E Tests
-
-- Spins up Postgres + Redis as services
-- Runs database migrations
-- Executes integration test suite
-- Uploads results as artifacts
-
-#### Job 5: Build & Dockerize (main branch only)
-
-- Builds multi-platform images (amd64 + arm64)
-- Docker Buildx layer caching from registry
-- Pushes to Docker Hub with version tags
-- Post-build Trivy image scan
-
-#### Job 6: Deploy (main branch only)
-
-- Triggers Render API redeploy
-- Triggers Vercel frontend deployment
-- Environment: `production`
-
-**Impact:** Complete automation from code to production with security gates.
+**Impact:** Fast feedback on lint/type/build for changed paths. Security and
+deployment gates are not enforced in CI — they must be run locally / added
+deliberately before publishing.
 
 ---
 

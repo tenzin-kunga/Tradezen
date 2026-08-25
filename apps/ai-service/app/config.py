@@ -79,6 +79,9 @@ class Config(BaseSettings):
     # Auth
     auth_secret: str = ""
 
+    # CORS — server-to-server only by default (no browser origins)
+    cors_origins: list[str] = []
+
     # Database
     database_url: str = ""
 

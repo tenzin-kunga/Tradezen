@@ -382,7 +382,7 @@ export default function CommandPalette({
     onOpenChange(false);
   }, [onOpenChange]);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refresh recent searches when palette opens
   useEffect(() => {

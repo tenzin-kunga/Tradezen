@@ -48,8 +48,9 @@ class AuthService:
         Returns Principal on success, None on failure.
         """
         if not self.secret:
-            # No secret configured — allow all (dev mode)
-            return Principal(user_id="dev-user", source="dev")
+            # Fail closed — never accept JWTs without a configured secret.
+            logger.warning("JWT verification attempted with no secret configured")
+            return None
 
         try:
             payload: dict[str, Any] = jwt.decode(

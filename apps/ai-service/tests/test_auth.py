@@ -93,12 +93,10 @@ class TestVerifyJWT:
         result = self.auth._verify_jwt("")
         assert result is None
 
-    def test_dev_mode_no_secret(self):
+    def test_no_secret_fails_closed(self):
         auth = AuthService(secret="")
         result = auth._verify_jwt("anything")
-        assert isinstance(result, Principal)
-        assert result.user_id == "dev-user"
-        assert result.source == "dev"
+        assert result is None
 
 
 class TestVerifyIntegration:

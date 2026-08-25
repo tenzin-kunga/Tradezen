@@ -531,7 +531,7 @@ export class TradesService {
       .where(and(eq(trades.id, id), eq(trades.userId, userId)));
     if (!result[0]) throw new NotFoundException(`Trade ${id} not found`);
 
-    const images = await this.imageService.getImages(id);
+    const images = await this.imageService.getImages(id, userId);
     return { ...result[0], images };
   }
 
@@ -626,7 +626,7 @@ export class TradesService {
     if (!tradeRes[0]) throw new NotFoundException(`Trade ${id} not found`);
 
     // Delete all images from Cloudinary before deleting the trade
-    const images = await this.imageService.getImages(id);
+    const images = await this.imageService.getImages(id, userId);
     for (const image of images) {
       try {
         await this.imageService.deleteImage(userId, id, image.id);

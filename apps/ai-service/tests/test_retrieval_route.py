@@ -26,13 +26,20 @@ class FakePipeline:
         return self.result
 
 
-def make_app(pipeline, policy=None):
+def make_app(pipeline, policy=None, user_id="u1"):
     app = FastAPI()
     app.state.container = type(
         "Container",
         (),
         {"retrieval_pipeline": pipeline, "retrieval_policy": policy or RetrievalPolicy()},
     )()
+
+    @app.middleware("http")
+    async def _set_session(request, call_next):
+        session = type("Session", (), {"user_id": user_id})()
+        request.state.session = session
+        return await call_next(request)
+
     app.include_router(router)
     return app
 
@@ -188,7 +195,7 @@ async def test_retrieval_missing_query_400():
 
 async def test_retrieval_requires_user_id():
     pipeline = FakePipeline(result=sample_result())
-    app = make_app(pipeline)
+    app = make_app(pipeline, user_id="")
 
     resp = await call_retrieval(
         app,

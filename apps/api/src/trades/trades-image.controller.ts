@@ -29,7 +29,7 @@ export class TradeImageController {
     @CurrentUser('id') userId: string,
     @Param('tradeId') tradeId: string,
   ) {
-    return this.imageService.getImages(tradeId);
+    return this.imageService.getImages(tradeId, userId);
   }
 
   @Post()
